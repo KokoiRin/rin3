@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFile, readdir } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 const basePath = process.env.GITHUB_ACTIONS === "true" ? "/rin3" : "";
@@ -48,18 +48,12 @@ test("publishes the workflow-interface note under software engineering", async (
     "software-engineering/when-workflows-are-clear-but-interfaces-are-not/index.html",
   );
 
-  assert.match(index, /When the Workflow Is Clear but the Interface Is Not/);
-  assert.match(article, /A skill should expose a contract/);
-  assert.match(article, /Process knowledge and interface knowledge are different assets/);
+  assert.match(index, /流程清楚，接口却模糊/);
+  assert.match(article, /Skill 需要的不是口号，而是契约/);
+  assert.match(article, /流程知识和接口知识是两种不同的资产/);
 });
 
-test("exports no Han characters in any page", async () => {
-  const outRoot = new URL("../out/", import.meta.url);
-  const files = await readdir(outRoot, { recursive: true });
-  const htmlFiles = files.filter((file) => file.endsWith(".html"));
-
-  for (const file of htmlFiles) {
-    const html = await readFile(new URL(file, outRoot), "utf8");
-    assert.doesNotMatch(html, /\p{Script=Han}/u, `${file} contains Han characters`);
-  }
+test("keeps the entrance copy English-only", async () => {
+  const html = await readOutput("index.html");
+  assert.doesNotMatch(html, /\p{Script=Han}/u);
 });
