@@ -1,103 +1,107 @@
 ---
-title: "When the Workflow Is Clear but the Interface Is Not"
-summary: "Why knowing the process is not enough when a skill still receives vague inputs and produces vague outputs."
+title: "流程清楚，接口却模糊"
+summary: "我明明知道该做什么，为什么把它变成 Skill 后仍然困难？问题往往不在流程，而在触发、输入和输出的边界。"
 date: "2026-07-10"
-topic: "Architecture & Design"
-tags: [Agentic Systems, Interface Design, Workflow Design]
+topic: "架构与设计"
+tags: [智能体系统, 接口设计, 工作流设计]
 order: 1
 draft: false
 ---
 
-# When the Workflow Is Clear but the Interface Is Not
+# 流程清楚，接口却模糊
 
-A few days ago, I ran into a frustrating gap. I understood the workflow. I could describe the problem, the constraints around it, and the difficult situation I was trying to escape. Yet when I tried to encode the solution as a reusable skill, the work remained surprisingly hard.
+前几天我遇到了一个有些反直觉的问题。
 
-The obstacle was no longer the process itself. It was the interface around the process.
+我明明知道整个流程，也知道自己正面临什么困境。我可以把问题的来龙去脉讲清楚，也大致知道下一步应该做什么。但当我试图把这套方法整理成一个可以复用的 Skill 时，事情依然很困难。
 
-## Knowing the path is not the same as being able to walk it
+后来我意识到，阻力已经不在流程本身，而在流程与外界连接的地方。
 
-A workflow is usually described as a sequence:
+## 知道路径，不等于能够沿着路径行动
 
-1. Understand the problem.
-2. Inspect the current state.
-3. Choose an approach.
-4. Make the change.
-5. Verify the result.
+一个流程通常可以被描述成几个步骤：
 
-This is useful as a map, but it is not yet an executable contract. Each step hides questions that the workflow does not answer:
+1. 理解问题。
+2. 检查当前状态。
+3. 选择解决方案。
+4. 执行修改。
+5. 验证结果。
 
-- What evidence is sufficient to say the problem is understood?
-- Which parts of the current state matter?
-- What form should a proposed approach take?
-- What exactly counts as a verified result?
+这张地图并没有错，但它还不是一个可以执行的契约。每一步里都藏着没有回答的问题：
 
-A human can often cross these gaps with intuition. A reusable skill cannot rely on the same unspoken judgment. It needs explicit boundaries.
+- 看到哪些证据，才算真正理解了问题？
+- 当前状态里，哪些信息与这次任务有关？
+- 解决方案应该具体到什么程度？
+- 什么样的结果才算验证通过？
 
-## The three ambiguous boundaries
+人可以依靠经验和直觉跨过这些缝隙。Skill 不行。它需要边界，需要明确知道什么时候接手、拿到什么、交付什么，以及什么时候停止。
 
-The difficulty tends to concentrate around three interfaces.
+## 三个最容易模糊的边界
 
-| Boundary | Missing question | Typical failure |
+困难通常集中在三个接口上。
+
+| 边界 | 没有回答的问题 | 常见结果 |
 | --- | --- | --- |
-| Trigger | When should this skill take control? | It activates too early, too late, or for the wrong problem. |
-| Input | What information must already exist? | The skill spends most of its effort guessing context. |
-| Output | What must be true when it finishes? | The result sounds reasonable but cannot drive the next step. |
+| 触发 | 什么情况下应该调用这个 Skill？ | 过早介入、介入太晚，或者接手了错误的问题 |
+| 输入 | 执行前必须已经具备哪些信息？ | 大部分精力都花在猜测上下文 |
+| 输出 | 结束时必须交付什么？ | 结果听起来合理，却无法推动下一步 |
 
-These ambiguities compound. An unclear trigger admits the wrong task. Vague input forces hidden assumptions. A loose output contract then makes it impossible to distinguish completion from a plausible-looking response.
+这些模糊性会互相放大。
 
-Adding more instructions does not necessarily fix this. A longer prompt can describe more behavior while leaving the interface just as uncertain.
+触发条件不清楚，会让错误的任务进入系统。输入不清楚，会迫使执行过程不断补充隐含假设。输出不清楚，则让我们无法区分“已经完成”和“只是写出了一段看起来不错的回答”。
 
-## A skill should expose a contract
+继续增加说明文字也不一定有用。更长的提示词可以描述更多行为，却可能仍然没有定义接口。
 
-A more useful skill definition begins with a narrow protocol rather than a broad promise.
+## Skill 需要的不是口号，而是契约
+
+相比“帮助我完成某类任务”这样的宽泛承诺，一个可复用的 Skill 更需要一份窄而明确的协议。
 
 ```yaml
 trigger:
-  use_when: the target behavior and affected surface are known
-  refuse_when: the request is still exploratory
+  use_when: 目标行为和受影响范围已经明确
+  refuse_when: 请求仍处于开放探索阶段
 
 input:
-  goal: one observable outcome
-  context: relevant files, state, or evidence
-  constraints: boundaries that must not change
-  acceptance: checks that can prove completion
+  goal: 一个可观察的结果
+  context: 与任务有关的文件、状态和证据
+  constraints: 不能被改变的边界
+  acceptance: 能证明完成的检查条件
 
 output:
-  decision: the chosen action and its reason
-  artifacts: concrete files, changes, or commands
-  assumptions: unresolved facts that influenced the result
-  next_step: one executable continuation
+  decision: 选择了什么，以及为什么
+  artifacts: 具体文件、修改或命令
+  assumptions: 影响结果但尚未确认的事实
+  next_step: 一个可以直接执行的下一步
 
 stop_when:
-  - acceptance checks pass
-  - a named external dependency blocks progress
+  - 验收条件通过
+  - 一个被明确命名的外部依赖阻止继续推进
 ```
 
-The exact schema is less important than the discipline behind it. Inputs should reduce interpretation. Outputs should create leverage for the next operation. Stop conditions should prevent the skill from drifting into endless explanation.
+具体字段并不是最重要的。真正重要的是背后的约束：输入应该减少解释空间，输出应该为下一步提供抓手，停止条件应该防止 Skill 陷入没有边界的继续分析。
 
-## Process knowledge and interface knowledge are different assets
+## 流程知识和接口知识是两种不同的资产
 
-This distinction changed how I think about reusable automation.
+这次经历改变了我对自动化的理解。
 
-Process knowledge explains *what usually happens*. Interface knowledge explains *what must be supplied, what may be assumed, and what will be returned*. A skill needs both.
+流程知识描述的是“事情通常怎样发生”。接口知识描述的是“必须提供什么、允许假设什么、最后返回什么”。一个真正可复用的 Skill 同时需要两者。
 
-Without process knowledge, the skill is shallow. Without interface knowledge, it is unpredictable.
+没有流程知识，Skill 会很浅。没有接口知识，Skill 会很不稳定。
 
-The most reusable part of a skill may therefore not be its internal reasoning. It may be the translation layer at its edges: normalization of messy input, validation of prerequisites, and production of an output that another person or tool can actually consume.
+因此，一个 Skill 最值得复用的部分，可能不只是它内部如何推理，而是它两侧的翻译层：如何把混乱的输入整理成稳定结构，如何验证前置条件，以及如何产生能被下一个人或工具直接消费的输出。
 
-## A practical test
+## 在自动化之前先问四个问题
 
-Before turning a workflow into a skill, I now ask four questions:
+以后再把工作流整理成 Skill 时，我会先问：
 
-1. Can I show one valid input and one invalid input?
-2. Can I describe the output without using words such as *helpful*, *good*, or *complete*?
-3. Can another step consume the result without reinterpreting it?
-4. Can the skill explain why it stopped?
+1. 我能否分别给出一个有效输入和一个无效输入？
+2. 我能否不用“有帮助”“足够好”“完整”这类模糊词描述输出？
+3. 下一个步骤能否不重新解释，就直接消费这份结果？
+4. Skill 能否说明自己为什么在这里停止？
 
-If these questions are difficult to answer, the workflow probably needs a clearer interface before it needs more automation.
+如果这几个问题很难回答，那么当前缺少的可能不是更多自动化，而是一个更清楚的接口。
 
-## Closing note
+## 结语
 
-Knowing the flow is necessary, but it is not sufficient. The hard part often begins after the flow is known: turning tacit judgment into explicit contracts.
+知道流程是必要条件，但不是充分条件。真正困难的部分，往往在流程已经清楚之后才出现：我们需要把依赖直觉的判断，转化成可以被观察、传递和验证的契约。
 
-A skill does not remove ambiguity by being named. It becomes useful when its boundaries make ambiguity visible, limited, and testable.
+一个东西不会因为被命名为 Skill 就自动消除模糊性。它真正有用的时刻，是它能够让模糊性变得可见、有限，而且可以被测试。
