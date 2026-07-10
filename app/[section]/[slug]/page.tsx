@@ -7,6 +7,7 @@ import {
   getAllArticles,
   getArticle,
   getArticleNavigation,
+  getArticlePrimaryHref,
 } from "@/lib/articles";
 import { getSection } from "../../sections";
 
@@ -90,7 +91,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
 
             <nav className="article-pagination" aria-label="Adjacent articles">
               {navigation.previous ? (
-                <Link href={`/${navigation.previous.section}/${navigation.previous.slug}`}>
+                <Link href={getArticlePrimaryHref(navigation.previous)}>
                   <span>PREVIOUS</span>
                   <strong>{navigation.previous.title}</strong>
                 </Link>
@@ -99,7 +100,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
                 {`ALL ${section.english} NOTES`}
               </Link>
               {navigation.next ? (
-                <Link className="article-pagination-next" href={`/${navigation.next.section}/${navigation.next.slug}`}>
+                <Link className="article-pagination-next" href={getArticlePrimaryHref(navigation.next)}>
                   <span>NEXT</span>
                   <strong>{navigation.next.title}</strong>
                 </Link>
