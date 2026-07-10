@@ -1,98 +1,65 @@
-# vinext-starter
+# 铃有三剑
 
-A clean full-stack starter running on
-[vinext](https://github.com/cloudflare/vinext), with optional Cloudflare D1 and
-Drizzle support.
+以樱花、莲花与枫叶为引，记录数学、计算机与软件工程学习内容的个人静态网站。
 
-## Prerequisites
+## 本地运行
 
-- Node.js `>=22.13.0`
-
-## Quick Start
+需要 Node.js 22 或更高版本。
 
 ```bash
 npm install
 npm run dev
-npm run build
 ```
 
-This starter does not use `wrangler.jsonc`.
+访问 `http://localhost:3000`。
 
-## Included Shape
+## 新增文章
 
-- edit site code under `app/`
-- `.openai/hosting.json` declares optional Sites D1 and R2 bindings
-- `vite.config.ts` simulates declared bindings for local development
-- `db/schema.ts` starts intentionally empty
-- `examples/d1/` contains an optional D1 example surface
-- `drizzle.config.ts` supports local migration generation when needed
+文章按分区放在 `content/` 下：
 
-## Workspace Auth Headers
-
-OpenAI workspace sites can read the current user's email from
-`oai-authenticated-user-email`.
-
-SIWC-authenticated workspace sites may also receive
-`oai-authenticated-user-full-name` when the user's SIWC profile has a non-empty
-`name` claim. The full-name value is percent-encoded UTF-8 and is accompanied by
-`oai-authenticated-user-full-name-encoding: percent-encoded-utf-8`.
-
-Treat the full name as optional and fall back to email when it is absent:
-
-```tsx
-import { headers } from "next/headers";
-
-export default async function Home() {
-  const requestHeaders = await headers();
-  const email = requestHeaders.get("oai-authenticated-user-email");
-  const encodedFullName = requestHeaders.get("oai-authenticated-user-full-name");
-  const fullName =
-    encodedFullName &&
-    requestHeaders.get("oai-authenticated-user-full-name-encoding") ===
-      "percent-encoded-utf-8"
-      ? decodeURIComponent(encodedFullName)
-      : null;
-
-  const displayName = fullName ?? email;
-  // ...
-}
+```text
+content/
+  mathematics/
+  computer-science/
+  software-engineering/
 ```
 
-## Optional Dispatch-Owned ChatGPT Sign-In
+新建一个 `.md` 文件，例如 `content/mathematics/eigenvalues.md`：
 
-Import the ready-to-use helpers from `app/chatgpt-auth.ts` when the site needs
-optional or required ChatGPT sign-in:
+````markdown
+---
+title: 文章标题
+summary: 一句话摘要
+date: "2026-07-10"
+topic: 分析与代数
+tags: [线性代数, 几何直觉]
+order: 10
+draft: false
+---
 
-- Use `getChatGPTUser()` for optional signed-in UI.
-- Use `requireChatGPTUser(returnTo)` for server-rendered pages that should send
-  anonymous visitors through Sign in with ChatGPT.
-- Use `chatGPTSignInPath(returnTo)` and `chatGPTSignOutPath(returnTo)` for
-  browser links or actions.
-- Pass a same-origin relative `returnTo` path for the destination after sign-in
-  or sign-out. The helper validates and safely encodes it.
-- Mark protected pages with `export const dynamic = "force-dynamic"` because
-  they depend on per-request identity headers.
+# 文章标题
 
-Dispatch owns `/signin-with-chatgpt`, `/signout-with-chatgpt`, `/callback`, the
-OAuth cookies, and identity header injection. Do not implement app routes for
-those reserved paths. Routes that do not import and call the helper remain
-anonymous-compatible.
+行内公式 $Av = \lambda v$。
 
-SIWC establishes identity only; it does not prove workspace membership. Use the
-Sites hosting platform's access policy controls for workspace-wide restrictions,
-or enforce explicit server-side membership or allowlist checks.
+$$
+A = PDP^{-1}
+$$
 
-Use SIWC for account pages, user-specific dashboards, saved records, and write
-actions tied to the current ChatGPT user. Leave public content anonymous.
+```python
+print("code is highlighted")
+```
+````
 
-## Useful Commands
+- `$...$`：行内公式
+- `$$...$$`：独立公式
+- `draft: true`：构建时不发布
+- `order`：同一分区中的显示顺序
+- 原始 HTML 不会执行；正文使用 Markdown、GFM 表格、公式和代码围栏
 
-- `npm run dev`: start local development
-- `npm run build`: verify the vinext build output
-- `npm test`: build the starter and verify its rendered loading skeleton
-- `npm run db:generate`: generate Drizzle migrations after schema changes
+## 构建与发布
 
-## Learn More
+```bash
+npm test
+```
 
-- [vinext Documentation](https://github.com/cloudflare/vinext)
-- [Drizzle D1 Guide](https://orm.drizzle.team/docs/get-started/d1-new)
+构建结果位于 `out/`。推送到 `main` 分支后，`.github/workflows/deploy-pages.yml` 会通过 GitHub Actions 自动构建并发布到 GitHub Pages。

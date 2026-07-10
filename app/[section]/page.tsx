@@ -1,15 +1,22 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { sections } from "../sections";
+import { formatArticleDate, getArticlesBySection } from "@/lib/articles";
+import { getSection, sections, type SectionSlug } from "../sections";
 
 type SectionPageProps = {
   params: Promise<{ section: string }>;
 };
 
+export const dynamicParams = false;
+
+export function generateStaticParams() {
+  return sections.map((section) => ({ section: section.slug }));
+}
+
 export async function generateMetadata({ params }: SectionPageProps): Promise<Metadata> {
   const { section: slug } = await params;
-  const section = sections.find((item) => item.slug === slug);
+  const section = getSection(slug);
 
   return section
     ? {
@@ -21,33 +28,61 @@ export async function generateMetadata({ params }: SectionPageProps): Promise<Me
 
 export default async function SectionPage({ params }: SectionPageProps) {
   const { section: slug } = await params;
-  const section = sections.find((item) => item.slug === slug);
+  const section = getSection(slug);
 
   if (!section) {
     notFound();
   }
 
+  const articles = getArticlesBySection(section.slug as SectionSlug);
+
   return (
-    <main className={`section-page section-${section.slug}`}>
-      <img className="section-image" src={section.image} alt="" />
-      <span className="section-shade" aria-hidden="true" />
+    <main className={`section-hub section-${section.slug}`}>
+      <div className="section-visual">
+        <img className="section-image" src={section.image} alt="" />
+        <span className="section-shade" aria-hidden="true" />
 
-      <Link className="back-link" href="/" aria-label="返回铃有三剑进入页">
-        <span aria-hidden="true">←</span>
-        <span>三境</span>
-      </Link>
+        <Link className="back-link" href="/" aria-label="返回铃有三剑进入页">
+          <span aria-hidden="true">←</span>
+          <span>三境</span>
+        </Link>
 
-      <section className="section-intro">
-        <p className="section-flower">{section.flower}</p>
-        <h1>{section.title}</h1>
-        <p className="section-english">{section.english}</p>
-        <p className="section-lead">{section.intro}</p>
-        <ul className="topic-list" aria-label={`${section.title}学习主题`}>
-          {section.topics.map((topic) => <li key={topic}>{topic}</li>)}
-        </ul>
+        <section className="section-intro">
+          <p className="section-flower">{section.flower}</p>
+          <h1>{section.title}</h1>
+          <p className="section-english">{section.english}</p>
+          <p className="section-lead">{section.intro}</p>
+        </section>
+      </div>
+
+      <section className="article-index" aria-labelledby="article-index-title">
+        <header className="article-index-header">
+          <p>LEARNING NOTES</p>
+          <h2 id="article-index-title">札记</h2>
+          <span>{articles.length.toString().padStart(2, "0")} 篇</span>
+        </header>
+
+        {articles.length > 0 ? (
+          <ol className="article-list">
+            {articles.map((article, index) => (
+              <li key={article.slug}>
+                <Link href={`/${section.slug}/${article.slug}`}>
+                  <span className="article-order">{(index + 1).toString().padStart(2, "0")}</span>
+                  <span className="article-list-copy">
+                    <span className="article-topic">{article.topic}</span>
+                    <strong>{article.title}</strong>
+                    <span className="article-summary">{article.summary}</span>
+                    <time dateTime={article.date}>{formatArticleDate(article.date)}</time>
+                  </span>
+                  <span className="article-list-arrow" aria-hidden="true">→</span>
+                </Link>
+              </li>
+            ))}
+          </ol>
+        ) : (
+          <p className="empty-section">此境尚待落笔。</p>
+        )}
       </section>
-
-      <p className="section-mark">铃有三剑 · 学习札记</p>
     </main>
   );
 }
