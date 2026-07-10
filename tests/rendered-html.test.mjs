@@ -42,6 +42,17 @@ test("renders Markdown, LaTeX, tables, and highlighted code", async () => {
   assert.match(html, /np\.linalg\.eig/);
 });
 
+test("publishes the workflow-interface note under software engineering", async () => {
+  const index = await readOutput("software-engineering/index.html");
+  const article = await readOutput(
+    "software-engineering/when-workflows-are-clear-but-interfaces-are-not/index.html",
+  );
+
+  assert.match(index, /When the Workflow Is Clear but the Interface Is Not/);
+  assert.match(article, /A skill should expose a contract/);
+  assert.match(article, /Process knowledge and interface knowledge are different assets/);
+});
+
 test("exports no Han characters in any page", async () => {
   const outRoot = new URL("../out/", import.meta.url);
   const files = await readdir(outRoot, { recursive: true });
