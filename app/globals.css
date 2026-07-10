@@ -91,6 +91,27 @@ a {
   border-right: 0;
 }
 
+/* 额外列收起时不参与布局或交互。 */
+.gate-winter {
+  width: 0;
+  min-width: 0;
+  flex: 0 0 0;
+  border-right: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.gates-winter-revealed .gate-winter {
+  width: auto;
+  flex: 1 1 0;
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.gates-winter-revealed .gate-title {
+  font-size: clamp(28px, 3.2vw, 52px);
+}
+
 .gate-image,
 .section-image {
   position: absolute;
@@ -205,6 +226,39 @@ a {
 
 .swipe-hint {
   display: none;
+}
+
+/* 桌面提示保持低干扰，不改变前三列的初始构图。 */
+.winter-reveal {
+  position: absolute;
+  z-index: 20;
+  top: 50%;
+  right: 14px;
+  display: grid;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  place-items: center;
+  transform: translateY(-50%);
+  border: 1px solid rgba(255, 255, 255, 0.38);
+  border-radius: 50%;
+  background: rgba(12, 22, 28, 0.42);
+  color: rgba(255, 255, 255, 0.8);
+  cursor: pointer;
+  backdrop-filter: blur(6px);
+  transition: color 220ms ease, border-color 220ms ease, background 220ms ease;
+}
+
+.winter-reveal:hover,
+.winter-reveal:focus-visible {
+  border-color: rgba(255, 255, 255, 0.82);
+  background: rgba(22, 38, 50, 0.72);
+  color: #fff;
+  outline: 0;
+}
+
+.winter-reveal:focus-visible {
+  box-shadow: 0 0 0 2px #fff;
 }
 
 .section-hub {
@@ -765,6 +819,28 @@ a {
     scroll-snap-align: start;
   }
 
+  .gate-winter {
+    width: 0;
+    min-width: 0;
+    flex: 0 0 0;
+    opacity: 0;
+  }
+
+  .gates-winter-revealed .gate-winter {
+    width: 86vw;
+    min-width: 86vw;
+    flex: 0 0 86vw;
+    opacity: 1;
+  }
+
+  .gates-winter-revealed .gate-title {
+    font-size: 48px;
+  }
+
+  .winter-reveal {
+    display: none;
+  }
+
   .gate-number {
     top: 26px;
     left: 20px;
@@ -927,6 +1003,8 @@ a {
   .gate,
   .gate-image,
   .gate-arrow,
+  .gate-winter,
+  .winter-reveal,
   .back-link span:first-child {
     transition: none;
   }
