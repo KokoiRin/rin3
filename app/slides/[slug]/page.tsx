@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import SlideDeckView from "../slide-deck";
 import { getSlideDeck, slideDecks } from "../decks";
+import { renderSlideDeck } from "../render-deck";
 
 // 表示静态 deck 路由从 Next.js 获得的唯一参数。
 type SlidePageProps = {
@@ -37,5 +38,5 @@ export default async function SlidePage({ params }: SlidePageProps) {
     notFound();
   }
 
-  return <SlideDeckView deck={deck} />;
+  return <SlideDeckView deck={await renderSlideDeck(deck)} />;
 }

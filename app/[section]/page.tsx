@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { formatArticleDate, getArticlesBySection } from "@/lib/articles";
+import { formatArticleDate, getArticlePrimaryHref, getArticlesBySection } from "@/lib/articles";
 import { getSection, sections, type SectionSlug } from "../sections";
 
 type SectionPageProps = {
@@ -66,12 +66,12 @@ export default async function SectionPage({ params }: SectionPageProps) {
           <ol className="article-list">
             {articles.map((article, index) => (
               <li key={article.slug} lang={article.lang}>
-                <Link href={`/${section.slug}/${article.slug}`}>
+                <Link href={getArticlePrimaryHref(article)}>
                   <span className="article-order">{(index + 1).toString().padStart(2, "0")}</span>
                   <span className="article-list-copy">
                     <span className="article-topic-row">
                       <span className="article-topic">{article.topic}</span>
-                      {article.slides ? <span className="article-slides-flag">SLIDES AVAILABLE</span> : null}
+                      {article.slides ? <span className="article-slides-flag">INTERACTIVE DECK</span> : null}
                     </span>
                     <strong>{article.title}</strong>
                     <span className="article-summary">{article.summary}</span>
