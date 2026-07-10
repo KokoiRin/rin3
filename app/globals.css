@@ -335,6 +335,23 @@ a {
   opacity: 0.68;
 }
 
+.article-topic-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  align-items: center;
+}
+
+.article-slides-flag {
+  padding: 4px 7px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 3px;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  color: #e2b7aa;
+}
+
 .article-list {
   margin: 0;
   padding: 0;
@@ -480,11 +497,21 @@ a {
 
 .article-meta {
   display: flex;
+  flex-wrap: wrap;
   gap: 26px;
   margin-top: 38px;
   font-size: 12px;
   letter-spacing: 0.08em;
   color: #74756e;
+}
+
+.article-slides-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 3px;
+  border-bottom: 1px solid currentColor;
+  color: #a9513e;
 }
 
 .article-layout {

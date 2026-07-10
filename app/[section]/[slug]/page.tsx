@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { GalleryHorizontalEnd } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
@@ -65,6 +66,12 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
           <div className="article-meta">
             <time dateTime={article.date}>{formatArticleDate(article.date, article.lang)}</time>
             <span>{article.topic}</span>
+            {article.slides ? (
+              <Link className="article-slides-link" href={article.slides}>
+                <GalleryHorizontalEnd size={15} />
+                <span>VIEW THE SLIDES</span>
+              </Link>
+            ) : null}
           </div>
         </header>
 
