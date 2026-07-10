@@ -31,6 +31,7 @@ content/
 title: 文章标题
 summary: 一句话摘要
 date: "2026-07-10"
+lang: en
 topic: 分析与代数
 tags: [线性代数, 几何直觉]
 order: 10
@@ -53,6 +54,7 @@ print("code is highlighted")
 - `$...$`：行内公式
 - `$$...$$`：独立公式
 - `draft: true`：构建时不发布
+- `lang`：文章语言，使用 `en` 或 `zh-CN`
 - `order`：同一分区中的显示顺序
 - 原始 HTML 不会执行；正文使用 Markdown、GFM 表格、公式和代码围栏
 

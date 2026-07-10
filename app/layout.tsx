@@ -7,7 +7,7 @@ export const metadata: Metadata = {
   title: "RIN III",
   description: "A personal archive for mathematics, computer science, and software engineering.",
   icons: {
-    icon: assetPath("/entrance/math-sakura.png"),
+    icon: assetPath("/entrance/math-sakura.webp"),
   },
 };
 

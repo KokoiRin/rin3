@@ -2,6 +2,7 @@
 title: "Eigenvalues: Scale Along Stable Directions"
 summary: "A geometric route to understanding why eigenvectors mark the special directions of a linear transformation."
 date: "2026-07-10"
+lang: en
 topic: "Analysis & Algebra"
 tags: [Linear Algebra, Geometric Intuition]
 order: 1

@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import matter from "gray-matter";
+import { toString } from "hast-util-to-string";
 import rehypeAutolinkHeadings from "rehype-autolink-headings";
 import rehypeKatex from "rehype-katex";
 import rehypePrettyCode from "rehype-pretty-code";
@@ -10,6 +11,8 @@ import { remark } from "remark";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
 import remarkRehype from "remark-rehype";
+import { visit } from "unist-util-visit";
+import type { Element, Root } from "hast";
 import { sections, type SectionSlug } from "@/app/sections";
 
 const contentRoot = path.join(process.cwd(), "content");
@@ -18,6 +21,7 @@ const sectionSlugs = new Set<string>(sections.map((section) => section.slug));
 export type ArticleSummary = {
   section: SectionSlug;
   slug: string;
+  lang: "en" | "zh-CN";
   title: string;
   summary: string;
   date: string;
@@ -26,7 +30,14 @@ export type ArticleSummary = {
   order: number;
 };
 
+export type ArticleHeading = {
+  depth: 2 | 3;
+  id: string;
+  text: string;
+};
+
 export type Article = ArticleSummary & {
+  headings: ArticleHeading[];
   html: string;
 };
 
@@ -47,9 +58,20 @@ function readArticleSource(section: SectionSlug, fileName: string) {
   const date = dateValue instanceof Date
     ? dateValue.toISOString().slice(0, 10)
     : readString(data, "date", filePath);
-  const tags = Array.isArray(data.tags)
-    ? data.tags.filter((tag): tag is string => typeof tag === "string")
-    : [];
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)
+    || new Date(`${date}T00:00:00Z`).toISOString().slice(0, 10) !== date) {
+    throw new Error(`${filePath}: frontmatter field "date" must be a valid YYYY-MM-DD date`);
+  }
+
+  const lang = readString(data, "lang", filePath);
+  if (lang !== "en" && lang !== "zh-CN") {
+    throw new Error(`${filePath}: frontmatter field "lang" must be "en" or "zh-CN"`);
+  }
+
+  if (!Array.isArray(data.tags) || data.tags.some((tag) => typeof tag !== "string")) {
+    throw new Error(`${filePath}: frontmatter field "tags" must be an array of strings`);
+  }
+  const tags = data.tags as string[];
 
   return {
     source: parsed.content,
@@ -57,6 +79,7 @@ function readArticleSource(section: SectionSlug, fileName: string) {
     summary: {
       section,
       slug: fileName.replace(/\.md$/, ""),
+      lang,
       title: readString(data, "title", filePath),
       summary: readString(data, "summary", filePath),
       date,
@@ -101,6 +124,16 @@ export function getArticlesBySection(section: SectionSlug) {
   return getAllArticles().filter((article) => article.section === section);
 }
 
+export function getArticleNavigation(section: SectionSlug, slug: string) {
+  const articles = getArticlesBySection(section);
+  const index = articles.findIndex((article) => article.slug === slug);
+
+  return {
+    previous: index > 0 ? articles[index - 1] : null,
+    next: index >= 0 && index < articles.length - 1 ? articles[index + 1] : null,
+  };
+}
+
 export async function getArticle(section: string, slug: string): Promise<Article | null> {
   if (!sectionSlugs.has(section)) {
     return null;
@@ -117,11 +150,24 @@ export async function getArticle(section: string, slug: string): Promise<Article
     return null;
   }
 
+  const headings: ArticleHeading[] = [];
   const result = await remark()
     .use(remarkGfm)
     .use(remarkMath)
     .use(remarkRehype)
     .use(rehypeSlug)
+    .use(() => (tree: Root) => {
+      visit(tree, "element", (node: Element) => {
+        if ((node.tagName === "h2" || node.tagName === "h3")
+          && typeof node.properties?.id === "string") {
+          headings.push({
+            depth: node.tagName === "h2" ? 2 : 3,
+            id: node.properties.id,
+            text: toString(node),
+          });
+        }
+      });
+    })
     .use(rehypeAutolinkHeadings, { behavior: "wrap" })
     .use(rehypeKatex)
     .use(rehypePrettyCode, {
@@ -133,12 +179,13 @@ export async function getArticle(section: string, slug: string): Promise<Article
 
   return {
     ...parsed.summary,
+    headings,
     html: String(result),
   };
 }
 
-export function formatArticleDate(date: string) {
-  return new Intl.DateTimeFormat("en-US", {
+export function formatArticleDate(date: string, lang: ArticleSummary["lang"] = "en") {
+  return new Intl.DateTimeFormat(lang, {
     year: "numeric",
     month: "long",
     day: "numeric",
