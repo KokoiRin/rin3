@@ -1,28 +1,28 @@
 ---
-title: 特征值：保持方向的尺度
-summary: 从线性变换的几何直觉出发，理解特征向量为什么是特殊方向。
+title: "Eigenvalues: Scale Along Stable Directions"
+summary: "A geometric route to understanding why eigenvectors mark the special directions of a linear transformation."
 date: "2026-07-10"
-topic: 分析与代数
-tags: [线性代数, 几何直觉]
+topic: "Analysis & Algebra"
+tags: [Linear Algebra, Geometric Intuition]
 order: 1
 draft: false
 ---
 
-# 从变换开始
+# Begin with the transformation
 
-矩阵不只是一张数字表。把它看作空间中的线性变换后，特征值与特征向量会变得直观：大多数向量经过变换后都会转向，但有些特殊方向只会被拉伸、压缩或反向。
+A matrix is more than a table of numbers. Seen as a linear transformation of space, eigenvalues and eigenvectors become easier to picture: most vectors change direction, while a few special directions are only stretched, compressed, or reversed.
 
-若非零向量 $v$ 满足
+For a nonzero vector $v$, if
 
 $$
 Av = \lambda v,
 $$
 
-那么 $v$ 是矩阵 $A$ 的特征向量，$\lambda$ 是对应的特征值。
+then $v$ is an eigenvector of $A$, and $\lambda$ is its corresponding eigenvalue.
 
-## 一个二维例子
+## A two-dimensional example
 
-考虑矩阵
+Consider the matrix
 
 $$
 A =
@@ -32,18 +32,18 @@ A =
 \end{pmatrix}.
 $$
 
-它的两个特征值为 $3$ 与 $2$。寻找特征值的标准方法，是求解特征方程：
+Its eigenvalues are $3$ and $2$. The usual route to them is the characteristic equation:
 
 $$
 \det(A - \lambda I) = 0.
 $$
 
-| 特征值 | 一个对应方向 | 几何含义 |
+| Eigenvalue | One matching direction | Geometric meaning |
 | --- | --- | --- |
-| $3$ | $(1, 0)^T$ | 沿该方向放大三倍 |
-| $2$ | $(-1, 1)^T$ | 沿该方向放大两倍 |
+| $3$ | $(1, 0)^T$ | Scale that direction by three |
+| $2$ | $(-1, 1)^T$ | Scale that direction by two |
 
-## 用代码核对
+## Check it with code
 
 ```python
 import numpy as np
@@ -55,18 +55,18 @@ print(values)
 print(vectors)
 ```
 
-代码给出的向量可能与手算结果相差一个非零倍数。这不是错误，因为特征向量描述的是方向，而不是某一个固定长度的箭头。
+The vectors returned by the program may differ from a hand calculation by a nonzero scalar. That is expected: an eigenvector represents a direction, not an arrow of one fixed length.
 
-## 值得保留的直觉
+## The useful intuition
 
-1. 特征向量是线性变换中的不变方向。
-2. 特征值记录这个方向上的缩放比例。
-3. 对角化是在一组特征向量构成的坐标系里描述变换。
+1. Eigenvectors are the stable directions of a linear transformation.
+2. Eigenvalues record the scale applied along those directions.
+3. Diagonalization describes the transformation in coordinates built from eigenvectors.
 
-当一组特征向量足以构成空间的基时，可以写成
+When there are enough eigenvectors to form a basis, the matrix can be written as
 
 $$
 A = PDP^{-1}.
 $$
 
-这里的 $P$ 负责切换到特征向量坐标系，$D$ 只负责沿各坐标轴缩放，最后由 $P^{-1}$ 切换回来。
+Here, $P^{-1}$ moves into eigenvector coordinates, $D$ performs independent scaling along each axis, and $P$ returns to the original coordinates.
