@@ -4,9 +4,10 @@ export function assetPath(path: string) {
   return `${siteBasePath}${path}`;
 }
 
-export const sections = [
+export const learningSections = [
   {
     slug: "mathematics",
+    kind: "learning",
     title: "Mathematics",
     english: "MATHEMATICS",
     flower: "SAKURA / THE LOGIC OF FORM",
@@ -17,6 +18,7 @@ export const sections = [
   },
   {
     slug: "computer-science",
+    kind: "learning",
     title: "Computer Science",
     english: "COMPUTER SCIENCE",
     flower: "LOTUS / THE ART OF COMPUTATION",
@@ -27,6 +29,7 @@ export const sections = [
   },
   {
     slug: "software-engineering",
+    kind: "learning",
     title: "Software Engineering",
     english: "SOFTWARE ENGINEERING",
     flower: "MAPLE / SYSTEMS IN MOTION",
@@ -36,6 +39,21 @@ export const sections = [
     topics: ["Architecture & Design", "Quality & Testing", "Collaboration & Delivery"],
   },
 ] as const;
+
+// 额外分区沿用文章基础设施，但不计入首页的三门学科。
+export const winterSection = {
+  slug: "winter",
+  kind: "personal",
+  title: "Winter",
+  english: "BECOMING",
+  flower: "SNOW / THE QUIET WORK OF BECOMING",
+  image: assetPath("/entrance/winter-path.webp"),
+  alt: "A trail of footprints crosses a snowy mountain retreat toward a single warm pavilion",
+  intro: "Notes on choosing, changing, and becoming more fully myself.",
+  topics: ["Reflections", "Choices", "Practices"],
+} as const;
+
+export const sections = [...learningSections, winterSection] as const;
 
 export type SectionSlug = (typeof sections)[number]["slug"];
 

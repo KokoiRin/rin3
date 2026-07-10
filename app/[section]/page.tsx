@@ -96,7 +96,7 @@ export default async function SectionPage({ params }: SectionPageProps) {
 
       <section className="article-index" aria-labelledby="article-index-title">
         <header className="article-index-header">
-          <p>LEARNING NOTES</p>
+          <p>{section.kind === "personal" ? "PERSONAL NOTES" : "LEARNING NOTES"}</p>
           <h2 id="article-index-title">Notes</h2>
           <span>{entries.length.toString().padStart(2, "0")} NOTES</span>
         </header>
