@@ -12,8 +12,10 @@
     "lint": "eslint . --ignore-pattern out --ignore-pattern dist --ignore-pattern .next --ignore-pattern .vinext --ignore-pattern .wrangler"
   },
   "dependencies": {
+    "@revealjs/react": "^0.2.1",
     "gray-matter": "^4.0.3",
     "hast-util-to-string": "^3.0.1",
+    "lucide-react": "^1.24.0",
     "next": "16.2.6",
     "react": "19.2.6",
     "react-dom": "19.2.6",
@@ -26,6 +28,7 @@
     "remark-gfm": "^4.0.1",
     "remark-math": "^6.0.0",
     "remark-rehype": "^11.1.2",
+    "reveal.js": "^6.0.1",
     "unist-util-visit": "^5.1.0"
   },
   "devDependencies": {

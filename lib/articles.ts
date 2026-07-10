@@ -21,6 +21,7 @@ const sectionSlugs = new Set<string>(sections.map((section) => section.slug));
 export type ArticleSummary = {
   section: SectionSlug;
   slug: string;
+  slides?: string;
   lang: "en" | "zh-CN";
   title: string;
   summary: string;
@@ -72,6 +73,11 @@ function readArticleSource(section: SectionSlug, fileName: string) {
     throw new Error(`${filePath}: frontmatter field "tags" must be an array of strings`);
   }
   const tags = data.tags as string[];
+  const slides = data.slides;
+  if (slides !== undefined
+    && (typeof slides !== "string" || !slides.startsWith("/slides/") || slides.endsWith("/"))) {
+    throw new Error(`${filePath}: frontmatter field "slides" must be a route like "/slides/deck-name"`);
+  }
 
   return {
     source: parsed.content,
@@ -79,6 +85,7 @@ function readArticleSource(section: SectionSlug, fileName: string) {
     summary: {
       section,
       slug: fileName.replace(/\.md$/, ""),
+      slides: slides as string | undefined,
       lang,
       title: readString(data, "title", filePath),
       summary: readString(data, "summary", filePath),

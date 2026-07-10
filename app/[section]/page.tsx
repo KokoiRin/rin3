@@ -69,7 +69,10 @@ export default async function SectionPage({ params }: SectionPageProps) {
                 <Link href={`/${section.slug}/${article.slug}`}>
                   <span className="article-order">{(index + 1).toString().padStart(2, "0")}</span>
                   <span className="article-list-copy">
-                    <span className="article-topic">{article.topic}</span>
+                    <span className="article-topic-row">
+                      <span className="article-topic">{article.topic}</span>
+                      {article.slides ? <span className="article-slides-flag">SLIDES AVAILABLE</span> : null}
+                    </span>
                     <strong>{article.title}</strong>
                     <span className="article-summary">{article.summary}</span>
                     <time dateTime={article.date}>{formatArticleDate(article.date, article.lang)}</time>
