@@ -59,10 +59,28 @@ export type SlideContent =
       items: string[];
     })
   | (SlideBase & {
+      kind: "formula";
+      intro: string;
+      formula: string;
+      items: SlideItem[];
+    })
+  | (SlideBase & {
+      kind: "code";
+      intro: string;
+      language: string;
+      code: string;
+      caption?: string;
+    })
+  | (SlideBase & {
       kind: "closing";
       statement: string;
       note: string;
     });
+
+// 表示公式和代码已经在构建阶段转成安全静态 HTML 的播放数据。
+export type RenderedSlideContent =
+  | Exclude<SlideContent, { kind: "formula" | "code" }>
+  | (Extract<SlideContent, { kind: "formula" | "code" }> & { html: string });
 
 // 表示一份可被通用播放器消费并静态生成的完整演示。
 export type SlideDeckData = {
@@ -74,12 +92,16 @@ export type SlideDeckData = {
   date: string;
   coverImage: string;
   articleHref: string;
-  sectionHref: string;
   chapters: SlideChapter[];
   slides: SlideContent[];
 };
 
-// 作为全部公开演示的唯一注册表，同时驱动列表页与静态路由。
+// 表示可以直接交给客户端播放器的完整 deck，内容已在服务端准备完成。
+export type RenderedSlideDeckData = Omit<SlideDeckData, "slides"> & {
+  slides: RenderedSlideContent[];
+};
+
+// 作为全部公开演示的唯一注册表，同时驱动内容入口与静态路由。
 export const slideDecks = [
   {
     slug: "interface-contracts",
@@ -90,7 +112,6 @@ export const slideDecks = [
     date: "2026 / 07 / 10",
     coverImage: assetPath("/entrance/engineering-maple.webp"),
     articleHref: "/software-engineering/when-workflows-are-clear-but-interfaces-are-not",
-    sectionHref: "/software-engineering",
     chapters: [
       {
         id: "opening",
@@ -226,6 +247,46 @@ export const slideDecks = [
             body: "验收通过，或一个被明确命名的外部依赖阻止继续。",
           },
         ],
+      },
+      {
+        kind: "formula",
+        chapter: "contract",
+        eyebrow: "PART 02 / A TESTABLE SHAPE",
+        title: "接口可以被写成一个函数",
+        intro: "重点不是数学化一切，而是让输入、约束和交付物同时出现在同一个可检查的表达里。",
+        formula: String.raw`\operatorname{Skill}(T, I, C) \longrightarrow (D, A, H, N)`,
+        items: [
+          {
+            label: "T / I / C",
+            title: "进入系统",
+            body: "Trigger、Input、Constraints",
+          },
+          {
+            label: "D / A / H / N",
+            title: "离开系统",
+            body: "Decision、Artifact、Hypotheses、Next step",
+          },
+        ],
+      },
+      {
+        kind: "code",
+        chapter: "test",
+        eyebrow: "PART 03 / MACHINE-READABLE",
+        title: "契约也可以成为可检查的结构",
+        intro: "当同一份结构既能指导人，也能成为测试输入，Skill 才开始具备稳定复用的条件。",
+        language: "yaml",
+        code: `use_when:
+  - goal_is_explicit
+  - evidence_is_available
+required:
+  - target
+  - constraints
+deliver:
+  - decision
+  - artifact
+  - assumptions
+stop_when: accepted_or_blocked`,
+        caption: "A compact contract can serve as documentation, input schema, and test fixture.",
       },
       {
         kind: "checklist",

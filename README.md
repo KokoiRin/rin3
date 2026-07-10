@@ -56,9 +56,14 @@ print("code is highlighted")
 - `$$...$$`：独立公式
 - `draft: true`：构建时不发布
 - `lang`：文章语言，使用 `en` 或 `zh-CN`
-- `slides`：可选，对应互动演示路由，例如 `/slides/example-deck`
+- `slides`：可选，对应互动演示路由；填写后，分区列表会直接进入该 deck
 - `order`：同一分区中的显示顺序
 - 原始 HTML 不会执行；正文使用 Markdown、GFM 表格、公式和代码围栏
+
+## 新增 Slides
+
+互动演示使用数据驱动模板，支持章节导航、移动端、全屏、LaTeX 公式和 Shiki 代码高亮。
+完整写法和发布检查清单见 [`docs/slides-authoring.md`](docs/slides-authoring.md)。
 
 ## 构建与发布
 

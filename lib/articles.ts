@@ -131,6 +131,11 @@ export function getArticlesBySection(section: SectionSlug) {
   return getAllArticles().filter((article) => article.section === section);
 }
 
+// 返回一条学习内容的主要公开入口；存在 deck 时优先进入互动演示。
+export function getArticlePrimaryHref(article: ArticleSummary) {
+  return article.slides ?? `/${article.section}/${article.slug}`;
+}
+
 export function getArticleNavigation(section: SectionSlug, slug: string) {
   const articles = getArticlesBySection(section);
   const index = articles.findIndex((article) => article.slug === slug);

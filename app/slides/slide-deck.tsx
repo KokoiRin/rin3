@@ -8,7 +8,6 @@ import {
   ArrowLeft,
   ArrowRight,
   BookOpen,
-  GalleryHorizontalEnd,
   House,
   Maximize2,
   Minimize2,
@@ -19,10 +18,10 @@ import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { RevealApi } from "reveal.js";
-import type { SlideContent, SlideDeckData } from "./decks";
+import type { RenderedSlideContent, RenderedSlideDeckData } from "./decks";
 
 // 把稳定的 deck 数据映射为模板支持的视觉页面，不参与导航状态管理。
-function renderSlideContent(slide: SlideContent, deck: SlideDeckData) {
+function renderSlideContent(slide: RenderedSlideContent, deck: RenderedSlideDeckData) {
   switch (slide.kind) {
     case "cover":
       return (
@@ -152,6 +151,49 @@ function renderSlideContent(slide: SlideContent, deck: SlideDeckData) {
         </div>
       );
 
+    case "formula":
+      return (
+        <div className="slide-standard-layout slide-formula-layout">
+          <header className="slide-heading slide-heading-compact">
+            <p className="slide-eyebrow">{slide.eyebrow}</p>
+            <h2>{slide.title}</h2>
+            <p>{slide.intro}</p>
+          </header>
+          <div
+            className="slide-formula-render"
+            dangerouslySetInnerHTML={{ __html: slide.html }}
+          />
+          <div className="slide-formula-legend">
+            {slide.items.map((item) => (
+              <article key={item.title}>
+                <span>{item.label}</span>
+                <h3>{item.title}</h3>
+                <p>{item.body}</p>
+              </article>
+            ))}
+          </div>
+        </div>
+      );
+
+    case "code":
+      return (
+        <div className="slide-standard-layout slide-code-layout">
+          <header className="slide-heading slide-heading-compact">
+            <p className="slide-eyebrow">{slide.eyebrow}</p>
+            <h2>{slide.title}</h2>
+            <p>{slide.intro}</p>
+          </header>
+          <div className="slide-code-panel">
+            <div className="slide-code-bar">
+              <span>{slide.language.toUpperCase()}</span>
+              <span>RIN III / SOURCE</span>
+            </div>
+            <div dangerouslySetInnerHTML={{ __html: slide.html }} />
+          </div>
+          {slide.caption ? <p className="slide-code-caption">{slide.caption}</p> : null}
+        </div>
+      );
+
     case "closing":
       return (
         <div className="slide-closing-layout">
@@ -166,7 +208,7 @@ function renderSlideContent(slide: SlideContent, deck: SlideDeckData) {
 }
 
 // 负责单份演示的导航、响应式画布、全屏状态和 Reveal 生命周期。
-export default function SlideDeckView({ deck }: { deck: SlideDeckData }) {
+export default function SlideDeckView({ deck }: { deck: RenderedSlideDeckData }) {
   const deckRef = useRef<RevealApi | null>(null);
   const shellRef = useRef<HTMLElement | null>(null);
   const [activeIndex, setActiveIndex] = useState(0);
@@ -213,7 +255,10 @@ export default function SlideDeckView({ deck }: { deck: SlideDeckData }) {
 
   // Reveal 初始化后同步可能来自 URL hash 的实际页码。
   const handleReady = useCallback((reveal: RevealApi) => {
-    setActiveIndex(reveal.getIndices().h);
+    const syncIndex = () => setActiveIndex(reveal.getIndices().h);
+    syncIndex();
+    // Reveal 在 ready 事件之后才应用首屏 hash；下一帧再次读取才能同步深链接页码。
+    window.requestAnimationFrame(syncIndex);
   }, []);
 
   // 每次翻页都从 Reveal 读取索引，避免侧栏维护第二份导航事实源。
@@ -311,9 +356,6 @@ export default function SlideDeckView({ deck }: { deck: SlideDeckData }) {
           </button>
           <Link href="/" aria-label="Return to RIN III" title="Home">
             <House size={18} />
-          </Link>
-          <Link href="/slides" aria-label="View all presentations" title="All slides">
-            <GalleryHorizontalEnd size={18} />
           </Link>
           <Link href={deck.articleHref} aria-label="Read the full article" title="Read article">
             <BookOpen size={18} />

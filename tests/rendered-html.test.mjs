@@ -69,19 +69,25 @@ test("publishes the workflow-interface note under software engineering", async (
   assert.match(article, /<article class="article-shell" lang="zh-CN">/);
   assert.match(article, /ON THIS PAGE/);
   assert.match(article, /ALL SOFTWARE ENGINEERING NOTES/);
-  assert.match(index, /SLIDES AVAILABLE/);
+  assert.match(index, /INTERACTIVE DECK/);
+  assert.match(index, new RegExp(`href="${basePath}/slides/interface-contracts/"`));
+  assert.doesNotMatch(
+    index,
+    new RegExp(`href="${basePath}/software-engineering/when-workflows-are-clear-but-interfaces-are-not/"`),
+  );
   assert.match(article, new RegExp(`href="${basePath}/slides/interface-contracts/"`));
 });
 
-test("exports the interactive slides index and companion deck", async () => {
-  const index = await readOutput("slides/index.html");
+test("exports the companion deck without a public slides index", async () => {
   const deck = await readOutput("slides/interface-contracts/index.html");
 
-  assert.match(index, /<title>Slides \| RIN III<\/title>/i);
-  assert.match(index, new RegExp(`href="${basePath}/slides/interface-contracts/"`));
+  await assert.rejects(readOutput("slides/index.html"), { code: "ENOENT" });
   assert.match(deck, /<main class="rin-slides-shell" lang="zh-CN">/);
   assert.match(deck, /aria-label="Presentation chapters"/);
   assert.match(deck, /Skill 需要的不是口号，而是契约/);
+  assert.match(deck, /class="katex"/);
+  assert.match(deck, /data-rehype-pretty-code-figure/);
+  assert.match(deck, /accepted_or_blocked/);
   assert.match(deck, /ARROW KEYS \/ SWIPE \/ CLICK/);
   assert.match(deck, new RegExp(`href="${basePath}/software-engineering/when-workflows-are-clear-but-interfaces-are-not/"`));
 });
