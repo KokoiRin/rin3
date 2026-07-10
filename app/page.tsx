@@ -5,18 +5,18 @@ export default function Home() {
   return (
     <main className="entrance">
       <header className="brand-lockup">
-        <p className="brand-kicker">RIN&apos;S LEARNING GARDEN</p>
-        <h1>铃有三剑</h1>
-        <p className="brand-note">以花为引，循三条路深入所学</p>
+        <p className="brand-kicker">A PERSONAL LEARNING ARCHIVE</p>
+        <h1>RIN III</h1>
+        <p className="brand-note">Three disciplines. One continuous practice.</p>
       </header>
 
-      <nav className="gates" aria-label="学习分区">
+      <nav className="gates" aria-label="Learning sections">
         {sections.map((section, index) => (
           <Link
             className={`gate gate-${section.slug}`}
             href={`/${section.slug}`}
             key={section.slug}
-            aria-label={`进入${section.title}分区`}
+            aria-label={`Enter ${section.title}`}
           >
             <img
               className="gate-image"
@@ -32,7 +32,7 @@ export default function Home() {
               <span className="gate-title">{section.title}</span>
               <span className="gate-english">{section.english}</span>
               <span className="gate-action">
-                <span>入境</span>
+                <span>ENTER</span>
                 <span className="gate-arrow" aria-hidden="true">→</span>
               </span>
             </span>
@@ -40,7 +40,7 @@ export default function Home() {
         ))}
       </nav>
 
-      <p className="swipe-hint" aria-hidden="true">横向漫游 · 选择一境</p>
+      <p className="swipe-hint" aria-hidden="true">SWIPE TO EXPLORE</p>
     </main>
   );
 }

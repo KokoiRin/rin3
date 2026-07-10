@@ -20,7 +20,7 @@ export async function generateMetadata({ params }: SectionPageProps): Promise<Me
 
   return section
     ? {
-        title: `${section.title} | 铃有三剑`,
+        title: `${section.title} | RIN III`,
         description: section.intro,
       }
     : {};
@@ -42,9 +42,9 @@ export default async function SectionPage({ params }: SectionPageProps) {
         <img className="section-image" src={section.image} alt="" />
         <span className="section-shade" aria-hidden="true" />
 
-        <Link className="back-link" href="/" aria-label="返回铃有三剑进入页">
+        <Link className="back-link" href="/" aria-label="Return to the RIN III index">
           <span aria-hidden="true">←</span>
-          <span>三境</span>
+          <span>INDEX</span>
         </Link>
 
         <section className="section-intro">
@@ -58,8 +58,8 @@ export default async function SectionPage({ params }: SectionPageProps) {
       <section className="article-index" aria-labelledby="article-index-title">
         <header className="article-index-header">
           <p>LEARNING NOTES</p>
-          <h2 id="article-index-title">札记</h2>
-          <span>{articles.length.toString().padStart(2, "0")} 篇</span>
+          <h2 id="article-index-title">Notes</h2>
+          <span>{articles.length.toString().padStart(2, "0")} NOTES</span>
         </header>
 
         {articles.length > 0 ? (
@@ -80,7 +80,7 @@ export default async function SectionPage({ params }: SectionPageProps) {
             ))}
           </ol>
         ) : (
-          <p className="empty-section">此境尚待落笔。</p>
+          <p className="empty-section">NO NOTES YET.</p>
         )}
       </section>
     </main>

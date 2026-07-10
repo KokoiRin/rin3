@@ -138,7 +138,7 @@ export async function getArticle(section: string, slug: string): Promise<Article
 }
 
 export function formatArticleDate(date: string) {
-  return new Intl.DateTimeFormat("zh-CN", {
+  return new Intl.DateTimeFormat("en-US", {
     year: "numeric",
     month: "long",
     day: "numeric",

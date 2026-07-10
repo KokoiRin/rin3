@@ -23,7 +23,7 @@ export async function generateMetadata({ params }: ArticlePageProps): Promise<Me
 
   return article
     ? {
-        title: `${article.title} | 铃有三剑`,
+        title: `${article.title} | RIN III`,
         description: article.summary,
       }
     : {};
@@ -42,12 +42,12 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
 
   return (
     <main className="article-page">
-      <nav className="article-nav" aria-label="文章导航">
+      <nav className="article-nav" aria-label="Article navigation">
         <Link href={`/${section.slug}`}>
           <span aria-hidden="true">←</span>
           <span>{section.title}</span>
         </Link>
-        <Link className="article-brand" href="/">铃有三剑</Link>
+        <Link className="article-brand" href="/">RIN III</Link>
       </nav>
 
       <article className="article-shell">
@@ -62,8 +62,8 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
         </header>
 
         <div className="article-layout">
-          <aside className="article-aside" aria-label="文章标签">
-            <p>标签</p>
+          <aside className="article-aside" aria-label="Article tags">
+            <p>TAGS</p>
             <ul>
               {article.tags.map((tag) => <li key={tag}>{tag}</li>)}
             </ul>
