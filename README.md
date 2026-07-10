@@ -56,7 +56,7 @@ print("code is highlighted")
 - `$$...$$`：独立公式
 - `draft: true`：构建时不发布
 - `lang`：文章语言，使用 `en` 或 `zh-CN`
-- `slides`：可选，对应互动演示路由；填写后，分区列表会直接进入该 deck
+- `slides`：可选，用于把 Markdown 长文关联到已有 deck；独立 deck 不需要创建文章
 - `order`：同一分区中的显示顺序
 - 原始 HTML 不会执行；正文使用 Markdown、GFM 表格、公式和代码围栏
 

@@ -57,41 +57,35 @@ test("renders Markdown, LaTeX, tables, and highlighted code", async () => {
   assert.match(html, /ALL MATHEMATICS NOTES/);
 });
 
-test("publishes the workflow-interface note under software engineering", async () => {
+test("lists the standalone component guide under software engineering", async () => {
   const index = await readOutput("software-engineering/index.html");
-  const article = await readOutput(
-    "software-engineering/when-workflows-are-clear-but-interfaces-are-not/index.html",
-  );
 
-  assert.match(index, /流程清楚，接口却模糊/);
-  assert.match(article, /Skill 需要的不是口号，而是契约/);
-  assert.match(article, /流程知识和接口知识是两种不同的资产/);
-  assert.match(article, /<article class="article-shell" lang="zh-CN">/);
-  assert.match(article, /ON THIS PAGE/);
-  assert.match(article, /ALL SOFTWARE ENGINEERING NOTES/);
+  assert.match(index, /RIN III Slides 组件使用说明/);
   assert.match(index, /INTERACTIVE DECK/);
-  assert.match(index, new RegExp(`href="${basePath}/slides/interface-contracts/"`));
-  assert.doesNotMatch(
-    index,
-    new RegExp(`href="${basePath}/software-engineering/when-workflows-are-clear-but-interfaces-are-not/"`),
+  assert.match(index, new RegExp(`href="${basePath}/slides/component-guide/"`));
+  await assert.rejects(
+    readOutput("software-engineering/when-workflows-are-clear-but-interfaces-are-not/index.html"),
+    { code: "ENOENT" },
   );
-  assert.match(article, new RegExp(`href="${basePath}/slides/interface-contracts/"`));
 });
 
-test("exports the companion deck without a public slides index", async () => {
-  const deck = await readOutput("slides/interface-contracts/index.html");
+test("exports the component guide without article or slides-index dependencies", async () => {
+  const deck = await readOutput("slides/component-guide/index.html");
 
   await assert.rejects(readOutput("slides/index.html"), { code: "ENOENT" });
+  await assert.rejects(readOutput("slides/interface-contracts/index.html"), { code: "ENOENT" });
   assert.match(deck, /<main class="rin-slides-shell" lang="zh-CN">/);
   assert.match(deck, /aria-label="Presentation chapters"/);
-  assert.match(deck, /Skill 需要的不是口号，而是契约/);
+  assert.match(deck, /内容、构建和播放各自只有一个职责/);
+  assert.match(deck, /公式页直接填写 LaTeX 本体/);
+  assert.match(deck, /代码页声明语言和源码即可/);
   assert.match(deck, /class="katex"/);
   assert.match(deck, /data-rehype-pretty-code-figure/);
-  assert.match(deck, /accepted_or_blocked/);
+  assert.match(deck, /satisfies SlideDeckData/);
   assert.match(deck, /ARROW KEYS \/ SWIPE \/ CLICK/);
   assert.match(deck, /Back to Software Engineering/);
   assert.match(deck, new RegExp(`href="${basePath}/software-engineering/"`));
-  assert.match(deck, new RegExp(`href="${basePath}/software-engineering/when-workflows-are-clear-but-interfaces-are-not/"`));
+  assert.doesNotMatch(deck, /Read the full article/);
 });
 
 test("keeps the entrance copy English-only", async () => {
