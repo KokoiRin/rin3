@@ -312,6 +312,14 @@ export default function SlideDeckView({ deck }: { deck: RenderedSlideDeckData })
           >
             <X size={18} />
           </button>
+          <Link
+            className="slides-section-link"
+            href={deck.sectionHref}
+            aria-label={`Back to ${deck.sectionTitle}`}
+          >
+            <ArrowLeft size={14} />
+            <span>{deck.sectionTitle}</span>
+          </Link>
           <p>{deck.description}</p>
         </header>
 
@@ -354,7 +362,16 @@ export default function SlideDeckView({ deck }: { deck: RenderedSlideDeckData })
           >
             <Menu size={18} />
           </button>
-          <Link href="/" aria-label="Return to RIN III" title="Home">
+          <Link
+            className="slides-toolbar-section"
+            href={deck.sectionHref}
+            aria-label={`Back to ${deck.sectionTitle}`}
+            title={`Back to ${deck.sectionTitle}`}
+          >
+            <ArrowLeft size={16} />
+            <span>{deck.sectionTitle}</span>
+          </Link>
+          <Link className="slides-toolbar-home" href="/" aria-label="Return to RIN III" title="Home">
             <House size={18} />
           </Link>
           <Link href={deck.articleHref} aria-label="Read the full article" title="Read article">
