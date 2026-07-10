@@ -89,6 +89,8 @@ test("exports the companion deck without a public slides index", async () => {
   assert.match(deck, /data-rehype-pretty-code-figure/);
   assert.match(deck, /accepted_or_blocked/);
   assert.match(deck, /ARROW KEYS \/ SWIPE \/ CLICK/);
+  assert.match(deck, /Back to Software Engineering/);
+  assert.match(deck, new RegExp(`href="${basePath}/software-engineering/"`));
   assert.match(deck, new RegExp(`href="${basePath}/software-engineering/when-workflows-are-clear-but-interfaces-are-not/"`));
 });
 

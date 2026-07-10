@@ -91,6 +91,8 @@ export type SlideDeckData = {
   description: string;
   date: string;
   coverImage: string;
+  sectionTitle: string;
+  sectionHref: string;
   articleHref: string;
   chapters: SlideChapter[];
   slides: SlideContent[];
@@ -111,6 +113,8 @@ export const slideDecks = [
     description: "为什么知道工作流之后，把它变成 Skill 仍然困难？",
     date: "2026 / 07 / 10",
     coverImage: assetPath("/entrance/engineering-maple.webp"),
+    sectionTitle: "Software Engineering",
+    sectionHref: "/software-engineering",
     articleHref: "/software-engineering/when-workflows-are-clear-but-interfaces-are-not",
     chapters: [
       {

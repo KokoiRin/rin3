@@ -16,7 +16,7 @@ Slides 是学习内容的主要浏览形式。分区列表中的条目如果在 
 
 1. 在 `app/slides/decks.ts` 的 `slideDecks` 数组中增加一项。
 2. 为相关 Markdown 增加 `slides: "/slides/<slug>"`。
-3. 确认 deck 的 `articleHref` 指向补充文章。
+3. 确认 `sectionTitle`、`sectionHref` 指向父分区，`articleHref` 指向补充文章。
 4. 运行 `GITHUB_ACTIONS=true NEXT_PUBLIC_BASE_PATH=/rin3 npm test`。
 5. 在桌面和手机尺寸至少各检查一次首屏、最长标题和内容最多的一页。
 
@@ -31,6 +31,8 @@ Slides 是学习内容的主要浏览形式。分区列表中的条目如果在 
   description: "一句话摘要",
   date: "2026 / 07 / 10",
   coverImage: assetPath("/entrance/math-sakura.webp"),
+  sectionTitle: "Mathematics",
+  sectionHref: "/mathematics",
   articleHref: "/mathematics/example-article",
   chapters: [
     { id: "opening", label: "00", title: "Opening", summary: "章节摘要" },
@@ -49,6 +51,8 @@ Slides 是学习内容的主要浏览形式。分区列表中的条目如果在 
 ```
 
 `chapter` 必须引用 `chapters` 中已经存在的 `id`。slug、文章 frontmatter 和公开 URL 必须保持一致。
+
+`sectionHref` 是播放器的稳定父级，不要用 `history.back()` 替代。用户可能通过收藏夹或分享链接直接进入 deck，仍然必须能回到所属分区。
 
 ## 布局选择
 
