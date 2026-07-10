@@ -34,13 +34,14 @@ test("exports optimized entrance artwork", async () => {
 // 额外分区必须随静态站点完整导出，且主图继续满足体积约束。
 test("exports the fourth seasonal destination", async () => {
   const home = await readOutput("index.html");
-  const winter = await readOutput("winter/index.html");
+  const personal = await readOutput("me/index.html");
   const artwork = await stat(new URL("../out/entrance/winter-path.webp", import.meta.url));
 
-  assert.match(home, /data-winter-gate="hidden"/);
-  assert.match(home, new RegExp(`href="${basePath}/winter/"`));
-  assert.match(winter, /<title>Winter \| RIN III<\/title>/i);
-  assert.match(winter, /THE QUIET WORK OF BECOMING/);
+  assert.match(home, /data-extra-gate="hidden"/);
+  assert.match(home, new RegExp(`href="${basePath}/me/"`));
+  assert.match(personal, /<title>Me \| RIN III<\/title>/i);
+  assert.match(personal, /THE QUIET WORK OF BECOMING/);
+  assert.doesNotMatch(home, /<button/i);
   assert.ok(artwork.size < 500_000, "winter-path.webp should remain below 500 KB");
 });
 
