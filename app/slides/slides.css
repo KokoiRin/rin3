@@ -1060,7 +1060,7 @@
   }
 
   .slide-formula-render .katex-display {
-    font-size: 2.7em;
+    font-size: 2.1em;
   }
 
   .slide-formula-legend {
@@ -1097,7 +1097,7 @@
 
   .slide-code-panel pre {
     padding: 30px 32px !important;
-    font-size: 25px;
+    font-size: 22px;
     line-height: 1.55;
   }
 

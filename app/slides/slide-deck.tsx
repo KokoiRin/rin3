@@ -374,9 +374,11 @@ export default function SlideDeckView({ deck }: { deck: RenderedSlideDeckData })
           <Link className="slides-toolbar-home" href="/" aria-label="Return to RIN III" title="Home">
             <House size={18} />
           </Link>
-          <Link href={deck.articleHref} aria-label="Read the full article" title="Read article">
-            <BookOpen size={18} />
-          </Link>
+          {deck.articleHref ? (
+            <Link href={deck.articleHref} aria-label="Read the full article" title="Read article">
+              <BookOpen size={18} />
+            </Link>
+          ) : null}
           <button
             type="button"
             aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}

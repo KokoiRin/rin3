@@ -2,7 +2,7 @@
 
 ## 目标与边界
 
-Slides 是学习内容的主要浏览形式。分区列表中的条目如果在 Markdown frontmatter 声明了 `slides`，点击后会直接进入对应 deck；原文章继续保留，只作为播放器书本图标中的补充阅读入口。
+Slides 是学习内容的主要浏览形式。独立 deck 通过自己的 `listing` 元数据进入所属分区，不需要创建占位 Markdown 文章。只有确实存在补充长文时，才配置可选的 `articleHref`。
 
 模板采用三层结构：
 
@@ -15,8 +15,8 @@ Slides 是学习内容的主要浏览形式。分区列表中的条目如果在 
 ## 新增一份 Deck
 
 1. 在 `app/slides/decks.ts` 的 `slideDecks` 数组中增加一项。
-2. 为相关 Markdown 增加 `slides: "/slides/<slug>"`。
-3. 确认 `sectionTitle`、`sectionHref` 指向父分区，`articleHref` 指向补充文章。
+2. 填写 `listing`，让独立 deck 出现在所属分区列表。
+3. 确认 `section`、`sectionTitle`、`sectionHref` 指向同一个父分区。
 4. 运行 `GITHUB_ACTIONS=true NEXT_PUBLIC_BASE_PATH=/rin3 npm test`。
 5. 在桌面和手机尺寸至少各检查一次首屏、最长标题和内容最多的一页。
 
@@ -31,9 +31,15 @@ Slides 是学习内容的主要浏览形式。分区列表中的条目如果在 
   description: "一句话摘要",
   date: "2026 / 07 / 10",
   coverImage: assetPath("/entrance/math-sakura.webp"),
+  section: "mathematics",
   sectionTitle: "Mathematics",
   sectionHref: "/mathematics",
-  articleHref: "/mathematics/example-article",
+  listing: {
+    topic: "Linear Algebra",
+    date: "2026-07-10",
+    order: 10,
+  },
+  // articleHref: "/mathematics/example-article",
   chapters: [
     { id: "opening", label: "00", title: "Opening", summary: "章节摘要" },
   ],
@@ -50,7 +56,7 @@ Slides 是学习内容的主要浏览形式。分区列表中的条目如果在 
 }
 ```
 
-`chapter` 必须引用 `chapters` 中已经存在的 `id`。slug、文章 frontmatter 和公开 URL 必须保持一致。
+`chapter` 必须引用 `chapters` 中已经存在的 `id`。`slug` 决定公开 URL，例如 `example-deck` 对应 `/slides/example-deck/`。
 
 `sectionHref` 是播放器的稳定父级，不要用 `history.back()` 替代。用户可能通过收藏夹或分享链接直接进入 deck，仍然必须能回到所属分区。
 
@@ -111,21 +117,24 @@ Slides 是学习内容的主要浏览形式。分区列表中的条目如果在 
 }
 ```
 
-`language` 使用 Shiki 支持的语言名，例如 `typescript`、`python`、`yaml`、`json`、`bash`。代码应控制在约 12 行以内；更长的实现放在文章里。
+`language` 使用 Shiki 支持的语言名，例如 `typescript`、`python`、`yaml`、`json`、`bash`。代码应控制在约 12 行以内；更长的实现放在仓库源码或独立文档里。
 
 ## 内容入口
 
-文章 frontmatter：
+独立 deck 使用 `listing` 进入分区：
 
-```yaml
-slides: "/slides/example-deck"
+```ts
+listing: {
+  topic: "Linear Algebra",
+  date: "2026-07-10",
+  order: 10,
+}
 ```
 
-存在该字段时：
+存在 `listing` 时：
 
 - 分区列表直接链接到 deck。
 - 列表显示 `INTERACTIVE DECK`。
-- 文章 URL 仍然静态生成，但不再是主要入口。
-- deck 顶部的书本图标可以进入完整文章。
+- 不需要创建 Markdown 文章。
 
-没有该字段时，列表仍然进入普通 Markdown 文章。
+如果 deck 确实有一篇补充文章，则省略 deck 的 `listing`，配置 `articleHref`，并在文章 frontmatter 中增加 `slides: "/slides/example-deck"`。文章负责分区列表摘要，播放器只会在 `articleHref` 存在时显示书本图标；两侧不要同时提供列表元数据，避免重复入口。
