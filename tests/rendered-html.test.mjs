@@ -1,53 +1,43 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-async function render(path = "/") {
-  const workerUrl = new URL("../dist/server/index.js", import.meta.url);
-  workerUrl.searchParams.set("test", `${process.pid}-${Date.now()}-${path}`);
-  const { default: worker } = await import(workerUrl.href);
+const basePath = process.env.GITHUB_ACTIONS === "true" ? "/rin3" : "";
 
-  return worker.fetch(
-    new Request(`http://localhost${path}`, {
-      headers: { accept: "text/html" },
-    }),
-    {
-      ASSETS: {
-        fetch: async () => new Response("Not found", { status: 404 }),
-      },
-    },
-    {
-      waitUntil() {},
-      passThroughOnException() {},
-    },
-  );
+async function readOutput(relativePath) {
+  return readFile(new URL(`../out/${relativePath}`, import.meta.url), "utf8");
 }
 
-test("server-renders the three learning gates", async () => {
-  const response = await render();
-  assert.equal(response.status, 200);
-  assert.match(response.headers.get("content-type") ?? "", /^text\/html\b/i);
+test("exports the three learning gates with deploy-safe paths", async () => {
+  const html = await readOutput("index.html");
 
-  const html = await response.text();
   assert.match(html, /<title>铃有三剑<\/title>/i);
   assert.match(html, /数学/);
   assert.match(html, /计算机/);
   assert.match(html, /软件工程/);
-  assert.match(html, /\/mathematics/);
-  assert.match(html, /\/computer-science/);
-  assert.match(html, /\/software-engineering/);
+  assert.match(html, new RegExp(`href="${basePath}/mathematics/"`));
+  assert.match(html, new RegExp(`src="${basePath}/entrance/math-sakura\\.png"`));
   assert.doesNotMatch(html, /codex-preview|react-loading-skeleton/i);
 });
 
-test("each learning gate opens a real section", async () => {
-  for (const [path, title] of [
-    ["/mathematics", "数学"],
-    ["/computer-science", "计算机"],
-    ["/software-engineering", "软件工程"],
+test("exports each section index", async () => {
+  for (const [directory, title] of [
+    ["mathematics", "数学"],
+    ["computer-science", "计算机"],
+    ["software-engineering", "软件工程"],
   ]) {
-    const response = await render(path);
-    assert.equal(response.status, 200);
-    const html = await response.text();
+    const html = await readOutput(`${directory}/index.html`);
     assert.match(html, new RegExp(`<title>${title} \\| 铃有三剑<\\/title>`, "i"));
-    assert.match(html, /返回铃有三剑进入页/);
+    assert.match(html, /札记/);
   }
+});
+
+test("renders Markdown, LaTeX, tables, and highlighted code", async () => {
+  const html = await readOutput("mathematics/eigenvalues/index.html");
+
+  assert.match(html, /特征值：保持方向的尺度/);
+  assert.match(html, /class="katex"/);
+  assert.match(html, /data-rehype-pretty-code-figure/);
+  assert.match(html, /<table>/);
+  assert.match(html, /np\.linalg\.eig/);
 });
