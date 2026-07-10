@@ -41,10 +41,10 @@ export const learningSections = [
 ] as const;
 
 // 额外分区沿用文章基础设施，但不计入首页的三门学科。
-export const winterSection = {
-  slug: "winter",
+export const personalSection = {
+  slug: "me",
   kind: "personal",
-  title: "Winter",
+  title: "Me",
   english: "BECOMING",
   flower: "SNOW / THE QUIET WORK OF BECOMING",
   image: assetPath("/entrance/winter-path.webp"),
@@ -53,7 +53,7 @@ export const winterSection = {
   topics: ["Reflections", "Choices", "Practices"],
 } as const;
 
-export const sections = [...learningSections, winterSection] as const;
+export const sections = [...learningSections, personalSection] as const;
 
 export type SectionSlug = (typeof sections)[number]["slug"];
 
