@@ -65,14 +65,14 @@ export default async function SectionPage({ params }: SectionPageProps) {
         {articles.length > 0 ? (
           <ol className="article-list">
             {articles.map((article, index) => (
-              <li key={article.slug}>
+              <li key={article.slug} lang={article.lang}>
                 <Link href={`/${section.slug}/${article.slug}`}>
                   <span className="article-order">{(index + 1).toString().padStart(2, "0")}</span>
                   <span className="article-list-copy">
                     <span className="article-topic">{article.topic}</span>
                     <strong>{article.title}</strong>
                     <span className="article-summary">{article.summary}</span>
-                    <time dateTime={article.date}>{formatArticleDate(article.date)}</time>
+                    <time dateTime={article.date}>{formatArticleDate(article.date, article.lang)}</time>
                   </span>
                   <span className="article-list-arrow" aria-hidden="true">→</span>
                 </Link>

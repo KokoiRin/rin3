@@ -1,7 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { formatArticleDate, getAllArticles, getArticle } from "@/lib/articles";
+import {
+  formatArticleDate,
+  getAllArticles,
+  getArticle,
+  getArticleNavigation,
+} from "@/lib/articles";
 import { getSection } from "../../sections";
 
 type ArticlePageProps = {
@@ -40,6 +45,8 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
     notFound();
   }
 
+  const navigation = getArticleNavigation(article.section, article.slug);
+
   return (
     <main className="article-page">
       <nav className="article-nav" aria-label="Article navigation">
@@ -50,13 +57,13 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
         <Link className="article-brand" href="/">RIN III</Link>
       </nav>
 
-      <article className="article-shell">
+      <article className="article-shell" lang={article.lang}>
         <header className="article-header">
           <p className="article-section-name">{section.flower}</p>
           <h1>{article.title}</h1>
           <p className="article-deck">{article.summary}</p>
           <div className="article-meta">
-            <time dateTime={article.date}>{formatArticleDate(article.date)}</time>
+            <time dateTime={article.date}>{formatArticleDate(article.date, article.lang)}</time>
             <span>{article.topic}</span>
           </div>
         </header>
@@ -68,10 +75,43 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
               {article.tags.map((tag) => <li key={tag}>{tag}</li>)}
             </ul>
           </aside>
-          <div
-            className="prose"
-            dangerouslySetInnerHTML={{ __html: article.html }}
-          />
+          <div className="article-main">
+            <div
+              className="prose"
+              dangerouslySetInnerHTML={{ __html: article.html }}
+            />
+
+            <nav className="article-pagination" aria-label="Adjacent articles">
+              {navigation.previous ? (
+                <Link href={`/${navigation.previous.section}/${navigation.previous.slug}`}>
+                  <span>PREVIOUS</span>
+                  <strong>{navigation.previous.title}</strong>
+                </Link>
+              ) : <span />}
+              <Link className="article-pagination-index" href={`/${section.slug}`}>
+                {`ALL ${section.english} NOTES`}
+              </Link>
+              {navigation.next ? (
+                <Link className="article-pagination-next" href={`/${navigation.next.section}/${navigation.next.slug}`}>
+                  <span>NEXT</span>
+                  <strong>{navigation.next.title}</strong>
+                </Link>
+              ) : <span />}
+            </nav>
+          </div>
+
+          {article.headings.length > 0 ? (
+            <aside className="article-toc" aria-label="Table of contents">
+              <p>ON THIS PAGE</p>
+              <ol>
+                {article.headings.map((heading) => (
+                  <li className={`article-toc-depth-${heading.depth}`} key={heading.id}>
+                    <a href={`#${heading.id}`}>{heading.text}</a>
+                  </li>
+                ))}
+              </ol>
+            </aside>
+          ) : null}
         </div>
       </article>
     </main>
