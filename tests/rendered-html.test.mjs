@@ -57,49 +57,60 @@ test("exports each section index", async () => {
   }
 });
 
-test("renders Markdown, LaTeX, tables, and highlighted code", async () => {
-  const html = await readOutput("mathematics/eigenvalues/index.html");
+test("renders the RIN component guide as a complete Markdown article", async () => {
+  const html = await readOutput("me/component-guide/index.html");
 
-  assert.match(html, /Eigenvalues: Scale Along Stable Directions/);
+  assert.match(html, /RIN III Slides 组件使用说明/);
   assert.match(html, /class="katex"/);
   assert.match(html, /data-rehype-pretty-code-figure/);
   assert.match(html, /<table>/);
-  assert.match(html, /np\.linalg\.eig/);
-  assert.match(html, /<article class="article-shell" lang="en">/);
+  assert.match(html, /:::slide/);
+  assert.match(html, /<article class="article-shell" lang="zh-CN">/);
   assert.match(html, /ON THIS PAGE/);
-  assert.match(html, /href="#a-two-dimensional-example"/);
-  assert.match(html, /ALL MATHEMATICS NOTES/);
+  assert.match(html, /href="#先判断内容关系再选择布局"/);
+  assert.match(html, /ALL BECOMING NOTES/);
+  assert.match(html, /VIEW SLIDES/);
+  assert.match(html, new RegExp(`href="${basePath}/slides/component-guide/"`));
+  assert.doesNotMatch(html, /:::slide \{&quot;kind&quot;[^<]*\}[\s\S]*^:::$/m);
 });
 
-test("lists the standalone component guide under software engineering", async () => {
-  const index = await readOutput("software-engineering/index.html");
+test("lists the dual-view component guide once under me and defaults to the article", async () => {
+  const index = await readOutput("me/index.html");
+  const softwareEngineering = await readOutput("software-engineering/index.html");
 
   assert.match(index, /RIN III Slides 组件使用说明/);
-  assert.match(index, /INTERACTIVE DECK/);
-  assert.match(index, new RegExp(`href="${basePath}/slides/component-guide/"`));
-  await assert.rejects(
-    readOutput("software-engineering/when-workflows-are-clear-but-interfaces-are-not/index.html"),
-    { code: "ENOENT" },
-  );
+  assert.match(index, /ARTICLE \+ SLIDES/);
+  assert.match(index, new RegExp(`href="${basePath}/me/component-guide/"`));
+  assert.equal(index.match(/<li lang="zh-CN">/g)?.length, 1);
+  assert.doesNotMatch(softwareEngineering, /RIN III Slides 组件使用说明/);
 });
 
-test("exports the component guide without article or slides-index dependencies", async () => {
+test("exports the component guide deck with a document switch", async () => {
   const deck = await readOutput("slides/component-guide/index.html");
 
   await assert.rejects(readOutput("slides/index.html"), { code: "ENOENT" });
   await assert.rejects(readOutput("slides/interface-contracts/index.html"), { code: "ENOENT" });
   assert.match(deck, /<main class="rin-slides-shell" lang="zh-CN">/);
   assert.match(deck, /aria-label="Presentation chapters"/);
-  assert.match(deck, /内容、构建和播放各自只有一个职责/);
-  assert.match(deck, /公式页直接填写 LaTeX 本体/);
-  assert.match(deck, /代码页声明语言和源码即可/);
+  assert.match(deck, /内容、编译和播放各自只有一个职责/);
+  assert.match(deck, /公式在文章和 Slides 中使用同一段 LaTeX/);
+  assert.match(deck, /指令只描述分页和布局/);
   assert.match(deck, /class="katex"/);
   assert.match(deck, /data-rehype-pretty-code-figure/);
-  assert.match(deck, /satisfies SlideDeckData/);
+  assert.match(deck, /ONE RIN DOCUMENT \/ ARTICLE \+ SLIDES/);
   assert.match(deck, /ARROW KEYS \/ SWIPE \/ CLICK/);
-  assert.match(deck, /Back to Software Engineering/);
-  assert.match(deck, new RegExp(`href="${basePath}/software-engineering/"`));
-  assert.doesNotMatch(deck, /Read the full article/);
+  assert.match(deck, /Back to Me/);
+  assert.match(deck, new RegExp(`href="${basePath}/me/"`));
+  assert.match(deck, /View document/);
+  assert.match(deck, /DOCUMENT/);
+  assert.match(deck, new RegExp(`href="${basePath}/me/component-guide/"`));
+});
+
+test("removes Eigenvalues from the mathematics section and static export", async () => {
+  const index = await readOutput("mathematics/index.html");
+
+  assert.doesNotMatch(index, /Eigenvalues: Scale Along Stable Directions/);
+  await assert.rejects(readOutput("mathematics/eigenvalues/index.html"), { code: "ENOENT" });
 });
 
 test("keeps the entrance copy English-only", async () => {

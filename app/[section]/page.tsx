@@ -110,7 +110,7 @@ export default async function SectionPage({ params }: SectionPageProps) {
                   <span className="article-list-copy">
                     <span className="article-topic-row">
                       <span className="article-topic">{entry.topic}</span>
-                      {entry.isDeck ? <span className="article-slides-flag">INTERACTIVE DECK</span> : null}
+                      {entry.isDeck ? <span className="article-slides-flag">ARTICLE + SLIDES</span> : null}
                     </span>
                     <strong>{entry.title}</strong>
                     <span className="article-summary">{entry.summary}</span>

@@ -70,7 +70,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
             {article.slides ? (
               <Link className="article-slides-link" href={article.slides}>
                 <GalleryHorizontalEnd size={15} />
-                <span>VIEW THE SLIDES</span>
+                <span>VIEW SLIDES</span>
               </Link>
             ) : null}
           </div>

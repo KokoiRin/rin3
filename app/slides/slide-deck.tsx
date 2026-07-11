@@ -18,7 +18,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { RevealApi } from "reveal.js";
-import type { RenderedSlideContent, RenderedSlideDeckData } from "./decks";
+import type { RenderedSlideContent, RenderedSlideDeckData } from "./types";
 
 // 把稳定的 deck 数据映射为模板支持的视觉页面，不参与导航状态管理。
 function renderSlideContent(slide: RenderedSlideContent, deck: RenderedSlideDeckData) {
@@ -64,6 +64,20 @@ function renderSlideContent(slide: RenderedSlideContent, deck: RenderedSlideDeck
               </article>
             ))}
           </div>
+        </div>
+      );
+
+    case "prose":
+      return (
+        <div className="slide-standard-layout slide-prose-layout">
+          <header className="slide-heading slide-heading-compact">
+            <p className="slide-eyebrow">{slide.eyebrow}</p>
+            <h2>{slide.title}</h2>
+          </header>
+          <div
+            className="slide-prose-content"
+            dangerouslySetInnerHTML={{ __html: slide.html }}
+          />
         </div>
       );
 
@@ -375,8 +389,14 @@ export default function SlideDeckView({ deck }: { deck: RenderedSlideDeckData })
             <House size={18} />
           </Link>
           {deck.articleHref ? (
-            <Link href={deck.articleHref} aria-label="Read the full article" title="Read article">
+            <Link
+              className="slides-toolbar-document"
+              href={deck.articleHref}
+              aria-label="View document"
+              title="View document"
+            >
               <BookOpen size={18} />
+              <span>DOCUMENT</span>
             </Link>
           ) : null}
           <button
