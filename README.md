@@ -24,7 +24,7 @@ content/
   software-engineering/
 ```
 
-新建一个 `.md` 文件，例如 `content/mathematics/eigenvalues.md`：
+新建一个 `.md` 文件，例如 `content/mathematics/example.md`：
 
 ````markdown
 ---
@@ -32,7 +32,6 @@ title: 文章标题
 summary: 一句话摘要
 date: "2026-07-10"
 lang: en
-# slides: "/slides/example-deck"
 topic: 分析与代数
 tags: [线性代数, 几何直觉]
 order: 10
@@ -56,14 +55,12 @@ print("code is highlighted")
 - `$$...$$`：独立公式
 - `draft: true`：构建时不发布
 - `lang`：文章语言，使用 `en` 或 `zh-CN`
-- `slides`：可选，用于把 Markdown 长文关联到已有 deck；独立 deck 不需要创建文章
 - `order`：同一分区中的显示顺序
 - 原始 HTML 不会执行；正文使用 Markdown、GFM 表格、公式和代码围栏
 
-## 新增 Slides
+## 新增文章 + Slides
 
-互动演示使用数据驱动模板，支持章节导航、移动端、全屏、LaTeX 公式和 Shiki 代码高亮。
-完整写法和发布检查清单见 [`docs/slides-authoring.md`](docs/slides-authoring.md)。
+需要同一份内容同时显示为文章和 Slides 时，使用 `format: rin-note` 与显式 `:::slide` 指令。完整格式、组件映射和发布检查见 [`docs/slides-authoring.md`](docs/slides-authoring.md)。
 
 ## 构建与发布
 

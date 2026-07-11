@@ -14,6 +14,7 @@ import remarkRehype from "remark-rehype";
 import { visit } from "unist-util-visit";
 import type { Element, Root } from "hast";
 import { sections, type SectionSlug } from "@/app/sections";
+import { parseRinDocument, type RinDocument } from "./rin-documents";
 
 const contentRoot = path.join(process.cwd(), "content");
 const sectionSlugs = new Set<string>(sections.map((section) => section.slug));
@@ -55,6 +56,20 @@ function readArticleSource(section: SectionSlug, fileName: string) {
   const source = fs.readFileSync(filePath, "utf8");
   const parsed = matter(source);
   const data = parsed.data as Record<string, unknown>;
+  const slug = fileName.replace(/\.md$/, "");
+  const rinDocument = data.format === "rin-note"
+    ? parseRinDocument(source, filePath, section, slug)
+    : null;
+
+  if (rinDocument) {
+    return {
+      source: rinDocument.articleMarkdown,
+      draft: data.draft === true,
+      summary: rinDocument.summary,
+      rinDocument,
+    };
+  }
+
   const dateValue = data.date;
   const date = dateValue instanceof Date
     ? dateValue.toISOString().slice(0, 10)
@@ -84,7 +99,7 @@ function readArticleSource(section: SectionSlug, fileName: string) {
     draft: data.draft === true,
     summary: {
       section,
-      slug: fileName.replace(/\.md$/, ""),
+      slug,
       slides: slides as string | undefined,
       lang,
       title: readString(data, "title", filePath),
@@ -94,6 +109,7 @@ function readArticleSource(section: SectionSlug, fileName: string) {
       tags,
       order: typeof data.order === "number" ? data.order : 999,
     } satisfies ArticleSummary,
+    rinDocument: null,
   };
 }
 
@@ -131,9 +147,28 @@ export function getArticlesBySection(section: SectionSlug) {
   return getAllArticles().filter((article) => article.section === section);
 }
 
-// 返回一条学习内容的主要公开入口；存在 deck 时优先进入互动演示。
+export function getAllRinDocuments(): RinDocument[] {
+  if (!fs.existsSync(contentRoot)) {
+    return [];
+  }
+
+  const documents: RinDocument[] = [];
+  for (const sectionName of fs.readdirSync(contentRoot)) {
+    if (!sectionSlugs.has(sectionName)) continue;
+    const section = sectionName as SectionSlug;
+    const sectionDir = path.join(contentRoot, section);
+    for (const fileName of fs.readdirSync(sectionDir)) {
+      if (!fileName.endsWith(".md")) continue;
+      const source = readArticleSource(section, fileName);
+      if (!source.draft && source.rinDocument) documents.push(source.rinDocument);
+    }
+  }
+  return documents;
+}
+
+// 文章是双视图内容在分区列表和相邻导航中的默认入口。
 export function getArticlePrimaryHref(article: ArticleSummary) {
-  return article.slides ?? `/${article.section}/${article.slug}`;
+  return `/${article.section}/${article.slug}`;
 }
 
 export function getArticleNavigation(section: SectionSlug, slug: string) {
