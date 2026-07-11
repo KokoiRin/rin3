@@ -237,6 +237,15 @@
   text-transform: uppercase;
 }
 
+.slides-toolbar .slides-toolbar-document {
+  width: auto;
+  gap: 8px;
+  padding: 0 12px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
 .slides-toolbar a:hover,
 .slides-toolbar a:focus-visible,
 .slides-toolbar button:hover,
@@ -417,6 +426,31 @@
   bottom: 32px;
   font-size: 10px !important;
   letter-spacing: 0.13em !important;
+}
+
+.slide-prose-content {
+  max-width: 920px;
+  margin-top: 34px;
+  overflow: hidden;
+  font-family: "Songti SC", "STSong", Georgia, serif;
+  font-size: 21px;
+  line-height: 1.65;
+  color: #4f524d;
+}
+
+.slide-prose-content > * + * {
+  margin-top: 18px;
+}
+
+.slide-prose-content ul,
+.slide-prose-content ol {
+  padding-left: 1.35em;
+}
+
+.slide-prose-content a {
+  color: var(--slides-moss);
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
 }
 
 .slide-card-grid {
@@ -940,6 +974,13 @@
     right: 28px;
     bottom: 26px;
     font-size: 13px !important;
+  }
+
+  .slide-prose-content {
+    max-width: none;
+    margin-top: 42px;
+    font-size: 28px;
+    line-height: 1.7;
   }
 
   .slide-card-grid {
