@@ -3,7 +3,8 @@
 
 export const TOUCH_SWIPE_COUNT = 3;
 export const SWIPE_THRESHOLD_PX = 52;
-export const DESKTOP_REVEAL_DISTANCE_PX = 480;
+export const WHEEL_GESTURE_COUNT = 3;
+export const WHEEL_GESTURE_GAP_MS = 240;
 
 /**
  * @param {{ count: number; startedAtEnd: boolean; horizontalDistance: number }} gesture
@@ -27,13 +28,33 @@ export function advanceTouchGesture(gesture) {
 }
 
 /**
- * @param {number} distance
- * @param {number} delta
+ * 桌面触控板的一次滑动会连续发出多个 wheel 事件；只有间隔足够长的新事件流才算下一次滑动。
+ * @param {{ count: number; lastEventAt: number | null; eventAt: number; deltaX: number; deltaY: number }} gesture
  */
-export function advanceWheelDistance(distance, delta) {
-  const nextDistance = Math.max(0, distance + delta);
+export function advanceWheelGesture(gesture) {
+  if (Math.abs(gesture.deltaX) <= Math.abs(gesture.deltaY)) {
+    return {
+      count: gesture.count,
+      lastEventAt: gesture.lastEventAt,
+      shouldReveal: false,
+    };
+  }
+
+  const isNewGesture = gesture.lastEventAt === null
+    || gesture.eventAt - gesture.lastEventAt >= WHEEL_GESTURE_GAP_MS;
+
+  if (gesture.deltaX <= 0) {
+    return {
+      count: isNewGesture ? 0 : gesture.count,
+      lastEventAt: gesture.eventAt,
+      shouldReveal: false,
+    };
+  }
+
+  const count = isNewGesture ? gesture.count + 1 : gesture.count;
   return {
-    distance: nextDistance,
-    shouldReveal: nextDistance >= DESKTOP_REVEAL_DISTANCE_PX,
+    count,
+    lastEventAt: gesture.eventAt,
+    shouldReveal: count >= WHEEL_GESTURE_COUNT,
   };
 }

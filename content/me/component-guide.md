@@ -2,7 +2,7 @@
 format: rin-note
 lang: zh-CN
 title: RIN III Slides 组件使用说明
-summary: 用一份可线性阅读的 RIN 文档，同时生成文章与 Slides，并按内容关系选择展示组件。
+summary: 用一份可线性阅读的 RIN 文档，同时生成文章与 Slides，并理解两种视图之间的组件映射。
 date: 2026-07-12
 topic: Site Authoring
 tags: [RIN Document, Slides, Markdown, Components]
@@ -23,12 +23,16 @@ slides:
       label: "02"
       title: Layouts
       summary: 内容到组件的映射
-    - id: rich-content
+    - id: mapping
       label: "03"
+      title: Mapping
+      summary: Markdown 与 Slides 对应关系
+    - id: rich-content
+      label: "04"
       title: Rich Content
       summary: 公式与代码
     - id: release
-      label: "04"
+      label: "05"
       title: Release
       summary: 检查与发布
 ---
@@ -107,6 +111,53 @@ slides:
 | 顺序过程 | flow / checklist | 使用有序列表；flow 项以“标题 — 说明”书写 |
 | 技术表达 | formula / code | 使用展示公式或带语言的 fenced code |
 | 收束结论 | closing | 使用引用块写核心判断 |
+:::
+
+:::slide {"kind":"matrix","chapter":"mapping","eyebrow":"MAPPING / STRUCTURED CONTENT"}
+## Markdown 内容块怎样变成 Slides 组件
+
+RIN 指令只选择页面布局；真正的内容仍然写成 Markdown。编译器把固定的 Markdown 结构映射成 `SlideDeckData` 字段，文章视图则保留原有语义。
+
+| RIN Markdown 写法 | Slides 数据 | 文章视图 |
+| --- | --- | --- |
+| 普通段落、链接、列表 | `prose.markdown` | 普通正文 |
+| `### LABEL — Title` + 段落 | `cards.items` / `contract.items` | 三级标题与说明 |
+| 三列 GFM 表格 | `matrix.columns` / `rows` | HTML 表格 |
+| “标题 — 说明”有序列表 | `flow.items` | 带顺序的列表 |
+| 普通有序列表 | `checklist.items` | 编号列表 |
+:::
+
+:::slide {"kind":"matrix","chapter":"mapping","eyebrow":"MAPPING / RICH CONTENT"}
+## 富内容与收束页也使用同一份正文
+
+两种视图不会共享生成后的 HTML，而是分别从同一 Markdown 内容在构建期生成适合自己的静态结构。
+
+| RIN Markdown 写法 | Slides 数据 | 文章视图 |
+| --- | --- | --- |
+| `$$...$$` 展示公式 | `formula.formula` | KaTeX 公式 |
+| 带语言的 fenced code | `code.language` / `code.code` | Shiki 高亮代码 |
+| 代码后的引用块 | `code.caption` | 普通引用 |
+| 引用块 + 末尾短句 | `closing.statement` / `note` | 引用与结论段落 |
+:::
+
+:::slide {"kind":"code","chapter":"mapping","eyebrow":"MAPPING / ITEMS AND NUMBERS"}
+## 使用示例：Markdown item 怎样获得自动编号
+
+`flow` 和 `checklist` 都直接读取有序列表。作者只写 Markdown item；编译器根据位置生成 `01`、`02`、`03`，不需要在数据对象中重复维护 label。
+
+```markdown
+:::slide {"kind":"flow","chapter":"authoring","eyebrow":"EXAMPLE / FLOW"}
+## 从文档到页面
+
+每个列表项都会成为一个 Slide item。
+
+1. 编写正文 — 先保证文章能够独立读懂。
+2. 选择布局 — 再声明这一页使用 flow。
+3. 构建输出 — 编译器自动生成 01、02、03。
+:::
+```
+
+> `checklist` 使用相同编号机制，但每个 item 只需要写一句检查内容。
 :::
 
 :::slide {"kind":"formula","chapter":"rich-content","eyebrow":"RICH CONTENT / LATEX"}

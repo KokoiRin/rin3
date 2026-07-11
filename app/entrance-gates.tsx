@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { advanceTouchGesture, advanceWheelDistance } from "./edge-gesture";
+import { advanceTouchGesture, advanceWheelGesture } from "./edge-gesture";
 import { learningSections, personalSection } from "./sections";
 
 const MOBILE_QUERY = "(max-width: 720px)";
@@ -14,7 +14,10 @@ export function EntranceGates() {
   const extraGateRef = useRef<HTMLAnchorElement>(null);
   const touchGestureRef = useRef<{ startX: number; startedAtEnd: boolean } | null>(null);
   const touchSwipeCountRef = useRef(0);
-  const wheelDistanceRef = useRef(0);
+  const wheelGestureRef = useRef<{ count: number; lastEventAt: number | null }>({
+    count: 0,
+    lastEventAt: null,
+  });
 
   const revealExtra = useCallback(() => {
     setIsExtraRevealed(true);
@@ -38,30 +41,32 @@ export function EntranceGates() {
     return () => window.clearTimeout(timer);
   }, [isExtraRevealed]);
 
-  // 桌面端把滚轮向下和触控板向右浏览视为同一个持续前进动作。
-  function handleWheel(event: React.WheelEvent<HTMLElement>) {
+  // PC 首页统一接收横向滑动，不再由鼠标当前悬停的分栏决定是否累计。
+  useEffect(() => {
     if (isExtraRevealed || window.matchMedia(MOBILE_QUERY).matches) {
       return;
     }
 
-    const dominantDelta = Math.abs(event.deltaX) > Math.abs(event.deltaY)
-      ? event.deltaX
-      : event.deltaY;
-    const deltaScale = event.deltaMode === WheelEvent.DOM_DELTA_LINE
-      ? 24
-      : event.deltaMode === WheelEvent.DOM_DELTA_PAGE
-        ? window.innerHeight
-        : 1;
-    const nextWheel = advanceWheelDistance(
-      wheelDistanceRef.current,
-      dominantDelta * deltaScale,
-    );
-    wheelDistanceRef.current = nextWheel.distance;
+    function handleWheel(event: WheelEvent) {
+      const nextWheel = advanceWheelGesture({
+        ...wheelGestureRef.current,
+        eventAt: event.timeStamp,
+        deltaX: event.deltaX,
+        deltaY: event.deltaY,
+      });
+      wheelGestureRef.current = {
+        count: nextWheel.count,
+        lastEventAt: nextWheel.lastEventAt,
+      };
 
-    if (nextWheel.shouldReveal) {
-      revealExtra();
+      if (nextWheel.shouldReveal) {
+        revealExtra();
+      }
     }
-  }
+
+    window.addEventListener("wheel", handleWheel, { passive: true });
+    return () => window.removeEventListener("wheel", handleWheel);
+  }, [isExtraRevealed, revealExtra]);
 
   // 只有到达末端后的完整手势才计数，正常浏览前三列不会误触。
   function handleTouchStart(event: React.TouchEvent<HTMLElement>) {
@@ -105,7 +110,6 @@ export function EntranceGates() {
       className={`gates${isExtraRevealed ? " gates-extra-revealed" : ""}`}
       aria-label="Archive sections"
       ref={gatesRef}
-      onWheel={handleWheel}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
     >
