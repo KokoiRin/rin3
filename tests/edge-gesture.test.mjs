@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { advanceTouchGesture, advanceWheelDistance } from "../app/edge-gesture.js";
+import { advanceTouchGesture, advanceWheelGesture } from "../app/edge-gesture.js";
 
 // 到达末端后，连续三次向后浏览才展开额外分区，前两次仅保留计数。
 test("reveals the extra section after three end swipes", () => {
@@ -33,8 +33,53 @@ test("resets only for a full invalid swipe", () => {
   );
 });
 
-// 桌面滚轮持续前进会累计距离，反向滚动只回退进度，不会产生负数。
-test("reveals the extra section after sustained desktop scrolling", () => {
-  assert.deepEqual(advanceWheelDistance(300, 200), { distance: 500, shouldReveal: true });
-  assert.deepEqual(advanceWheelDistance(120, -200), { distance: 0, shouldReveal: false });
+// 桌面端一次滑动产生的连续滚轮事件只计一次，第三次独立前进滑动才展开额外分区。
+test("reveals the extra section after three desktop wheel gestures", () => {
+  let state = { count: 0, lastEventAt: null, shouldReveal: false };
+
+  for (const eventAt of [0, 20, 40]) {
+    state = advanceWheelGesture({
+      count: state.count,
+      lastEventAt: state.lastEventAt,
+      eventAt,
+      deltaX: 120,
+      deltaY: 0,
+    });
+  }
+  assert.deepEqual(state, { count: 1, lastEventAt: 40, shouldReveal: false });
+
+  for (const eventAt of [400, 420]) {
+    state = advanceWheelGesture({
+      count: state.count,
+      lastEventAt: state.lastEventAt,
+      eventAt,
+      deltaX: 120,
+      deltaY: 0,
+    });
+  }
+  assert.deepEqual(state, { count: 2, lastEventAt: 420, shouldReveal: false });
+
+  state = advanceWheelGesture({
+    count: state.count,
+    lastEventAt: state.lastEventAt,
+    eventAt: 800,
+    deltaX: 120,
+    deltaY: 0,
+  });
+
+  assert.deepEqual(state, { count: 3, lastEventAt: 800, shouldReveal: true });
+});
+
+// PC 上普通的纵向滚动不是“继续向左浏览”，因此不能推进隐藏入口的解锁进度。
+test("ignores vertical desktop wheel gestures", () => {
+  assert.deepEqual(
+    advanceWheelGesture({
+      count: 1,
+      lastEventAt: 100,
+      eventAt: 500,
+      deltaX: 20,
+      deltaY: 120,
+    }),
+    { count: 1, lastEventAt: 100, shouldReveal: false },
+  );
 });

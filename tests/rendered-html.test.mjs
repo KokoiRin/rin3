@@ -65,6 +65,9 @@ test("renders the RIN component guide as a complete Markdown article", async () 
   assert.match(html, /data-rehype-pretty-code-figure/);
   assert.match(html, /<table>/);
   assert.match(html, /:::slide/);
+  assert.match(html, /Markdown 内容块怎样变成 Slides 组件/);
+  assert.match(html, /Markdown item 怎样获得自动编号/);
+  assert.match(html, /编译器自动生成 01、02、03/);
   assert.match(html, /<article class="article-shell" lang="zh-CN">/);
   assert.match(html, /ON THIS PAGE/);
   assert.match(html, /href="#先判断内容关系再选择布局"/);
@@ -72,6 +75,27 @@ test("renders the RIN component guide as a complete Markdown article", async () 
   assert.match(html, /VIEW SLIDES/);
   assert.match(html, new RegExp(`href="${basePath}/slides/component-guide/"`));
   assert.doesNotMatch(html, /:::slide \{&quot;kind&quot;[^<]*\}[\s\S]*^:::$/m);
+});
+
+// 模型论笔记迁移后必须保留原 Slides 地址，同时新增默认文章入口和双向切换。
+test("publishes model theory as one dual-view RIN document", async () => {
+  const article = await readOutput("mathematics/model-theory-for-software-engineering/index.html");
+  const deck = await readOutput("slides/model-theory-for-software-engineering/index.html");
+  const index = await readOutput("mathematics/index.html");
+
+  assert.match(article, /模型论中的可定义性/);
+  assert.match(article, /class="katex"/);
+  assert.match(article, /<table>/);
+  assert.match(article, /VIEW SLIDES/);
+  assert.match(article, new RegExp(`href="${basePath}/slides/model-theory-for-software-engineering/"`));
+
+  assert.match(index, /ARTICLE \+ SLIDES/);
+  assert.match(index, new RegExp(`href="${basePath}/mathematics/model-theory-for-software-engineering/"`));
+  assert.equal(index.match(/<li lang="zh-CN">/g)?.length, 1);
+
+  assert.match(deck, /View document/);
+  assert.match(deck, new RegExp(`href="${basePath}/mathematics/model-theory-for-software-engineering/"`));
+  assert.match(deck, /FORMULA → SATISFIERS → DEFINABLE SET/);
 });
 
 test("lists the dual-view component guide once under me and defaults to the article", async () => {
