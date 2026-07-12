@@ -60,11 +60,20 @@ slides:
 
 ## 保留方式：独立 deck
 
-只有纯演示、没有文章阅读需求的内容，才直接注册到 `app/slides/decks.ts`：
+只有纯演示、没有文章阅读需求的内容，才直接注册到 `lib/content/slides.ts`：
 
 - 提供 `listing` 后，deck 会直接进入所属分区。
 - 不配置 `articleHref` 时，播放器不显示文档切换按钮。
 - 现有播放器、路由和 CSS 不要为新内容复制。
+
+## 架构归属
+
+- `packages/rin-document/`：可移植的 RIN 解析、校验、文章渲染和 Slides 编译；不依赖网站路由或 React。
+- `lib/content/`：RIN III 的文件发现与站点适配，负责栏目、URL 和 deploy-safe 资源路径。
+- `components/slides/`：Reveal 播放器与网站视觉交互，只消费构建后的 deck。
+- `app/`：静态路由和页面组装，不直接解析 Markdown。
+
+其他项目复用文档链路时应通过 `@rin/document` 公共入口传入源字符串，不复制本网站的 content catalog 或播放器。
 
 ## 发布检查
 

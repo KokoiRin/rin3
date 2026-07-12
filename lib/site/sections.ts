@@ -1,3 +1,5 @@
+// 网站分区、部署 base path 与资源 URL 都由宿主拥有。
+// 可移植文档 package 只保存中立 section id 和原始资源引用，不依赖这里。
 export const siteBasePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 
 export function assetPath(path: string) {

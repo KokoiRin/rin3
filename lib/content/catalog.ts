@@ -1,20 +1,15 @@
+// 网站内容 catalog 拥有本地文件发现、draft、排序与公开文章查询。
+// RIN 语法和 Markdown 渲染委托给 @rin/document，不泄漏到 Next.js routes。
 import fs from "node:fs";
 import path from "node:path";
 import matter from "gray-matter";
-import { toString } from "hast-util-to-string";
-import rehypeAutolinkHeadings from "rehype-autolink-headings";
-import rehypeKatex from "rehype-katex";
-import rehypePrettyCode from "rehype-pretty-code";
-import rehypeSlug from "rehype-slug";
-import rehypeStringify from "rehype-stringify";
-import { remark } from "remark";
-import remarkGfm from "remark-gfm";
-import remarkMath from "remark-math";
-import remarkRehype from "remark-rehype";
-import { visit } from "unist-util-visit";
-import type { Element, Root } from "hast";
-import { sections, type SectionSlug } from "@/app/sections";
-import { parseRinDocument, type RinDocument } from "./rin-documents";
+import {
+  parseRinDocument,
+  renderArticleMarkdown,
+  type ArticleHeading,
+  type RinDocument,
+} from "@rin/document";
+import { sections, type SectionSlug } from "@/lib/site/sections";
 
 const contentRoot = path.join(process.cwd(), "content");
 const sectionSlugs = new Set<string>(sections.map((section) => section.slug));
@@ -30,12 +25,6 @@ export type ArticleSummary = {
   topic: string;
   tags: string[];
   order: number;
-};
-
-export type ArticleHeading = {
-  depth: 2 | 3;
-  id: string;
-  text: string;
 };
 
 export type Article = ArticleSummary & {
@@ -65,7 +54,11 @@ function readArticleSource(section: SectionSlug, fileName: string) {
     return {
       source: rinDocument.articleMarkdown,
       draft: data.draft === true,
-      summary: rinDocument.summary,
+      summary: {
+        ...rinDocument.summary,
+        section,
+        slides: `/slides/${slug}`,
+      } satisfies ArticleSummary,
       rinDocument,
     };
   }
@@ -197,37 +190,11 @@ export async function getArticle(section: string, slug: string): Promise<Article
     return null;
   }
 
-  const headings: ArticleHeading[] = [];
-  const result = await remark()
-    .use(remarkGfm)
-    .use(remarkMath)
-    .use(remarkRehype)
-    .use(rehypeSlug)
-    .use(() => (tree: Root) => {
-      visit(tree, "element", (node: Element) => {
-        if ((node.tagName === "h2" || node.tagName === "h3")
-          && typeof node.properties?.id === "string") {
-          headings.push({
-            depth: node.tagName === "h2" ? 2 : 3,
-            id: node.properties.id,
-            text: toString(node),
-          });
-        }
-      });
-    })
-    .use(rehypeAutolinkHeadings, { behavior: "wrap" })
-    .use(rehypeKatex)
-    .use(rehypePrettyCode, {
-      theme: "github-light",
-      keepBackground: false,
-    })
-    .use(rehypeStringify)
-    .process(parsed.source);
+  const rendered = await renderArticleMarkdown(parsed.source);
 
   return {
     ...parsed.summary,
-    headings,
-    html: String(result),
+    ...rendered,
   };
 }
 

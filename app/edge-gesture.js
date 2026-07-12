@@ -4,7 +4,7 @@
 export const TOUCH_SWIPE_COUNT = 3;
 export const SWIPE_THRESHOLD_PX = 52;
 export const WHEEL_GESTURE_COUNT = 3;
-export const WHEEL_GESTURE_GAP_MS = 240;
+export const WHEEL_GESTURE_GAP_MS = 80;
 
 /**
  * @param {{ count: number; startedAtEnd: boolean; horizontalDistance: number }} gesture
