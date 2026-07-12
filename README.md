@@ -62,6 +62,20 @@ print("code is highlighted")
 
 需要同一份内容同时显示为文章和 Slides 时，使用 `format: rin-note` 与显式 `:::slide` 指令。完整格式、组件映射和发布检查见 [`docs/slides-authoring.md`](docs/slides-authoring.md)。
 
+## 架构
+
+```text
+content/**/*.md
+    ↓ 网站文件发现
+lib/content/                 RIN III 内容 catalog 与站点适配
+    ↓ 源字符串
+packages/rin-document/       可移植的解析、校验和双视图编译
+    ↓ 构建后数据
+app/ + components/slides/    静态路由、文章页面与 Reveal 播放器
+```
+
+`@rin/document` 不依赖 Next.js、React、Reveal、网站 URL 或文件系统；其他消费者可以通过它的公共入口复用 RIN 文档编译能力。
+
 ## 构建与发布
 
 ```bash

@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { formatArticleDate, getArticlePrimaryHref, getArticlesBySection } from "@/lib/articles";
-import { getListedSlideDecks } from "../slides/decks";
-import { getSection, sections, type SectionSlug } from "../sections";
+import { formatArticleDate, getArticlePrimaryHref, getArticlesBySection } from "@/lib/content/catalog";
+import { getListedSlideDecks } from "@/lib/content/slides";
+import { getSection, sections, type SectionSlug } from "@/lib/site/sections";
 
 // 统一分区列表中的 Markdown 文章和独立 deck，页面不关心它们的存储方式。
 type SectionEntry = {

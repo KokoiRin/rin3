@@ -70,6 +70,23 @@ test("reveals the extra section after three desktop wheel gestures", () => {
   assert.deepEqual(state, { count: 3, lastEventAt: 800, shouldReveal: true });
 });
 
+// 用户快速连续完成三次独立横向滑动也必须被逐次识别，不能被过长的事件合并窗口吞成一次。
+test("reveals the extra section after three quick independent wheel gestures", () => {
+  let state = { count: 0, lastEventAt: null, shouldReveal: false };
+
+  for (const eventAt of [0, 100, 200]) {
+    state = advanceWheelGesture({
+      count: state.count,
+      lastEventAt: state.lastEventAt,
+      eventAt,
+      deltaX: 120,
+      deltaY: 0,
+    });
+  }
+
+  assert.deepEqual(state, { count: 3, lastEventAt: 200, shouldReveal: true });
+});
+
 // PC 上普通的纵向滚动不是“继续向左浏览”，因此不能推进隐藏入口的解锁进度。
 test("ignores vertical desktop wheel gestures", () => {
   assert.deepEqual(

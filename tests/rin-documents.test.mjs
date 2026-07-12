@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-const { parseRinDocument } = await import("../lib/rin-documents.ts");
+const { parseRinDocument } = await import("@rin/document");
 
 const frontmatter = `---
 format: rin-note
@@ -46,7 +46,7 @@ test("parses explicit slide boundaries in source order and keeps readable articl
   assert.match(document.articleMarkdown, /## 普通内容/);
   assert.match(document.articleMarkdown, /这段文字在两种视图中都应该存在/);
   assert.doesNotMatch(document.articleMarkdown, /:::slide|^:::$/m);
-  assert.equal(document.summary.slides, "/slides/example");
+  assert.equal("slides" in document.summary, false);
 });
 
 // 未知布局必须在构建前暴露，并指明问题文件。
@@ -114,4 +114,77 @@ test("does not treat directive examples inside fenced code as the slide closing 
 
   assert.match(document.slides[0].markdown, /## 示例\n:::/);
   assert.equal(document.slides.length, 1);
+});
+
+// 章节 id 是所有页面引用的稳定键，重复定义会让目录跳转产生歧义。
+test("rejects duplicate chapter identifiers", () => {
+  const source = frontmatter.replace(
+    "      summary: 基础组件",
+    `      summary: 基础组件
+    - id: basics
+      label: "02"
+      title: Duplicate
+      summary: 重复章节`,
+  );
+
+  assert.throws(
+    () => parseRinDocument(source, "/tmp/duplicate-chapter.md", "me", "duplicate-chapter"),
+    /\/tmp\/duplicate-chapter\.md: duplicate chapter id "basics"/,
+  );
+});
+
+// 每页只能引用 frontmatter 已声明的章节，否则播放器目录无法定位它。
+test("rejects slides that reference an undeclared chapter", () => {
+  assert.throws(
+    () => parseRinDocument(`${frontmatter}
+
+:::slide {"kind":"prose","chapter":"missing","eyebrow":"BAD"}
+## 未声明章节
+:::`, "/tmp/unknown-chapter.md", "me", "unknown-chapter"),
+    /\/tmp\/unknown-chapter\.md: slide at line \d+ references unknown chapter "missing"/,
+  );
+});
+
+// code 布局依赖围栏代码块提供语言和源码，行内代码不能替代。
+test("rejects code slides without a fenced code block", () => {
+  assert.throws(
+    () => parseRinDocument(`${frontmatter}
+
+:::slide {"kind":"code","chapter":"basics","eyebrow":"BAD"}
+## 代码页
+
+只有行内 \`code\`。
+:::`, "/tmp/code.md", "me", "code"),
+    /\/tmp\/code\.md: code slide .*fenced code block/,
+  );
+});
+
+// 顺序型布局必须从 Markdown 列表获得稳定 item 边界。
+test("rejects flow and checklist slides without a list", () => {
+  for (const kind of ["flow", "checklist"]) {
+    assert.throws(
+      () => parseRinDocument(`${frontmatter}
+
+:::slide {"kind":"${kind}","chapter":"basics","eyebrow":"BAD"}
+## 列表页
+
+没有列表。
+:::`, `/tmp/${kind}.md`, "me", kind),
+      new RegExp(`/tmp/${kind}\\.md: ${kind} slide .*must contain a list`),
+    );
+  }
+});
+
+// closing 的核心陈述来自引用块，普通段落不能被猜测为收束语。
+test("rejects closing slides without a blockquote", () => {
+  assert.throws(
+    () => parseRinDocument(`${frontmatter}
+
+:::slide {"kind":"closing","chapter":"basics","eyebrow":"BAD"}
+## 收束页
+
+这不是引用。
+:::`, "/tmp/closing.md", "me", "closing"),
+    /\/tmp\/closing\.md: closing slide .*blockquote/,
+  );
 });

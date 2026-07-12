@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import SlideDeckView from "../slide-deck";
-import { getAllSlideDecks, getSlideDeck } from "../decks";
-import { renderSlideDeck } from "../render-deck";
+import { renderSlideDeck } from "@rin/document";
+import SlideDeckView from "@/components/slides/player";
+import { getAllSlideDecks, getSlideDeck } from "@/lib/content/slides";
 
 // 表示静态 deck 路由从 Next.js 获得的唯一参数。
 type SlidePageProps = {
