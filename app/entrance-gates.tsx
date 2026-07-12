@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { advanceTouchGesture, advanceWheelGesture } from "./edge-gesture";
-import { learningSections, personalSection } from "./sections";
+import { learningSections, personalSection } from "@/lib/site/sections";
 
 const MOBILE_QUERY = "(max-width: 720px)";
 

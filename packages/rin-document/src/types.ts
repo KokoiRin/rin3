@@ -1,7 +1,6 @@
 // 这里集中定义独立 deck 与 RIN 派生 deck 共同使用的播放数据契约。
 // 类型只描述构建完成后的页面结构，不负责源文档解析、路由或交互状态。
-// 保持两种内容来源进入播放器后的语义一致。
-import type { SectionSlug } from "../sections";
+// 保持两种内容来源进入播放器后的语义一致；站点导航由宿主自行扩展。
 
 export type SlideChapter = {
   id: string;
@@ -14,16 +13,6 @@ export type SlideItem = {
   label?: string;
   title: string;
   body: string;
-};
-
-export type SlideDeckListing = {
-  topic: string;
-  date: string;
-  order: number;
-};
-
-export type ListedSlideDeckData = SlideDeckData & {
-  listing: SlideDeckListing;
 };
 
 type SlideBase = {
@@ -69,15 +58,11 @@ export type SlideDeckData = {
   description: string;
   date: string;
   coverImage: string;
-  section: SectionSlug;
-  sectionTitle: string;
-  sectionHref: string;
-  listing?: SlideDeckListing;
-  articleHref?: string;
+  section: string;
   chapters: SlideChapter[];
   slides: SlideContent[];
 };
 
-export type RenderedSlideDeckData = Omit<SlideDeckData, "slides"> & {
+export type RenderedSlideDeckData<TDeck extends SlideDeckData = SlideDeckData> = Omit<TDeck, "slides"> & {
   slides: RenderedSlideContent[];
 };

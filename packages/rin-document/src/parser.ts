@@ -1,11 +1,10 @@
 // 这个模块定义 RIN 文档的中立内容模型，并负责解析与结构校验。
 // 它只处理 frontmatter、显式 Slide 边界和 Markdown 结构，不生成 React 或视觉组件。
-// 文章与 Slides 编译器都消费这里的同一个解析结果。
+// 文章与 Slides 编译器都消费这里的同一个解析结果；模型不引用任何站点类型。
 import matter from "gray-matter";
 import { remark } from "remark";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
-import type { SectionSlug } from "@/app/sections";
 
 export const rinSlideKinds = [
   "prose",
@@ -36,20 +35,24 @@ export type RinChapter = {
   summary: string;
 };
 
+export type RinDocumentIdentity = {
+  section: string;
+  slug: string;
+};
+
+export type RinDocumentSummary = RinDocumentIdentity & {
+  lang: "en" | "zh-CN";
+  title: string;
+  summary: string;
+  date: string;
+  topic: string;
+  tags: string[];
+  order: number;
+};
+
 export type RinDocument = {
   filePath: string;
-  summary: {
-    section: SectionSlug;
-    slug: string;
-    slides: string;
-    lang: "en" | "zh-CN";
-    title: string;
-    summary: string;
-    date: string;
-    topic: string;
-    tags: string[];
-    order: number;
-  };
+  summary: RinDocumentSummary;
   deck: {
     series: string;
     coverImage: string;
@@ -232,7 +235,7 @@ function parseSlides(content: string, filePath: string, chapters: RinChapter[]) 
 export function parseRinDocument(
   source: string,
   filePath: string,
-  section: SectionSlug,
+  section: string,
   slug: string,
 ): RinDocument {
   const parsed = matter(source);
@@ -260,7 +263,6 @@ export function parseRinDocument(
     summary: {
       section,
       slug,
-      slides: `/slides/${slug}`,
       lang,
       title: readString(data, "title", filePath),
       summary: readString(data, "summary", filePath),

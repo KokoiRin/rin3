@@ -1,12 +1,11 @@
 // 这个模块把中立的 RinDocument 映射成现有播放器使用的 SlideDeckData。
 // 它在构建期解释每种 Markdown 约定并补齐封面，不读取或保存第二份正文。
-// 路由、播放状态与文章 HTML 渲染不属于这里的职责。
+// 路由、资源 base path、播放状态与文章 HTML 渲染不属于这里的职责。
 import { remark } from "remark";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
-import type { RinDocument, RinSlideSource } from "@/lib/rin-documents";
-import { assetPath, getSection } from "../sections";
-import type { SlideContent, SlideDeckData, SlideItem } from "./types";
+import type { RinDocument, RinSlideSource } from "./parser.ts";
+import type { SlideContent, SlideDeckData, SlideItem } from "./types.ts";
 
 type MarkdownNode = {
   type: string;
@@ -159,10 +158,6 @@ function compileSlide(document: RinDocument, slide: RinSlideSource): SlideConten
 }
 
 export function compileRinDeck(document: RinDocument): SlideDeckData {
-  const section = getSection(document.summary.section);
-  if (!section) {
-    throw new Error(`${document.filePath}: unknown section "${document.summary.section}"`);
-  }
   const firstChapter = document.deck.chapters[0];
 
   return {
@@ -172,11 +167,8 @@ export function compileRinDeck(document: RinDocument): SlideDeckData {
     title: document.summary.title,
     description: document.summary.summary,
     date: document.summary.date.replaceAll("-", " / "),
-    coverImage: assetPath(document.deck.coverImage),
+    coverImage: document.deck.coverImage,
     section: document.summary.section,
-    sectionTitle: section.title,
-    sectionHref: `/${section.slug}`,
-    articleHref: `/${section.slug}/${document.summary.slug}`,
     chapters: document.deck.chapters,
     slides: [
       {

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import "katex/dist/katex.min.css";
 import "./globals.css";
-import { assetPath } from "./sections";
+import { assetPath } from "@/lib/site/sections";
 
 export const metadata: Metadata = {
   title: "RIN III",

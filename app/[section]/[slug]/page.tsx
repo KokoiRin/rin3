@@ -8,8 +8,8 @@ import {
   getArticle,
   getArticleNavigation,
   getArticlePrimaryHref,
-} from "@/lib/articles";
-import { getSection } from "../../sections";
+} from "@/lib/content/catalog";
+import { getSection } from "@/lib/site/sections";
 
 type ArticlePageProps = {
   params: Promise<{ section: string; slug: string }>;
