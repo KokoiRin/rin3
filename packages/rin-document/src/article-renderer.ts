@@ -1,7 +1,6 @@
 // 文章投影统一在构建期完成 Markdown、目录、公式与代码渲染。
 // 调用方只提供 Markdown，不需要了解 remark / rehype 的组合顺序。
 import { toString } from "hast-util-to-string";
-import rehypeAutolinkHeadings from "rehype-autolink-headings";
 import rehypeKatex from "rehype-katex";
 import rehypePrettyCode from "rehype-pretty-code";
 import rehypeSlug from "rehype-slug";
@@ -44,7 +43,6 @@ export async function renderArticleMarkdown(markdown: string): Promise<RenderedA
         }
       });
     })
-    .use(rehypeAutolinkHeadings, { behavior: "wrap" })
     .use(rehypeKatex)
     .use(rehypePrettyCode, {
       theme: "github-light",

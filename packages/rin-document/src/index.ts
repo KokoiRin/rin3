@@ -3,6 +3,7 @@ export { parseRinDocument, rinSlideKinds } from "./parser.ts";
 export { compileRinDeck } from "./slide-compiler.ts";
 export { renderArticleMarkdown } from "./article-renderer.ts";
 export { renderSlideDeck } from "./slide-renderer.ts";
+export { projectRinContent, rinSlidePresentations } from "./domain.ts";
 
 export type {
   RinChapter,
@@ -12,6 +13,13 @@ export type {
   RinSlideKind,
   RinSlideSource,
 } from "./parser.ts";
+export type {
+  RinContentBlock,
+  RinContentRole,
+  RinProjectionTarget,
+  RinSlidePage,
+  RinSlidePresentation,
+} from "./domain.ts";
 export type {
   RenderedSlideContent,
   RenderedSlideDeckData,

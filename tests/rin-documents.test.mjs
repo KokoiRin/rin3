@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-const { parseRinDocument } = await import("@rin/document");
+const { parseRinDocument, projectRinContent } = await import("@rin/document");
 
 const frontmatter = `---
 format: rin-note
@@ -42,7 +42,7 @@ test("parses explicit slide boundaries in source order and keeps readable articl
 `, "/tmp/example.md", "me", "example");
 
   assert.equal(document.slides.length, 2);
-  assert.deepEqual(document.slides.map((slide) => slide.kind), ["prose", "checklist"]);
+  assert.deepEqual(document.slides.map((slide) => slide.presentation), ["prose", "checklist"]);
   assert.match(document.articleMarkdown, /## 普通内容/);
   assert.match(document.articleMarkdown, /这段文字在两种视图中都应该存在/);
   assert.doesNotMatch(document.articleMarkdown, /:::slide|^:::$/m);
@@ -112,8 +112,41 @@ test("does not treat directive examples inside fenced code as the slide closing 
 :::
 `, "/tmp/fenced.md", "me", "fenced");
 
-  assert.match(document.slides[0].markdown, /## 示例\n:::/);
+  assert.match(projectRinContent(document.slides[0].blocks, "slides"), /## 示例\n:::/);
   assert.equal(document.slides.length, 1);
+});
+
+// detail 在文档结束前没有闭合时，解析必须指出来源和起始行，不能静默吞掉后续内容。
+test("rejects an unclosed detail block with source context", () => {
+  assert.throws(
+    () => parseRinDocument(`${frontmatter}
+
+:::slide {"kind":"prose","chapter":"basics","eyebrow":"BAD"}
+## 核心判断
+
+:::detail
+没有结束的详细解释`, "/tmp/unclosed-detail.md", "me", "unclosed-detail"),
+    /\/tmp\/unclosed-detail\.md: unclosed detail block at line \d+/,
+  );
+});
+
+// fenced code 中出现 detail 标记只是示例文本，文章与 Slides 都必须完整保留它。
+test("keeps detail marker examples inside fenced code as core content", () => {
+  const document = parseRinDocument(`${frontmatter}
+
+:::slide {"kind":"code","chapter":"basics","eyebrow":"EXAMPLE"}
+## Detail 写法
+
+\`\`\`markdown
+:::detail
+详细解释
+:::
+\`\`\`
+:::`, "/tmp/detail-fence.md", "me", "detail-fence");
+  const slidesMarkdown = projectRinContent(document.slides[0].blocks, "slides");
+
+  assert.match(slidesMarkdown, /:::detail\n详细解释\n:::/);
+  assert.match(document.articleMarkdown, /:::detail\n详细解释\n:::/);
 });
 
 // 章节 id 是所有页面引用的稳定键，重复定义会让目录跳转产生歧义。
