@@ -68,6 +68,8 @@ test("renders the RIN component guide as a complete Markdown article", async () 
   assert.match(html, /Markdown 内容块怎样变成 Slides 组件/);
   assert.match(html, /Markdown item 怎样获得自动编号/);
   assert.match(html, /编译器自动生成 01、02、03/);
+  assert.match(html, /三层模型怎样协作/);
+  assert.match(html, /这段说明故意作为 detail/);
   assert.match(html, /<article class="article-shell" lang="zh-CN">/);
   assert.match(html, /ON THIS PAGE/);
   assert.match(html, /href="#先判断内容关系再选择布局"/);
@@ -84,6 +86,11 @@ test("publishes model theory as one dual-view RIN document", async () => {
   const index = await readOutput("mathematics/index.html");
 
   assert.match(article, /模型论中的可定义性/);
+  assert.match(article, /可定义性的明确含义：公式的满足者必须与目标完全相同/);
+  assert.match(article, /需要修正的一点/);
+  assert.match(article, /纯序一阶语言无法定义这些算术关系/);
+  assert.match(article, /先分清“5 这个对象”与“公式能不能直接写 5”/);
+  assert.match(article, /公式、性质、集合和关系是同一条链上的不同视角/);
   assert.match(article, /class="katex"/);
   assert.match(article, /<table>/);
   assert.match(article, /VIEW SLIDES/);
@@ -95,7 +102,8 @@ test("publishes model theory as one dual-view RIN document", async () => {
 
   assert.match(deck, /View document/);
   assert.match(deck, new RegExp(`href="${basePath}/mathematics/model-theory-for-software-engineering/"`));
-  assert.match(deck, /FORMULA → SATISFIERS → DEFINABLE SET/);
+  assert.match(deck, /FORMULA → SATISFACTION → DEFINABLE SET/);
+  assert.doesNotMatch(deck, /需要修正的一点/);
 });
 
 test("lists the dual-view component guide once under me and defaults to the article", async () => {
@@ -117,6 +125,8 @@ test("exports the component guide deck with a document switch", async () => {
   assert.match(deck, /<main class="rin-slides-shell" lang="zh-CN">/);
   assert.match(deck, /aria-label="Presentation chapters"/);
   assert.match(deck, /内容、编译和播放各自只有一个职责/);
+  assert.doesNotMatch(deck, /三层模型怎样协作/);
+  assert.doesNotMatch(deck, /这段说明故意作为 detail/);
   assert.match(deck, /公式在文章和 Slides 中使用同一段 LaTeX/);
   assert.match(deck, /指令只描述分页和布局/);
   assert.match(deck, /class="katex"/);

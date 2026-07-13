@@ -4,8 +4,9 @@
 import { remark } from "remark";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
-import type { RinDocument, RinSlideSource } from "./parser.ts";
+import type { RinDocument } from "./parser.ts";
 import type { SlideContent, SlideDeckData, SlideItem } from "./types.ts";
+import { projectRinContent, type RinSlidePage } from "./domain.ts";
 
 type MarkdownNode = {
   type: string;
@@ -15,8 +16,10 @@ type MarkdownNode = {
   children?: MarkdownNode[];
 };
 
-function fail(document: RinDocument, slide: RinSlideSource, message: string): never {
-  throw new Error(`${document.filePath}: ${slide.kind} slide at line ${slide.line} ${message}`);
+function fail(document: RinDocument, slide: RinSlidePage, message: string): never {
+  throw new Error(
+    `${document.filePath}: ${slide.presentation} slide at line ${slide.line} ${message}`,
+  );
 }
 
 function text(node: MarkdownNode): string {
@@ -26,11 +29,11 @@ function text(node: MarkdownNode): string {
   return node.children?.map(text).join("").trim() ?? "";
 }
 
-function root(slide: RinSlideSource) {
-  return remark().use(remarkGfm).use(remarkMath).parse(slide.markdown) as MarkdownNode;
+function root(markdown: string) {
+  return remark().use(remarkGfm).use(remarkMath).parse(markdown) as MarkdownNode;
 }
 
-function titleOf(document: RinDocument, slide: RinSlideSource, tree: MarkdownNode) {
+function titleOf(document: RinDocument, slide: RinSlidePage, tree: MarkdownNode) {
   const heading = tree.children?.find((node) => node.type === "heading");
   const title = heading ? text(heading) : "";
   if (!title) {
@@ -65,6 +68,26 @@ function headingItems(tree: MarkdownNode): SlideItem[] {
   return items;
 }
 
+// “标题：说明”列表是文章友好的内容语义；需要卡片时再在 Slides 投影中拆成结构化 item。
+function labelledListItems(tree: MarkdownNode): SlideItem[] {
+  const list = tree.children?.find((node) => node.type === "list" && !node.ordered);
+  return list?.children?.flatMap((item, index) => {
+    const match = /^(.+?)[：:]\s*(.+)$/.exec(text(item));
+    if (!match) return [];
+    return [{
+      label: (index + 1).toString().padStart(2, "0"),
+      title: match[1].trim(),
+      body: match[2].trim(),
+    }];
+  }) ?? [];
+}
+
+// 新的列表写法优先；旧三级标题写法暂时保留，避免已有文档在迁移期间失效。
+function presentationItems(tree: MarkdownNode): SlideItem[] {
+  const items = labelledListItems(tree);
+  return items.length > 0 ? items : headingItems(tree);
+}
+
 function orderedList(tree: MarkdownNode) {
   return tree.children?.find((node) => node.type === "list" && node.ordered);
 }
@@ -81,7 +104,7 @@ function flowItems(tree: MarkdownNode): SlideItem[] {
   }) ?? [];
 }
 
-function matrixOf(document: RinDocument, slide: RinSlideSource, tree: MarkdownNode) {
+function matrixOf(document: RinDocument, slide: RinSlidePage, tree: MarkdownNode) {
   const table = tree.children?.find((node) => node.type === "table");
   const rows = table?.children?.map((row) => row.children?.map(text) ?? []) ?? [];
   if (rows.length < 2 || rows.some((row) => row.length !== 3)) {
@@ -93,26 +116,27 @@ function matrixOf(document: RinDocument, slide: RinSlideSource, tree: MarkdownNo
   };
 }
 
-function proseWithoutTitle(slide: RinSlideSource) {
-  return slide.markdown.replace(/^##\s+.+(?:\r?\n)+/, "").trim();
+function proseWithoutTitle(markdown: string) {
+  return markdown.replace(/^##\s+.+(?:\r?\n)+/, "").trim();
 }
 
-function compileSlide(document: RinDocument, slide: RinSlideSource): SlideContent {
-  const tree = root(slide);
+function compileSlide(document: RinDocument, slide: RinSlidePage): SlideContent {
+  const markdown = projectRinContent(slide.blocks, "slides");
+  const tree = root(markdown);
   const title = titleOf(document, slide, tree);
   const base = { chapter: slide.chapter, eyebrow: slide.eyebrow, title };
   const intro = introOf(tree);
 
-  switch (slide.kind) {
+  switch (slide.presentation) {
     case "prose":
-      return { ...base, kind: "prose", markdown: proseWithoutTitle(slide) };
+      return { ...base, kind: "prose", markdown: proseWithoutTitle(markdown) };
     case "cards": {
-      const items = headingItems(tree);
+      const items = presentationItems(tree);
       if (items.length < 2) fail(document, slide, "must contain at least two labelled sections");
       return { ...base, kind: "cards", intro, items };
     }
     case "contract": {
-      const items = headingItems(tree);
+      const items = presentationItems(tree);
       if (items.length < 2) fail(document, slide, "must contain at least two labelled sections");
       return { ...base, kind: "contract", intro, items };
     }
@@ -133,7 +157,7 @@ function compileSlide(document: RinDocument, slide: RinSlideSource): SlideConten
     case "formula": {
       const formula = tree.children?.find((node) => node.type === "math")?.value;
       if (!formula) fail(document, slide, "must contain a display formula");
-      return { ...base, kind: "formula", intro, formula, items: headingItems(tree) };
+      return { ...base, kind: "formula", intro, formula, items: presentationItems(tree) };
     }
     case "code": {
       const code = tree.children?.find((node) => node.type === "code");
