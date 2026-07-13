@@ -5,28 +5,21 @@ import matter from "gray-matter";
 import { remark } from "remark";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
+import {
+  projectRinContent,
+  rinSlidePresentations,
+  type RinContentBlock,
+  type RinContentRole,
+  type RinSlidePage,
+  type RinSlidePresentation,
+} from "./domain.ts";
 
-export const rinSlideKinds = [
-  "prose",
-  "cards",
-  "matrix",
-  "flow",
-  "contract",
-  "checklist",
-  "formula",
-  "code",
-  "closing",
-] as const;
+// `kind` 是既有作者语法；进入领域模型后统一称为 presentation。
+export const rinSlideKinds = rinSlidePresentations;
+export type RinSlideKind = RinSlidePresentation;
 
-export type RinSlideKind = (typeof rinSlideKinds)[number];
-
-export type RinSlideSource = {
-  kind: RinSlideKind;
-  chapter: string;
-  eyebrow: string;
-  markdown: string;
-  line: number;
-};
+// 兼容早期公共类型名；领域代码统一使用能够表达页面语义的 RinSlidePage。
+export type RinSlideSource = RinSlidePage;
 
 export type RinChapter = {
   id: string;
@@ -59,7 +52,7 @@ export type RinDocument = {
     chapters: RinChapter[];
   };
   articleMarkdown: string;
-  slides: RinSlideSource[];
+  slides: RinSlidePage[];
 };
 
 type MarkdownNode = {
@@ -130,31 +123,46 @@ function hasThreeColumnTable(node: MarkdownNode): boolean {
   return Boolean(node.children?.some(hasThreeColumnTable));
 }
 
-function validateSlide(slide: RinSlideSource, filePath: string) {
-  const tree = remark().use(remarkGfm).use(remarkMath).parse(slide.markdown) as MarkdownNode;
-  const context = `${slide.kind} slide at line ${slide.line}`;
+function validateSlide(slide: RinSlidePage, filePath: string) {
+  const markdown = projectRinContent(slide.blocks, "slides");
+  const tree = remark().use(remarkGfm).use(remarkMath).parse(markdown) as MarkdownNode;
+  const context = `${slide.presentation} slide at line ${slide.line}`;
 
-  if (slide.kind === "formula" && !containsNode(tree, "math")) {
+  if (slide.presentation === "formula" && !containsNode(tree, "math")) {
     fail(filePath, `${context} must contain a display formula`);
   }
-  if (slide.kind === "matrix" && !hasThreeColumnTable(tree)) {
+  if (slide.presentation === "matrix" && !hasThreeColumnTable(tree)) {
     fail(filePath, `${context} must contain a three-column table`);
   }
-  if (slide.kind === "code" && !containsNode(tree, "code")) {
+  if (slide.presentation === "code" && !containsNode(tree, "code")) {
     fail(filePath, `${context} must contain a fenced code block`);
   }
-  if ((slide.kind === "flow" || slide.kind === "checklist") && !containsNode(tree, "list")) {
+  if ((slide.presentation === "flow" || slide.presentation === "checklist")
+    && !containsNode(tree, "list")) {
     fail(filePath, `${context} must contain a list`);
   }
-  if (slide.kind === "closing" && !containsNode(tree, "blockquote")) {
+  if (slide.presentation === "closing" && !containsNode(tree, "blockquote")) {
     fail(filePath, `${context} must contain a blockquote`);
+  }
+}
+
+// 连续同角色内容合并为一个 block，空白只作为 Markdown 排版保留，不产生空领域对象。
+function appendBlock(
+  blocks: RinContentBlock[],
+  role: RinContentRole,
+  lines: string[],
+  line: number,
+) {
+  const markdown = lines.join("\n").trim();
+  if (markdown) {
+    blocks.push({ role, markdown, line });
   }
 }
 
 function parseSlides(content: string, filePath: string, chapters: RinChapter[]) {
   const lines = content.split(/\r?\n/);
   const articleLines: string[] = [];
-  const slides: RinSlideSource[] = [];
+  const slides: RinSlidePage[] = [];
   const chapterIds = new Set(chapters.map((chapter) => chapter.id));
 
   for (let index = 0; index < lines.length;) {
@@ -188,7 +196,11 @@ function parseSlides(content: string, filePath: string, chapters: RinChapter[]) 
     const eyebrow = readString(record, "eyebrow", filePath);
 
     index += 1;
-    const body: string[] = [];
+    const blocks: RinContentBlock[] = [];
+    let blockRole: RinContentRole = "core";
+    let blockStartLine = index + 1;
+    let blockLines: string[] = [];
+    let detailStartLine: number | null = null;
     let fence: { marker: string; length: number } | null = null;
     while (index < lines.length) {
       const bodyLine = lines[index];
@@ -202,26 +214,53 @@ function parseSlides(content: string, filePath: string, chapters: RinChapter[]) 
           fence = null;
         }
       }
+      // detail 是 Slide 内唯一允许嵌套的语义指令；它切换内容角色，但不进入任一投影文本。
+      if (!fence && bodyLine === ":::detail") {
+        if (blockRole === "detail") {
+          fail(filePath, `nested detail block at line ${index + 1} is not supported`);
+        }
+        appendBlock(blocks, blockRole, blockLines, blockStartLine);
+        blockRole = "detail";
+        detailStartLine = index + 1;
+        blockStartLine = index + 2;
+        blockLines = [];
+        index += 1;
+        continue;
+      }
+      // 同一个结束标记优先闭合当前 detail；没有 detail 时才闭合外层 Slide。
       if (!fence && bodyLine === ":::") {
+        if (blockRole === "detail") {
+          appendBlock(blocks, blockRole, blockLines, blockStartLine);
+          blockRole = "core";
+          detailStartLine = null;
+          blockStartLine = index + 2;
+          blockLines = [];
+          index += 1;
+          continue;
+        }
         break;
       }
-      body.push(bodyLine);
-      articleLines.push(bodyLine);
+      blockLines.push(bodyLine);
       index += 1;
+    }
+    if (detailStartLine !== null && index === lines.length) {
+      fail(filePath, `unclosed detail block at line ${detailStartLine}`);
     }
     if (index === lines.length) {
       fail(filePath, `unclosed slide directive at line ${startLine}`);
     }
+    appendBlock(blocks, blockRole, blockLines, blockStartLine);
 
     const slide = {
-      kind: kind as RinSlideKind,
+      presentation: kind as RinSlidePresentation,
       chapter,
       eyebrow,
-      markdown: body.join("\n").trim(),
+      blocks,
       line: startLine,
     };
     validateSlide(slide, filePath);
     slides.push(slide);
+    articleLines.push(projectRinContent(blocks, "article"));
     articleLines.push("");
     index += 1;
   }
