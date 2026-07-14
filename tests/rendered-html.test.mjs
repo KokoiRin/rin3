@@ -79,6 +79,19 @@ test("renders the RIN component guide as a complete Markdown article", async () 
   assert.doesNotMatch(html, /:::slide \{&quot;kind&quot;[^<]*\}[\s\S]*^:::$/m);
 });
 
+// 富内容示例必须保留惰性 Mermaid 节点、部署安全图片和两类语义列表。
+test("exports rich document media and editorial lists with deploy-safe markup", async () => {
+  const article = await readOutput("me/component-guide/index.html");
+  const deck = await readOutput("slides/component-guide/index.html");
+
+  for (const html of [article, deck]) {
+    assert.match(html, /<pre class="mermaid" data-mermaid-diagram="">/);
+    assert.match(html, new RegExp(`src="${basePath}/entrance/computer-lotus\\.webp"`));
+    assert.match(html, /<ol class="rin-list rin-list-ordered">/);
+    assert.match(html, /<ul class="rin-list rin-list-unordered">/);
+  }
+});
+
 // 模型论笔记迁移后必须保留原 Slides 地址，同时新增默认文章入口和双向切换。
 test("publishes model theory as one dual-view RIN document", async () => {
   const article = await readOutput("mathematics/model-theory-for-software-engineering/index.html");

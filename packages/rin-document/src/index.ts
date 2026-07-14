@@ -29,3 +29,4 @@ export type {
   SlideItem,
 } from "./types.ts";
 export type { ArticleHeading, RenderedArticleMarkdown } from "./article-renderer.ts";
+export type { RichContentRenderOptions } from "./rich-content.ts";

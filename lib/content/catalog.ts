@@ -9,7 +9,7 @@ import {
   type ArticleHeading,
   type RinDocument,
 } from "@rin/document";
-import { sections, type SectionSlug } from "@/lib/site/sections";
+import { assetPath, sections, type SectionSlug } from "@/lib/site/sections";
 
 const contentRoot = path.join(process.cwd(), "content");
 const sectionSlugs = new Set<string>(sections.map((section) => section.slug));
@@ -190,7 +190,7 @@ export async function getArticle(section: string, slug: string): Promise<Article
     return null;
   }
 
-  const rendered = await renderArticleMarkdown(parsed.source);
+  const rendered = await renderArticleMarkdown(parsed.source, { resolveImageSrc: assetPath });
 
   return {
     ...parsed.summary,
