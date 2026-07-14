@@ -11,6 +11,10 @@ import remarkMath from "remark-math";
 import remarkRehype from "remark-rehype";
 import { visit } from "unist-util-visit";
 import type { Element, Root } from "hast";
+import {
+  rehypeRinRichContent,
+  type RichContentRenderOptions,
+} from "./rich-content.ts";
 
 export type ArticleHeading = {
   depth: 2 | 3;
@@ -24,7 +28,10 @@ export type RenderedArticleMarkdown = {
 };
 
 // 返回可直接交给文章视图的静态 HTML 和同源目录结构。
-export async function renderArticleMarkdown(markdown: string): Promise<RenderedArticleMarkdown> {
+export async function renderArticleMarkdown(
+  markdown: string,
+  options: RichContentRenderOptions = {},
+): Promise<RenderedArticleMarkdown> {
   const headings: ArticleHeading[] = [];
   const result = await remark()
     .use(remarkGfm)
@@ -44,6 +51,7 @@ export async function renderArticleMarkdown(markdown: string): Promise<RenderedA
       });
     })
     .use(rehypeKatex)
+    .use(rehypeRinRichContent, options)
     .use(rehypePrettyCode, {
       theme: "github-light",
       keepBackground: false,

@@ -9,6 +9,10 @@ import remarkMath from "remark-math";
 import remarkRehype from "remark-rehype";
 import remarkGfm from "remark-gfm";
 import type { RenderedSlideDeckData, SlideDeckData } from "./types.ts";
+import {
+  rehypeRinRichContent,
+  type RichContentRenderOptions,
+} from "./rich-content.ts";
 
 // 把一段展示公式转成 KaTeX 静态标记，构建失败时直接暴露无效公式。
 async function renderFormula(formula: string) {
@@ -40,12 +44,13 @@ async function renderCode(code: string, language: string) {
   return String(result);
 }
 
-async function renderProse(markdown: string) {
+async function renderProse(markdown: string, options: RichContentRenderOptions) {
   const result = await remark()
     .use(remarkGfm)
     .use(remarkMath)
     .use(remarkRehype)
     .use(rehypeKatex)
+    .use(rehypeRinRichContent, options)
     .use(rehypePrettyCode, {
       theme: "github-dark",
       keepBackground: true,
@@ -59,6 +64,7 @@ async function renderProse(markdown: string) {
 // 准备一份 deck 中的富内容页，同时保留普通布局的原始数据结构。
 export async function renderSlideDeck<TDeck extends SlideDeckData>(
   deck: TDeck,
+  options: RichContentRenderOptions = {},
 ): Promise<RenderedSlideDeckData<TDeck>> {
   const slides = await Promise.all(deck.slides.map(async (slide) => {
     if (slide.kind === "formula") {
@@ -70,7 +76,7 @@ export async function renderSlideDeck<TDeck extends SlideDeckData>(
     }
 
     if (slide.kind === "prose") {
-      return { ...slide, html: await renderProse(slide.markdown) };
+      return { ...slide, html: await renderProse(slide.markdown, options) };
     }
 
     return slide;

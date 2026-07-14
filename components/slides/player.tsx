@@ -18,6 +18,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Reveal from "reveal.js";
 import type { RevealApi } from "reveal.js";
 import type { SiteRenderedSlideDeckData } from "@/lib/content/slides";
+import MermaidDiagrams from "@/components/mermaid-diagrams";
 import { SlideContent } from "./slide-layouts";
 
 // 负责单份演示的导航、响应式画布、全屏状态和 Reveal 生命周期。
@@ -123,6 +124,7 @@ export default function SlideDeckView({ deck }: { deck: SiteRenderedSlideDeckDat
       lang={deck.lang}
       ref={shellRef}
     >
+      <MermaidDiagrams />
       <button
         className="slides-menu-backdrop"
         type="button"

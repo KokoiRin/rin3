@@ -86,6 +86,104 @@ test("initializes the exported Slides player and advances from the cover", async
   await page.close();
 });
 
+// 富内容页必须渲染图表和图片，并让有序/无序列表显示舒适的黑色数字与圆点。
+test("renders Mermaid and deploy-safe images in the exported component guide", async () => {
+  const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+  const runtimeErrors = [];
+  page.on("pageerror", (error) => runtimeErrors.push(error.message));
+
+  await page.goto(`${origin}${basePath}/me/component-guide/`);
+  const articleOrderedItem = page.locator(".prose .rin-list-ordered li").first();
+  const articleBulletItem = page.locator(".prose .rin-list-unordered li").first();
+  await articleOrderedItem.waitFor();
+  assert.deepEqual(await articleOrderedItem.evaluate((item) => ({
+    color: getComputedStyle(item, "::marker").color,
+    type: getComputedStyle(item).listStyleType,
+  })), { color: "rgb(37, 38, 33)", type: "decimal" });
+  assert.deepEqual(await articleBulletItem.evaluate((item) => ({
+    color: getComputedStyle(item, "::marker").color,
+    type: getComputedStyle(item).listStyleType,
+  })), { color: "rgb(37, 38, 33)", type: "disc" });
+
+  await page.goto(`${origin}${basePath}/slides/component-guide/`);
+  await page.locator(".reveal.ready").waitFor();
+  const targetIndex = await page.locator(".slides > section").evaluateAll((slides) =>
+    slides.findIndex((slide) => slide.querySelector("[data-mermaid-diagram]")),
+  );
+  assert.ok(targetIndex > 0);
+  for (let index = 0; index < targetIndex; index += 1) {
+    await page.getByRole("button", { name: "Next slide" }).click();
+    const expected = (index + 2).toString().padStart(2, "0");
+    await page.waitForFunction(
+      (value) => document.querySelector(".slides-counter span")?.textContent === value,
+      expected,
+    );
+  }
+  const diagram = page.locator(".slides > section.present [data-mermaid-diagram] svg");
+  await diagram.waitFor();
+  await page.waitForFunction(() => {
+    const svg = document.querySelector(".slides > section.present [data-mermaid-diagram] svg");
+    if (!(svg instanceof SVGElement)) return false;
+    const bounds = svg.getBoundingClientRect();
+    return bounds.width > 200 && bounds.height > 100;
+  });
+  assert.equal(await diagram.count(), 1);
+  // Mermaid 使用原生 SVG 文本，避免 Reveal 缩放时 HTML label 超出 foreignObject 被裁切。
+  assert.equal(await diagram.locator("foreignObject").count(), 0);
+
+  await page.getByRole("button", { name: "Next slide" }).click();
+  await page.waitForFunction(
+    (value) => document.querySelector(".slides-counter span")?.textContent === value,
+    (targetIndex + 2).toString().padStart(2, "0"),
+  );
+  const image = page.locator(
+    `.slides > section.present img[src="${basePath}/entrance/computer-lotus.webp"]`,
+  );
+  await image.waitFor();
+  await page.waitForFunction(() => {
+    const currentImage = document.querySelector(".slides > section.present .slide-prose-content img");
+    return currentImage instanceof HTMLImageElement
+      && currentImage.complete
+      && currentImage.naturalWidth > 0;
+  });
+  const imageMetrics = await image.evaluate((currentImage) => {
+    const bounds = currentImage.getBoundingClientRect();
+    const containerBounds = currentImage.parentElement?.getBoundingClientRect();
+    return {
+      height: bounds.height,
+      maxHeight: getComputedStyle(currentImage).maxHeight,
+      naturalWidth: currentImage.naturalWidth,
+      width: bounds.width,
+      containerWidth: containerBounds?.width ?? 0,
+    };
+  });
+  assert.ok(imageMetrics.naturalWidth > 0 && imageMetrics.width > 100 && imageMetrics.height > 100);
+  assert.ok(imageMetrics.width <= imageMetrics.containerWidth);
+  assert.equal(imageMetrics.maxHeight, "330px");
+
+  await page.getByRole("button", { name: "Next slide" }).click();
+  await page.waitForFunction(
+    (value) => document.querySelector(".slides-counter span")?.textContent === value,
+    (targetIndex + 3).toString().padStart(2, "0"),
+  );
+  const orderedItem = page.locator(".slides > section.present .rin-list-ordered li").first();
+  const bulletItem = page.locator(".slides > section.present .rin-list-unordered li").first();
+  await orderedItem.waitFor();
+  assert.deepEqual(await orderedItem.evaluate((item) => ({
+    color: getComputedStyle(item, "::marker").color,
+    type: getComputedStyle(item).listStyleType,
+  })), { color: "rgb(32, 33, 29)", type: "decimal" });
+  assert.deepEqual(await bulletItem.evaluate((item) => ({
+    color: getComputedStyle(item, "::marker").color,
+    type: getComputedStyle(item).listStyleType,
+  })), { color: "rgb(32, 33, 29)", type: "disc" });
+  assert.equal(await page.locator(".slides > section.present .slide-prose-content").evaluate(
+    (content) => content.scrollWidth <= content.clientWidth,
+  ), true);
+  assert.deepEqual(runtimeErrors, []);
+  await page.close();
+});
+
 // 真实 wheel 事件必须忽略纵向滚动，并在第三次独立横向手势后才解锁第四入口。
 test("reveals the fourth entrance only after three horizontal wheel gestures", async () => {
   const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });

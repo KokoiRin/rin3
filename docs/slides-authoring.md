@@ -82,6 +82,42 @@ RIN 把三个概念分开管理：
 
 完整范例见 [`content/me/component-guide.md`](../content/me/component-guide.md)。它本身会同时发布为文章和 Slides。
 
+## Mermaid、图片与普通列表
+
+这三种内容使用 `prose` 布局和标准 Markdown，不增加新的 Slide kind。
+
+Mermaid 使用带 `mermaid` 语言名的代码围栏：
+
+````md
+```mermaid
+flowchart LR
+  Source --> Article
+  Source --> Slides
+```
+````
+
+文章和 prose Slides 会生成同一语义的图表节点，浏览器只在页面实际包含图表时按需加载 Mermaid。原始 HTML 仍然禁用，Mermaid 使用严格安全模式。`code` 等专用布局中的代码围栏仍按该布局的规则处理，不渲染图表。
+
+站内图片放在 `public/` 下，并在 Markdown 中使用根路径：
+
+```md
+![可访问的替代文字](/images/example.webp)
+```
+
+宿主会为根路径补齐 GitHub Pages 的 `/rin3` 前缀；`https://` 外部图片和相对路径保持原样。图片必须提供有意义的 alt 文本，并控制源文件尺寸，避免让文章加载或 Slide 高度失控。
+
+普通列表直接使用 Markdown：
+
+```md
+1. 第一项
+2. 第二项
+
+- 并列项一
+- 并列项二
+```
+
+文章与 prose Slides 会保留 `<ol>` / `<ul>` 语义，并用醒目的数字或圆点 marker 呈现。若列表本身要驱动 `flow` 或 `checklist` 专用组件，仍按对应布局约定编写。
+
 ## 保留方式：独立 deck
 
 只有纯演示、没有文章阅读需求的内容，才直接注册到 `lib/content/slides.ts`：
@@ -108,4 +144,4 @@ RIN 把三个概念分开管理：
 GITHUB_ACTIONS=true NEXT_PUBLIC_BASE_PATH=/rin3 npm test
 ```
 
-并检查文章、Slides、双向切换、最长页面、手机竖屏和 GitHub Pages base path。未知 kind、未知章节、未闭合指令，以及缺失布局必需结构时，构建必须失败。
+并检查文章、Slides、双向切换、最长页面、手机竖屏和 GitHub Pages base path。含 Mermaid 时确认图表已变成 SVG；含图片时确认站内 URL 带有部署前缀；普通列表要检查数字、圆点和长文本换行。未知 kind、未知章节、未闭合指令，以及缺失布局必需结构时，构建必须失败。
