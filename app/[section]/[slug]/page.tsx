@@ -10,6 +10,7 @@ import {
   getArticlePrimaryHref,
 } from "@/lib/content/catalog";
 import { getSection } from "@/lib/site/sections";
+import MermaidDiagrams from "@/components/mermaid-diagrams";
 
 type ArticlePageProps = {
   params: Promise<{ section: string; slug: string }>;
@@ -88,6 +89,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
               className="prose"
               dangerouslySetInnerHTML={{ __html: article.html }}
             />
+            <MermaidDiagrams />
 
             <nav className="article-pagination" aria-label="Adjacent articles">
               {navigation.previous ? (

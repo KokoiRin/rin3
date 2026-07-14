@@ -2,8 +2,9 @@
 // 可移植文档 package 只保存中立 section id 和原始资源引用，不依赖这里。
 export const siteBasePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 
+// 站内根路径使用部署前缀，外部或相对资源保持作者提供的原地址。
 export function assetPath(path: string) {
-  return `${siteBasePath}${path}`;
+  return path.startsWith("/") ? `${siteBasePath}${path}` : path;
 }
 
 export const learningSections = [

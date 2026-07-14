@@ -56,6 +56,67 @@ test("keeps article heading ids without wrapping headings in self links", async 
   assert.doesNotMatch(article.html, /<h2[^>]*><a[^>]+href="#中立内容"/);
 });
 
+// prose 中的 Mermaid 围栏在文章和 Slides 中都应投影成待渲染图表，而不是普通高亮代码。
+test("projects Mermaid fences as diagram nodes in both prose views", async () => {
+  const mermaidSource = source.replace(
+    "这个 package 不知道网站路由。",
+    `\`\`\`mermaid
+flowchart LR
+  Source --> Article
+  Source --> Slides
+\`\`\``,
+  );
+  const document = parseRinDocument(mermaidSource, "/virtual/mermaid.md", "notes", "mermaid");
+  const article = await renderArticleMarkdown(document.articleMarkdown);
+  const deck = await renderSlideDeck(compileRinDeck(document));
+
+  assert.match(article.html, /<pre class="mermaid"[^>]*data-mermaid-diagram/);
+  assert.match(deck.slides[1].html, /<pre class="mermaid"[^>]*data-mermaid-diagram/);
+  assert.doesNotMatch(article.html, /data-rehype-pretty-code-figure/);
+  assert.doesNotMatch(deck.slides[1].html, /data-rehype-pretty-code-figure/);
+});
+
+// 宿主提供资源适配器时，双视图应重写站内图片并保持外部图片地址不变。
+test("resolves portable Markdown image sources in both prose views", async () => {
+  const imageSource = source.replace(
+    "这个 package 不知道网站路由。",
+    `![站内示意图](/media/architecture.webp)
+
+![外部示意图](https://images.example.com/architecture.webp)`,
+  );
+  const document = parseRinDocument(imageSource, "/virtual/images.md", "notes", "images");
+  const resolveImageSrc = (src) => src.startsWith("/") ? `/docs${src}` : src;
+  const article = await renderArticleMarkdown(document.articleMarkdown, { resolveImageSrc });
+  const deck = await renderSlideDeck(compileRinDeck(document), { resolveImageSrc });
+
+  for (const html of [article.html, deck.slides[1].html]) {
+    assert.match(html, /src="\/docs\/media\/architecture\.webp"/);
+    assert.match(html, /src="https:\/\/images\.example\.com\/architecture\.webp"/);
+  }
+});
+
+// 普通 Markdown 列表必须在保留 ol/ul 语义的同时，为两种视图提供稳定的编辑样式接缝。
+test("marks ordered and unordered lists for editorial presentation", async () => {
+  const listSource = source.replace(
+    "这个 package 不知道网站路由。",
+    `1. 第一项
+2. 第二项
+
+- 圆点项一
+- 圆点项二`,
+  );
+  const document = parseRinDocument(listSource, "/virtual/lists.md", "notes", "lists");
+  const article = await renderArticleMarkdown(document.articleMarkdown);
+  const deck = await renderSlideDeck(compileRinDeck(document));
+
+  for (const html of [article.html, deck.slides[1].html]) {
+    assert.match(html, /<ol class="rin-list rin-list-ordered">/);
+    assert.match(html, /<ul class="rin-list rin-list-unordered">/);
+    assert.match(html, /<li>第一项<\/li>/);
+    assert.match(html, /<li>圆点项一<\/li>/);
+  }
+});
+
 // 高语义布局的 Markdown 约定必须稳定编译为播放器消费的中立数据。
 test("compiles ordered, code, and closing layout semantics", () => {
   const richSource = source.replace(

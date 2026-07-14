@@ -447,6 +447,61 @@
   padding-left: 1.35em;
 }
 
+.slide-prose-content .rin-list {
+  list-style-position: outside;
+}
+
+.slide-prose-content .rin-list-ordered {
+  list-style-type: decimal;
+}
+
+.slide-prose-content .rin-list-unordered {
+  list-style-type: disc;
+}
+
+.slide-prose-content .rin-list li {
+  margin-top: 0.52em;
+  padding-left: 0.4em;
+}
+
+.slide-prose-content .rin-list li::marker {
+  color: var(--slides-ink);
+  font-weight: 600;
+}
+
+.slide-prose-content .rin-list-unordered li::marker {
+  font-size: 1.16em;
+}
+
+.slide-prose-content img {
+  display: block;
+  width: auto;
+  max-width: 100%;
+  max-height: 330px;
+  margin: 22px auto 0;
+  border: 1px solid #c6c2b8;
+  object-fit: contain;
+}
+
+.slide-prose-content .mermaid {
+  display: flex;
+  min-height: 260px;
+  align-items: center;
+  justify-content: center;
+  overflow: auto;
+  padding: 18px;
+  border: 1px solid #c6c2b8;
+  background: #f4f0e7;
+  font-family: "SFMono-Regular", Consolas, monospace;
+  font-size: 13px;
+}
+
+.slide-prose-content .mermaid svg {
+  width: 100%;
+  max-width: 820px;
+  max-height: 320px;
+}
+
 .slide-prose-content a {
   color: var(--slides-moss);
   text-decoration: underline;
