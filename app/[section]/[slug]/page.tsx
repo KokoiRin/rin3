@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { GalleryHorizontalEnd } from "lucide-react";
+import { ArrowLeft, GalleryHorizontalEnd } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
@@ -54,7 +55,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
     <main className="article-page">
       <nav className="article-nav" aria-label="Article navigation">
         <Link href={`/${section.slug}`}>
-          <span aria-hidden="true">←</span>
+          <ArrowLeft aria-hidden="true" size={15} strokeWidth={1.5} />
           <span>{section.title}</span>
         </Link>
         <Link className="article-brand" href="/">RIN III</Link>
@@ -62,28 +63,34 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
 
       <article className="article-shell" lang={article.lang}>
         <header className="article-header">
-          <p className="article-section-name">{section.flower}</p>
-          <h1>{article.title}</h1>
-          <p className="article-deck">{article.summary}</p>
-          <div className="article-meta">
-            <time dateTime={article.date}>{formatArticleDate(article.date, article.lang)}</time>
-            <span>{article.topic}</span>
-            {article.slides ? (
-              <Link className="article-slides-link" href={article.slides}>
-                <GalleryHorizontalEnd size={15} />
-                <span>VIEW SLIDES</span>
-              </Link>
-            ) : null}
+          <Image
+            className="article-cover-image"
+            src={section.image}
+            alt=""
+            fill
+            priority
+            sizes="100vw"
+          />
+          <span className="article-cover-shade" aria-hidden="true" />
+
+          <div className="article-header-inner">
+            <p className="article-section-name">{section.flower}</p>
+            <h1>{article.title}</h1>
+            <p className="article-deck">{article.summary}</p>
+            <div className="article-meta">
+              <time dateTime={article.date}>{formatArticleDate(article.date, article.lang)}</time>
+              <span>{article.topic}</span>
+              {article.slides ? (
+                <Link className="article-slides-link" href={article.slides}>
+                  <GalleryHorizontalEnd aria-hidden="true" size={15} strokeWidth={1.5} />
+                  <span>VIEW SLIDES</span>
+                </Link>
+              ) : null}
+            </div>
           </div>
         </header>
 
         <div className="article-layout">
-          <aside className="article-aside" aria-label="Article tags">
-            <p>TAGS</p>
-            <ul>
-              {article.tags.map((tag) => <li key={tag}>{tag}</li>)}
-            </ul>
-          </aside>
           <div className="article-main">
             <div
               className="prose"
