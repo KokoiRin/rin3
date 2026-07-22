@@ -1,6 +1,6 @@
-# 铃有三剑
+# RIN III
 
-以樱花、莲花与枫叶为引，记录数学、计算机与软件工程学习内容的个人静态网站。
+以樱花、莲花、枫叶与雪为引，记录数学、计算机、软件工程与个人成长的个人静态网站。
 
 ## 本地运行
 
@@ -22,6 +22,7 @@ content/
   mathematics/
   computer-science/
   software-engineering/
+  me/
 ```
 
 新建一个 `.md` 文件，例如 `content/mathematics/example.md`：
