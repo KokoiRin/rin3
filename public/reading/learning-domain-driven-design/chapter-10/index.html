@@ -1,0 +1,1033 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>第 10 章｜设计启发式｜RIN III</title>
+  <meta name="description" content="《Learning Domain-Driven Design》第十章中文翻译与项目批注阅读版">
+  <style>
+    :root {
+      --paper: #fffefa;
+      --canvas: #ecebe7;
+      --ink: #26343b;
+      --muted: #65757d;
+      --accent: #39728d;
+      --accent-soft: #e7f1f5;
+      --line: #d9e2e6;
+      --node: #e7f1f5;
+      --decision: #c9e0ea;
+      --warm: #f6a63d;
+      --alert: #d94b52;
+      --figure-bg: #f8fafb;
+      --shadow: 0 18px 48px rgba(40, 50, 56, .10);
+      color-scheme: light;
+    }
+
+    * { box-sizing: border-box; }
+
+    html {
+      scroll-behavior: smooth;
+      background: var(--canvas);
+    }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text",
+        "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      font-size: 17px;
+      line-height: 1.78;
+      text-rendering: optimizeLegibility;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .site-nav {
+      display: flex;
+      width: min(1160px, calc(100% - 32px));
+      margin: 24px auto -16px;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .08em;
+    }
+
+    .site-nav a {
+      color: var(--muted);
+      text-decoration: none;
+    }
+
+    .site-nav a:hover {
+      color: var(--accent);
+    }
+
+    .reader {
+      width: min(1160px, calc(100% - 32px));
+      margin: 40px auto 72px;
+      padding: 52px 360px 64px 64px;
+      background: var(--paper);
+      border: 1px solid rgba(57, 79, 90, .08);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+    }
+
+    .chapter-kicker {
+      display: inline-flex;
+      align-items: center;
+      min-height: 30px;
+      padding: 3px 14px;
+      border-radius: 999px;
+      color: var(--accent);
+      background: var(--accent-soft);
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: .04em;
+    }
+
+    h1 {
+      margin: 14px 0 4px;
+      font-size: clamp(34px, 6vw, 46px);
+      line-height: 1.18;
+      letter-spacing: -.035em;
+    }
+
+    .title-rule {
+      width: 52px;
+      height: 3px;
+      margin: 18px 0 28px;
+      border-radius: 99px;
+      background: var(--accent);
+    }
+
+    .lead {
+      margin: 0 0 16px;
+      font-size: 18px;
+      line-height: 1.72;
+      color: #35464e;
+    }
+
+    .chapter-nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 30px 0 38px;
+      padding: 0;
+      list-style: none;
+    }
+
+    .chapter-nav a {
+      display: block;
+      padding: 5px 11px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.4;
+      text-decoration: none;
+    }
+
+    .chapter-nav a:hover {
+      color: var(--accent);
+      border-color: #9fc1d0;
+      background: #f5fafc;
+    }
+
+    .annotation-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 7px;
+      margin: -12px 0 40px;
+      padding: 12px 14px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #f8fafb;
+    }
+
+    .annotation-toolbar strong {
+      margin-right: 4px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .annotation-toolbar button {
+      appearance: none;
+      padding: 5px 10px;
+      color: var(--muted);
+      border: 1px solid #ccd9df;
+      border-radius: 999px;
+      background: #fff;
+      font: inherit;
+      font-size: 12px;
+      line-height: 1.25;
+      cursor: pointer;
+    }
+
+    .annotation-toolbar button:hover,
+    .annotation-toolbar button[aria-pressed="true"] {
+      color: #fff;
+      border-color: var(--accent);
+      background: var(--accent);
+    }
+
+    .annotation-scope {
+      flex-basis: 100%;
+      margin-top: 3px;
+      color: #7a898f;
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+    .margin-note {
+      position: relative;
+      float: right;
+      clear: right;
+      width: 286px;
+      margin: .15em -330px 20px 32px;
+      padding: 14px 15px 15px;
+      border: 1px solid #d9e4e8;
+      border-radius: 13px;
+      background: #f8fbfc;
+      color: #52646c;
+      font-size: 14px;
+      line-height: 1.62;
+      text-align: left;
+      box-shadow: 0 7px 18px rgba(51, 71, 81, .06);
+      transition: opacity .18s ease, transform .18s ease;
+    }
+
+    .margin-note::before {
+      position: absolute;
+      top: 22px;
+      left: -25px;
+      width: 18px;
+      height: 1px;
+      background: #aac3ce;
+      content: "";
+    }
+
+    .margin-note[data-kind="project"] {
+      border-color: #c9dfd3;
+      background: #f6fbf8;
+    }
+
+    .margin-note[data-kind="project"]::before {
+      background: #8eb9a1;
+    }
+
+    .margin-note[data-kind="action"] {
+      border-color: #ead8b6;
+      background: #fffaf1;
+    }
+
+    .margin-note[data-kind="action"]::before {
+      background: #d5ac61;
+    }
+
+    .margin-note[hidden] { display: none; }
+
+    .margin-note .note-kind {
+      display: inline-flex;
+      margin-bottom: 7px;
+      padding: 2px 8px;
+      color: var(--accent);
+      border-radius: 999px;
+      background: #e6f1f5;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: .04em;
+    }
+
+    .margin-note[data-kind="project"] .note-kind {
+      color: #397158;
+      background: #e4f2ea;
+    }
+
+    .margin-note[data-kind="action"] .note-kind {
+      color: #936817;
+      background: #f8ebce;
+    }
+
+    .margin-note h4 {
+      margin: 0 0 6px;
+      color: var(--ink);
+      font-size: 16px;
+      line-height: 1.35;
+    }
+
+    .margin-note p {
+      margin: .4em 0 0;
+      text-align: left;
+    }
+
+    .margin-note ul {
+      margin: .5em 0 0;
+      padding-left: 1.2em;
+    }
+
+    .margin-note li {
+      margin: .28em 0;
+      padding-left: 0;
+    }
+
+    .term {
+      padding: 0 .12em;
+      color: #214f64;
+      background: linear-gradient(transparent 64%, #dcedf4 64%);
+      font-weight: 650;
+    }
+
+    h2 {
+      margin: 2.25em 0 .55em;
+      font-size: 27px;
+      line-height: 1.28;
+      letter-spacing: -.02em;
+    }
+
+    h3 {
+      margin: 1.7em 0 .4em;
+      font-size: 20px;
+      line-height: 1.35;
+    }
+
+    p {
+      margin: .72em 0;
+      text-align: justify;
+      text-justify: inter-ideograph;
+    }
+
+    blockquote {
+      margin: 1.25em 0;
+      padding: 2px 0 2px 20px;
+      color: #53646d;
+      border-left: 3px solid #9bc2d2;
+      font-size: 18px;
+    }
+
+    ul, ol {
+      margin: .75em 0;
+      padding-left: 1.45em;
+    }
+
+    li {
+      margin: .38em 0;
+      padding-left: .18em;
+    }
+
+    li::marker { color: var(--accent); }
+
+    sup a {
+      color: var(--accent);
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+    .note {
+      margin: 1em 0;
+      padding: 12px 15px;
+      border-radius: 10px;
+      background: #f4f7f8;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.62;
+    }
+
+    .note strong { color: var(--ink); }
+
+    figure {
+      margin: 1.35em 0 1.7em;
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+
+    .figure-frame {
+      padding: 18px 18px 14px;
+      overflow-x: auto;
+      border: 1px solid #e1e8eb;
+      border-radius: 14px;
+      background: var(--figure-bg);
+    }
+
+    figure svg {
+      display: block;
+      width: 100%;
+      min-width: 580px;
+      height: auto;
+      overflow: visible;
+    }
+
+    figcaption {
+      margin-top: 9px;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .figure-number {
+      margin-right: .55em;
+      color: var(--accent);
+      font-weight: 800;
+    }
+
+    svg text {
+      fill: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text",
+        "PingFang SC", "Hiragino Sans GB", sans-serif;
+    }
+
+    svg .node {
+      fill: var(--node);
+      stroke: var(--ink);
+      stroke-width: 1.4;
+    }
+
+    svg .decision {
+      fill: var(--decision);
+      stroke: var(--ink);
+      stroke-width: 1.4;
+    }
+
+    svg .edge {
+      fill: none;
+      stroke: var(--ink);
+      stroke-width: 1.35;
+    }
+
+    svg .group {
+      fill: none;
+      stroke: #e4b868;
+      stroke-width: 1.4;
+      stroke-dasharray: 6 5;
+    }
+
+    svg .label {
+      font-size: 15px;
+      font-weight: 650;
+      text-anchor: middle;
+      dominant-baseline: middle;
+    }
+
+    svg .small {
+      fill: var(--muted);
+      font-size: 13px;
+      text-anchor: middle;
+    }
+
+    .exercise-list {
+      padding-left: 1.55em;
+    }
+
+    .closing-note {
+      margin-top: 2.2em;
+      padding-top: 1.2em;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    @media (max-width: 1040px) {
+      .reader {
+        width: min(820px, calc(100% - 32px));
+        padding: 52px 64px 64px;
+      }
+
+      .margin-note {
+        float: none;
+        width: auto;
+        margin: 1em 0 1.25em;
+      }
+
+      .margin-note::before { display: none; }
+    }
+
+    @media (max-width: 680px) {
+      body { font-size: 16px; }
+
+      .reader {
+        width: 100%;
+        margin: 0;
+        padding: 32px 22px 48px;
+        border: 0;
+        border-radius: 0;
+        box-shadow: none;
+      }
+
+      .figure-frame {
+        margin-left: -6px;
+        margin-right: -6px;
+        padding: 12px 10px;
+      }
+
+      .annotation-toolbar {
+        position: sticky;
+        top: 8px;
+        z-index: 5;
+        margin-bottom: 30px;
+        background: rgba(248, 250, 251, .96);
+        backdrop-filter: blur(12px);
+      }
+
+      .annotation-scope { display: none; }
+    }
+
+    @page {
+      size: 177.8mm 233.3mm;
+      margin: 13mm 15mm 14mm;
+    }
+
+    @media print {
+      html, body { background: #fff; }
+
+      body {
+        font-size: 10.6pt;
+        line-height: 1.62;
+      }
+
+      .reader {
+        width: auto;
+        margin: 0;
+        padding: 0;
+        border: 0;
+        border-radius: 0;
+        box-shadow: none;
+      }
+
+      .site-nav { display: none; }
+      .chapter-nav { display: none; }
+      .annotation-toolbar { display: none; }
+      h1 { font-size: 28pt; }
+      h2 { font-size: 18pt; }
+      h3 { font-size: 13.5pt; }
+      h2, h3 { break-after: avoid; page-break-after: avoid; }
+
+      .figure-frame {
+        padding: 8px 10px 6px;
+        overflow: visible;
+        background: #fbfcfc;
+      }
+
+      figure svg { min-width: 0; }
+      a { color: inherit; }
+      .closing-note { display: none; }
+
+      .margin-note {
+        float: none;
+        width: auto;
+        margin: 8pt 0 10pt;
+        padding: 8pt 10pt;
+        break-inside: avoid;
+        page-break-inside: avoid;
+        box-shadow: none;
+      }
+
+      .margin-note::before { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <nav class="site-nav" aria-label="站点导航">
+    <a href="../../../software-engineering/learning-domain-driven-design-chapter-10/">← 返回学习记录</a>
+    <a href="../../../">RIN III</a>
+  </nav>
+  <main class="reader">
+    <header>
+      <span class="chapter-kicker">第 10 章</span>
+      <h1>设计启发式</h1>
+      <div class="title-rule"></div>
+      <p class="lead">“视情况而定”几乎是软件工程中任何问题的正确答案，但它并不真正实用。本章将探讨，这个“情况”究竟取决于什么。</p>
+      <p>本书第一部分介绍了用于分析业务领域并做出战略设计决策的领域驱动设计工具。第二部分讨论了战术设计模式：实现业务逻辑的不同方式、组织系统架构的方法，以及在系统组件之间建立通信的方式。本章把第一部分与第二部分连接起来。你将学习如何运用分析工具，通过启发式方法推动各种软件设计决策，也就是实现由（业务）领域驱动的（软件）设计。</p>
+      <p>不过，既然本章讨论的是设计启发式，我们先从“启发式”这个术语的定义开始。</p>
+      <nav aria-label="本章导航">
+        <ul class="chapter-nav">
+          <li><a href="#heuristics">启发式</a></li>
+          <li><a href="#bounded-context">限界上下文</a></li>
+          <li><a href="#business-logic">业务逻辑</a></li>
+          <li><a href="#architecture">架构模式</a></li>
+          <li><a href="#testing">测试策略</a></li>
+          <li><a href="#decision-tree">决策树</a></li>
+          <li><a href="#exercises">练习</a></li>
+        </ul>
+      </nav>
+      <div class="annotation-toolbar" role="group" aria-label="批注筛选">
+        <strong>侧栏讲解</strong>
+        <button type="button" data-note-filter="all" aria-pressed="true">全部</button>
+        <button type="button" data-note-filter="plain" aria-pressed="false">白话解释</button>
+        <button type="button" data-note-filter="project" aria-pressed="false">你的项目</button>
+        <button type="button" data-note-filter="action" aria-pressed="false">可优化点</button>
+        <button type="button" data-note-filter="none" aria-pressed="false">隐藏批注</button>
+        <span class="annotation-scope">项目批注基于你此前的 native-text Common KMP / Android / 鸿蒙迁移经历，用来帮助理解概念，不代表对当前分支做过实时代码审查。</span>
+      </div>
+    </header>
+
+    <section id="heuristics">
+      <h2>启发式</h2>
+      <aside class="margin-note" data-kind="project" aria-label="你的项目批注">
+        <span class="note-kind">你的项目</span>
+        <h4>你其实已经在使用启发式</h4>
+        <p>你习惯把“静态分析、编译成功、设备可见效果”分开报告，这就是很好的启发式：它不保证功能正确，但能避免把较弱证据误当成较强证据。</p>
+      </aside>
+      <p>启发式并不是一种能保证在 100% 的情况下都正确、并且经过数学证明的硬性规则。它更像是一条经验法则：不保证完美，但足以达成眼前目标。换句话说，使用启发式是一种有效的问题求解方式：忽略众多线索中固有的噪声，把注意力集中在最重要线索所反映的那些“压倒性因素”上。<sup><a href="#note-1">1</a></sup></p>
+      <p>本章给出的启发式，关注的是不同业务领域的本质属性，以及各种设计决策所要解决的问题本质。</p>
+      <aside class="note" id="note-1"><strong>1</strong>　Gigerenzer, G., Todd, P. M., 与 ABC Research Group，<em>Simple Heuristics That Make Us Smart</em>，纽约：牛津大学出版社，1999 年。</aside>
+    </section>
+
+    <section id="bounded-context">
+      <h2>限界上下文</h2>
+      <aside class="margin-note" data-kind="plain" aria-label="白话解释批注">
+        <span class="note-kind">白话解释</span>
+        <h4>先别把它理解成目录或服务</h4>
+        <p><span class="term">限界上下文</span>是一块“词义和规则保持一致”的范围。同一个词出了这块范围，可以有不同含义，但必须经过明确翻译。</p>
+        <p>所以它首先是语义边界，之后才可能落成模块、仓库、进程或微服务。</p>
+      </aside>
+      <p>回顾第 3 章，无论边界较宽还是较窄，只要其中包含一致的通用语言，都可能符合有效<span class="term">限界上下文</span>的定义。可是，限界上下文的最佳规模究竟是多少？考虑到人们经常把限界上下文与微服务直接等同起来，这个问题尤其重要。<sup><a href="#note-2">2</a></sup></p>
+      <aside class="margin-note" data-kind="project" aria-label="你的项目批注">
+        <span class="note-kind">你的项目</span>
+        <h4>用“选中”这个词感受边界</h4>
+        <p>在 Common 模板选择会话里，<code>selectedIndex</code> 表示用户当前想选的目标，<code>committedIndex</code> 才是最后成功应用的位置。</p>
+        <p>到了平台编辑器里，Pack 上的模板才是最终写回的业务事实。两边都在说“选中”，含义却不同，中间需要 snapshot / port 做翻译。</p>
+        <p>这不等于 Common 与平台天然就是两个限界上下文，但它是一个很强的边界线索。</p>
+      </aside>
+      <p>我们是否应当始终追求尽可能小的限界上下文？我的朋友 Nick Tune 曾说：</p>
+      <blockquote>定义服务边界有许多有用而且富有启发性的经验法则。规模，是其中最没有用的一项。</blockquote>
+      <p>与其让模型服从预先期望的规模，也就是为了“小”而优化限界上下文，更有效的做法恰好相反：让限界上下文的规模取决于它所包含的模型。</p>
+      <p>一项软件变更如果影响多个限界上下文，成本会很高，也需要大量协调；当受影响的上下文由不同团队实现时更是如此。如果某类变更无法被封装在单个限界上下文中，往往说明这些上下文的边界设计无效。遗憾的是，重构限界上下文边界代价很大，因此无效边界常常得不到处理，最终不断累积技术债务（见图 10-1）。</p>
+
+      <figure>
+        <div class="figure-frame">
+          <svg viewBox="0 0 760 240" role="img" aria-labelledby="fig-10-1-title">
+            <title id="fig-10-1-title">一项新需求同时影响两个限界上下文</title>
+            <defs>
+              <marker id="arrow-101" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#26343b"/>
+              </marker>
+            </defs>
+            <path d="M78 70 C88 18 257 15 311 52 C344 76 324 139 264 153 C176 174 60 140 78 70Z" fill="#f6a63d" stroke="#26343b" stroke-width="2"/>
+            <path d="M258 153 C266 96 290 58 332 50 C338 99 321 137 258 153Z" fill="#d94b52" stroke="#26343b" stroke-width="2"/>
+            <path d="M443 54 C482 8 651 24 680 74 C716 136 638 171 516 149 C444 136 417 91 443 54Z" fill="#c9e0ea" stroke="#26343b" stroke-width="2"/>
+            <path d="M443 76 C479 88 500 115 505 147 C473 140 453 124 438 108Z" fill="#d94b52" stroke="#26343b" stroke-width="2"/>
+            <text class="label" x="185" y="98">限界上下文 1</text>
+            <text class="label" x="571" y="98">限界上下文 2</text>
+            <text class="small" x="380" y="216">一项新需求</text>
+            <path class="edge" d="M355 202 L287 154" stroke-dasharray="6 5" marker-end="url(#arrow-101)"/>
+            <path class="edge" d="M405 202 L469 147" stroke-dasharray="6 5" marker-end="url(#arrow-101)"/>
+          </svg>
+        </div>
+        <figcaption><span class="figure-number">图 10-1</span>一项变更同时影响多个限界上下文</figcaption>
+      </figure>
+
+      <p>使限界上下文边界失效的变更，通常发生在业务领域尚未被充分理解，或者业务需求频繁变化的情况下。正如第 1 章所述，易变性与不确定性都属于核心子域的特征，在实现早期尤其明显。我们可以把它们用作设计限界上下文边界的启发式依据。</p>
+      <p>较宽的限界上下文边界，或者包含多个子域的边界，能让我们更安全地承受对子域边界或模型判断错误的后果。重构逻辑边界的成本远低于重构物理边界。因此，在设计限界上下文时，应从较宽的边界开始；随着领域知识增加，如果确有需要，再把宽边界拆分成更小的边界。</p>
+      <aside class="margin-note" data-kind="action" aria-label="可优化点批注">
+        <span class="note-kind">可优化点</span>
+        <h4>先问“什么变化总要一起改”</h4>
+        <p>回看 native-text 最近的需求：</p>
+        <ul>
+          <li>模板请求、缓存键、失效请求过滤和失败回滚，是否经常一起变化？</li>
+          <li>多页模板是否总要同时修改 Common 模型与平台 Pack 写回？</li>
+          <li>某个全局开关是否会越过新旧链路边界？</li>
+        </ul>
+        <p>如果答案经常是“会”，优先补齐一个较宽事务的模型和契约，不要急着拆出更多物理模块。</p>
+      </aside>
+      <p>这一启发式主要适用于包含核心子域的限界上下文，因为通用子域与支撑子域通常更加规范化，易变性也低得多。创建包含核心子域的限界上下文时，可以把与该核心子域交互最频繁的其他子域也纳入其中，以抵御无法预见的变化。这些子域既可以是其他核心子域，也可以是支撑子域或通用子域，如图 10-2 所示。</p>
+
+      <figure>
+        <div class="figure-frame">
+          <svg viewBox="0 0 760 390" role="img" aria-labelledby="fig-10-2-title">
+            <title id="fig-10-2-title">一个较宽的限界上下文包含多个互相关联的子域</title>
+            <rect x="36" y="24" width="688" height="330" rx="20" fill="#fff" stroke="#26343b" stroke-width="1.8"/>
+            <text class="label" x="380" y="52">限界上下文</text>
+            <g class="edge">
+              <path d="M170 122 L350 175"/>
+              <path d="M314 95 L578 116"/>
+              <path d="M380 178 L578 116"/>
+              <path d="M170 122 L380 265"/>
+              <path d="M172 281 L380 265"/>
+              <path d="M380 265 L578 116"/>
+              <path d="M380 265 L482 322"/>
+            </g>
+            <g>
+              <rect class="node" x="118" y="96" width="104" height="52" rx="10"/><text class="label" x="170" y="122">通用</text>
+              <rect class="node" x="262" y="68" width="104" height="52" rx="10"/><text class="label" x="314" y="94">通用</text>
+              <rect class="node" x="328" y="150" width="104" height="52" rx="10"/><text class="label" x="380" y="176">通用</text>
+              <rect class="node" x="526" y="90" width="104" height="52" rx="10"/><text class="label" x="578" y="116">核心</text>
+              <rect class="node" x="120" y="255" width="104" height="52" rx="10"/><text class="label" x="172" y="281">支撑</text>
+              <rect class="node" x="328" y="239" width="104" height="52" rx="10"/><text class="label" x="380" y="265">核心</text>
+              <rect class="node" x="430" y="296" width="104" height="52" rx="10"/><text class="label" x="482" y="322">通用</text>
+            </g>
+          </svg>
+        </div>
+        <figcaption><span class="figure-number">图 10-2</span>较宽的限界上下文边界</figcaption>
+      </figure>
+
+      <aside class="note" id="note-2"><strong>2</strong>　第 11 章将专门讨论限界上下文与微服务之间的相互关系。</aside>
+    </section>
+
+    <section id="business-logic">
+      <h2>业务逻辑实现模式</h2>
+      <aside class="margin-note" data-kind="plain" aria-label="白话解释批注">
+        <span class="note-kind">白话解释</span>
+        <h4>模式是在匹配“规则重量”</h4>
+        <p>别先看类有多少，而要看业务规则有多重：</p>
+        <ul>
+          <li>主要是按步骤搬运和校验数据：事务脚本。</li>
+          <li>数据结构映射很麻烦：活动记录。</li>
+          <li>状态之间有必须始终成立的规则：领域模型。</li>
+          <li>历史本身就是业务事实：事件溯源。</li>
+        </ul>
+      </aside>
+      <p>第 5～7 章详细讨论了业务逻辑，并介绍了四种业务逻辑建模方式：事务脚本、活动记录、领域模型，以及事件溯源领域模型。</p>
+      <p>事务脚本和活动记录都更适合业务逻辑简单的子域，例如支撑子域，或者为通用子域集成第三方解决方案。两者的差别在于数据结构的复杂度。事务脚本模式适合简单的数据结构；活动记录模式则有助于封装复杂数据结构与底层数据库之间的映射。</p>
+      <p>领域模型及其变体——事件溯源领域模型——适用于业务逻辑复杂的子域，也就是核心子域。如果核心子域涉及资金交易、依法必须提供审计日志，或者业务需要对系统行为进行深度分析，那么事件溯源领域模型更合适。</p>
+      <aside class="margin-note" data-kind="project" aria-label="你的项目批注">
+        <span class="note-kind">你的项目</span>
+        <h4>模板列表和模板事务不是一回事</h4>
+        <p>如果“模板列表”只负责获取、缓存、展示和参数校验，它更接近事务脚本，没必要为了 DDD 而造复杂领域对象。</p>
+        <p>但“切换模板”要维护目标选择、最后成功状态、过期回调拒绝、失败回滚、多页原子写回，这已经出现稳定不变量，更值得用领域模型表达。</p>
+      </aside>
+      <p>综合以上因素，可以依次提出下列问题，作为选择业务逻辑实现模式的有效启发式：</p>
+      <ul>
+        <li>该子域是否跟踪资金或其他货币交易？是否必须提供一致的审计日志？业务是否要求深入分析其行为？如果是，采用事件溯源领域模型；否则继续。</li>
+        <li>该子域的业务逻辑是否复杂？如果是，实现领域模型；否则继续。</li>
+        <li>该子域是否包含复杂的数据结构？如果是，采用活动记录模式；否则继续。</li>
+        <li>采用事务脚本。</li>
+      </ul>
+      <p>子域复杂度与子域类型之间存在很强的关系，因此可以把这些启发式表示为一个领域驱动的决策树，如图 10-3 所示。</p>
+
+      <figure>
+        <div class="figure-frame">
+          <svg viewBox="0 0 920 430" role="img" aria-labelledby="fig-10-3-title">
+            <title id="fig-10-3-title">根据子域类型、数据结构和审计需求选择业务逻辑实现模式</title>
+            <defs>
+              <marker id="arrow-103" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#26343b"/>
+              </marker>
+            </defs>
+            <text class="small" x="175" y="34">支撑子域 / 集成通用子域</text>
+            <text class="small" x="748" y="34">核心子域</text>
+            <path class="decision" d="M460 26 L530 72 L460 118 L390 72Z"/>
+            <text class="label" x="460" y="62">子域</text><text class="label" x="460" y="83">类型</text>
+            <path class="decision" d="M225 150 L315 205 L225 260 L135 205Z"/>
+            <text class="label" x="225" y="194">数据结构</text><text class="label" x="225" y="215">复杂吗？</text>
+            <path class="decision" d="M695 140 L815 205 L695 270 L575 205Z"/>
+            <text class="label" x="695" y="185">资金交易 / 深度分析 /</text><text class="label" x="695" y="207">审计日志？</text>
+            <rect class="node" x="80" y="330" width="170" height="58" rx="10"/><text class="label" x="165" y="359">事务脚本</text>
+            <rect class="node" x="290" y="330" width="170" height="58" rx="10"/><text class="label" x="375" y="359">活动记录</text>
+            <rect class="node" x="505" y="330" width="170" height="58" rx="10"/><text class="label" x="590" y="359">领域模型</text>
+            <rect class="node" x="715" y="320" width="170" height="78" rx="10"/><text class="label" x="800" y="349">事件溯源</text><text class="label" x="800" y="373">领域模型</text>
+            <g class="edge" marker-end="url(#arrow-103)">
+              <path d="M415 95 H225 V149"/>
+              <path d="M505 95 H695 V139"/>
+              <path d="M190 238 V300 H165 V329"/>
+              <path d="M260 238 V300 H375 V329"/>
+              <path d="M640 238 V300 H590 V329"/>
+              <path d="M750 238 V290 H800 V319"/>
+            </g>
+            <text class="small" x="145" y="294">否</text><text class="small" x="345" y="294">是</text>
+            <text class="small" x="570" y="294">否</text><text class="small" x="820" y="285">是</text>
+          </svg>
+        </div>
+        <figcaption><span class="figure-number">图 10-3</span>业务逻辑实现模式决策树</figcaption>
+      </figure>
+
+      <p>还可以用另一条启发式来区分复杂业务逻辑与简单业务逻辑。两者之间没有十分清晰的分界线，但这种区分仍然有用。一般而言，复杂业务逻辑包含复杂的业务规则、不变量和算法；简单方式则主要围绕输入校验展开。</p>
+      <p>评估复杂度的另一条启发式，是观察通用语言本身有多复杂：它主要是在描述 CRUD 操作，还是在描述更复杂的业务流程和规则？</p>
+      <p>根据业务逻辑与数据结构的复杂度选择业务逻辑实现模式，也可以用来验证你对子域类型的判断。假设你认为某个子域是核心子域，但最适合它的模式却是活动记录或事务脚本；或者，你认为某个子域只是支撑子域，它却需要领域模型或事件溯源领域模型。此时正适合重新审视你对子域乃至整个业务领域的判断。请记住，核心子域带来的竞争优势不一定是技术性的。</p>
+      <aside class="margin-note" data-kind="action" aria-label="可优化点批注">
+        <span class="note-kind">可优化点</span>
+        <h4>把不变量写成一句业务话</h4>
+        <p>例如：<strong>只有平台写回成功，Common 才能推进 committedIndex；失败时必须恢复选中位置并解除交互锁。</strong></p>
+        <p>如果一条规则能这样说清楚，就值得集中在一个可测试对象里，而不是散落在 UI、回调和平台适配代码中。</p>
+      </aside>
+    </section>
+
+    <section id="architecture">
+      <h2>架构模式</h2>
+      <aside class="margin-note" data-kind="project" aria-label="你的项目批注">
+        <span class="note-kind">你的项目</span>
+        <h4>Ports &amp; Adapters 正好解释 Common / 平台分工</h4>
+        <p>Common 可以拥有模板事务和状态机，但不应直接认识 Pack、NLE、Preview 或草稿工程对象。</p>
+        <p>Android / 鸿蒙通过端口接收“应用模板”的意图，完成平台写回后，再把成功或失败结果交还 Common。这让业务规则可共用，平台副作用仍留在宿主。</p>
+      </aside>
+      <p>第 8 章介绍了三种架构模式：分层架构、端口与适配器，以及 CQRS。</p>
+      <p>一旦知道准备采用哪种业务逻辑实现模式，选择架构模式就会相当直接：</p>
+      <ul>
+        <li>事件溯源领域模型需要 CQRS。否则，系统的数据查询能力会受到极大限制，只能按 ID 读取单个实例。</li>
+        <li>领域模型需要端口与适配器架构。否则，分层架构会使聚合和值对象难以摆脱对持久化的感知。</li>
+        <li>活动记录模式最好搭配包含额外应用（服务）层的分层架构；这一层负责控制活动记录的相关逻辑。</li>
+        <li>事务脚本模式可以使用最小化的分层架构实现，只需要三层。</li>
+      </ul>
+      <p>上述启发式唯一的例外是 CQRS。CQRS 不仅适用于事件溯源领域模型；如果某个子域需要把数据表示为多个持久化模型，它也可能为其他任何模式带来好处。</p>
+      <aside class="margin-note" data-kind="plain" aria-label="白话解释批注">
+        <span class="note-kind">白话解释</span>
+        <h4>读写分开，不等于一定要上 CQRS</h4>
+        <p>模板列表、预取缓存是偏“读”的模型；Pack / NLE 写回是偏“写”的模型。它们不同很正常。</p>
+        <p>只有当这种差异需要独立演进、独立持久化或独立扩展时，才值得引入完整 CQRS。否则清晰的读模型、写端口和结果契约已经足够。</p>
+      </aside>
+
+      <figure>
+        <div class="figure-frame">
+          <svg viewBox="0 0 920 500" role="img" aria-labelledby="fig-10-4-title">
+            <title id="fig-10-4-title">根据持久化模型数量和业务逻辑模式选择架构</title>
+            <defs>
+              <marker id="arrow-104" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#26343b"/>
+              </marker>
+            </defs>
+            <path class="decision" d="M460 20 L555 78 L460 136 L365 78Z"/>
+            <text class="label" x="460" y="67">需要多个</text><text class="label" x="460" y="90">持久化模型？</text>
+            <path class="decision" d="M245 155 L335 210 L245 265 L155 210Z"/>
+            <text class="label" x="245" y="198">业务逻辑</text><text class="label" x="245" y="220">实现模式</text>
+            <g class="edge" marker-end="url(#arrow-104)">
+              <path d="M398 111 H245 V154"/>
+              <path d="M522 111 H805 V406"/>
+              <path d="M245 264 V292 H105 V319"/>
+              <path d="M245 264 V292 H300 V319"/>
+              <path d="M245 264 V292 H495 V319"/>
+              <path d="M245 264 V292 H690 V319"/>
+              <path d="M105 371 V415"/>
+              <path d="M300 371 V415"/>
+              <path d="M495 371 V415"/>
+              <path d="M690 371 H805 V406"/>
+            </g>
+            <text class="small" x="330" y="105">否</text><text class="small" x="630" y="105">是</text>
+            <rect class="node" x="35" y="320" width="140" height="52" rx="10"/><text class="label" x="105" y="346">事务脚本</text>
+            <rect class="node" x="230" y="320" width="140" height="52" rx="10"/><text class="label" x="300" y="346">活动记录</text>
+            <rect class="node" x="425" y="320" width="140" height="52" rx="10"/><text class="label" x="495" y="346">领域模型</text>
+            <rect class="node" x="620" y="310" width="140" height="72" rx="10"/><text class="label" x="690" y="337">事件溯源</text><text class="label" x="690" y="359">领域模型</text>
+            <rect class="node" x="35" y="416" width="140" height="62" rx="10"/><text class="label" x="105" y="437">三层</text><text class="label" x="105" y="459">分层架构</text>
+            <rect class="node" x="230" y="416" width="140" height="62" rx="10"/><text class="label" x="300" y="437">四层</text><text class="label" x="300" y="459">分层架构</text>
+            <rect class="node" x="425" y="416" width="140" height="62" rx="10"/><text class="label" x="495" y="437">端口与</text><text class="label" x="495" y="459">适配器</text>
+            <rect class="node" x="770" y="407" width="100" height="62" rx="10"/><text class="label" x="820" y="438">CQRS</text>
+          </svg>
+        </div>
+        <figcaption><span class="figure-number">图 10-4</span>架构模式决策树</figcaption>
+      </figure>
+    </section>
+
+    <section id="testing">
+      <h2>测试策略</h2>
+      <aside class="margin-note" data-kind="project" aria-label="你的项目批注">
+        <span class="note-kind">你的项目</span>
+        <h4>把测试层次映射到你的证据分层</h4>
+        <ul>
+          <li><strong>单元：</strong>selected / committed、超时、旧回调、失败回滚。</li>
+          <li><strong>集成：</strong>Common session → Android / 鸿蒙 adapter → 平台结果回传。</li>
+          <li><strong>端到端：</strong>真实页面选择模板，Pack / 预览 / 草稿与屏幕效果一致。</li>
+        </ul>
+        <p>编译成功只能证明连接成立，不能替代后二者。</p>
+      </aside>
+      <p>掌握业务逻辑实现模式和架构模式之后，还可以把这些知识用作选择代码库测试策略的启发式。请看图 10-5 中的三种测试策略。</p>
+
+      <figure>
+        <div class="figure-frame">
+          <svg viewBox="0 0 920 350" role="img" aria-labelledby="fig-10-5-title">
+            <title id="fig-10-5-title">测试金字塔、测试菱形和倒置测试金字塔</title>
+            <g transform="translate(40 28)">
+              <path d="M130 0 L255 255 H5Z" fill="#e7f1f5" stroke="#26343b" stroke-width="1.5"/>
+              <path class="edge" d="M42 180 H218"/><path class="edge" d="M76 105 H184"/>
+              <text class="label" x="130" y="218">单元</text><text class="label" x="130" y="144">集成</text><text class="label" x="130" y="65">端到端</text>
+              <text class="small" x="130" y="302">测试金字塔</text>
+            </g>
+            <g transform="translate(335 28)">
+              <path d="M130 0 L255 127 L130 255 L5 127Z" fill="#e7f1f5" stroke="#26343b" stroke-width="1.5"/>
+              <path class="edge" d="M47 83 H213"/><path class="edge" d="M47 171 H213"/>
+              <text class="label" x="130" y="42">端到端</text><text class="label" x="130" y="127">集成</text><text class="label" x="130" y="212">单元</text>
+              <text class="small" x="130" y="302">测试菱形</text>
+            </g>
+            <g transform="translate(630 28)">
+              <path d="M5 0 H255 L130 255Z" fill="#e7f1f5" stroke="#26343b" stroke-width="1.5"/>
+              <path class="edge" d="M42 75 H218"/><path class="edge" d="M76 150 H184"/>
+              <text class="label" x="130" y="38">端到端</text><text class="label" x="130" y="112">集成</text><text class="label" x="130" y="190">单元</text>
+              <text class="small" x="130" y="302">倒置测试金字塔</text>
+            </g>
+          </svg>
+        </div>
+        <figcaption><span class="figure-number">图 10-5</span>三种测试策略</figcaption>
+      </figure>
+
+      <p>图中三种策略的区别，在于它们对不同测试类型——单元测试、集成测试和端到端测试——投入的侧重点不同。下面逐一分析每种策略及其适用场景。</p>
+
+      <h3>测试金字塔</h3>
+      <p>经典测试金字塔强调大量单元测试、较少集成测试，以及更少的端到端测试。领域模型的两个变体都最适合使用测试金字塔。聚合和值对象是非常理想的测试单元，能够高效验证业务逻辑。</p>
+
+      <h3>测试菱形</h3>
+      <p>测试菱形最侧重集成测试。使用活动记录模式时，按照定义，系统的业务逻辑会分散在服务层和业务逻辑层中。因此，为了重点验证这两层的集成，测试菱形是更有效的选择。</p>
+      <aside class="note"><strong>译注：</strong>英文原文最后一句写作 testing pyramid（测试金字塔），但本节标题、上下文以及图 10-6 都指向 testing diamond（测试菱形），这里按其显然意图译为“测试菱形”。</aside>
+
+      <h3>倒置测试金字塔</h3>
+      <p>倒置测试金字塔把最多注意力放在端到端测试上：从头到尾验证应用程序的完整工作流。这种方式最适合采用事务脚本模式的代码库：业务逻辑简单，层数也最少，因此验证系统的端到端流程更有效。</p>
+      <aside class="margin-note" data-kind="action" aria-label="可优化点批注">
+        <span class="note-kind">可优化点</span>
+        <h4>你的高价值测试不是“页面能打开”</h4>
+        <p>更值得优先固化的回归行为是：</p>
+        <ul>
+          <li>快速连续点两个模板，只允许最后一个结果提交。</li>
+          <li>平台应用失败，UI 回到最后成功模板。</li>
+          <li>多页资源缺一页时，不允许压缩索引后错写其他页。</li>
+          <li>关闭新链路开关时，旧链路不受共享全局能力影响。</li>
+        </ul>
+      </aside>
+
+      <figure>
+        <div class="figure-frame">
+          <svg viewBox="0 0 920 355" role="img" aria-labelledby="fig-10-6-title">
+            <title id="fig-10-6-title">根据业务逻辑实现模式选择测试策略</title>
+            <defs>
+              <marker id="arrow-106" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#26343b"/>
+              </marker>
+            </defs>
+            <path class="decision" d="M460 18 L545 68 L460 118 L375 68Z"/>
+            <text class="label" x="460" y="57">业务逻辑</text><text class="label" x="460" y="79">实现模式</text>
+            <g class="edge" marker-end="url(#arrow-106)">
+              <path d="M410 98 H115 V164"/><path d="M440 112 H340 V164"/>
+              <path d="M480 112 H575 V164"/><path d="M510 98 H805 V164"/>
+              <path d="M115 216 V267"/><path d="M340 216 V267"/>
+              <path d="M575 216 V267"/><path d="M805 216 V267"/>
+            </g>
+            <rect class="node" x="45" y="165" width="140" height="52" rx="10"/><text class="label" x="115" y="191">事务脚本</text>
+            <rect class="node" x="270" y="165" width="140" height="52" rx="10"/><text class="label" x="340" y="191">活动记录</text>
+            <rect class="node" x="505" y="165" width="140" height="52" rx="10"/><text class="label" x="575" y="191">领域模型</text>
+            <rect class="node" x="735" y="155" width="140" height="72" rx="10"/><text class="label" x="805" y="182">事件溯源</text><text class="label" x="805" y="204">领域模型</text>
+            <rect class="node" x="45" y="268" width="140" height="62" rx="10"/><text class="label" x="115" y="289">倒置测试</text><text class="label" x="115" y="311">金字塔</text>
+            <rect class="node" x="270" y="268" width="140" height="62" rx="10"/><text class="label" x="340" y="299">测试菱形</text>
+            <rect class="node" x="505" y="268" width="140" height="62" rx="10"/><text class="label" x="575" y="299">测试金字塔</text>
+            <rect class="node" x="735" y="268" width="140" height="62" rx="10"/><text class="label" x="805" y="299">测试金字塔</text>
+          </svg>
+        </div>
+        <figcaption><span class="figure-number">图 10-6</span>测试策略决策树</figcaption>
+      </figure>
+    </section>
+
+    <section id="decision-tree">
+      <h2>战术设计决策树</h2>
+      <aside class="margin-note" data-kind="plain" aria-label="白话解释批注">
+        <span class="note-kind">白话解释</span>
+        <h4>这张图是提问顺序，不是标准答案</h4>
+        <p>它真正有用的地方，是强迫我们先回答“业务复杂在哪里”，再选择模式；而不是从“团队想用 CQRS”倒推需求。</p>
+      </aside>
+      <p>业务逻辑模式、架构模式和测试策略的启发式可以合并起来，用一棵战术设计决策树进行总结，如图 10-7 所示。</p>
+
+      <figure>
+        <div class="figure-frame">
+          <svg viewBox="0 0 980 700" role="img" aria-labelledby="fig-10-7-title">
+            <title id="fig-10-7-title">完整的战术设计决策树</title>
+            <defs>
+              <marker id="arrow-107" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#26343b"/>
+              </marker>
+            </defs>
+            <text class="small" x="215" y="24">支撑子域 / 集成通用子域</text>
+            <text class="small" x="773" y="24">核心子域</text>
+            <path class="decision" d="M490 12 L555 52 L490 92 L425 52Z"/>
+            <text class="label" x="490" y="43">子域</text><text class="label" x="490" y="63">类型</text>
+            <path class="decision" d="M260 108 L350 158 L260 208 L170 158Z"/>
+            <text class="label" x="260" y="148">数据结构</text><text class="label" x="260" y="168">复杂吗？</text>
+            <path class="decision" d="M720 98 L840 158 L720 218 L600 158Z"/>
+            <text class="label" x="720" y="139">资金交易 / 分析 /</text><text class="label" x="720" y="162">审计日志？</text>
+            <g class="edge" marker-end="url(#arrow-107)">
+              <path d="M445 74 H260 V107"/><path d="M535 74 H720 V97"/>
+            </g>
+
+            <rect class="group" x="42" y="236" width="896" height="104" rx="15"/>
+            <rect class="node" x="75" y="256" width="150" height="56" rx="10"/><text class="label" x="150" y="284">事务脚本</text>
+            <rect class="node" x="285" y="256" width="150" height="56" rx="10"/><text class="label" x="360" y="284">活动记录</text>
+            <rect class="node" x="545" y="256" width="150" height="56" rx="10"/><text class="label" x="620" y="284">领域模型</text>
+            <rect class="node" x="755" y="246" width="150" height="76" rx="10"/><text class="label" x="830" y="274">事件溯源</text><text class="label" x="830" y="298">领域模型</text>
+            <g class="edge" marker-end="url(#arrow-107)">
+              <path d="M220 190 V226 H150 V255"/><path d="M300 190 V226 H360 V255"/>
+              <path d="M670 194 V226 H620 V255"/><path d="M775 194 V226 H830 V245"/>
+            </g>
+
+            <rect class="group" x="42" y="358" width="896" height="214" rx="15"/>
+            <path class="decision" d="M150 370 L225 414 L150 458 L75 414Z"/>
+            <path class="decision" d="M360 370 L435 414 L360 458 L285 414Z"/>
+            <path class="decision" d="M620 370 L695 414 L620 458 L545 414Z"/>
+            <text class="label" x="150" y="404">多个</text><text class="label" x="150" y="424">持久化模型？</text>
+            <text class="label" x="360" y="404">多个</text><text class="label" x="360" y="424">持久化模型？</text>
+            <text class="label" x="620" y="404">多个</text><text class="label" x="620" y="424">持久化模型？</text>
+            <rect class="node" x="75" y="492" width="150" height="64" rx="10"/><text class="label" x="150" y="514">三层</text><text class="label" x="150" y="537">分层架构</text>
+            <rect class="node" x="285" y="492" width="150" height="64" rx="10"/><text class="label" x="360" y="514">四层</text><text class="label" x="360" y="537">分层架构</text>
+            <rect class="node" x="545" y="492" width="150" height="64" rx="10"/><text class="label" x="620" y="514">端口与</text><text class="label" x="620" y="537">适配器</text>
+            <rect class="node" x="785" y="389" width="110" height="58" rx="10"/><text class="label" x="840" y="418">CQRS</text>
+            <g class="edge" marker-end="url(#arrow-107)">
+              <path d="M150 312 V369"/><path d="M360 312 V369"/><path d="M620 312 V369"/>
+              <path d="M830 322 V388"/><path d="M150 458 V491"/><path d="M360 458 V491"/><path d="M620 458 V491"/>
+              <path d="M225 414 H785"/><path d="M435 414 H785"/><path d="M695 414 H785"/>
+            </g>
+
+            <rect class="group" x="42" y="592" width="896" height="92" rx="15"/>
+            <rect class="node" x="75" y="608" width="150" height="62" rx="10"/><text class="label" x="150" y="629">倒置测试</text><text class="label" x="150" y="651">金字塔</text>
+            <rect class="node" x="285" y="608" width="150" height="62" rx="10"/><text class="label" x="360" y="639">测试菱形</text>
+            <rect class="node" x="610" y="608" width="150" height="62" rx="10"/><text class="label" x="685" y="639">测试金字塔</text>
+            <g class="edge" marker-end="url(#arrow-107)">
+              <path d="M150 556 V607"/><path d="M360 556 V607"/>
+              <path d="M620 556 V582 H685 V607"/><path d="M840 447 V582 H685 V607"/>
+            </g>
+          </svg>
+        </div>
+        <figcaption><span class="figure-number">图 10-7</span>战术设计决策树</figcaption>
+      </figure>
+
+      <p>可以看到，识别子域类型并沿决策树向下判断，能为关键设计决策提供一个可靠起点。不过仍需再次强调：这些是启发式，不是硬性规则。每条规则都有例外；何况启发式按定义本来就不追求在 100% 的情况下都正确。</p>
+      <p>这棵决策树体现了我的偏好：先使用简单工具，只有在绝对必要时，才诉诸领域模型、事件溯源领域模型、CQRS 等高级模式。另一方面，我也遇到过一些团队，他们在实现事件溯源领域模型方面经验丰富，因此把它用于所有子域。对他们来说，这反而比混用不同模式更简单。我能把这种做法推荐给所有人吗？当然不能。在我任职或提供咨询的公司中，基于启发式的方法通常比用同一种方案解决所有问题更高效。</p>
+      <p>归根结底，答案取决于你的具体上下文。请把图 10-7 的决策树及其背后的设计启发式当作指导原则，而不要用它们替代批判性思考。如果你发现别的启发式更适合自己，完全可以修改这些指导原则，甚至重新构建一棵自己的决策树。</p>
+      <aside class="margin-note" data-kind="action" aria-label="可优化点批注">
+        <span class="note-kind">可优化点</span>
+        <h4>可以变成你项目的设计检查卡</h4>
+        <ul>
+          <li>这次变化属于哪条真实业务链？</li>
+          <li>哪些状态或副作用必须一起成功？</li>
+          <li>Common 与平台分别拥有哪部分事实？</li>
+          <li>最简单够用的模式是什么？</li>
+          <li>静态、构建、设备证据各缺什么？</li>
+        </ul>
+        <p>这会比只问“该放 commonMain 还是 androidMain”更早暴露错误边界。</p>
+      </aside>
+    </section>
+
+    <section id="conclusion">
+      <h2>结论</h2>
+      <p>本章把本书第一部分与第二部分连接成了一个基于启发式的决策框架。你学习了如何运用业务领域及其子域的知识来推动技术决策：选择安全的限界上下文边界、为应用程序的业务逻辑建模，以及确定用于编排每个限界上下文内部组件交互的架构模式。最后，我们还绕道讨论了一个经常引发激烈争论的话题——哪种测试更重要——并使用同一套框架，根据业务领域来确定不同测试的优先级。</p>
+      <p>做出设计决策很重要，但更重要的是随着时间推移持续验证决策的有效性。下一章将把讨论转向软件设计生命周期的下一个阶段：设计决策的演进。</p>
+    </section>
+
+    <section id="exercises">
+      <h2>练习</h2>
+      <ol class="exercise-list">
+        <li>假设你正在实现 WolfDesk（见前言）的工单生命周期管理系统。它是一个核心子域，需要深入分析系统行为，以便未来继续优化算法。你最初会采用什么策略来实现业务逻辑和组件架构？你会采用什么测试策略？</li>
+        <li>对于 WolfDesk 的客服人员排班管理模块，你会做出哪些设计决策？</li>
+        <li>为了简化客服人员排班管理，你准备使用一个外部公共节假日服务商，获取不同地理区域的节假日信息。该流程会定期调用外部服务商，拉取即将到来的公共节假日日期和名称。你会使用什么业务逻辑模式和架构模式来实现这项集成？你会如何测试它？</li>
+        <li>根据你的经验，软件开发流程中还有哪些方面可以纳入本章提出的、基于启发式的决策树？</li>
+      </ol>
+    </section>
+
+    <p class="closing-note">HTML 批注试读版：正文、脚注、项目讲解与图表均内嵌在本文件中，可离线阅读，也可直接使用浏览器打印为 PDF。</p>
+  </main>
+  <script>
+    (() => {
+      const buttons = [...document.querySelectorAll("[data-note-filter]")];
+      const notes = [...document.querySelectorAll(".margin-note")];
+
+      function applyFilter(filter) {
+        notes.forEach((note) => {
+          note.hidden = filter === "none"
+            || (filter !== "all" && note.dataset.kind !== filter);
+        });
+        buttons.forEach((button) => {
+          button.setAttribute(
+            "aria-pressed",
+            String(button.dataset.noteFilter === filter)
+          );
+        });
+      }
+
+      buttons.forEach((button) => {
+        button.addEventListener("click", () => {
+          applyFilter(button.dataset.noteFilter);
+        });
+      });
+    })();
+  </script>
+</body>
+</html>

@@ -130,6 +130,34 @@ test("lists the dual-view component guide once under me and defaults to the arti
   assert.doesNotMatch(softwareEngineering, /RIN III Slides 组件使用说明/);
 });
 
+// 学习记录与完整阅读器分别承担反思和沉浸阅读，两条链接在 Pages 前缀下都必须可达。
+test("publishes the DDD chapter 10 learning record with its annotated reader", async () => {
+  const article = await readOutput(
+    "software-engineering/learning-domain-driven-design-chapter-10/index.html",
+  );
+  const index = await readOutput("software-engineering/index.html");
+  const reader = await readOutput(
+    "reading/learning-domain-driven-design/chapter-10/index.html",
+  );
+
+  assert.match(index, /《Learning Domain-Driven Design》第十章学习记录/);
+  assert.match(article, /限界上下文首先是词义的边界/);
+  assert.match(article, /让业务性质决定边界、模型、架构与证据/);
+  assert.match(
+    article,
+    /href="\.\.\/\.\.\/reading\/learning-domain-driven-design\/chapter-10\/"/,
+  );
+
+  assert.match(reader, /第 10 章｜设计启发式｜RIN III/);
+  assert.match(reader, /data-note-filter="plain"/);
+  assert.match(reader, /data-note-filter="project"/);
+  assert.match(reader, /data-note-filter="action"/);
+  assert.match(
+    reader,
+    /href="\.\.\/\.\.\/\.\.\/software-engineering\/learning-domain-driven-design-chapter-10\/"/,
+  );
+});
+
 test("exports the component guide deck with a document switch", async () => {
   const deck = await readOutput("slides/component-guide/index.html");
 
