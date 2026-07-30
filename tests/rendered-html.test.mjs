@@ -158,6 +158,38 @@ test("publishes the DDD chapter 10 learning record with its annotated reader", a
   );
 });
 
+// 第十一章必须延续学习记录与完整阅读器的双层结构，并保留部署安全的双向链接。
+test("publishes the DDD chapter 11 evolution notes with its annotated reader", async () => {
+  const article = await readOutput(
+    "software-engineering/learning-domain-driven-design-chapter-11/index.html",
+  );
+  const index = await readOutput("software-engineering/index.html");
+  const reader = await readOutput(
+    "reading/learning-domain-driven-design/chapter-11/index.html",
+  );
+
+  assert.match(index, /《Learning Domain-Driven Design》第十一章学习记录/);
+  assert.match(article, /设计决策应该带有失效条件/);
+  assert.match(article, /诚实的不完整，胜过精确的虚构/);
+  assert.match(
+    article,
+    /href="\.\.\/\.\.\/reading\/learning-domain-driven-design\/chapter-11\/"/,
+  );
+
+  assert.match(reader, /第 11 章｜演进设计决策｜RIN III/);
+  assert.match(reader, /图 11-1/);
+  assert.match(reader, /图 11-2/);
+  assert.match(reader, /图 11-3/);
+  assert.match(reader, /data-note-filter="plain"/);
+  assert.match(reader, /data-note-filter="project"/);
+  assert.match(reader, /data-note-filter="action"/);
+  assert.match(reader, /migrated-from-legacy/);
+  assert.match(
+    reader,
+    /href="\.\.\/\.\.\/\.\.\/software-engineering\/learning-domain-driven-design-chapter-11\/"/,
+  );
+});
+
 test("exports the component guide deck with a document switch", async () => {
   const deck = await readOutput("slides/component-guide/index.html");
 

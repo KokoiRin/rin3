@@ -1,0 +1,1135 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>第 11 章｜演进设计决策｜RIN III</title>
+  <meta name="description" content="《Learning Domain-Driven Design》第十一章中文翻译与项目批注阅读版">
+  <style>
+    :root {
+      --paper: #fffefa;
+      --canvas: #ecebe7;
+      --ink: #26343b;
+      --muted: #65757d;
+      --accent: #39728d;
+      --accent-soft: #e7f1f5;
+      --line: #d9e2e6;
+      --node: #e7f1f5;
+      --decision: #c9e0ea;
+      --warm: #f6a63d;
+      --alert: #d94b52;
+      --figure-bg: #f8fafb;
+      --shadow: 0 18px 48px rgba(40, 50, 56, .10);
+      color-scheme: light;
+    }
+
+    * { box-sizing: border-box; }
+
+    html {
+      scroll-behavior: smooth;
+      background: var(--canvas);
+    }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text",
+        "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      font-size: 17px;
+      line-height: 1.78;
+      text-rendering: optimizeLegibility;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .site-nav {
+      display: flex;
+      width: min(1160px, calc(100% - 32px));
+      margin: 24px auto -16px;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .08em;
+    }
+
+    .site-nav a {
+      color: var(--muted);
+      text-decoration: none;
+    }
+
+    .site-nav a:hover {
+      color: var(--accent);
+    }
+
+    .reader {
+      width: min(1160px, calc(100% - 32px));
+      margin: 40px auto 72px;
+      padding: 52px 360px 64px 64px;
+      background: var(--paper);
+      border: 1px solid rgba(57, 79, 90, .08);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+    }
+
+    .chapter-kicker {
+      display: inline-flex;
+      align-items: center;
+      min-height: 30px;
+      padding: 3px 14px;
+      border-radius: 999px;
+      color: var(--accent);
+      background: var(--accent-soft);
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: .04em;
+    }
+
+    h1 {
+      margin: 14px 0 4px;
+      font-size: clamp(34px, 6vw, 46px);
+      line-height: 1.18;
+      letter-spacing: -.035em;
+    }
+
+    .title-rule {
+      width: 52px;
+      height: 3px;
+      margin: 18px 0 28px;
+      border-radius: 99px;
+      background: var(--accent);
+    }
+
+    .lead {
+      margin: 0 0 16px;
+      font-size: 18px;
+      line-height: 1.72;
+      color: #35464e;
+    }
+
+    .chapter-nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 30px 0 38px;
+      padding: 0;
+      list-style: none;
+    }
+
+    .chapter-nav a {
+      display: block;
+      padding: 5px 11px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.4;
+      text-decoration: none;
+    }
+
+    .chapter-nav a:hover {
+      color: var(--accent);
+      border-color: #9fc1d0;
+      background: #f5fafc;
+    }
+
+    .annotation-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 7px;
+      margin: -12px 0 40px;
+      padding: 12px 14px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #f8fafb;
+    }
+
+    .annotation-toolbar strong {
+      margin-right: 4px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .annotation-toolbar button {
+      appearance: none;
+      padding: 5px 10px;
+      color: var(--muted);
+      border: 1px solid #ccd9df;
+      border-radius: 999px;
+      background: #fff;
+      font: inherit;
+      font-size: 12px;
+      line-height: 1.25;
+      cursor: pointer;
+    }
+
+    .annotation-toolbar button:hover,
+    .annotation-toolbar button[aria-pressed="true"] {
+      color: #fff;
+      border-color: var(--accent);
+      background: var(--accent);
+    }
+
+    .annotation-scope {
+      flex-basis: 100%;
+      margin-top: 3px;
+      color: #7a898f;
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+    .margin-note {
+      position: relative;
+      float: right;
+      clear: right;
+      width: 286px;
+      margin: .15em -330px 20px 32px;
+      padding: 14px 15px 15px;
+      border: 1px solid #d9e4e8;
+      border-radius: 13px;
+      background: #f8fbfc;
+      color: #52646c;
+      font-size: 14px;
+      line-height: 1.62;
+      text-align: left;
+      box-shadow: 0 7px 18px rgba(51, 71, 81, .06);
+      transition: opacity .18s ease, transform .18s ease;
+    }
+
+    .margin-note::before {
+      position: absolute;
+      top: 22px;
+      left: -25px;
+      width: 18px;
+      height: 1px;
+      background: #aac3ce;
+      content: "";
+    }
+
+    .margin-note[data-kind="project"] {
+      border-color: #c9dfd3;
+      background: #f6fbf8;
+    }
+
+    .margin-note[data-kind="project"]::before {
+      background: #8eb9a1;
+    }
+
+    .margin-note[data-kind="action"] {
+      border-color: #ead8b6;
+      background: #fffaf1;
+    }
+
+    .margin-note[data-kind="action"]::before {
+      background: #d5ac61;
+    }
+
+    .margin-note[hidden] { display: none; }
+
+    .margin-note .note-kind {
+      display: inline-flex;
+      margin-bottom: 7px;
+      padding: 2px 8px;
+      color: var(--accent);
+      border-radius: 999px;
+      background: #e6f1f5;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: .04em;
+    }
+
+    .margin-note[data-kind="project"] .note-kind {
+      color: #397158;
+      background: #e4f2ea;
+    }
+
+    .margin-note[data-kind="action"] .note-kind {
+      color: #936817;
+      background: #f8ebce;
+    }
+
+    .margin-note h4 {
+      margin: 0 0 6px;
+      color: var(--ink);
+      font-size: 16px;
+      line-height: 1.35;
+    }
+
+    .margin-note p {
+      margin: .4em 0 0;
+      text-align: left;
+    }
+
+    .margin-note ul {
+      margin: .5em 0 0;
+      padding-left: 1.2em;
+    }
+
+    .margin-note li {
+      margin: .28em 0;
+      padding-left: 0;
+    }
+
+    .term {
+      padding: 0 .12em;
+      color: #214f64;
+      background: linear-gradient(transparent 64%, #dcedf4 64%);
+      font-weight: 650;
+    }
+
+    h2 {
+      margin: 2.25em 0 .55em;
+      font-size: 27px;
+      line-height: 1.28;
+      letter-spacing: -.02em;
+    }
+
+    h3 {
+      margin: 1.7em 0 .4em;
+      font-size: 20px;
+      line-height: 1.35;
+    }
+
+    p {
+      margin: .72em 0;
+      text-align: justify;
+      text-justify: inter-ideograph;
+    }
+
+    blockquote {
+      margin: 1.25em 0;
+      padding: 2px 0 2px 20px;
+      color: #53646d;
+      border-left: 3px solid #9bc2d2;
+      font-size: 18px;
+    }
+
+    ul, ol {
+      margin: .75em 0;
+      padding-left: 1.45em;
+    }
+
+    li {
+      margin: .38em 0;
+      padding-left: .18em;
+    }
+
+    li::marker { color: var(--accent); }
+
+    sup a {
+      color: var(--accent);
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+    .note {
+      margin: 1em 0;
+      padding: 12px 15px;
+      border-radius: 10px;
+      background: #f4f7f8;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.62;
+    }
+
+    .note strong { color: var(--ink); }
+
+    code {
+      padding: .12em .35em;
+      border-radius: 5px;
+      background: #edf2f4;
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+      font-size: .88em;
+    }
+
+    pre {
+      margin: 1.1em 0;
+      padding: 16px 18px;
+      overflow-x: auto;
+      border: 1px solid #dfe7ea;
+      border-radius: 12px;
+      background: #f5f8f9;
+      font-size: 13px;
+      line-height: 1.58;
+    }
+
+    pre code {
+      padding: 0;
+      background: transparent;
+      font-size: inherit;
+    }
+
+    .table-wrap {
+      margin: 1.2em 0;
+      overflow-x: auto;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+    }
+
+    table {
+      width: 100%;
+      min-width: 760px;
+      border-collapse: collapse;
+      font-size: 13px;
+      line-height: 1.48;
+    }
+
+    th, td {
+      padding: 10px 11px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      color: #fff;
+      background: #33464f;
+      font-weight: 700;
+    }
+
+    tr:last-child td { border-bottom: 0; }
+
+    .flow-board {
+      display: grid;
+      gap: 12px;
+      min-width: 590px;
+    }
+
+    .transition-row {
+      display: grid;
+      grid-template-columns: 1fr 44px 1fr minmax(130px, .8fr);
+      gap: 10px;
+      align-items: center;
+    }
+
+    .diagram-node,
+    .diagram-reason {
+      padding: 11px 12px;
+      border: 1px solid #a8bec8;
+      border-radius: 10px;
+      background: var(--node);
+      text-align: center;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .diagram-reason {
+      color: var(--muted);
+      border-style: dashed;
+      background: #fff;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .diagram-arrow {
+      color: var(--accent);
+      font-size: 22px;
+      font-weight: 800;
+      text-align: center;
+    }
+
+    .split-board {
+      display: grid;
+      grid-template-columns: 1fr 48px 1.25fr;
+      gap: 14px;
+      min-width: 620px;
+      align-items: center;
+    }
+
+    .context-panel {
+      padding: 14px;
+      border: 1px solid #afc3cc;
+      border-radius: 14px;
+      background: #fff;
+      text-align: center;
+    }
+
+    .context-panel strong {
+      display: block;
+      margin-bottom: 10px;
+      color: var(--accent);
+    }
+
+    .context-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      justify-content: center;
+    }
+
+    .context-chips span {
+      padding: 6px 9px;
+      border-radius: 999px;
+      background: var(--node);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .growth-board {
+      display: grid;
+      grid-template-columns: 1fr 42px 1.5fr 42px 1.5fr;
+      gap: 10px;
+      min-width: 700px;
+      align-items: center;
+    }
+
+    .growth-stage {
+      display: grid;
+      gap: 8px;
+      padding: 12px;
+      border: 1px solid #b7c9d0;
+      border-radius: 12px;
+      background: #fff;
+      text-align: center;
+    }
+
+    .growth-stage small {
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .growth-stage span {
+      padding: 8px;
+      border-radius: 8px;
+      background: var(--node);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    figure {
+      margin: 1.35em 0 1.7em;
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+
+    .figure-frame {
+      padding: 18px 18px 14px;
+      overflow-x: auto;
+      border: 1px solid #e1e8eb;
+      border-radius: 14px;
+      background: var(--figure-bg);
+    }
+
+    figure svg {
+      display: block;
+      width: 100%;
+      min-width: 580px;
+      height: auto;
+      overflow: visible;
+    }
+
+    figcaption {
+      margin-top: 9px;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .figure-number {
+      margin-right: .55em;
+      color: var(--accent);
+      font-weight: 800;
+    }
+
+    svg text {
+      fill: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text",
+        "PingFang SC", "Hiragino Sans GB", sans-serif;
+    }
+
+    svg .node {
+      fill: var(--node);
+      stroke: var(--ink);
+      stroke-width: 1.4;
+    }
+
+    svg .decision {
+      fill: var(--decision);
+      stroke: var(--ink);
+      stroke-width: 1.4;
+    }
+
+    svg .edge {
+      fill: none;
+      stroke: var(--ink);
+      stroke-width: 1.35;
+    }
+
+    svg .group {
+      fill: none;
+      stroke: #e4b868;
+      stroke-width: 1.4;
+      stroke-dasharray: 6 5;
+    }
+
+    svg .label {
+      font-size: 15px;
+      font-weight: 650;
+      text-anchor: middle;
+      dominant-baseline: middle;
+    }
+
+    svg .small {
+      fill: var(--muted);
+      font-size: 13px;
+      text-anchor: middle;
+    }
+
+    .exercise-list {
+      padding-left: 1.55em;
+    }
+
+    .closing-note {
+      margin-top: 2.2em;
+      padding-top: 1.2em;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    @media (max-width: 1040px) {
+      .reader {
+        width: min(820px, calc(100% - 32px));
+        padding: 52px 64px 64px;
+      }
+
+      .margin-note {
+        float: none;
+        width: auto;
+        margin: 1em 0 1.25em;
+      }
+
+      .margin-note::before { display: none; }
+    }
+
+    @media (max-width: 680px) {
+      body { font-size: 16px; }
+
+      .reader {
+        width: 100%;
+        margin: 0;
+        padding: 32px 22px 48px;
+        border: 0;
+        border-radius: 0;
+        box-shadow: none;
+      }
+
+      .figure-frame {
+        margin-left: -6px;
+        margin-right: -6px;
+        padding: 12px 10px;
+      }
+
+      .annotation-toolbar {
+        position: sticky;
+        top: 8px;
+        z-index: 5;
+        margin-bottom: 30px;
+        background: rgba(248, 250, 251, .96);
+        backdrop-filter: blur(12px);
+      }
+
+      .annotation-scope { display: none; }
+    }
+
+    @page {
+      size: 177.8mm 233.3mm;
+      margin: 13mm 15mm 14mm;
+    }
+
+    @media print {
+      html, body { background: #fff; }
+
+      body {
+        font-size: 10.6pt;
+        line-height: 1.62;
+      }
+
+      .reader {
+        width: auto;
+        margin: 0;
+        padding: 0;
+        border: 0;
+        border-radius: 0;
+        box-shadow: none;
+      }
+
+      .site-nav { display: none; }
+      .chapter-nav { display: none; }
+      .annotation-toolbar { display: none; }
+      h1 { font-size: 28pt; }
+      h2 { font-size: 18pt; }
+      h3 { font-size: 13.5pt; }
+      h2, h3 { break-after: avoid; page-break-after: avoid; }
+
+      .figure-frame {
+        padding: 8px 10px 6px;
+        overflow: visible;
+        background: #fbfcfc;
+      }
+
+      figure svg { min-width: 0; }
+      a { color: inherit; }
+      .closing-note { display: none; }
+
+      .margin-note {
+        float: none;
+        width: auto;
+        margin: 8pt 0 10pt;
+        padding: 8pt 10pt;
+        break-inside: avoid;
+        page-break-inside: avoid;
+        box-shadow: none;
+      }
+
+      .margin-note::before { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <nav class="site-nav" aria-label="站点导航">
+    <a href="../../../software-engineering/learning-domain-driven-design-chapter-11/">← 返回学习记录</a>
+    <a href="../../../">RIN III</a>
+  </nav>
+  <main class="reader">
+    <header>
+      <span class="chapter-kicker">第 11 章</span>
+      <h1>演进设计决策</h1>
+      <div class="title-rule"></div>
+      <p class="lead">业务、组织、认知和规模都会变化。设计不是一次性答案，而是需要随着这些变化持续重新评估的假设。</p>
+      <p>在我们生活的这个高速运转的现代世界里，企业承担不起行动迟缓的代价。为了跟上竞争，它们必须持续变化、演进，甚至不断重新定义自己。设计系统时不能忽略这个事实，尤其当我们的目标是让软件贴合业务领域的需求时。</p>
+      <p>如果变化没有得到妥善管理，即使最复杂、最周密的设计，最终也会变成难以维护和演进的噩梦。本章讨论软件项目环境的变化如何影响设计决策，以及怎样相应地演进设计。我们将考察四种最常见的变化向量：<span class="term">业务领域</span>、<span class="term">组织结构</span>、<span class="term">领域知识</span>和<span class="term">增长</span>。</p>
+      <nav aria-label="本章导航">
+        <ul class="chapter-nav">
+          <li><a href="#domains">领域变化</a></li>
+          <li><a href="#strategic">战略设计</a></li>
+          <li><a href="#tactical">战术设计</a></li>
+          <li><a href="#organization">组织变化</a></li>
+          <li><a href="#knowledge">领域知识</a></li>
+          <li><a href="#growth">增长</a></li>
+          <li><a href="#exercises">练习</a></li>
+        </ul>
+      </nav>
+      <div class="annotation-toolbar" role="group" aria-label="批注筛选">
+        <strong>侧栏讲解</strong>
+        <button type="button" data-note-filter="all" aria-pressed="true">全部</button>
+        <button type="button" data-note-filter="plain" aria-pressed="false">白话解释</button>
+        <button type="button" data-note-filter="project" aria-pressed="false">你的项目</button>
+        <button type="button" data-note-filter="action" aria-pressed="false">可优化点</button>
+        <button type="button" data-note-filter="none" aria-pressed="false">隐藏批注</button>
+        <span class="annotation-scope">项目批注基于你此前的 native-text Common KMP / Android / 鸿蒙迁移经历，用来帮助理解概念，不代表对当前分支做过实时代码审查。</span>
+      </div>
+    </header>
+
+    <section id="domains">
+      <h2>领域变化</h2>
+      <aside class="margin-note" data-kind="plain" aria-label="白话解释批注">
+        <span class="note-kind">白话解释</span>
+        <h4>子域类型不是永久标签</h4>
+        <p>核心、支撑、通用描述的是“这件事此刻对企业的战略价值”，而不是代码目录的固定属性。同一块能力会因为市场、成本和新机会而换类型。</p>
+      </aside>
+      <p>第 2 章介绍了三类业务子域及其差异：</p>
+      <ul>
+        <li><strong>核心子域：</strong>企业为了获得竞争优势，采用不同于竞争对手的方式开展的活动。</li>
+        <li><strong>支撑子域：</strong>企业采用了不同做法，但这些做法本身并不会带来竞争优势。</li>
+        <li><strong>通用子域：</strong>所有企业基本都以相同方式完成的事情。</li>
+      </ul>
+      <p>前几章已经说明，所涉及的子域类型会影响战略与战术设计决策：怎样设计限界上下文边界，怎样编排上下文之间的集成，以及选择什么设计模式来容纳业务逻辑的复杂度。</p>
+      <p>要让软件设计由业务领域的需要驱动，识别业务子域及其类型至关重要。但这还不够。我们同样要警觉子域本身的演进。组织成长和变化时，一些子域从一种类型转变成另一种类型并不少见。</p>
+
+      <h3>从核心到通用</h3>
+      <p>设想一家名为 BuyIT 的在线零售企业一直在自行实现订单配送方案。它开发了创新算法来优化快递员的配送路线，因此可以收取比竞争对手更低的配送费用。</p>
+      <p>后来，DeliverIT 公司颠覆了配送行业。它宣称已经解决“旅行商问题”，并把路径优化作为服务提供。DeliverIT 的优化不仅更先进，价格也只有 BuyIT 自行维持同等能力的一小部分。</p>
+      <p>从 BuyIT 的角度看，一旦 DeliverIT 的方案成为现成商品，原本的核心子域就转变成了通用子域。最优方案现在对所有竞争对手都可获得。除非投入巨额研发资金，否则 BuyIT 已经无法再从路径优化中获得竞争优势。过去的优势变成了所有竞争者都能购买的商品。</p>
+
+      <h3>从通用到核心</h3>
+      <p>BuyIT 从成立之初就使用现成方案管理库存，但商业智能报告不断显示，它对客户需求的预测并不准确。结果是，热门商品无法及时补货，冷门商品却占用了仓库空间。</p>
+      <p>在评估了几种替代产品之后，管理层作出战略决策：设计并构建内部系统。这个方案会考虑 BuyIT 所售商品的具体特点，更准确地预测客户需求。</p>
+      <aside class="margin-note" data-kind="project" aria-label="你的项目批注">
+        <span class="note-kind">你的项目</span>
+        <h4>Common 化不自动等于“核心子域”</h4>
+        <p>native-text 迁移到 Common，说明跨平台一致性和复用价值上升；但是否成为核心子域，还要看它是否带来真实业务优势。技术投入变大，只是重新评估的信号，不是结论。</p>
+      </aside>
+      <p>用内部实现替换现成产品，使库存管理从通用子域变成了核心子域：如果新系统成功，BuyIT 将拥有竞争对手无法使用的高级需求预测算法。一个现实中的经典例子是 Amazon。像所有服务提供商一样，Amazon 需要运行服务的基础设施；后来它重新发明了管理物理基础设施的方式，并最终把这项能力发展成了盈利业务——Amazon Web Services。</p>
+
+      <h3>从支撑到通用</h3>
+      <p>BuyIT 的市场部门实现了一套供应商与合同管理系统。系统没有特别之处，也不复杂，只是用于录入数据的一些 CRUD 界面，因此是典型的支撑子域。</p>
+      <p>几年后，一个开源合同管理方案出现了。它既实现了相同功能，又提供 OCR 和全文搜索等高级能力。这些能力长期位于 BuyIT 的待办列表中，却因业务影响较低从未获得优先级。于是公司放弃内部方案，转而集成开源产品。文档管理因此从支撑子域变成了通用子域。</p>
+
+      <h3>从支撑到核心</h3>
+      <p>如果企业找到一种优化支撑逻辑的方法，能够降低成本或带来额外利润，那么支撑子域也可能变成核心子域。</p>
+      <p>这种转变的典型症状，是支撑子域的业务逻辑复杂度不断上升。支撑子域按定义应该比较简单，主要类似 CRUD 界面或 ETL 流程。如果业务逻辑越来越复杂，额外复杂度背后应该有原因。若它不影响企业利润，那就是偶发的业务复杂度；若它提高了盈利能力，则表明支撑子域正在转变为核心子域。</p>
+
+      <h3>从核心到支撑</h3>
+      <p>核心子域也可能随着时间变成支撑子域。当一个子域的复杂度不再值得，也就是不再盈利时，组织可能决定删去多余复杂度，只保留支撑其他子域所需的最少逻辑。</p>
+
+      <h3>从通用到支撑</h3>
+      <p>出于类似原因，通用子域也可能变成支撑子域。回到 BuyIT 的文档管理系统：如果公司发现集成开源产品的复杂度不值得，重新使用内部系统，那么这个通用子域就转变成了支撑子域。</p>
+
+      <figure>
+        <div class="figure-frame">
+          <div class="flow-board" role="img" aria-label="核心、支撑和通用子域之间的六种转变及其原因">
+            <div class="transition-row"><span class="diagram-node">核心子域</span><span class="diagram-arrow">→</span><span class="diagram-node">通用子域</span><span class="diagram-reason">能力商品化</span></div>
+            <div class="transition-row"><span class="diagram-node">通用子域</span><span class="diagram-arrow">→</span><span class="diagram-node">核心子域</span><span class="diagram-reason">发现新机会</span></div>
+            <div class="transition-row"><span class="diagram-node">支撑子域</span><span class="diagram-arrow">→</span><span class="diagram-node">通用子域</span><span class="diagram-reason">能力商品化</span></div>
+            <div class="transition-row"><span class="diagram-node">通用子域</span><span class="diagram-arrow">→</span><span class="diagram-node">支撑子域</span><span class="diagram-reason">降低集成成本</span></div>
+            <div class="transition-row"><span class="diagram-node">支撑子域</span><span class="diagram-arrow">→</span><span class="diagram-node">核心子域</span><span class="diagram-reason">发现新机会</span></div>
+            <div class="transition-row"><span class="diagram-node">核心子域</span><span class="diagram-arrow">→</span><span class="diagram-node">支撑子域</span><span class="diagram-reason">主动简化</span></div>
+          </div>
+        </div>
+        <figcaption><span class="figure-number">图 11-1</span>子域类型发生变化的驱动因素。这里改用六条明确的迁移路径展示，避免原图交叉箭头造成阅读负担。</figcaption>
+      </figure>
+    </section>
+
+    <section id="strategic">
+      <h2>战略设计方面的影响</h2>
+      <p>子域类型一旦变化，会直接影响它的限界上下文，继而影响相应的战略设计决策。不同的上下文集成模式适用于不同的子域类型。核心子域需要使用防腐层保护自己的模型，还需要用开放主机服务和发布语言保护消费者，使它们不必跟随实现模型频繁变化。</p>
+      <p>另一种会受到影响的模式是<span class="term">各行其道</span>。团队可以在支撑和通用子域中采用这种模式；但如果子域变成核心子域，让多个团队重复实现同一项核心能力就不再合适。团队必须整合各自实现。在这种情况下，由一个团队实现核心子域，并建立客户—供应商关系通常更合理。</p>
+      <p>从实现策略看，核心与支撑子域也不同。支撑子域可以外包，或者用作新员工的练手机会。核心子域必须由内部团队实现，并且尽可能贴近领域知识的来源。因此，当支撑子域变成核心子域时，实现工作应移回内部；反过来，如果核心子域变成支撑子域，则可以考虑外包，让内部研发集中于新的核心能力。</p>
+      <aside class="margin-note" data-kind="action" aria-label="可优化点批注">
+        <span class="note-kind">可优化点</span>
+        <h4>给重要边界加“复查触发器”</h4>
+        <p>不要按季度机械重画架构。可以在出现新平台、新盈利点、外部商品化方案、团队归属变化或规则复杂度陡增时，触发一次子域与集成关系复查。</p>
+      </aside>
+    </section>
+
+    <section id="tactical">
+      <h2>战术设计方面的影响</h2>
+      <p>子域类型发生变化的主要指标，是现有技术设计已经无法支持当前业务需求。</p>
+      <p>回到支撑子域变成核心子域的例子。支撑子域通常使用相对简单的业务逻辑模式，例如事务脚本或活动记录。但这些模式不适合包含复杂规则和不变量的业务逻辑。</p>
+      <aside class="margin-note" data-kind="project" aria-label="你的项目批注">
+        <span class="note-kind">你的项目</span>
+        <h4>“越来越难改”本身就是领域信号</h4>
+        <p>模板切换若只需请求并展示，简单流程足够；当失败回滚、过期回调、二次编辑和平台写回不断叠加，再继续增加布尔值和临时分支，痛苦就说明模型已落后于业务。</p>
+      </aside>
+      <p>如果复杂规则和不变量持续加入，代码库也会越来越复杂。新增功能会变得痛苦，因为当前设计无法支撑新的复杂度水平。这种“痛苦”是重要信号，应当用它来重新评估业务领域和设计选择。</p>
+      <p>需要改变实现策略并不可怕，这是正常现象。我们无法预见业务未来怎样演变，也不能对所有子域一开始就使用最复杂的设计模式，那既浪费又低效。我们应该选择当下最合适的设计，在确有需要时再演进。</p>
+      <p>如果最初对业务逻辑模式的选择是有意识的，并且团队理解不同方案及其差异，那么从一种模式迁移到另一种模式并不会特别麻烦。下面是几条常见演进路径。</p>
+
+      <h3>从事务脚本到活动记录</h3>
+      <p>事务脚本和活动记录的核心原则相同：业务逻辑都以过程式脚本实现。两者的区别在于数据结构的建模方式。活动记录引入了专门的数据结构，用来封装数据到持久化机制之间的映射复杂度。</p>
+      <p>因此，当事务脚本中“操作数据”本身变得困难时，可以重构为活动记录。找出复杂的数据结构，把它们封装到活动记录对象中；不要继续直接访问数据库，而是让活动记录抽象存储模型和结构。</p>
+
+      <h3>从活动记录到领域模型</h3>
+      <p>如果操作活动记录的业务逻辑变得复杂，并且不一致和重复越来越多，就应考虑重构为领域模型。</p>
+      <p>首先识别值对象：哪些数据结构可以建模成不可变对象？找到与之相关的业务逻辑，并把这些逻辑也移入值对象。</p>
+      <p>然后分析数据结构，寻找事务边界。为了让所有修改状态的逻辑都变得显式，可以先把活动记录的 setter 改为私有，使状态只能在对象内部修改。编译当然会失败，但编译错误会准确暴露哪些外部组件正在控制对象状态。</p>
+      <pre><code>public class Player
+{
+    public Guid Id { get; set; }
+    public int Points { get; set; }
+}
+
+public class ApplyBonus
+{
+    public void Execute(Guid playerId, byte percentage)
+    {
+        var player = _repository.Load(playerId);
+        player.Points *= 1 + percentage / 100.0;
+        _repository.Save(player);
+    }
+}</code></pre>
+      <p>第一步先收紧 setter。此时代码还不能编译，但错误会让外部状态修改的位置一目了然：</p>
+      <pre><code>public class Player
+{
+    public Guid Id { get; private set; }
+    public int Points { get; private set; }
+}</code></pre>
+      <p>下一步，把修改积分的逻辑移到对象边界内部：</p>
+      <pre><code>public class Player
+{
+    public Guid Id { get; private set; }
+    public int Points { get; private set; }
+
+    public void ApplyBonus(int percentage)
+    {
+        this.Points *= 1 + percentage / 100.0;
+    }
+}</code></pre>
+      <aside class="margin-note" data-kind="project" aria-label="你的项目批注">
+        <span class="note-kind">你的项目</span>
+        <h4>让非法状态先“写不出来”</h4>
+        <p>把 <code>selectedIndex</code>、<code>committedIndex</code> 或请求代次暴露给任意调用方修改，等价于公开 setter。更稳妥的方向是只暴露 <code>requestTemplate</code>、<code>finishPlatformApply</code>、<code>failActiveApply</code> 这类带业务语义的状态转换。</p>
+      </aside>
+      <p>当所有修改状态的业务逻辑都被移入相应对象边界后，再检查需要哪些层级才能强一致地验证业务规则和不变量。这些层级就是聚合的候选。</p>
+      <p>遵循第 6 章的聚合设计原则，寻找最小事务边界，也就是业务领域要求保持强一致的最少数据量。沿着这些边界拆分层级结构，外部聚合只能通过 ID 引用。最后，为每个聚合识别聚合根，也就是公共接口的入口；聚合内部其他对象的方法应设为私有，只能从聚合内部调用。</p>
+
+      <h3>从领域模型到事件溯源领域模型</h3>
+      <p>一旦拥有边界设计合理的聚合，就可以向事件溯源模型迁移。不要再直接修改聚合数据，而是对表达聚合生命周期所需的领域事件进行建模。</p>
+      <p>最具挑战的部分是已有聚合的历史：怎样把原来“没有时间维度的状态”迁移到基于事件的模型中。旧系统没有保存每一次细粒度状态变化，因此只能尽力生成历史事件，或者明确建模一种迁移事件。</p>
+
+      <h3>生成过去的状态转换</h3>
+      <p>这种方式会为每个聚合生成一条近似事件流，使事件投影后能得到与原系统相同的状态。以下是第 7 章潜在客户聚合的状态表示：</p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>ID</th><th>名字</th><th>姓氏</th><th>电话</th><th>状态</th><th>最后联系</th><th>下单时间</th><th>转化时间</th><th>跟进时间</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>12</td><td>Shauna</td><td>Mercia</td><td>555-4753</td><td>converted</td><td>2020-05-27 12:02Z</td><td>2020-05-27 12:02Z</td><td>2020-05-27 12:38Z</td><td>null</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>根据业务逻辑，可以假设这个聚合先被初始化，随后销售人员联系了客户、提交了订单，最后由于状态为“已转化”，订单付款得到确认。可以用下面的事件表示这些假设：</p>
+      <pre><code>[
+  {
+    "lead-id": 12,
+    "event-id": 0,
+    "event-type": "lead-initialized",
+    "first-name": "Shauna",
+    "last-name": "Mercia",
+    "phone-number": "555-4753"
+  },
+  {
+    "lead-id": 12,
+    "event-id": 1,
+    "event-type": "contacted",
+    "timestamp": "2020-05-27T12:02:12.51Z"
+  },
+  {
+    "lead-id": 12,
+    "event-id": 2,
+    "event-type": "order-submitted",
+    "payment-deadline": "2020-05-30T12:02:12.51Z",
+    "timestamp": "2020-05-27T12:02:12.51Z"
+  },
+  {
+    "lead-id": 12,
+    "event-id": 3,
+    "event-type": "payment-confirmed",
+    "status": "converted",
+    "timestamp": "2020-05-27T12:38:44.12Z"
+  }
+]</code></pre>
+      <p>逐一应用这些事件，可以投影出与原系统完全相同的状态。测试也很直接：把恢复出的事件投影成状态，再与原始数据比较。</p>
+      <p>不过，这种方式的缺点必须牢记。事件溯源的目标是获得可靠、强一致的聚合领域事件历史，而近似生成无法恢复完整的状态转换。在这个例子里，我们不知道销售人员实际联系过客户多少次，也就不知道遗漏了多少个 <code>contacted</code> 事件。</p>
+
+      <h3>建模迁移事件</h3>
+      <p>另一种方式，是承认我们不知道过去发生过什么，并把知识缺失显式建模成一个事件。与其推测哪些事件导致了当前状态，不如定义迁移事件，用它初始化已有聚合的事件流：</p>
+      <pre><code>{
+  "lead-id": 12,
+  "event-id": 0,
+  "event-type": "migrated-from-legacy",
+  "first-name": "Shauna",
+  "last-name": "Mercia",
+  "phone-number": "555-4753",
+  "status": "converted",
+  "last-contacted-on": "2020-05-27T12:02:12.51Z",
+  "order-placed-on": "2020-05-27T12:02:12.51Z",
+  "converted-on": "2020-05-27T12:38:44.12Z",
+  "followup-on": null
+}</code></pre>
+      <aside class="margin-note" data-kind="plain" aria-label="白话解释批注">
+        <span class="note-kind">白话解释</span>
+        <h4>诚实的不完整，胜过精确的虚构</h4>
+        <p><code>migrated-from-legacy</code> 的价值不只是迁移方便，而是永久告诉读者：“从这里向前历史可信；更早的细节我们不知道。”</p>
+      </aside>
+      <p>这种方法的优点是明确表达了历史数据缺失。任何人都不会误以为事件流包含了聚合生命周期里发生过的全部领域事件。缺点则是旧系统的痕迹会永久保留在事件存储中。例如使用 CQRS 时，投影逻辑始终需要识别迁移事件。</p>
+      <aside class="margin-note" data-kind="project" aria-label="你的项目批注">
+        <span class="note-kind">你的项目</span>
+        <h4>迁移边界也应该显式</h4>
+        <p>未迁移模块继续走旧链路、Common 只接管指定能力，本质上和迁移事件相似：不要伪装成“全量已经统一”，而要让新旧事实从哪一刻、哪一能力开始分界清晰可见。</p>
+      </aside>
+    </section>
+
+    <section id="organization">
+      <h2>组织变化</h2>
+      <p>另一类影响系统设计的变化来自组织本身。第 4 章介绍了限界上下文的多种集成模式：合作关系、共享内核、遵奉者、防腐层、开放主机服务和各行其道。组织结构的变化会改变团队之间的沟通与协作水平，因此上下文的集成方式也需要随之调整。</p>
+      <p>一个直接例子是研发中心扩张。一个限界上下文只能由一个团队负责，因此新增研发团队时，原本较宽的限界上下文可能需要拆成更小的上下文，让每个团队拥有自己的边界。</p>
+      <figure>
+        <div class="figure-frame">
+          <div class="split-board" role="img" aria-label="一个团队拥有的宽限界上下文拆为两个团队分别拥有的较小上下文">
+            <div class="context-panel">
+              <strong>原来：团队 A</strong>
+              <div class="context-chips"><span>账单</span><span>支持台</span><span>目录</span><span>CRM</span><span>清算</span></div>
+            </div>
+            <span class="diagram-arrow">→</span>
+            <div class="context-panel">
+              <strong>增长后：团队 B + 团队 A</strong>
+              <div class="context-chips"><span>团队 B：账单</span><span>团队 B：清算</span><span>团队 A：支持台</span><span>团队 A：目录</span><span>团队 A：CRM</span></div>
+            </div>
+          </div>
+        </div>
+        <figcaption><span class="figure-number">图 11-2</span>为适应研发团队增长，把较宽的限界上下文拆成由不同团队分别拥有的上下文。</figcaption>
+      </figure>
+      <p>研发中心还可能分布在不同地理位置。当已有上下文的工作转移到另一个地点时，团队协作可能受到负面影响。相应地，限界上下文之间的集成模式也需要演进。</p>
+
+      <h3>从合作关系到客户—供应商</h3>
+      <p>合作关系假设团队之间存在紧密沟通与协作。随着时间推移，这个条件可能不再成立，例如其中一个上下文被转移到远程研发中心。沟通质量下降后，从合作关系转向边界和责任更明确的客户—供应商关系可能更合理。</p>
+
+      <h3>从客户—供应商到各行其道</h3>
+      <p>团队出现严重沟通问题并不少见，原因可能是地理距离，也可能是组织政治。集成问题会随着时间不断增加；到某个临界点，重复实现一部分功能可能比长期互相等待和协调更经济。</p>
+      <aside class="margin-note" data-kind="project" aria-label="你的项目批注">
+        <span class="note-kind">你的项目</span>
+        <h4>边界要匹配真实协作能力</h4>
+        <p>Common、Android 和鸿蒙即使共享代码，也不代表三个宿主拥有同样的发布节奏与领域知识。接口、错误语义和写回契约要能在“沟通不是实时的”情况下仍然成立。</p>
+      </aside>
+    </section>
+
+    <section id="knowledge">
+      <h2>领域知识</h2>
+      <p>领域驱动设计的核心主张是：领域知识对于设计成功的软件系统不可或缺。获取领域知识本身就是软件工程最困难的部分之一，核心子域尤其如此。核心子域的逻辑不仅复杂，还会频繁变化；建模也不是一次性活动，模型必须随着对业务领域理解的加深而改进。</p>
+      <p>很多时候，业务领域的复杂度最初是隐性的。一开始一切看起来简单直接，这种简单却往往具有欺骗性。随着功能增加，更多边缘情况、不变量和规则被发现，简单很快转化为复杂。新的认识甚至可能是颠覆性的，要求从头重建模型，包括限界上下文、聚合和其他实现细节的边界。</p>
+      <aside class="margin-note" data-kind="plain" aria-label="白话解释批注">
+        <span class="note-kind">白话解释</span>
+        <h4>早期的大边界是一种可逆选择</h4>
+        <p>领域还没看清时，太早切得很细，会把猜测固化成跨服务契约。先保留稍宽的边界，等词义和规则稳定后再拆，通常更容易纠错。</p>
+      </aside>
+      <p>从战略设计角度看，一个有用的启发式是：根据领域知识的成熟度设计限界上下文边界。把系统拆成错误的上下文，事后修正成本可能很高。因此，当领域逻辑尚不清晰且频繁变化时，适合先采用较宽的边界。随着知识不断积累、业务逻辑趋于稳定，再把宽上下文分解为更窄的上下文或微服务。</p>
+      <p>新发现的领域知识应当用于演进设计，使其更有韧性。但领域知识也可能流失：文档逐渐过期，参与原始设计的人离开公司，新功能以临时方式不断加入，最终代码库获得“遗留系统”的名号。主动防止领域知识退化至关重要。下一章将介绍一种恢复领域知识的有效工具：EventStorming 工作坊。</p>
+      <aside class="margin-note" data-kind="action" aria-label="可优化点批注">
+        <span class="note-kind">可优化点</span>
+        <h4>把知识写进可执行边界</h4>
+        <p>文档记录为什么，类型和状态机限制什么能发生，测试保护关键不变量。只写一次性迁移文档，无法阻止半年后同样的语义再次分叉。</p>
+      </aside>
+    </section>
+
+    <section id="growth">
+      <h2>增长</h2>
+      <p>增长是健康系统的标志。持续增加新功能，说明系统给用户带来了价值，团队也在继续满足需求并应对竞争。但增长也有阴暗面：代码库可能逐渐长成一团乱麻。</p>
+      <blockquote>
+        <p>一团乱麻，是一种结构随意、蔓延失控、粗糙松散、靠胶带和铁丝勉强维持的意大利面式代码丛林。它清楚地表现出不受约束的增长，以及一次又一次只求眼前奏效的修补。<sup><a href="#note-1">1</a></sup></p>
+      </blockquote>
+      <aside class="note" id="note-1"><strong>1</strong>　Brian Foote 与 Joseph Yoder，<em>Big Ball of Mud</em>，PLoP 1997。</aside>
+      <p>导致一团乱麻的无序增长，源于扩展系统功能时没有重新评估过去的设计决策。增长不断撑大组件边界，扩展其职责。领域驱动设计中的许多工具，本质上都在设定边界：子域限定业务构件，限界上下文限定模型，值对象限定不可变性，聚合限定一致性。</p>
+      <p>处理增长复杂度的指导原则，是识别并消除<span class="term">偶发复杂度</span>——也就是过期设计决策造成的复杂度。业务领域内在的<span class="term">本质复杂度</span>则应该用领域驱动设计工具和实践来管理。</p>
+
+      <h3>子域</h3>
+      <p>子域边界很难识别，因此我们不追求完美边界，而追求有用边界：它们应帮助我们区分不同业务价值的组件，并为每一类选择合适的设计和实现工具。</p>
+      <p>业务增长时，子域边界会更加模糊，一个粗粒度子域可能实际上横跨多个更细的子域。应当定期重新检查已识别的子域，并使用<span class="term">内聚用例</span>这一启发式：如果一组用例操作同一组数据，它们更可能属于同一个子域；若用例和数据开始分群，就可能出现了拆分位置。</p>
+      <figure>
+        <div class="figure-frame">
+          <div class="growth-board" role="img" aria-label="工单路由子域在增长中混入意图分析，随后拆为核心与通用两个子域">
+            <div class="growth-stage"><small>原始</small><span>工单路由<br>核心子域</span></div>
+            <span class="diagram-arrow">→</span>
+            <div class="growth-stage"><small>增长</small><span>工单路由<br>核心子域</span><span>意图分析<br>通用子域</span></div>
+            <span class="diagram-arrow">→</span>
+            <div class="growth-stage"><small>优化边界</small><span>工单路由<br>核心子域</span><span>意图分析<br>通用子域</span></div>
+          </div>
+        </div>
+        <figcaption><span class="figure-number">图 11-3</span>为了适应增长，把隐藏在原子域中的不同业务价值明确拆开。</figcaption>
+      </figure>
+      <p>如果能够识别类型不同的细粒度子域，就能更好地管理业务领域的本质复杂度。对子域及其类型了解得越准确，为每个子域选择技术方案就越有效。尤其对于核心子域，应尽量从其他能力中提纯出来，把投入集中在业务战略最重要的地方。</p>
+      <aside class="margin-note" data-kind="project" aria-label="你的项目批注">
+        <span class="note-kind">你的项目</span>
+        <h4>按业务链拆，不按平台拆</h4>
+        <p>首次输入、模板选择、二次编辑、完成写回虽然穿过 Common/Android/鸿蒙，但更值得检查的是它们是否拥有不同用例、状态和副作用，而不是简单按源码集把领域切成三块。</p>
+      </aside>
+
+      <h3>限界上下文</h3>
+      <p>限界上下文允许我们为业务领域使用不同模型。与其构建一个“什么都会、什么都不精”的模型，不如构建多个各自聚焦于特定问题的模型。</p>
+      <p>项目演进和增长时，限界上下文很容易失去焦点，积累解决不同问题的逻辑，这就是偶发复杂度。像检查子域一样，我们也需要定期检查上下文边界，寻找把模型简化为更专注上下文的机会。</p>
+      <p>增长还会把原先隐蔽的设计问题暴露出来。例如，一些限界上下文可能越来越“话多”，任何操作都必须调用另一个上下文才能完成。这强烈暗示模型无效，应重新设计边界，提高上下文自治性。</p>
+      <aside class="margin-note" data-kind="project" aria-label="你的项目批注">
+        <span class="note-kind">你的项目</span>
+        <h4>频繁来回调用可能是事实被切开了</h4>
+        <p>如果 Common 每一步都要询问平台“现在是什么状态”，平台又不断读取 Common 才能决定写回，很可能不是接口不够多，而是同一业务事实被两个所有者拆开了。</p>
+      </aside>
+
+      <h3>聚合</h3>
+      <p>第 6 章给出的聚合边界原则是：聚合应尽可能小，只包含业务领域要求保持强一致的对象。</p>
+      <p>业务需求增长时，把新功能随手分配给已有聚合很方便，却容易忘记重新检查“小聚合”原则。如果一个聚合包含了并非所有业务逻辑都需要强一致的数据，就产生了应当消除的偶发复杂度。</p>
+      <p>把业务功能提取到独立聚合，不仅能简化原聚合，还可能简化它所属的限界上下文。这类重构经常会暴露一个隐藏模型；当它被明确表达后，甚至应该进入另一个限界上下文。</p>
+      <aside class="margin-note" data-kind="action" aria-label="可优化点批注">
+        <span class="note-kind">可优化点</span>
+        <h4>用强一致问题检查会话边界</h4>
+        <ul>
+          <li>哪些状态必须与一次平台写回一起成功？</li>
+          <li>哪些只是展示或缓存，可以稍后更新？</li>
+          <li>失败时必须共同回滚的最小集合是什么？</li>
+        </ul>
+        <p>答案比“把所有编辑状态放进一个 Session”更能决定聚合大小。</p>
+      </aside>
+    </section>
+
+    <section id="conclusion">
+      <h2>结论</h2>
+      <p>正如赫拉克利特所说，人生唯一不变的就是变化。企业也不例外。为了保持竞争力，企业会持续演进并重新定义自己；这些变化应该被当成设计过程的一等公民。</p>
+      <p>业务领域演进时，必须识别子域的变化，并让系统设计作出响应。过去的设计决策要持续与当前业务战略和子域状态对齐，必要时让设计演进到更适合当前需求的形态。</p>
+      <p>组织结构变化会影响团队沟通与合作，也会改变限界上下文的集成方式。学习业务领域是持续过程；随着新的领域知识出现，战略与战术设计都需要调整。</p>
+      <p>软件增长本身值得欢迎，但管理不当会对设计和架构造成灾难性影响。因此：</p>
+      <ul>
+        <li>子域功能扩展时，尝试识别更细粒度的子域边界，以支持更准确的设计决策。</li>
+        <li>不要让限界上下文变成“什么都做”的模型，确保其中的模型始终聚焦于具体问题。</li>
+        <li>让聚合边界尽可能小，用强一致数据这一启发式寻找可以提取到新聚合的业务逻辑。</li>
+      </ul>
+      <p>最后，要持续检查各种边界是否出现增长驱动的复杂度。消除偶发复杂度，用领域驱动设计工具管理业务领域真正不可避免的本质复杂度。</p>
+      <aside class="margin-note" data-kind="action" aria-label="可优化点批注">
+        <span class="note-kind">可优化点</span>
+        <h4>把架构决策写成带复查条件的假设</h4>
+        <p>除了记录“为什么这样设计”，再写清楚“出现哪些信号就要重评”：规则增多、跨边界调用变密、团队归属改变、外部方案商品化、或强一致范围发生变化。</p>
+      </aside>
+    </section>
+
+    <section id="exercises">
+      <h2>练习</h2>
+      <ol class="exercise-list">
+        <li>组织增长经常导致哪种限界上下文集成关系变化？
+          <ol type="a">
+            <li>合作关系转为客户—供应商（遵奉者、防腐层或开放主机服务）</li>
+            <li>防腐层转为开放主机服务</li>
+            <li>遵奉者转为共享内核</li>
+            <li>开放主机服务转为共享内核</li>
+          </ol>
+        </li>
+        <li>假设限界上下文的集成从遵奉者转为各行其道，可以推断出什么？
+          <ol type="a">
+            <li>研发团队难以合作。</li>
+            <li>被重复实现的功能属于支撑或通用子域。</li>
+            <li>被重复实现的功能属于核心子域。</li>
+            <li>A 和 B。</li>
+            <li>A 和 C。</li>
+          </ol>
+        </li>
+        <li>支撑子域正在变成核心子域时，会出现哪些症状？
+          <ol type="a">
+            <li>演进现有模型和实现新需求变得更容易。</li>
+            <li>演进现有模型变得痛苦。</li>
+            <li>子域变化得更频繁。</li>
+            <li>B 和 C。</li>
+            <li>以上都不是。</li>
+          </ol>
+        </li>
+        <li>发现新的业务机会可能导致什么变化？
+          <ol type="a">
+            <li>支撑子域转为核心子域。</li>
+            <li>支撑子域转为通用子域。</li>
+            <li>通用子域转为核心子域。</li>
+            <li>通用子域转为支撑子域。</li>
+            <li>A 和 B。</li>
+            <li>A 和 C。</li>
+          </ol>
+        </li>
+        <li>WolfDesk（前言中的虚构公司）可能通过怎样的业务战略变化，把某个通用子域转变为核心子域？</li>
+      </ol>
+    </section>
+
+    <p class="closing-note">HTML 批注阅读版：译文依据用户提供的英文原书制作；正文、代码、表格、批注与重绘后的中文图表均内嵌在本文件中，可离线阅读，也可直接使用浏览器打印。</p>
+  </main>
+  <script>
+    (() => {
+      const buttons = [...document.querySelectorAll("[data-note-filter]")];
+      const notes = [...document.querySelectorAll(".margin-note")];
+
+      function applyFilter(filter) {
+        notes.forEach((note) => {
+          note.hidden = filter === "none"
+            || (filter !== "all" && note.dataset.kind !== filter);
+        });
+        buttons.forEach((button) => {
+          button.setAttribute(
+            "aria-pressed",
+            String(button.dataset.noteFilter === filter)
+          );
+        });
+      }
+
+      buttons.forEach((button) => {
+        button.addEventListener("click", () => {
+          applyFilter(button.dataset.noteFilter);
+        });
+      });
+    })();
+  </script>
+</body>
+</html>
