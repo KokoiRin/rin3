@@ -190,6 +190,37 @@ test("publishes the DDD chapter 11 evolution notes with its annotated reader", a
   );
 });
 
+// 第十二章的侧栏只负责维持阅读主线，不再引入分类筛选；十二张重绘图必须完整导出。
+test("publishes the DDD chapter 12 EventStorming guide with mainline reading cues", async () => {
+  const article = await readOutput(
+    "software-engineering/learning-domain-driven-design-chapter-12/index.html",
+  );
+  const index = await readOutput("software-engineering/index.html");
+  const reader = await readOutput(
+    "reading/learning-domain-driven-design/chapter-12/index.html",
+  );
+
+  assert.match(index, /《Learning Domain-Driven Design》第十二章学习记录/);
+  assert.match(article, /先有业务故事，后有边界，最后才谈实现/);
+  assert.match(article, /事件模型不等于事件溯源/);
+  assert.match(
+    article,
+    /href="\.\.\/\.\.\/reading\/learning-domain-driven-design\/chapter-12\/"/,
+  );
+
+  assert.match(reader, /第 12 章｜EventStorming｜RIN III/);
+  for (let figure = 1; figure <= 12; figure += 1) {
+    assert.match(reader, new RegExp(`图 12-${figure}(?!\\d)`));
+  }
+  assert.match(reader, /回到主线/);
+  assert.match(reader, /十步流程的终点/);
+  assert.doesNotMatch(reader, /data-note-filter=/);
+  assert.match(
+    reader,
+    /href="\.\.\/\.\.\/\.\.\/software-engineering\/learning-domain-driven-design-chapter-12\/"/,
+  );
+});
+
 test("exports the component guide deck with a document switch", async () => {
   const deck = await readOutput("slides/component-guide/index.html");
 
