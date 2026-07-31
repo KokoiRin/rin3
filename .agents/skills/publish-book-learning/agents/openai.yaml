@@ -1,0 +1,4 @@
+interface:
+  display_name: "书籍翻译阅读器"
+  short_description: "保持原文完整、统一阅读器 UI，并按整本书沉淀学习记录"
+  default_prompt: "使用 $publish-book-learning 把这本书的下一章翻译成与现有章节风格一致的阅读器。"
