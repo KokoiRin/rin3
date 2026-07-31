@@ -131,7 +131,7 @@ test("lists the dual-view component guide once under me and defaults to the arti
 });
 
 // 同一本书只占一个学习记录入口，章节阅读器分别承载完整翻译并回到这篇整书笔记。
-test("publishes one Learning DDD record with four chapter readers", async () => {
+test("publishes one Learning DDD record with five chapter readers", async () => {
   const article = await readOutput(
     "software-engineering/learning-domain-driven-design/index.html",
   );
@@ -151,8 +151,10 @@ test("publishes one Learning DDD record with four chapter readers", async () => 
   assert.match(article, /事件模型不等于事件溯源/);
   assert.match(article, /把 DDD 带回不理想的现实/);
   assert.match(article, /先恢复逻辑边界，再选择物理拆分/);
+  assert.match(article, /微服务的“微”究竟在哪里/);
+  assert.match(article, /限界上下文给上限，聚合给下限/);
 
-  for (const chapter of [10, 11, 12, 13]) {
+  for (const chapter of [10, 11, 12, 13, 14]) {
     assert.match(
       article,
       new RegExp(
@@ -181,6 +183,9 @@ test("publishes one Learning DDD record with four chapter readers", async () => 
   const chapter13 = await readOutput(
     "reading/learning-domain-driven-design/chapter-13/index.html",
   );
+  const chapter14 = await readOutput(
+    "reading/learning-domain-driven-design/chapter-14/index.html",
+  );
   assert.match(chapter10, /第 10 章｜设计启发式｜RIN III/);
   assert.match(chapter11, /migrated-from-legacy/);
   for (let figure = 1; figure <= 12; figure += 1) {
@@ -194,6 +199,14 @@ test("publishes one Learning DDD record with four chapter readers", async () => 
     assert.match(chapter13, new RegExp(`图 13-${figure}(?!\\d)`));
   }
   assert.doesNotMatch(chapter13, /data-note-filter=/);
+  assert.match(chapter14, /第 14 章｜微服务｜RIN III/);
+  assert.match(chapter14, /AddTwoNumbers/);
+  assert.match(chapter14, /所有微服务都是限界上下文/);
+  assert.match(chapter14, /OASIS，《Reference Model for Service Oriented Architecture 1.0》/);
+  for (let figure = 1; figure <= 13; figure += 1) {
+    assert.match(chapter14, new RegExp(`图 14-${figure}(?!\\d)`));
+  }
+  assert.doesNotMatch(chapter14, /data-note-filter=/);
 });
 
 // 已发布的章节文章地址保留跳转页，避免旧链接在合并后直接失效。
