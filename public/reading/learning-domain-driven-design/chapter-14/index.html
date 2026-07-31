@@ -1,0 +1,1014 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>第 14 章｜微服务｜RIN III</title>
+  <meta name="description" content="《Learning Domain-Driven Design》第十四章完整中文翻译、重绘图示与主线提示阅读版">
+  <style>
+    :root {
+      --paper: #fffefa;
+      --canvas: #ecebe7;
+      --ink: #26343b;
+      --muted: #65757d;
+      --accent: #39728d;
+      --accent-soft: #e7f1f5;
+      --line: #d9e2e6;
+      --figure-bg: #f8fafb;
+      --blue: #9bc6df;
+      --blue-soft: #dcecf4;
+      --orange: #f2ad59;
+      --yellow: #f5d54a;
+      --red: #c9474f;
+      --shadow: 0 18px 48px rgba(40, 50, 56, .10);
+      color-scheme: light;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; background: var(--canvas); }
+    body {
+      margin: 0;
+      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text",
+        "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      font-size: 17px;
+      line-height: 1.78;
+      text-rendering: optimizeLegibility;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .site-nav {
+      display: flex;
+      width: min(1160px, calc(100% - 32px));
+      margin: 24px auto -16px;
+      justify-content: space-between;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .08em;
+    }
+
+    .site-nav a { color: var(--muted); text-decoration: none; }
+    .site-nav a:hover { color: var(--accent); }
+
+    .reader {
+      width: min(1160px, calc(100% - 32px));
+      margin: 40px auto 72px;
+      padding: 52px 360px 64px 64px;
+      background: var(--paper);
+      border: 1px solid rgba(57, 79, 90, .08);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+    }
+
+    .chapter-kicker, .note-kind {
+      display: inline-flex;
+      padding: 3px 12px;
+      border-radius: 999px;
+      color: var(--accent);
+      background: var(--accent-soft);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: .04em;
+    }
+
+    h1 {
+      margin: 14px 0 4px;
+      font-size: clamp(34px, 6vw, 46px);
+      line-height: 1.18;
+      letter-spacing: -.035em;
+    }
+
+    h2 {
+      margin: 2.25em 0 .55em;
+      font-size: 27px;
+      line-height: 1.28;
+      letter-spacing: -.02em;
+    }
+
+    h3 { margin: 1.7em 0 .4em; font-size: 21px; line-height: 1.35; }
+    h4 { margin: 1.35em 0 .25em; font-size: 17px; line-height: 1.45; }
+    p { margin: .72em 0; text-align: justify; text-justify: inter-ideograph; }
+    ul, ol { padding-left: 1.45em; }
+    li { margin: .42em 0; }
+    li::marker { color: var(--accent); }
+
+    .lead { margin-bottom: 14px; color: #35464e; font-size: 18px; line-height: 1.72; }
+    .title-rule {
+      width: 52px;
+      height: 3px;
+      margin: 18px 0 28px;
+      border-radius: 99px;
+      background: var(--accent);
+    }
+
+    .chapter-nav {
+      display: flex;
+      margin: 30px 0 38px;
+      padding: 0;
+      flex-wrap: wrap;
+      gap: 8px;
+      list-style: none;
+    }
+
+    .chapter-nav a {
+      display: block;
+      padding: 5px 11px;
+      color: var(--muted);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      font-size: 13px;
+      line-height: 1.4;
+      text-decoration: none;
+    }
+
+    .chapter-nav a:hover { color: var(--accent); border-color: #9fc1d0; background: #f5fafc; }
+
+    .margin-note {
+      position: relative;
+      float: right;
+      clear: right;
+      width: 286px;
+      margin: .15em -330px 20px 32px;
+      padding: 14px 15px 15px;
+      color: #52646c;
+      border: 1px solid #d9e4e8;
+      border-radius: 13px;
+      background: #f8fbfc;
+      box-shadow: 0 7px 18px rgba(51, 71, 81, .06);
+      font-size: 14px;
+      line-height: 1.62;
+    }
+
+    .margin-note::before {
+      position: absolute;
+      top: 22px;
+      left: -25px;
+      width: 18px;
+      height: 1px;
+      background: #aac3ce;
+      content: "";
+    }
+
+    .margin-note h4 { margin: 8px 0 6px; color: var(--ink); font-size: 16px; }
+    .margin-note p { margin: .4em 0 0; text-align: left; }
+
+    figure { margin: 1.35em 0 1.7em; break-inside: avoid; }
+    .figure-frame {
+      min-width: 650px;
+      padding: 20px 18px;
+      overflow-x: auto;
+      border: 1px solid #e1e8eb;
+      border-radius: 14px;
+      background: var(--figure-bg);
+    }
+
+    figcaption { margin-top: 9px; color: var(--muted); font-size: 14px; line-height: 1.5; }
+    .figure-number { margin-right: .55em; color: var(--accent); font-weight: 800; }
+    .callout {
+      margin: 1.35em 0;
+      padding: 15px 18px;
+      color: #43565f;
+      border-left: 3px solid #9bc2d2;
+      border-radius: 0 10px 10px 0;
+      background: #f5fafc;
+      font-size: 18px;
+    }
+
+    code {
+      padding: .12em .35em;
+      border-radius: 5px;
+      background: #edf2f4;
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+      font-size: .88em;
+    }
+
+    pre {
+      margin: 1.15em 0 1.5em;
+      padding: 18px 20px;
+      overflow-x: auto;
+      color: #20313a;
+      border: 1px solid #dbe4e8;
+      border-radius: 12px;
+      background: #f4f7f8;
+      line-height: 1.58;
+    }
+
+    pre code { padding: 0; background: transparent; }
+    .kw { color: #126d8f; font-weight: 700; }
+    .fn { color: #a13b85; }
+
+    .service {
+      display: grid;
+      min-height: 118px;
+      grid-template-columns: 1fr 44px;
+      align-items: stretch;
+      border: 2px solid #40545d;
+      background: var(--blue-soft);
+      font-size: 14px;
+      font-weight: 800;
+      text-align: center;
+    }
+
+    .service > span { display: grid; padding: 10px; place-items: center; }
+    .interface {
+      display: grid;
+      padding: 6px;
+      place-items: center;
+      color: #27343a;
+      background: var(--orange);
+      writing-mode: vertical-rl;
+      letter-spacing: .04em;
+    }
+
+    .service-link {
+      display: grid;
+      min-width: 650px;
+      grid-template-columns: 190px 1fr 190px;
+      gap: 18px;
+      align-items: center;
+    }
+
+    .link-lines { color: #40545d; font-size: 28px; font-weight: 900; text-align: center; line-height: 1.7; }
+    .link-lines .event { color: var(--orange); font-size: 19px; }
+
+    .api-card {
+      width: min(620px, 94%);
+      margin: 0 auto;
+      overflow: hidden;
+      border: 2px solid #40545d;
+      background: #fff;
+    }
+
+    .api-card strong { display: block; padding: 9px 14px; border-bottom: 2px solid #40545d; text-align: center; }
+    .api-card ul { margin: 0; padding: 8px 18px 12px; list-style: none; font-family: "SFMono-Regular", Consolas, monospace; font-size: 13px; }
+
+    .decompose {
+      display: grid;
+      min-width: 680px;
+      grid-template-columns: 190px 58px 1fr;
+      gap: 15px;
+      align-items: center;
+    }
+
+    .backlog {
+      border: 2px solid #40545d;
+      background: #fff;
+      font-size: 13px;
+    }
+
+    .backlog strong { display: block; padding: 8px 10px; background: var(--blue-soft); }
+    .backlog span { display: block; padding: 3px 10px; border-top: 1px dotted #7f9199; }
+    .big-arrow { color: var(--orange); font-size: 44px; font-weight: 900; text-align: center; }
+    .micro-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+    .micro {
+      position: relative;
+      min-height: 58px;
+      padding: 8px 42px 8px 10px;
+      border: 2px solid #40545d;
+      background: var(--blue-soft);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .micro::after {
+      position: absolute;
+      right: 7px;
+      bottom: 7px;
+      padding: 2px 6px;
+      color: #fff;
+      border-radius: 50%;
+      background: #247db8;
+      content: "DB";
+      font-size: 10px;
+      font-weight: 800;
+    }
+
+    .mesh {
+      position: relative;
+      min-width: 650px;
+      min-height: 430px;
+    }
+
+    .mesh .micro { position: absolute; width: 235px; min-height: 80px; }
+    .mesh .micro:nth-of-type(1) { top: 10px; left: 10px; }
+    .mesh .micro:nth-of-type(2) { top: 10px; right: 10px; }
+    .mesh .micro:nth-of-type(3) { top: 168px; left: 10px; }
+    .mesh .micro:nth-of-type(4) { top: 168px; right: 10px; }
+    .mesh .micro:nth-of-type(5) { bottom: 10px; left: 10px; }
+    .mesh .micro:nth-of-type(6) { right: 10px; bottom: 10px; }
+    .mesh svg { position: absolute; inset: 0; z-index: 0; }
+    .mesh .micro { z-index: 1; }
+
+    .chart {
+      display: block;
+      width: 100%;
+      min-width: 620px;
+      height: auto;
+    }
+
+    .chart text {
+      fill: #34454d;
+      font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif;
+      font-size: 15px;
+    }
+
+    .module-comparison {
+      display: flex;
+      min-width: 620px;
+      min-height: 330px;
+      align-items: end;
+      justify-content: center;
+      gap: 100px;
+      padding: 50px 20px 20px;
+    }
+
+    .module-shape {
+      position: relative;
+      display: grid;
+      width: var(--w);
+      height: var(--h);
+      place-items: center;
+      border: 2px solid #40545d;
+      background: #fff;
+      font-weight: 800;
+    }
+
+    .module-shape::before {
+      position: absolute;
+      top: -7px;
+      left: -2px;
+      width: calc(100% + 4px);
+      height: 8px;
+      border: 2px solid #40545d;
+      background: #1784bd;
+      content: "";
+    }
+
+    .module-shape::after {
+      position: absolute;
+      top: -58px;
+      left: 50%;
+      width: 180px;
+      color: var(--muted);
+      content: "公共接口（越窄越好）";
+      font-size: 13px;
+      font-weight: 600;
+      text-align: center;
+      transform: translateX(-50%);
+    }
+
+    .module-label { position: absolute; right: 0; bottom: -34px; left: 0; text-align: center; }
+
+    .context-row {
+      display: flex;
+      min-width: 620px;
+      align-items: stretch;
+      justify-content: center;
+      gap: 42px;
+    }
+
+    .context-blob {
+      width: 265px;
+      min-height: 220px;
+      padding: 20px;
+      border: 2px solid #40545d;
+      border-radius: 38% 44% 34% 42%;
+      background: var(--blue-soft);
+      text-align: center;
+    }
+
+    .context-blob strong { display: block; margin-bottom: 10px; color: var(--accent); font-size: 18px; }
+    .context-blob span { display: inline-block; margin: 3px 6px; font-size: 13px; }
+    .context-blob .conflict { color: var(--red); font-weight: 900; }
+
+    .alternatives { display: grid; min-width: 650px; gap: 14px; }
+    .alternative {
+      padding: 14px;
+      border: 1px dashed #9aabb2;
+      border-radius: 16px;
+      background: #fff;
+    }
+
+    .alternative > strong { display: block; margin-bottom: 10px; color: var(--muted); font-size: 13px; }
+    .mini-contexts { display: flex; flex-wrap: wrap; gap: 10px; }
+    .mini-context {
+      flex: 1 1 175px;
+      padding: 11px 12px;
+      border: 2px solid #70838b;
+      border-radius: 18px 25px 20px 23px;
+      background: var(--blue-soft);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .mini-context b { display: block; color: var(--accent); font-size: 14px; }
+    .mini-context em { color: var(--red); font-style: normal; font-weight: 800; }
+
+    .subdomain-modules {
+      display: flex;
+      min-width: 650px;
+      min-height: 340px;
+      align-items: end;
+      justify-content: space-around;
+      gap: 20px;
+      padding: 54px 14px 24px;
+    }
+
+    .subdomain-modules .module-shape::after { content: ""; }
+    .integration-map {
+      display: grid;
+      min-width: 650px;
+      grid-template-columns: 170px 60px 1fr;
+      gap: 20px;
+      align-items: center;
+    }
+
+    .context-box {
+      display: grid;
+      min-height: 150px;
+      padding: 18px;
+      place-items: center;
+      border: 2px solid #40545d;
+      border-radius: 12px;
+      background: var(--blue);
+      font-weight: 800;
+      text-align: center;
+    }
+
+    .adapter {
+      display: grid;
+      width: 52px;
+      height: 62px;
+      place-items: center;
+      border: 2px solid #40545d;
+      background: #ffe0a8;
+      font-size: 12px;
+      font-weight: 900;
+      writing-mode: vertical-rl;
+    }
+
+    .downstreams { display: grid; gap: 18px; }
+    .downstreams .context-box { min-height: 100px; }
+    .exercise-list > li { margin: 1.15em 0; padding-left: .25em; }
+    .exercise-list ol { margin-top: .4em; list-style-type: lower-alpha; }
+    .translation-note {
+      margin-top: 2.8em;
+      padding-top: 1.2em;
+      color: var(--muted);
+      border-top: 1px solid var(--line);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    @media (max-width: 1040px) {
+      .reader { width: min(820px, calc(100% - 32px)); padding: 52px 64px 64px; }
+      .margin-note { float: none; width: auto; margin: 1em 0 1.25em; }
+      .margin-note::before { display: none; }
+    }
+
+    @media (max-width: 680px) {
+      body { font-size: 16px; }
+      .site-nav { width: calc(100% - 36px); margin: 16px auto; }
+      .reader { width: 100%; margin: 0; padding: 32px 22px 48px; border: 0; border-radius: 0; box-shadow: none; }
+      .figure-frame { min-width: 0; margin-right: -6px; margin-left: -6px; padding: 12px 10px; }
+    }
+
+    @media print {
+      html, body { background: #fff; }
+      body { font-size: 10.6pt; line-height: 1.62; }
+      .site-nav, .chapter-nav { display: none; }
+      .reader { width: auto; margin: 0; padding: 0; border: 0; border-radius: 0; box-shadow: none; }
+      .margin-note { float: none; width: auto; margin: 8pt 0 10pt; box-shadow: none; break-inside: avoid; }
+      .margin-note::before { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <nav class="site-nav" aria-label="站点导航">
+    <a href="../../../software-engineering/learning-domain-driven-design/">← 返回整本书学习记录</a>
+    <a href="../../../">RIN III</a>
+  </nav>
+
+  <main class="reader">
+    <header>
+      <span class="chapter-kicker">第 14 章</span>
+      <h1>微服务</h1>
+      <div class="title-rule"></div>
+      <p class="lead">微服务真正需要“微”的，不是代码行数、团队人数或部署包大小，而是公共接口。设计目标也不是让每个服务单独看起来最简单，而是在服务内部复杂度和整个系统的集成复杂度之间取得平衡。</p>
+      <nav aria-label="本章导航">
+        <ul class="chapter-nav">
+          <li><a href="#service">什么是服务</a></li>
+          <li><a href="#microservice">什么是微服务</a></li>
+          <li><a href="#complexity">系统复杂度</a></li>
+          <li><a href="#deep-service">深服务</a></li>
+          <li><a href="#ddd-boundaries">DDD 与服务边界</a></li>
+          <li><a href="#compress-interface">压缩公共接口</a></li>
+          <li><a href="#conclusion">总结</a></li>
+          <li><a href="#exercises">练习</a></li>
+        </ul>
+      </nav>
+    </header>
+
+    <section id="intro">
+      <aside class="margin-note">
+        <span class="note-kind">本章主旨</span>
+        <h4>微服务不是限界上下文的同义词</h4>
+        <p>这一章会先定义微服务，再用限界上下文、聚合和子域逐层寻找安全边界。</p>
+      </aside>
+
+      <p>2010 年代中期，微服务席卷了软件工程行业。它的初衷，是满足现代系统快速变化、弹性伸缩的需要，并自然适应云计算的分布式特征。许多公司做出战略决策，把单体代码库拆开，希望获得微服务架构带来的灵活性。遗憾的是，其中很多尝试并没有好结果。它们没有得到灵活架构，反而得到了“分布式大泥球”——比原本想拆掉的单体更加脆弱、黏连和昂贵。</p>
+
+      <p>从历史上看，微服务经常与领域驱动设计联系在一起，尤其是限界上下文模式。许多人甚至把“限界上下文”和“微服务”当作可以互换的说法。但它们真的是一回事吗？本章将探索 DDD 方法论与微服务架构模式的关系。你会看到二者如何相互作用，更重要的是，怎样借助 DDD 设计有效的微服务系统。</p>
+
+      <p>先从最基本的问题开始：服务和微服务究竟是什么？</p>
+    </section>
+
+    <section id="service">
+      <h2>什么是服务？</h2>
+
+      <aside class="margin-note">
+        <span class="note-kind">本段主旨</span>
+        <h4>公共接口定义服务</h4>
+        <p>判断一个服务“是什么”，先看它允许外界做什么，而不是先看内部有多少类、表或代码。</p>
+      </aside>
+
+      <p>按照 OASIS 的定义，服务是一种通过规定接口提供一个或多个能力访问机制。<sup><a href="#footnote-1">1</a></sup> 规定接口可以是任何让数据进入或离开服务的机制：既可以是请求—响应这样的同步方式，也可以是生产和消费事件这样的异步方式。这就是服务的公共接口，如图 14-1 所示，它提供了与其他系统组件沟通和集成的途径。</p>
+
+      <figure>
+        <div class="figure-frame" role="img" aria-label="两个服务的所有同步请求和异步事件都通过各自公共接口交换">
+          <div class="service-link">
+            <div class="service"><span>服务 1</span><span class="interface">公共接口</span></div>
+            <div class="link-lines">⟷<br><span class="event">✉　⇢　✉</span></div>
+            <div class="service"><span class="interface">公共接口</span><span>服务 2</span></div>
+          </div>
+        </div>
+        <figcaption><span class="figure-number">图 14-1</span>服务之间的通信。</figcaption>
+      </figure>
+
+      <p>Randy Shoup 把服务接口比作“前门”。所有进入或离开服务的数据都必须通过这扇前门。进一步说，服务的公共接口定义了服务本身，也就是它向外暴露的功能。一个表达清楚的接口，足以描述服务实现了什么功能。例如，图 14-2 中的公共接口明确说明了该服务提供的能力。</p>
+
+      <figure>
+        <div class="figure-frame">
+          <div class="api-card" role="img" aria-label="营销活动发布服务的五个公共方法">
+            <strong>营销活动发布服务</strong>
+            <ul>
+              <li>+ Publish(CampaignId): PublishingResult</li>
+              <li>+ Pause(CampaignId): Confirmation</li>
+              <li>+ Reschedule(CampaignId, Schedule): Confirmation</li>
+              <li>+ GetStatistics(CampaignId): PublishingStatistics</li>
+              <li>+ Deactivate(CampaignId, Reason): PublishingStatus</li>
+            </ul>
+          </div>
+        </div>
+        <figcaption><span class="figure-number">图 14-2</span>一个服务的公共接口。</figcaption>
+      </figure>
+
+      <p>这就把我们带到了微服务的定义。</p>
+    </section>
+
+    <section id="microservice">
+      <h2>什么是微服务？</h2>
+
+      <p>微服务的定义出乎意料地简单。既然服务由公共接口定义，那么微服务就是拥有“微型公共接口”的服务，也就是只有一扇很小的前门。</p>
+
+      <p>微型公共接口更容易让人理解单个服务的功能，以及它与其他系统组件的集成方式。减少服务功能，也会限制它发生变化的理由，使服务在开发、管理和伸缩方面更加自治。</p>
+
+      <p>这也解释了为什么微服务不应暴露自己的数据库。把数据库暴露出去，使它成为服务前门的一部分，会让公共接口变得极其庞大。比如，对关系数据库究竟可以执行多少种 SQL 查询？SQL 是一种相当灵活的语言，合理估计大概是“无限多”。因此，微服务要封装自己的数据库，数据只能通过更紧凑、面向集成的公共接口访问。</p>
+
+      <h3>一个方法一个服务：完美的微服务？</h3>
+
+      <aside class="margin-note">
+        <span class="note-kind">别跳太快</span>
+        <h4>前门小，不等于房间切得碎</h4>
+        <p>如果服务为了完成一个业务用例而必须频繁互相同步，那么隐藏的“员工入口”会比原来的公共接口更复杂。</p>
+      </aside>
+
+      <p>说“微服务就是拥有微型公共接口的服务”看似简单，却容易产生误导：好像只要把服务接口限制成一个方法，就能得到完美微服务。下面看看把这种幼稚拆分真正用到系统里，会发生什么。</p>
+
+      <p>考虑图 14-3 中的待办项管理服务。它的公共接口有 8 个方法，我们打算应用“每个服务只保留一个方法”的规则。</p>
+
+      <figure>
+        <div class="figure-frame" role="img" aria-label="待办项服务的八个操作被拆成八个各自拥有数据库的微服务">
+          <div class="decompose">
+            <div class="backlog">
+              <strong>待办项服务</strong>
+              <span>添加待办项</span><span>更新详情</span><span>归档待办项</span><span>设置优先级</span>
+              <span>列出待办项</span><span>搜索</span><span>查看待办项</span><span>分配到迭代</span>
+            </div>
+            <div class="big-arrow">➜</div>
+            <div class="micro-grid">
+              <div class="micro">添加待办项服务<br>+ Execute</div>
+              <div class="micro">更新待办项服务<br>+ Execute</div>
+              <div class="micro">归档待办项服务<br>+ Execute</div>
+              <div class="micro">设置优先级服务<br>+ Execute</div>
+              <div class="micro">列出待办项服务<br>+ Execute</div>
+              <div class="micro">搜索待办项服务<br>+ Execute</div>
+              <div class="micro">查看待办项服务<br>+ Execute</div>
+              <div class="micro">分配到迭代服务<br>+ Execute</div>
+            </div>
+          </div>
+        </div>
+        <figcaption><span class="figure-number">图 14-3</span>幼稚的拆分方式。</figcaption>
+      </figure>
+
+      <p>既然这些都是“行为良好”的微服务，每个服务都封装自己的数据库。任何服务都不能直接访问另一个服务的数据库，只能通过对方的公共接口。但当前接口并不支持服务之间的协作。它们必须共同工作，并同步各自造成的数据变化。结果，我们不得不扩展每个服务的接口，加入处理集成问题的方法。把这些服务之间的集成和数据流画出来，最终会像图 14-4 一样，成为典型的分布式大泥球。</p>
+
+      <figure>
+        <div class="figure-frame" role="img" aria-label="六个细粒度待办项服务之间存在大量交叉事件连接，形成集成网">
+          <div class="mesh">
+            <svg viewBox="0 0 650 430" aria-hidden="true">
+              <g stroke="#73858d" stroke-width="2" opacity=".75">
+                <path d="M245 55 L405 55 M245 55 L405 210 M245 55 L405 375"/>
+                <path d="M245 210 L405 55 M245 210 L405 210 M245 210 L405 375"/>
+                <path d="M245 375 L405 55 M245 375 L405 210 M245 375 L405 375"/>
+                <path d="M120 90 C320 110 330 310 530 345 M530 90 C330 115 320 320 120 345"/>
+              </g>
+            </svg>
+            <div class="micro">添加待办项<br>Execute / 发布事件</div>
+            <div class="micro">更新待办项<br>Execute / 处理多类事件</div>
+            <div class="micro">归档待办项<br>Execute / 发布并处理事件</div>
+            <div class="micro">设置优先级<br>Execute / 发布并处理事件</div>
+            <div class="micro">列出待办项<br>Execute / 处理所有变化</div>
+            <div class="micro">搜索待办项<br>Execute / 处理所有变化</div>
+          </div>
+        </div>
+        <figcaption><span class="figure-number">图 14-4</span>集成复杂度。</figcaption>
+      </figure>
+
+      <p>沿用 Randy Shoup 的比喻，把系统拆成如此细粒度的服务以后，我们确实缩小了每个服务的“前门”。然而，为了实现整个系统的功能，又不得不给每个服务加上巨大的“仅限员工”入口。这个例子能告诉我们什么？</p>
+
+      <h3>设计目标</h3>
+
+      <p>“每个服务只暴露一个方法”这条简单拆分启发式之所以次优，有很多原因。第一，它根本做不到。服务必须协作，因此我们被迫给公共接口增加面向集成的方法。第二，我们赢了一场战斗，却输掉了整场战争：每个服务的确比原设计简单得多，但得到的整个系统却复杂了几个数量级。</p>
+
+      <p>微服务架构的目标，是产生一个灵活的系统。如果只把设计精力集中在单个组件上，却忽略它与系统其余部分的互动，就违背了“系统”的定义：</p>
+
+      <ul>
+        <li>一组相互连接、共同工作的事物或设备；</li>
+        <li>一组为特定目的共同使用的计算机设备和程序。</li>
+      </ul>
+
+      <p>因此，系统不可能由彼此完全独立的组件构成。在正确的微服务系统中，无论服务之间解耦得多好，它们仍然必须集成并互相通信。下面看看单个微服务的复杂度与整个系统复杂度如何相互影响。</p>
+    </section>
+
+    <section id="complexity">
+      <h2>系统复杂度</h2>
+
+      <aside class="margin-note">
+        <span class="note-kind">回到主线</span>
+        <h4>同时看局部和全局</h4>
+        <p>单体会把复杂度压进内部；过度拆分会把复杂度搬到网络和协作关系中。两端都可能成为大泥球。</p>
+      </aside>
+
+      <p>四十年前，没有云计算，没有全球规模的需求，也不需要每 11.7 秒部署一次系统。但工程师依然需要驯服系统复杂度。尽管当时使用的工具不同，面临的挑战——更重要的是解决思路——今天仍然适用，也可以用来设计微服务系统。</p>
+
+      <p>Glenford J. Myers 在《Composite/Structured Design》中讨论了怎样组织过程式代码来降低复杂度。他在第一页就指出：复杂度问题远不止“尽量降低程序每个部分的局部复杂度”；更重要的是全局复杂度，也就是程序或系统整体结构的复杂度——主要部分之间关联或相互依赖的程度。</p>
+
+      <p>在我们的语境中，局部复杂度是每个微服务自身的复杂度，全局复杂度则是整个系统的复杂度。局部复杂度取决于服务实现；全局复杂度由服务之间的互动和依赖决定。设计微服务系统时，哪一种复杂度更值得优化？来看两个极端。</p>
+
+      <p>把全局复杂度降到最低出奇地容易：消除系统组件之间的一切互动，也就是把所有功能都放进一个单体服务。前面已经看到，这种策略在某些场景中可以工作；在另一些场景中，它会形成可怕的大泥球，局部复杂度可能达到最高。</p>
+
+      <p>反过来，如果只优化局部复杂度，却忽略系统全局复杂度，就会得到更加可怕的分布式大泥球。二者关系如图 14-5 所示。</p>
+
+      <figure>
+        <div class="figure-frame">
+          <svg class="chart" viewBox="0 0 700 430" role="img" aria-label="随着服务粒度变细，局部复杂度下降而全局复杂度上升">
+            <defs><marker id="a5" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#34454d"/></marker></defs>
+            <path d="M90 345 H650 M90 345 V45" fill="none" stroke="#34454d" stroke-width="2" marker-end="url(#a5)"/>
+            <path d="M100 90 L620 330" fill="none" stroke="#c9474f" stroke-width="5" stroke-dasharray="10 8"/>
+            <path d="M100 330 L620 90" fill="none" stroke="#8ebbd8" stroke-width="5"/>
+            <text x="18" y="210" transform="rotate(-90 18 210)">复杂度</text>
+            <text x="330" y="390">粒度越来越细 →</text>
+            <text x="108" y="72">局部复杂度</text>
+            <text x="500" y="73">全局复杂度</text>
+            <text x="70" y="374">大泥球</text>
+            <text x="535" y="374">分布式大泥球</text>
+          </svg>
+        </div>
+        <figcaption><span class="figure-number">图 14-5</span>服务粒度与系统复杂度。</figcaption>
+      </figure>
+
+      <p>要设计正确的微服务系统，必须同时优化全局复杂度和局部复杂度。把目标设成只优化其中一个，只能得到局部最优；全局最优需要平衡两种复杂度。下面看看“微型公共接口”怎样帮助我们取得这种平衡。</p>
+    </section>
+
+    <section id="deep-service">
+      <h2>把微服务设计成深服务</h2>
+
+      <p>软件系统中的模块——实际上任何系统中的模块——都由功能和逻辑定义。功能是模块应该做什么，也就是它的业务能力；逻辑是模块怎样实现该功能，也就是业务逻辑。</p>
+
+      <p>John Ousterhout 在《A Philosophy of Software Design》中讨论了模块化，并提出一个简单而有力的视觉启发式来评估模块设计：深度。</p>
+
+      <p>可以把模块想象成矩形，如图 14-6 所示。矩形上边代表模块的功能，也就是公共接口的复杂度。较宽的矩形代表功能范围更广，较窄的矩形代表功能更受限制、公共接口更简单。矩形面积代表模块逻辑，也就是功能实现的复杂度。</p>
+
+      <aside class="margin-note">
+        <span class="note-kind">读图提示</span>
+        <h4>“深”不是代码多</h4>
+        <p>深度表达的是：一小块接口替调用者隐藏了多少有价值的复杂度。接口同样大时，能封装更多逻辑的模块更深。</p>
+      </aside>
+
+      <figure>
+        <div class="figure-frame" role="img" aria-label="深模块以窄接口封装较多实现复杂度，浅模块以宽接口只封装较少复杂度">
+          <div class="module-comparison">
+            <div class="module-shape" style="--w:140px;--h:235px"><span class="module-label">深模块</span></div>
+            <div class="module-shape" style="--w:275px;--h:68px"><span class="module-label">浅模块</span></div>
+          </div>
+        </div>
+        <figcaption><span class="figure-number">图 14-6</span>深模块。</figcaption>
+      </figure>
+
+      <p>按照这个模型，有效模块是深的：简单公共接口封装复杂逻辑。无效模块是浅的：它的公共接口能封装的复杂度远少于深模块。考虑下面的方法：</p>
+
+      <pre><code><span class="kw">int</span> <span class="fn">AddTwoNumbers</span>(<span class="kw">int</span> a, <span class="kw">int</span> b)
+{
+    <span class="kw">return</span> a + b;
+}</code></pre>
+
+      <p>这是浅模块的极端情况：公共接口（方法签名）与逻辑（方法实现）的复杂度几乎相同。引入这样的模块，只会增加多余的“活动部件”。它没有封装复杂度，反而给整个系统增加了偶发复杂度。</p>
+
+      <h3>把微服务看作深模块</h3>
+
+      <p>除了术语不同，“深模块”与微服务模式的区别在于：模块既可以表示逻辑边界，也可以表示物理边界，而微服务严格来说是物理边界。除此以外，两者概念及其底层设计原则是相同的。</p>
+
+      <p>图 14-3 中每个只实现一个业务方法的服务，都是浅模块。因为必须引入面向集成的公共方法，最终接口反而比它应有的更“宽”。</p>
+
+      <p>从系统复杂度看，深模块通过封装局部复杂度来降低系统全局复杂度；浅模块没有封装住自己的局部复杂度，因此会给系统增加一个组件并抬高全局复杂度。</p>
+
+      <p>浅服务也是许多微服务项目失败的原因。把微服务误解为“不超过 X 行代码的服务”，或“重写比修改更容易的服务”，只盯着单个服务，却漏掉了架构最重要的对象：整个系统。</p>
+
+      <p>系统可以拆到多细，取决于这些微服务共同参与的系统用例。如果把单体拆成服务，引入变化的成本会下降，并在系统达到合适的微服务粒度时降到最低。但如果继续拆过这个阈值，原本的深服务会越来越浅；由于集成需要，它们的接口会再次变宽，引入变化的成本也会重新上升，整个架构最终变成分布式大泥球，如图 14-7 所示。</p>
+
+      <figure>
+        <div class="figure-frame">
+          <svg class="chart" viewBox="0 0 700 420" role="img" aria-label="变化成本随拆分粒度呈 U 型，在合适微服务粒度区间最低">
+            <defs><marker id="a7" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#34454d"/></marker></defs>
+            <path d="M90 340 H650 M90 340 V45" fill="none" stroke="#34454d" stroke-width="2" marker-end="url(#a7)"/>
+            <path d="M120 80 C155 285 270 315 365 295 C485 270 570 175 610 80" fill="none" stroke="#1681b8" stroke-width="7"/>
+            <path d="M120 80 V340 M365 295 V340 M610 80 V340" fill="none" stroke="#7c8e96" stroke-dasharray="4 5"/>
+            <text x="23" y="220" transform="rotate(-90 23 220)">变化成本</text>
+            <text x="80" y="375">大泥球</text>
+            <text x="302" y="375">微服务</text>
+            <text x="535" y="375">分布式大泥球</text>
+          </svg>
+        </div>
+        <figcaption><span class="figure-number">图 14-7</span>粒度与变化成本。</figcaption>
+      </figure>
+
+      <p>现在已经知道微服务是什么，接下来看看 DDD 怎样帮助我们找到深服务的边界。</p>
+    </section>
+
+    <section id="ddd-boundaries">
+      <h2>领域驱动设计与微服务边界</h2>
+
+      <aside class="margin-note">
+        <span class="note-kind">本段主旨</span>
+        <h4>三种边界回答不同问题</h4>
+        <p>限界上下文给出最大安全边界，聚合给出最小一致性边界，子域通常提供更平衡的服务候选。</p>
+      </aside>
+
+      <p>和微服务一样，前面介绍的许多 DDD 模式都在讨论边界：限界上下文是模型的边界，子域限定一项业务能力，而聚合和值对象是事务边界。下面看看哪些边界适合用来界定微服务。</p>
+
+      <h3>限界上下文</h3>
+
+      <p>微服务与限界上下文有很多共同点，以至于两个模式经常被混用。它们真的一样吗？限界上下文边界是否与有效微服务的边界一致？</p>
+
+      <p>微服务和限界上下文都是物理边界。和限界上下文一样，一个微服务由一个团队拥有；彼此冲突的模型也不能被塞进同一个微服务，否则会形成复杂接口。微服务确实是限界上下文。但反过来也成立吗？能不能说每个限界上下文都是微服务？</p>
+
+      <p>第 3 章已经说明，限界上下文保护统一语言和模型的一致性。同一限界上下文里不能实现相互冲突的模型。假设你在开发广告管理系统，业务实体“潜在客户”（Lead）在“推广”和“销售”上下文中使用不同模型。因此，推广和销售必须是两个限界上下文，各自在自己的边界内只定义一个有效模型，如图 14-8 所示。原文随后把该实体写成 Campaign，与前文和图示不一致，此处按图示语义理解为 Lead。</p>
+
+      <figure>
+        <div class="figure-frame" role="img" aria-label="推广与销售两个限界上下文分别拥有自己的潜在客户模型">
+          <div class="context-row">
+            <div class="context-blob">
+              <strong>推广</strong>
+              <span>营销活动</span><span>漏斗</span><span>投放位置</span><span>落地页</span>
+              <span>代理商</span><span>插入订单</span><span class="conflict">潜在客户</span>
+            </div>
+            <div class="context-blob">
+              <strong>销售</strong>
+              <span>联系人</span><span>CDR</span><span>转化</span><span>营销活动</span>
+              <span>坐席</span><span>提案</span><span>消息</span><span class="conflict">潜在客户</span>
+            </div>
+          </div>
+        </div>
+        <figcaption><span class="figure-number">图 14-8</span>限界上下文。</figcaption>
+      </figure>
+
+      <p>为简化讨论，假设除了“潜在客户”以外，系统里没有其他冲突模型。这样得到的限界上下文天然很宽，每个上下文都可以包含多个子域。只要子域不会引入冲突模型，它们就能从一个限界上下文移动到另一个上下文；图 14-9 中的多种拆分都是完全有效的限界上下文设计。</p>
+
+      <figure>
+        <div class="figure-frame" role="img" aria-label="同一组子域可以依据团队、生命周期等需要形成三种不同但有效的限界上下文拆分">
+          <div class="alternatives">
+            <div class="alternative">
+              <strong>限界上下文拆分方案 1</strong>
+              <div class="mini-contexts">
+                <div class="mini-context"><b>营销</b>客服台、电话、合同、活动管理、优化、身份访问、<em>潜在客户模型 A</em></div>
+                <div class="mini-context"><b>销售</b>CRM、计费、创意目录、佣金、身份访问、<em>潜在客户模型 B</em></div>
+              </div>
+            </div>
+            <div class="alternative">
+              <strong>限界上下文拆分方案 2</strong>
+              <div class="mini-contexts">
+                <div class="mini-context"><b>营销</b>创意目录、活动管理、优化、<em>模型 A</em></div>
+                <div class="mini-context"><b>支撑</b>客服台、电话、合同、计费、身份访问</div>
+                <div class="mini-context"><b>销售</b>CRM、佣金、优化、<em>模型 B</em></div>
+              </div>
+            </div>
+            <div class="alternative">
+              <strong>限界上下文拆分方案 3</strong>
+              <div class="mini-contexts">
+                <div class="mini-context"><b>营销</b>创意目录、计费、合同、活动管理、优化、身份访问、<em>模型 A</em></div>
+                <div class="mini-context"><b>销售</b>CRM、电话、客服台、佣金、身份访问、<em>模型 B</em></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <figcaption><span class="figure-number">图 14-9</span>限界上下文的不同拆分方式。</figcaption>
+      </figure>
+
+      <p>不同拆分可以适应不同要求，例如团队规模与结构、生命周期依赖等。但能否说这个例子中所有有效的限界上下文都必然是微服务？不能，尤其是方案 1 中两个限界上下文的功能都相当宽。</p>
+
+      <p>所以，微服务与限界上下文的关系并不对称。所有微服务都是限界上下文，但并非所有限界上下文都是微服务。限界上下文代表“最大有效单体”的边界。这样的单体不能与大泥球混为一谈：它是可行的设计选项，能够保护统一语言或业务领域模型的一致性。第 15 章还会看到，在某些情况下，这种宽边界比微服务更有效。</p>
+
+      <p>图 14-10 展示了限界上下文与微服务的关系。位于二者之间的区域是安全区，里面都是有效设计。如果系统没有被拆成正确的限界上下文，会形成大泥球；如果拆分越过微服务阈值，则会形成分布式大泥球。</p>
+
+      <aside class="margin-note">
+        <span class="note-kind">读图提示</span>
+        <h4>这是区间，不是一个点</h4>
+        <p>同一个业务可能有多种有效粒度。目标不是计算唯一答案，而是避免越过两侧的危险边界。</p>
+      </aside>
+
+      <figure>
+        <div class="figure-frame">
+          <svg class="chart" viewBox="0 0 700 390" role="img" aria-label="从大泥球到分布式大泥球的粒度曲线上，限界上下文与微服务之间是安全区">
+            <defs><marker id="a10" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#34454d"/></marker></defs>
+            <path d="M90 320 H650 M90 320 V45" fill="none" stroke="#34454d" stroke-width="2" marker-end="url(#a10)"/>
+            <path d="M105 60 C130 170 230 245 350 285 C455 316 560 316 620 316" fill="none" stroke="#1681b8" stroke-width="7"/>
+            <path d="M285 248 L455 303" fill="none" stroke="#f5d54a" stroke-width="6"/>
+            <circle cx="285" cy="248" r="8" fill="#f5d54a" stroke="#39728d"/><circle cx="455" cy="303" r="8" fill="#f5d54a" stroke="#39728d"/>
+            <text x="20" y="62">粒度</text><text x="70" y="350">大泥球</text>
+            <text x="225" y="350">限界上下文</text><text x="420" y="350">微服务</text><text x="545" y="350">分布式大泥球</text>
+          </svg>
+        </div>
+        <figcaption><span class="figure-number">图 14-10</span>粒度与模块化。</figcaption>
+      </figure>
+
+      <p>接下来看看另一个极端：聚合能否帮助我们找到微服务边界。</p>
+
+      <h3>聚合</h3>
+
+      <p>如果说限界上下文给出了最宽有效边界，那么聚合模式恰好相反：聚合边界是可能的最窄边界。把一个聚合拆成多个物理服务或限界上下文，不只是次优设计；正如附录 A 将展示的，它至少会带来许多不希望出现的后果。</p>
+
+      <p>和限界上下文一样，聚合边界也经常被用来驱动微服务边界。聚合是不可分割的业务功能单元，封装内部业务规则、不变量和逻辑的复杂度。但本章前面已经说明，微服务设计关注的不是孤立的单个服务。必须把服务放在它与系统其他组件的互动中考察：</p>
+
+      <ul>
+        <li>这个聚合是否与同一子域的其他聚合通信？</li>
+        <li>它是否与其他聚合共享值对象？</li>
+        <li>这个聚合的业务逻辑变化影响子域其他组件的概率有多高？反过来又如何？</li>
+      </ul>
+
+      <p>聚合与子域其他业务实体的关系越强，它作为独立服务时就越浅。</p>
+
+      <p>确实存在“一个聚合一个服务”能产生模块化设计的情况。但更多时候，如此细粒度的服务会增加整个系统的全局复杂度。</p>
+
+      <h3>子域</h3>
+
+      <p>设计微服务时，一个更平衡的启发式，是让服务与业务子域的边界对齐。第 1 章已经介绍，子域对应细粒度业务能力，是公司在业务领域中竞争所需的构件。从业务角度看，子域描述的是能力——业务“做什么”——而不是能力“怎样实现”。从技术角度看，子域代表一组相互连贯的用例：它们使用同一个业务领域模型，操作相同或紧密相关的数据，并具有强功能关系。一个用例的业务需求变化，很可能影响其他用例，如图 14-11 所示。</p>
+
+      <figure>
+        <div class="figure-frame" role="img" aria-label="四个子域都以相对窄的接口封装不同规模的实现复杂度">
+          <div class="subdomain-modules">
+            <div class="module-shape" style="--w:125px;--h:190px"><span class="module-label">活动优化</span></div>
+            <div class="module-shape" style="--w:90px;--h:130px"><span class="module-label">发布</span></div>
+            <div class="module-shape" style="--w:170px;--h:160px"><span class="module-label">CRM</span></div>
+            <div class="module-shape" style="--w:85px;--h:245px"><span class="module-label">佣金</span></div>
+          </div>
+        </div>
+        <figcaption><span class="figure-number">图 14-11</span>子域。</figcaption>
+      </figure>
+
+      <p>子域的粒度，以及对子域功能——“做什么”而不是“怎样做”——的关注，使其天然成为深模块。子域描述，也就是功能，封装了更复杂的实现细节，也就是逻辑。子域中用例彼此连贯，也保证了最终模块的深度。在很多情况下，把这些用例拆开反而会形成更复杂的公共接口，得到更浅的模块。所有这些特征，都使子域成为设计微服务时相对安全的边界。</p>
+
+      <p>让微服务与子域对齐是一条安全启发式，对大多数微服务都能产生较优方案。但也存在其他边界更有效的情况：例如保留在更宽的限界上下文语言边界中，或者因为非功能需求而把聚合作为微服务。解决方案不仅取决于业务领域，也取决于组织结构、业务战略和非功能需求。正如第 11 章所说，软件架构和设计必须持续适应环境变化。</p>
+    </section>
+
+    <section id="compress-interface">
+      <h2>压缩微服务的公共接口</h2>
+
+      <aside class="margin-note">
+        <span class="note-kind">回到主线</span>
+        <h4>边界之外，还要看接口形状</h4>
+        <p>服务粒度合适，并不保证它足够“深”。发布语言和防腐层都在减少跨边界暴露的复杂度。</p>
+      </aside>
+
+      <p>除了帮助寻找服务边界，DDD 还能让服务变得更深。下面用开放主机服务和防腐层模式，说明怎样简化微服务的公共接口。</p>
+
+      <h3>开放主机服务</h3>
+
+      <p>开放主机服务把限界上下文内部的业务领域模型，与用于集成其他系统组件的模型解耦，如图 14-12 所示。</p>
+
+      <p>引入面向集成的模型，也就是发布语言，可以降低系统的全局复杂度。第一，它允许服务实现独立演进而不影响消费者：新的实现模型仍然可以被翻译成现有发布语言。第二，发布语言只暴露更克制的模型。它围绕集成需要设计，封装消费者无须了解的实现复杂度。例如，它可以暴露更少的数据，并以更方便消费者使用的模型呈现。</p>
+
+      <p>在同一份实现逻辑之上提供更简单的公共接口，会让服务变得更“深”，也会带来更有效的微服务设计。</p>
+
+      <figure>
+        <div class="figure-frame" role="img" aria-label="上游限界上下文通过开放主机服务和发布语言向两个下游上下文提供稳定接口">
+          <div class="integration-map">
+            <div class="context-box">上游<br>限界上下文</div>
+            <div class="adapter">开放主机服务</div>
+            <div class="downstreams">
+              <div class="context-box">下游限界上下文</div>
+              <div class="context-box">下游限界上下文</div>
+            </div>
+          </div>
+        </div>
+        <figcaption><span class="figure-number">图 14-12</span>通过发布语言集成服务。</figcaption>
+      </figure>
+
+      <h3>防腐层</h3>
+
+      <p>防腐层（ACL）模式从相反方向工作。它降低服务与其他限界上下文集成的复杂度。传统上，防腐层属于它所保护的限界上下文。不过正如第 9 章所讨论的，还可以再向前一步，把它实现成独立服务。</p>
+
+      <p>图 14-13 中的 ACL 服务同时降低了消费方限界上下文的局部复杂度和系统全局复杂度。消费方上下文的业务复杂度与集成复杂度分离，后者被卸载给 ACL 服务。消费方上下文使用更方便、面向集成的模型，因此公共接口得到压缩，不必反映生产方服务暴露的集成复杂度。</p>
+
+      <figure>
+        <div class="figure-frame" role="img" aria-label="独立防腐层服务位于上游与两个下游限界上下文之间，承担模型翻译">
+          <div class="integration-map">
+            <div class="context-box">上游<br>限界上下文</div>
+            <div class="adapter">防腐层服务</div>
+            <div class="downstreams">
+              <div class="context-box">下游限界上下文</div>
+              <div class="context-box">下游限界上下文</div>
+            </div>
+          </div>
+        </div>
+        <figcaption><span class="figure-number">图 14-13</span>作为独立服务的防腐层。</figcaption>
+      </figure>
+    </section>
+
+    <section id="conclusion">
+      <h2>总结</h2>
+
+      <aside class="margin-note">
+        <span class="note-kind">整章收束</span>
+        <h4>寻找安全区，而不是最小值</h4>
+        <p>太宽会破坏模型一致性，太窄会制造集成泥球。子域通常是起点，但最终仍由业务、组织和非功能需求共同决定。</p>
+      </aside>
+
+      <p>从历史上看，微服务架构与 DDD 联系极深，以至于“微服务”和“限界上下文”经常被混用。本章分析了二者的联系，也看到了它们并不相同。</p>
+
+      <p>所有微服务都是限界上下文，但并非所有限界上下文都是微服务。微服务定义了服务的最小有效边界；限界上下文保护其中模型的一致性，代表最大有效边界。边界比限界上下文更宽，会形成大泥球；边界比微服务更窄，则会形成分布式大泥球。</p>
+
+      <p>尽管如此，微服务与领域驱动设计的关系依然紧密。我们已经看到，怎样利用 DDD 工具设计有效的微服务边界。</p>
+
+      <p>第 15 章会从另一个角度继续讨论高层系统架构：通过事件驱动架构进行异步集成。我们将学习怎样利用不同类型的事件消息，进一步优化微服务边界。</p>
+    </section>
+
+    <section id="exercises">
+      <h2>练习</h2>
+
+      <ol class="exercise-list">
+        <li>
+          限界上下文与微服务之间是什么关系？
+          <ol>
+            <li>所有微服务都是限界上下文。</li>
+            <li>所有限界上下文都是微服务。</li>
+            <li>微服务和限界上下文是同一概念的不同说法。</li>
+            <li>二者完全不同，无法比较。</li>
+          </ol>
+        </li>
+        <li>
+          微服务的哪个部分应该是“微”的？
+          <ol>
+            <li>喂饱微服务团队所需的披萨数量；还要考虑团队成员不同的饮食偏好和每日平均热量摄入。</li>
+            <li>实现服务功能所需的代码行数；由于指标不考虑每行宽度，最好在超宽显示器上开发微服务。</li>
+            <li>最重要的是采购适合微服务的中间件和基础设施，最好来自获得微服务认证的供应商。</li>
+            <li>跨越服务边界暴露、并由公共接口反映的业务领域知识和复杂性。</li>
+          </ol>
+        </li>
+        <li>
+          哪些组件边界是安全的？
+          <ol>
+            <li>比限界上下文更宽的边界。</li>
+            <li>比微服务更窄的边界。</li>
+            <li>位于限界上下文（最宽）与微服务（最窄）之间的边界。</li>
+            <li>所有边界都安全。</li>
+          </ol>
+        </li>
+        <li>
+          让微服务与聚合边界对齐，是一个好的设计决策吗？
+          <ol>
+            <li>是，聚合永远都能形成正确的微服务。</li>
+            <li>不是，聚合绝不能作为独立微服务暴露。</li>
+            <li>不可能用单个聚合构成微服务。</li>
+            <li>取决于业务领域。</li>
+          </ol>
+        </li>
+      </ol>
+    </section>
+
+    <p id="footnote-1" class="translation-note"><strong>1.</strong> OASIS，《Reference Model for Service Oriented Architecture 1.0》，检索日期：2021 年 6 月 14 日。</p>
+    <p class="translation-note">本页按原章结构完整翻译。图 14-1 至图 14-13 均依据原图语义重绘并翻译图中文字；侧栏内容为阅读提示，不属于原文。</p>
+  </main>
+</body>
+</html>
