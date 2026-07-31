@@ -131,7 +131,7 @@ test("lists the dual-view component guide once under me and defaults to the arti
 });
 
 // 同一本书只占一个学习记录入口，章节阅读器分别承载完整翻译并回到这篇整书笔记。
-test("publishes one Learning DDD record with three chapter readers", async () => {
+test("publishes one Learning DDD record with four chapter readers", async () => {
   const article = await readOutput(
     "software-engineering/learning-domain-driven-design/index.html",
   );
@@ -144,13 +144,15 @@ test("publishes one Learning DDD record with three chapter readers", async () =>
     )?.length,
     1,
   );
-  assert.doesNotMatch(index, /第十章学习记录|第十一章学习记录|第十二章学习记录/);
+  assert.doesNotMatch(index, /第十章学习记录|第十一章学习记录|第十二章学习记录|第十三章学习记录/);
   assert.match(article, /限界上下文首先是词义的边界/);
   assert.match(article, /设计决策应该带有失效条件/);
   assert.match(article, /先有业务故事，后有边界，最后才谈实现/);
   assert.match(article, /事件模型不等于事件溯源/);
+  assert.match(article, /把 DDD 带回不理想的现实/);
+  assert.match(article, /先恢复逻辑边界，再选择物理拆分/);
 
-  for (const chapter of [10, 11, 12]) {
+  for (const chapter of [10, 11, 12, 13]) {
     assert.match(
       article,
       new RegExp(
@@ -176,12 +178,22 @@ test("publishes one Learning DDD record with three chapter readers", async () =>
   const chapter12 = await readOutput(
     "reading/learning-domain-driven-design/chapter-12/index.html",
   );
+  const chapter13 = await readOutput(
+    "reading/learning-domain-driven-design/chapter-13/index.html",
+  );
   assert.match(chapter10, /第 10 章｜设计启发式｜RIN III/);
   assert.match(chapter11, /migrated-from-legacy/);
   for (let figure = 1; figure <= 12; figure += 1) {
     assert.match(chapter12, new RegExp(`图 12-${figure}(?!\\d)`));
   }
   assert.doesNotMatch(chapter12, /data-note-filter=/);
+  assert.match(chapter13, /第 13 章｜现实世界中的领域驱动设计｜RIN III/);
+  assert.match(chapter13, /想得大，但从小处开始/);
+  assert.match(chapter13, /地下.*领域驱动设计/);
+  for (let figure = 1; figure <= 5; figure += 1) {
+    assert.match(chapter13, new RegExp(`图 13-${figure}(?!\\d)`));
+  }
+  assert.doesNotMatch(chapter13, /data-note-filter=/);
 });
 
 // 已发布的章节文章地址保留跳转页，避免旧链接在合并后直接失效。
