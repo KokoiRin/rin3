@@ -1,0 +1,543 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>第 16 章｜数据网格｜RIN III</title>
+  <meta name="description" content="《Learning Domain-Driven Design》第十六章与全书结语完整中文翻译、重绘图示与主线提示阅读版">
+  <style>
+    :root {
+      --paper:#fffefa; --canvas:#ecebe7; --ink:#26343b; --muted:#65757d;
+      --accent:#39728d; --accent-soft:#e7f1f5; --line:#d9e2e6;
+      --figure-bg:#f8fafb; --blue:#dcecf4; --blue-strong:#9bc6df;
+      --orange:#f2ad59; --yellow:#f5d54a; --shadow:0 18px 48px rgba(40,50,56,.10);
+      color-scheme:light;
+    }
+    * { box-sizing:border-box; }
+    html { scroll-behavior:smooth; background:var(--canvas); }
+    body {
+      margin:0; color:var(--ink);
+      font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+      font-size:17px; line-height:1.78; text-rendering:optimizeLegibility;
+      -webkit-font-smoothing:antialiased;
+    }
+    .site-nav { display:flex; width:min(1160px,calc(100% - 32px)); margin:24px auto -16px; justify-content:space-between; font-size:12px; font-weight:700; letter-spacing:.08em; }
+    .site-nav a { color:var(--muted); text-decoration:none; }
+    .site-nav a:hover { color:var(--accent); }
+    .reader {
+      width:min(1160px,calc(100% - 32px)); margin:40px auto 72px;
+      padding:52px 360px 64px 64px; background:var(--paper);
+      border:1px solid rgba(57,79,90,.08); border-radius:18px; box-shadow:var(--shadow);
+    }
+    .chapter-kicker,.note-kind { display:inline-flex; padding:3px 12px; border-radius:999px; color:var(--accent); background:var(--accent-soft); font-size:12px; font-weight:800; letter-spacing:.04em; }
+    h1 { margin:14px 0 4px; font-size:clamp(34px,6vw,46px); line-height:1.18; letter-spacing:-.035em; }
+    h2 { margin:2.25em 0 .55em; font-size:27px; line-height:1.28; letter-spacing:-.02em; }
+    h3 { margin:1.7em 0 .4em; font-size:21px; line-height:1.35; }
+    h4 { margin:1.35em 0 .25em; font-size:17px; line-height:1.45; }
+    p { margin:.72em 0; text-align:justify; text-justify:inter-ideograph; }
+    ul,ol { padding-left:1.45em; }
+    li { margin:.42em 0; }
+    li::marker { color:var(--accent); }
+    blockquote { margin:1.4em 0; padding:15px 18px; border-left:3px solid #9bc2d2; background:#f5fafc; color:#43565f; font-size:18px; }
+    .lead { margin-bottom:14px; color:#35464e; font-size:18px; line-height:1.72; }
+    .title-rule { width:52px; height:3px; margin:18px 0 28px; border-radius:99px; background:var(--accent); }
+    .chapter-nav { display:flex; margin:30px 0 38px; padding:0; flex-wrap:wrap; gap:8px; list-style:none; }
+    .chapter-nav a { display:block; padding:5px 11px; color:var(--muted); border:1px solid var(--line); border-radius:999px; font-size:13px; line-height:1.4; text-decoration:none; }
+    .chapter-nav a:hover { color:var(--accent); border-color:#9fc1d0; background:#f5fafc; }
+    .margin-note {
+      position:relative; float:right; clear:right; width:286px; margin:.15em -330px 20px 32px;
+      padding:14px 15px 15px; color:#52646c; border:1px solid #d9e4e8;
+      border-radius:13px; background:#f8fbfc; box-shadow:0 7px 18px rgba(51,71,81,.06);
+      font-size:14px; line-height:1.62;
+    }
+    .margin-note::before { position:absolute; top:22px; left:-25px; width:18px; height:1px; background:#aac3ce; content:""; }
+    .margin-note h4 { margin:8px 0 6px; color:var(--ink); font-size:16px; }
+    .margin-note p { margin:.4em 0 0; text-align:left; }
+    figure { margin:1.35em 0 1.7em; break-inside:avoid; }
+    .figure-frame { min-width:650px; padding:20px 18px; overflow-x:auto; border:1px solid #e1e8eb; border-radius:14px; background:var(--figure-bg); }
+    figcaption { margin-top:9px; color:var(--muted); font-size:14px; line-height:1.5; }
+    .figure-number { margin-right:.55em; color:var(--accent); font-weight:800; }
+    code { padding:.12em .35em; border-radius:5px; background:#edf2f4; font-family:"SFMono-Regular",Consolas,"Liberation Mono",monospace; font-size:.88em; }
+    .translation-note { color:var(--muted); font-size:14px; }
+    .exercise-list>li { margin:1.15em 0; padding-left:.25em; }
+    .exercise-list ol { margin-top:.4em; list-style-type:lower-alpha; }
+    .closing-note { margin-top:3em; padding:18px; border:1px solid var(--line); border-radius:12px; color:var(--muted); background:#fafcfb; font-size:14px; }
+    .diagram { min-width:650px; color:#26343b; font-size:14px; line-height:1.35; }
+    .node { display:grid; min-height:52px; padding:8px 10px; place-items:center; border:1.5px solid #40545d; border-radius:6px; background:var(--blue); font-weight:700; text-align:center; }
+    .node.orange { background:#f7d69a; }
+    .node.white { background:#fff; }
+    .arrow { color:#526872; font-size:24px; font-weight:800; text-align:center; }
+    .flow { display:grid; grid-template-columns:repeat(7,minmax(70px,1fr)); gap:9px; align-items:center; }
+    .flow.five { grid-template-columns:repeat(5,minmax(90px,1fr)); }
+    .schema { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; align-items:center; }
+    .schema-table { overflow:hidden; border:1.5px solid #40545d; background:#fff; font-size:12px; }
+    .schema-table strong { display:block; padding:7px 8px; background:var(--blue); border-bottom:1px solid #40545d; text-align:center; }
+    .schema-table span { display:block; padding:3px 8px; border-top:1px solid #d9e2e6; }
+    .fact-table,.book-table { width:100%; border-collapse:collapse; background:#fff; font-size:13px; }
+    .fact-table th,.fact-table td,.book-table th,.book-table td { padding:7px 8px; border:1px solid #7b8d95; text-align:left; white-space:nowrap; }
+    .fact-table th,.book-table th { background:var(--blue); }
+    .star { display:grid; min-width:650px; grid-template-columns:repeat(5,1fr); grid-template-rows:repeat(3,76px); gap:8px; align-items:center; }
+    .star .center { grid-column:3; grid-row:2; background:#fff; }
+    .star .top { grid-column:3; grid-row:1; }.star .left { grid-column:1; grid-row:2; }.star .right { grid-column:5; grid-row:2; }.star .bl { grid-column:2; grid-row:3; }.star .br { grid-column:4; grid-row:3; }
+    .mesh { display:grid; min-width:650px; gap:14px; }
+    .bounded { display:grid; grid-template-columns:1.1fr 1fr 48px 1fr 48px 1fr; gap:9px; padding:15px; align-items:center; border:1.5px solid #70838b; background:#fff; }
+    .bounded>strong { grid-column:1/-1; color:var(--accent); text-align:center; }
+    .ports { display:flex; gap:5px; flex-direction:column; }
+    .ports span { padding:6px; border:1px dotted #40545d; background:#f7d69a; text-align:center; }
+    .endpoints { display:flex; gap:8px; flex-direction:column; }
+    .endpoints span { padding:8px; border:1px dotted #40545d; background:#eef3f5; text-align:center; }
+    .principles { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; min-width:650px; }
+    .principles div { padding:15px 10px; border:1px solid #d4e0e5; border-radius:10px; background:#fff; text-align:center; }
+    .principles strong { display:block; margin-bottom:5px; color:var(--accent); }
+    .decision { display:grid; min-width:680px; grid-template-columns:repeat(4,1fr); gap:10px; }
+    .decision .question { padding:13px 8px; border:1.5px solid #40545d; background:#dcecf4; text-align:center; transform:rotate(0); }
+    .decision .choice { padding:10px; border:1.5px solid #40545d; background:#fff; text-align:center; }
+    .decision .label { grid-column:1/-1; margin-top:8px; padding:5px 10px; border-top:1px dashed #f2ad59; color:#9a621a; font-size:12px; font-weight:700; }
+    .reading-list li { margin:.9em 0; }
+    @media(max-width:900px) {
+      .site-nav,.reader { width:min(760px,calc(100% - 20px)); }
+      .reader { margin-top:28px; padding:38px 28px 50px; border-radius:14px; }
+      .margin-note { float:none; width:auto; margin:1em 0 1.25em; }
+      .margin-note::before { display:none; }
+      .figure-frame { min-width:0; overflow-x:auto; }
+    }
+    @media(max-width:520px) {
+      body { font-size:16px; line-height:1.76; }
+      .site-nav { width:calc(100% - 24px); margin-top:16px; }
+      .reader { width:calc(100% - 14px); margin:26px auto 36px; padding:28px 18px 38px; border-radius:12px; }
+      h1 { font-size:34px; } h2 { font-size:24px; } h3 { font-size:20px; }
+      p { text-align:left; }
+      .figure-frame { margin-left:-4px; margin-right:-4px; padding:14px 10px; }
+    }
+  </style>
+</head>
+<body>
+  <nav class="site-nav" aria-label="站点导航">
+    <a href="../../../software-engineering/learning-domain-driven-design/">← 返回整本书学习记录</a>
+    <a href="../chapter-15/">上一章</a>
+  </nav>
+
+  <main class="reader">
+    <header>
+      <span class="chapter-kicker">第 16 章 · 完整中文学习版</span>
+      <h1>数据网格</h1>
+      <p class="lead">前十五章主要在保护运行系统的领域边界；最后一章把同样的思路带到分析数据：谁理解数据，谁生产数据产品，并通过稳定接口让它被整个组织使用。</p>
+      <div class="title-rule"></div>
+      <ul class="chapter-nav" aria-label="本章目录">
+        <li><a href="#models">OLTP 与 OLAP</a></li>
+        <li><a href="#platforms">数据仓库与数据湖</a></li>
+        <li><a href="#mesh">数据网格</a></li>
+        <li><a href="#ddd">结合 DDD</a></li>
+        <li><a href="#conclusion">小结与练习</a></li>
+        <li><a href="#closing">全书结语</a></li>
+      </ul>
+    </header>
+
+    <aside class="margin-note">
+      <span class="note-kind">主线提示</span>
+      <h4>最后一章把边界从“业务操作”推到“业务分析”</h4>
+      <p>运行模型回答“现在怎样完成一次业务动作”，分析模型回答“过去发生了什么、怎样做得更好”。两者使用同一批事实，却不能直接共用同一个模型。</p>
+    </aside>
+    <p>到目前为止，本书讨论的都是用于构建运行系统的模型。运行系统执行实时事务，操纵系统数据，并编排系统与周围环境的日常交互。这些模型处理的是在线事务处理（online transactional processing，OLTP）数据。另一类同样值得重视、也需要恰当建模的数据，是在线分析处理（online analytical processing，OLAP）数据。</p>
+    <p>本章将介绍一种分析数据管理架构：数据网格（data mesh）。你会看到基于数据网格的架构如何工作，以及它与更传统的 OLAP 数据管理方式有何差异。最后，你会看到领域驱动设计与数据网格怎样彼此契合。不过，首先要理解分析数据模型是什么，以及为什么不能直接复用运行模型来满足分析用例。</p>
+
+    <section id="models">
+      <h2>分析数据模型与事务数据模型</h2>
+      <p>人们常说，知识就是力量。分析数据正是这样一种知识：它让公司可以利用积累的数据，洞察怎样优化业务、更好地理解客户需求，甚至通过训练机器学习（ML）模型来自动作出决策。</p>
+      <p>分析模型（OLAP）与运行模型（OLTP）服务于不同类型的消费者，支持实现不同种类的用例，因此也遵循不同的设计原则。</p>
+      <p>运行模型围绕系统业务领域中的各类实体构建，实现它们的生命周期，并编排它们之间的互动。图 16-1 展示了这样的模型。由于它们服务于运行系统，因此必须针对实时业务事务进行优化。</p>
+
+      <figure>
+        <div class="figure-frame">
+          <div class="diagram schema">
+            <div class="schema-table"><strong>support-case（支持工单）</strong><span>PK case-id</span><span>title</span><span>FK category-id</span><span>FK agent</span><span>FK customer</span></div>
+            <div class="schema-table"><strong>users（用户）</strong><span>PK user-id</span><span>first-name</span><span>last-name</span><span>email</span><span>is-active</span><span>FK role</span></div>
+            <div class="schema-table"><strong>message（消息）</strong><span>PK message-id</span><span>title / body</span><span>FK case-id</span><span>FK from / to</span><span>was-delivered / was-read</span></div>
+            <div class="schema-table"><strong>case-category（工单类别）</strong><span>PK category-id</span><span>name</span></div>
+            <div class="arrow">↖ 关联 ↗</div>
+            <div class="schema-table"><strong>roles（角色）</strong><span>PK role-id</span><span>name</span></div>
+          </div>
+        </div>
+        <figcaption><span class="figure-number">图 16-1</span>描述运行模型中各实体关系的关系型数据库模式</figcaption>
+      </figure>
+
+      <p>分析模型旨在让人从不同角度洞察运行系统。它不负责实现实时事务，而是帮助理解业务活动的表现，更重要的是帮助发现怎样优化运营，从而创造更大价值。</p>
+      <p>从数据结构看，OLAP 模型不再围绕单个业务实体组织，而是通过事实表和维度表聚焦业务活动。下面逐一介绍。</p>
+
+      <h3>事实表</h3>
+      <p>事实代表已经发生的业务活动。事实与领域事件有些相似，因为两者都描述过去发生的事情。不过，与领域事件不同，事实的名称没有必须使用过去时动词的风格要求；即便如此，事实仍然代表业务流程中的活动。例如，事实表 <code>Fact_CustomerOnboardings</code> 会为每位新入驻客户保存一条记录，<code>Fact_Sales</code> 会为每笔已经承诺的销售保存一条记录。图 16-2 展示了一张事实表。</p>
+
+      <figure>
+        <div class="figure-frame">
+          <table class="fact-table">
+            <thead><tr><th colspan="2">Fact_SolvedCases（已解决工单事实）</th></tr></thead>
+            <tbody><tr><td>PK</td><td>CaseId</td></tr><tr><td>FK</td><td>AgentKey</td></tr><tr><td>FK</td><td>CategoryKey</td></tr><tr><td>FK</td><td>OpenedOnDateKey</td></tr><tr><td>FK</td><td>ClosedOnDateKey</td></tr><tr><td>FK</td><td>CustomerKey</td></tr></tbody>
+          </table>
+        </div>
+        <figcaption><span class="figure-number">图 16-2</span>记录公司支持台已解决工单的事实表</figcaption>
+      </figure>
+
+      <p>事实记录与领域事件还有一个相似之处：它们永远不会被删除或修改。分析数据是只追加数据；如果要表达当前数据已经过时，只能追加一条包含当前状态的新记录。考虑图 16-3 中的事实表 <code>Fact_CaseStatus</code>。它记录支持请求的状态随时间变化的度量。事实名称中虽然没有明确动词，但它捕捉的业务流程是“处理支持工单”。</p>
+
+      <figure>
+        <div class="figure-frame">
+          <table class="fact-table">
+            <thead><tr><th>CaseId</th><th>时间戳</th><th>AgentKey</th><th>CategoryKey</th><th>CustomerKey</th><th>StatusKey</th></tr></thead>
+            <tbody>
+              <tr><td>case-141408202228</td><td>2021-06-15 10:30</td><td></td><td>12</td><td>10060512</td><td>1</td></tr>
+              <tr><td>case-141408202228</td><td>2021-06-15 11:00</td><td>285889</td><td>12</td><td>10060512</td><td>2</td></tr>
+              <tr><td>case-141408202228</td><td>2021-06-15 12:00</td><td>285889</td><td>12</td><td>10060512</td><td>3</td></tr>
+              <tr><td>case-141408202228</td><td>2021-06-15 13:00</td><td>285889</td><td>12</td><td>10060512</td><td>4</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <figcaption><span class="figure-number">图 16-3</span>描述支持工单生命周期中状态变化的事实表</figcaption>
+      </figure>
+
+      <aside class="margin-note">
+        <span class="note-kind">主线提示</span>
+        <h4>分析模型会主动损失细节</h4>
+        <p>运行系统必须精确处理每次变化；分析系统只需保留足以回答问题的粒度。这里每 30 分钟取一次快照，说明“完整”不等于“把所有运行数据原样搬过去”。</p>
+      </aside>
+      <p>OLAP 与 OLTP 模型的另一个重要差异，是数据粒度。运行系统为了处理业务事务，需要最精确的数据；对分析模型来说，聚合数据在许多用例中更高效。例如，在图 16-3 的 <code>Fact_CaseStatus</code> 表中，快照每 30 分钟采集一次。使用模型的数据分析师会决定哪种粒度最适合他们。为度量的每一次变化——例如工单数据的每一次改变——都创建事实记录，在某些场景中会造成浪费，在另一些场景中甚至技术上不可行。</p>
+
+      <h3>维度表</h3>
+      <p>分析模型的另一个基本构件是维度。如果事实表示业务流程或动作（动词），维度就是对事实的描述（形容词）。</p>
+      <p>维度用于描述事实的属性，事实表通过外键引用维度表。适合建模成维度的属性，是那些在不同事实记录中反复出现、又无法装进单个列的度量或数据。例如，图 16-4 中的模式使用多个维度补充了 <code>SolvedCases</code> 事实。</p>
+
+      <figure>
+        <div class="figure-frame">
+          <div class="diagram star">
+            <div class="node center">事实<br>已解决工单</div><div class="node top">维度<br>工单类别</div><div class="node left">维度<br>处理人员</div><div class="node right">维度<br>客户</div><div class="node bl">维度<br>升级状态</div><div class="node br">维度<br>日期</div>
+          </div>
+        </div>
+        <figcaption><span class="figure-number">图 16-4</span>被多个维度包围的 SolvedCases 事实</figcaption>
+      </figure>
+
+      <p>维度之所以高度规范化，是因为分析系统需要支持灵活查询。这也是运行模型与分析模型之间的一项差异。为了满足业务需求，人们通常可以预测运行模型会怎样被查询；分析模型的查询模式却无法预测。数据分析师需要以灵活方式观察数据，很难预先知道未来会执行什么查询。因此，规范化可以支持动态查询和过滤，也能按不同维度对事实数据进行分组。</p>
+
+      <h3>分析模型</h3>
+      <p>图 16-5 所示的表结构称为星型模式（star schema）。它以事实与维度之间的多对一关系为基础：每条维度记录会被多条事实使用，而事实中的每个外键只指向一条维度记录。</p>
+      <figure>
+        <div class="figure-frame">
+          <div class="diagram star">
+            <div class="node center white">事实</div><div class="node top">维度<br><small>1 ← 多</small></div><div class="node left">维度<br><small>1 ← 多</small></div><div class="node right">维度<br><small>多 → 1</small></div><div class="node bl">维度<br><small>多 → 1</small></div><div class="node br">维度<br><small>多 → 1</small></div>
+          </div>
+        </div>
+        <figcaption><span class="figure-number">图 16-5</span>事实与维度之间的多对一关系</figcaption>
+      </figure>
+
+      <p>另一种主流分析模型是雪花模式（snowflake schema）。它使用同样的基本构件：事实与维度。不过，在雪花模式中，维度是多层的：每个维度还会进一步规范化成粒度更细的维度，如图 16-6 所示。</p>
+      <p>额外的规范化让雪花模式可以用更少的空间存储维度数据，也更容易维护。不过，查询事实数据时需要连接更多表，因此要消耗更多计算资源。</p>
+      <p>星型模式和雪花模式都允许数据分析师分析业务表现，洞察哪些部分可以优化，并将其构建成商业智能（BI）报表。</p>
+      <figure>
+        <div class="figure-frame">
+          <div class="diagram star">
+            <div class="node center white">事实</div><div class="node top">一级维度<br>↗ 二级维度<br>↖ 二级维度</div><div class="node left">一级维度<br>← 二级维度</div><div class="node right">一级维度<br>→ 二级维度</div><div class="node bl">一级维度<br>↙ 二级维度</div><div class="node br">一级维度<br>↘ 二级维度</div>
+          </div>
+        </div>
+        <figcaption><span class="figure-number">图 16-6</span>雪花模式中的多层维度</figcaption>
+      </figure>
+    </section>
+
+    <section id="platforms">
+      <h2>分析数据管理平台</h2>
+      <p>下面从分析模型转向支持生成和提供分析数据的数据管理架构。本节讨论两种常见的分析数据架构：数据仓库和数据湖。你会了解它们各自的基本工作原理、二者的差异，以及每种方式面临的挑战。理解这两种架构，能为本章主题——数据网格范式以及它与领域驱动设计的关系——打下基础。</p>
+
+      <h3>数据仓库</h3>
+      <p>数据仓库（data warehouse，DWH）架构相对直接：从企业所有运行系统中提取数据，把源数据转换成分析模型，再把结果载入面向数据分析的数据库。这个数据库就是数据仓库。</p>
+      <p>这种数据管理架构主要建立在提取—转换—加载（extract-transform-load，ETL）脚本上。数据可以来自多种来源：运行数据库、事件流、日志等。除了把源数据翻译成以事实和维度为基础的模型，转换步骤还可能包括删除敏感数据、记录去重、事件重排、聚合细粒度事件等操作。有时转换还需要临时存储进入的数据，这块空间称为暂存区（staging area）。</p>
+      <p>图 16-7 所示的数据仓库包含覆盖企业所有业务流程的分析数据。它通过 SQL 语言（或某种方言）对外提供数据，供数据分析师和 BI 工程师使用。</p>
+
+      <figure>
+        <div class="figure-frame">
+          <div class="diagram flow">
+            <div><div class="node">运行系统 A</div><div class="node">运行系统 B</div><div class="node">日志</div></div><div class="arrow">→<small>提取</small></div><div class="node">暂存区</div><div class="arrow">→</div><div class="node">转换</div><div class="arrow">→</div><div><div class="node">企业数据仓库</div><div class="node white">分析 / 报表 / 挖掘</div></div>
+          </div>
+        </div>
+        <figcaption><span class="figure-number">图 16-7</span>典型的企业数据仓库架构</figcaption>
+      </figure>
+
+      <aside class="margin-note">
+        <span class="note-kind">主线提示</span>
+        <h4>数据仓库重演了“企业统一模型”的问题</h4>
+        <p>它试图把所有系统、所有分析用途压进一个中心模型。第 3 章已经解释过，覆盖整个企业的单一模型通常会因为词义和目的冲突而失效。</p>
+      </aside>
+      <p>细心的读者会发现，数据仓库架构与第 2、3 章讨论的问题有些相似。</p>
+      <p>首先，数据仓库架构的核心目标，是建立一个企业级统一模型。这个模型要描述企业所有系统产生的数据，并覆盖分析数据的全部不同用例，例如优化业务、降低运营成本、作出智能业务决策、生成报表，甚至训练 ML 模型。正如第 3 章所学到的，除了规模最小的组织，这种方式都不切实际。针对手头任务——例如制作报表或训练 ML 模型——设计模型，会更加有效，也更容易扩展。</p>
+      <p>数据集市（data mart）可以部分缓解构建包罗万象模型的挑战。数据集市是一个数据库，保存某种明确定义的分析需求所需的数据，例如分析单个业务部门。图 16-8 的数据集市模型中，一个集市由 ETL 流程直接从运行系统填充，另一个集市则从数据仓库提取数据。</p>
+
+      <figure>
+        <div class="figure-frame">
+          <div class="diagram flow five">
+            <div><div class="node">运行系统 A</div><div class="node">运行系统 B / 日志</div></div><div class="arrow">→<small>ETL</small></div><div><div class="node">营销数据集市</div><div class="node">企业数据仓库</div></div><div class="arrow">→</div><div><div class="node">支持台数据集市</div><div class="node white">分析 / 报表 / 挖掘</div></div>
+          </div>
+        </div>
+        <figcaption><span class="figure-number">图 16-8</span>增加数据集市后的企业数据仓库架构</figcaption>
+      </figure>
+
+      <p>如果数据从企业数据仓库进入数据集市，数据仓库中仍然必须定义企业级统一模型。另一种做法是让数据集市实现专用 ETL 流程，直接从运行系统摄取数据；但这样得到的模型很难跨不同集市查询数据——例如跨部门查询——因为它需要跨数据库查询，会显著影响性能。</p>
+      <p>数据仓库架构的另一个难题，是 ETL 流程在分析系统（OLAP）和运行系统（OLTP）之间建立了强耦合。ETL 脚本消费的数据不一定通过系统的公共接口提供。DWH 系统经常直接获取运行系统数据库里的全部数据。然而，运行数据库的模式并不是公共接口，而是内部实现细节。因此，模式稍有变化就注定会破坏数据仓库的 ETL 脚本。运行系统和分析系统通常由组织中相距较远的单位实现和维护，双方沟通困难，团队之间也会产生大量摩擦。这种沟通模式如图 16-9 所示。</p>
+
+      <figure>
+        <div class="figure-frame">
+          <div class="diagram flow five">
+            <div class="ports"><span>用户界面</span><span>API</span></div><div class="node">后端<br><small>产品团队</small></div><div class="node">运行数据</div><div class="arrow">ETL →</div><div class="node">企业数据仓库<br><small>数据工程团队</small></div>
+          </div>
+        </div>
+        <figcaption><span class="figure-number">图 16-9</span>绕过面向集成的公共接口，直接从运行数据库获取数据来填充数据仓库</figcaption>
+      </figure>
+
+      <p>数据湖架构解决了数据仓库架构的一部分不足。</p>
+      <h3>数据湖</h3>
+      <p>与数据仓库一样，数据湖架构也建立在摄取运行系统数据、并将它转换成分析模型这一思路之上。不过，两种方法之间存在一个概念差异。</p>
+      <p>基于数据湖的系统会摄取运行系统的数据，但不会立即把它转换成分析模型，而是先以原始形式保存，也就是以原来的运行模型保存。</p>
+      <p>原始数据最终无法直接满足数据分析师的需要。因此，数据工程师和 BI 工程师必须理解数据湖中的数据，并实现 ETL 脚本，生成分析模型，再把它们送入数据仓库。图 16-10 展示了数据湖架构。</p>
+
+      <figure>
+        <div class="figure-frame">
+          <div class="diagram flow">
+            <div><div class="node">运行系统 A</div><div class="node">运行系统 B</div><div class="node">日志</div></div><div class="arrow">摄取 →</div><div class="node">数据湖<br><small>原始运行模型</small></div><div class="arrow">提取 →</div><div class="node">转换</div><div class="arrow">加载 →</div><div><div class="node">企业数据仓库</div><div class="node white">分析 / 报表 / 挖掘</div></div>
+          </div>
+        </div>
+        <figcaption><span class="figure-number">图 16-10</span>数据湖架构</figcaption>
+      </figure>
+
+      <p>运行系统数据以原始形式保存，之后才转换，因此数据湖允许构建多个面向任务的分析模型。一个模型可以用于报表，另一个用于训练 ML 模型，等等。未来还可以增加新模型，并使用已经存在的原始数据初始化它们。</p>
+      <p>但延迟生成分析模型也提高了整个系统的复杂度。数据工程师为了兼容运行模型的不同版本，往往要实现和维护同一 ETL 脚本的多个版本，如图 16-11 所示。</p>
+      <figure>
+        <div class="figure-frame">
+          <div class="diagram flow">
+            <div><div class="node">运行系统 A</div><div class="node">运行系统 B / 日志</div></div><div class="arrow">→</div><div class="node">数据湖</div><div class="arrow">→</div><div><div class="node">转换 V1</div><div class="node">转换 V2</div></div><div class="arrow">→</div><div><div class="node">企业数据仓库</div><div class="node white">分析 / 报表 / 挖掘</div></div>
+          </div>
+        </div>
+        <figcaption><span class="figure-number">图 16-11</span>为兼容运行模型不同版本而维护同一 ETL 脚本的多个版本</figcaption>
+      </figure>
+
+      <p>此外，数据湖是无模式的——进入的数据没有强制模式，也没有机制控制数据质量——达到一定规模后，湖中的数据就会变得混乱。数据湖让摄取数据变得容易，却让使用数据困难得多。或者用一句常见的话说：数据湖会变成“数据沼泽”。数据科学家必须花费高出几个数量级的精力，才能理解混乱并提取有用的分析数据。</p>
+
+      <h3>数据仓库与数据湖架构的挑战</h3>
+      <p>数据仓库和数据湖都基于一个假设：为分析摄取的数据越多，组织获得的洞察就越多。然而，两种方法都会在“大”数据的重量下崩溃。规模扩大以后，从运行模型到分析模型的转换，会汇聚成数千个无法维护、临时拼凑的 ETL 脚本。</p>
+      <p>从建模角度看，两种架构都会越过运行系统的边界，并对其实现细节产生依赖。对实现模型的耦合造成运行系统团队与分析系统团队之间的摩擦，甚至会为了不破坏分析系统的 ETL 作业，而阻止运行模型发生变化。</p>
+      <p>更糟的是，数据分析师和数据工程师属于独立的组织单位，他们往往缺少运行系统开发团队所掌握的深层业务领域知识；他们主要专长于大数据工具，而不是业务领域。</p>
+      <p>最后，这种对实现模型的耦合，在采用领域驱动设计的项目中尤其严重，因为 DDD 强调持续演进和改进业务领域模型。于是，运行模型的一次变化可能给分析模型带来无法预见的后果。这类变化在 DDD 项目中频繁发生，也常常造成研发团队与数据团队之间的摩擦。</p>
+      <p>数据仓库和数据湖的这些局限，催生了一种新的分析数据管理架构：数据网格。</p>
+    </section>
+
+    <section id="mesh">
+      <h2>数据网格</h2>
+      <aside class="margin-note">
+        <span class="note-kind">主线提示</span>
+        <h4>数据网格不是另一种集中式存储产品</h4>
+        <p>它首先改变责任：不再由中央数据团队猜测每个系统的数据含义，而由掌握领域知识的产品团队交付可被消费的分析数据产品。</p>
+      </aside>
+      <p>从某种意义上说，数据网格架构就是面向分析数据的领域驱动设计。DDD 的各种模式会划定边界并保护边界内的内容；数据网格同样为分析数据定义并保护模型边界与所有权边界。</p>
+      <p>数据网格架构建立在四项核心原则上：围绕领域拆分数据、把数据当作产品、支持自治，以及构建生态系统。下面逐一讨论。</p>
+      <figure>
+        <div class="figure-frame">
+          <div class="principles">
+            <div><strong>围绕领域拆分</strong>按数据来源与业务边界划分所有权</div>
+            <div><strong>数据即产品</strong>提供可信、可发现、可演进的数据接口</div>
+            <div><strong>支持自治</strong>用统一平台降低各团队交付成本</div>
+            <div><strong>构建生态</strong>通过联邦治理保障互操作性</div>
+          </div>
+        </div>
+        <figcaption><span class="figure-number">主线图</span>数据网格的四项原则</figcaption>
+      </figure>
+
+      <h3>围绕领域拆分数据</h3>
+      <p>数据仓库和数据湖都试图把企业全部数据统一进一个大模型。这样得到的分析模型之所以低效，与企业级运行模型低效的原因完全相同。此外，把所有系统的数据汇集到一个地方，也会模糊不同数据元素的所有权边界。</p>
+      <p>数据网格不构建单体分析模型，而是采用第 3 章处理运行数据时讨论过的同一种办法：使用多个分析模型，并让它们与数据来源对齐。这样一来，分析模型的所有权边界自然就会与限界上下文边界对齐，如图 16-12 所示。分析模型按照系统限界上下文拆分以后，生成分析数据就成为对应产品团队的责任。</p>
+
+      <figure>
+        <div class="figure-frame">
+          <div class="diagram mesh">
+            <div class="bounded"><strong>营销限界上下文</strong><div class="ports"><span>用户界面</span><span>API</span></div><div class="node">后端<br><small>营销产品团队</small></div><div class="arrow">→</div><div class="node">运行数据</div><div class="arrow">ETL →</div><div class="node">营销分析模型</div></div>
+            <div class="bounded"><strong>支持限界上下文</strong><div class="ports"><span>用户界面</span><span>API</span></div><div class="node">后端<br><small>支持产品团队</small></div><div class="arrow">→</div><div class="node">运行数据</div><div class="arrow">ETL →</div><div class="node">支持分析模型</div></div>
+            <div class="bounded"><strong>销售限界上下文</strong><div class="ports"><span>用户界面</span><span>API</span></div><div class="node">后端<br><small>销售产品团队</small></div><div class="arrow">→</div><div class="node">运行数据</div><div class="arrow">ETL →</div><div class="node">销售分析模型</div></div>
+          </div>
+        </div>
+        <figcaption><span class="figure-number">图 16-12</span>让分析模型的所有权边界与限界上下文边界对齐</figcaption>
+      </figure>
+      <p>现在，每个限界上下文同时拥有自己的运行模型（OLTP）和分析模型（OLAP）。因此，拥有运行模型的同一个团队，也负责把它转换成分析模型。</p>
+
+      <h3>数据即产品</h3>
+      <p>传统数据管理架构很难发现、理解并获取高质量分析数据，在数据湖中尤其严重。</p>
+      <p>“数据即产品”原则要求把分析数据当作一等公民。在数据网格系统中，分析系统不再从可疑来源——内部数据库、日志文件等——获取运行数据，而是由限界上下文通过定义清晰的输出端口提供分析数据，如图 16-13 所示。</p>
+
+      <figure>
+        <div class="figure-frame">
+          <div class="diagram bounded">
+            <strong>限界上下文的数据产品</strong><div class="ports"><span>用户界面</span><span>API</span></div><div class="node">后端<br><small>产品团队</small></div><div class="arrow">→</div><div class="node">运行数据<br>→ 分析模型</div><div class="arrow">→</div><div class="endpoints"><span>流式端点</span><span>对象存储 / SQL</span></div>
+          </div>
+        </div>
+        <figcaption><span class="figure-number">图 16-13</span>通过多语言数据端点向消费者提供分析数据</figcaption>
+      </figure>
+
+      <p>应该像对待任何公共 API 一样对待分析数据：</p>
+      <ul>
+        <li>需要的端点——数据输出端口——应该容易发现；</li>
+        <li>分析端点应该拥有定义清晰的模式，描述所提供的数据及其格式；</li>
+        <li>分析数据应该值得信赖，并像任何 API 一样，具有明确且持续监控的服务级别协议（SLA）；</li>
+        <li>分析模型应该像普通 API 一样进行版本管理，并相应处理会破坏集成的模型变化。</li>
+      </ul>
+      <p>此外，既然分析数据被当作产品，就必须满足消费者需求。限界上下文团队负责保证最终模型能够解决消费者的问题。与数据仓库和数据湖架构不同，在数据网格中，数据质量的责任是一项顶层关注点。</p>
+      <p>分布式数据管理架构的目标，是让这些细粒度分析模型可以组合起来，满足组织的数据分析需求。例如，如果一份 BI 报表需要反映多个限界上下文的数据，它应该能够在需要时轻松获取它们的分析数据，执行本地转换，并生成报表。</p>
+      <p>最后，不同消费者可能需要不同形式的分析数据。有些人偏好执行 SQL 查询，有些人则希望从对象存储服务中获取分析数据。因此，数据产品必须支持多种技术形式，以适合不同消费者需求的格式提供数据。</p>
+      <p>为了落实“数据即产品”原则，产品团队需要加入面向数据的专家。这是跨职能团队拼图中缺失的一块：传统跨职能团队通常只包含与运行系统有关的专家。</p>
+
+      <h3>支持自治</h3>
+      <p>产品团队应该既能创建自己的数据产品，也能消费其他限界上下文提供的数据产品。与限界上下文本身一样，数据产品也应该能够互操作。</p>
+      <p>如果每个团队都自行构建提供分析数据的方案，不仅浪费、低效，也很难集成。为了避免这种情况，需要一个平台来抽象构建、运行和维护可互操作数据产品的复杂度。设计和建设这个平台是一项庞大的工作，需要专门的数据基础设施平台团队。</p>
+      <p>数据基础设施平台团队应该负责定义数据产品蓝图、统一访问模式、访问控制和产品团队可复用的多语言存储；还要监控平台，确保 SLA 与各项目标得到满足。</p>
+
+      <h3>构建生态系统</h3>
+      <p>建立数据网格系统的最后一步，是成立一个联邦治理机构，以保证分析数据领域的互操作性和生态思维。通常，这个小组由各限界上下文的数据负责人、产品负责人，以及数据基础设施平台团队的代表组成，如图 16-14 所示。</p>
+      <p>治理小组负责定义规则，确保生态系统健康且可互操作。规则必须应用到全部数据产品及其接口上，而治理小组要负责确保整个企业都遵守这些规则。</p>
+
+      <figure>
+        <div class="figure-frame">
+          <div class="diagram mesh">
+            <div class="node orange">联邦治理小组：领域数据负责人、产品负责人、平台工程师</div>
+            <div class="bounded"><strong>数据产品 A</strong><div class="ports"><span>UI</span><span>API</span></div><div class="node">产品团队</div><div class="arrow">→</div><div class="node">分析模型</div><div class="arrow">→</div><div class="endpoints"><span>流</span><span>存储</span></div></div>
+            <div class="bounded"><strong>数据产品 B</strong><div class="ports"><span>UI</span><span>API</span></div><div class="node">产品团队</div><div class="arrow">→</div><div class="node">分析模型</div><div class="arrow">→</div><div class="endpoints"><span>流</span><span>存储</span></div></div>
+          </div>
+        </div>
+        <figcaption><span class="figure-number">图 16-14</span>治理小组确保分布式数据分析生态可以互操作、保持健康，并服务于组织需求</figcaption>
+      </figure>
+    </section>
+
+    <section id="ddd">
+      <h2>结合数据网格与领域驱动设计</h2>
+      <aside class="margin-note">
+        <span class="note-kind">主线提示</span>
+        <h4>这里把全书工具重新串了起来</h4>
+        <p>统一语言提供语义，开放主机服务定义分析数据的发布语言，CQRS 生成多种读模型，上下文映射决定多个数据产品怎样合作。数据网格不是脱离 DDD 的新世界。</p>
+      </aside>
+      <p>以上就是数据网格架构的四项原则。它强调定义边界，并把实现细节封装在定义清晰的输出端口之后；显然，数据网格架构建立在与领域驱动设计相同的推理之上。此外，一些领域驱动设计模式能为实现数据网格架构提供有力支持。</p>
+      <p>首先，统一语言以及由此形成的领域知识，是设计分析模型的必要条件。正如讨论数据仓库和数据湖时所说，传统架构恰恰缺少领域知识。</p>
+      <p>第二，用不同于运行模型的另一套模型提供限界上下文数据，就是开放主机服务模式。在这个场景中，分析模型是一种额外的发布语言。</p>
+      <p>CQRS 模式让同一份数据生成多个模型变得容易，因此可以用来把运行模型转换成分析模型。CQRS 能够从头重新生成模型，也让同时生成并提供分析模型的多个版本变得容易，如图 16-15 所示。</p>
+
+      <figure>
+        <div class="figure-frame">
+          <div class="diagram flow">
+            <div class="ports"><span>用户界面</span><span>API</span></div><div class="node">后端</div><div class="node">命令执行模型</div><div class="arrow">已提交变化 →</div><div><div class="node">分析模型投影 V1</div><div class="node">分析模型投影 V2</div></div><div class="arrow">→</div><div><div class="endpoints"><span>分析模型 V1：流 / 存储</span><span>分析模型 V2：流 / 存储</span></div></div>
+          </div>
+        </div>
+        <figcaption><span class="figure-number">图 16-15</span>利用 CQRS 模式，同时以两个不同的模式版本提供分析数据</figcaption>
+      </figure>
+
+      <p>最后，由于数据网格架构要组合不同限界上下文的模型来实现分析用例，运行模型的限界上下文集成模式也适用于分析模型。两个产品团队可以通过合作关系共同演进分析模型；另一个团队可以实现防腐层，保护自己不受低效分析模型影响；反过来，团队也可以各走各路，分别重复实现分析模型。</p>
+    </section>
+
+    <section id="conclusion">
+      <h2>小结</h2>
+      <p>本章介绍了软件系统设计中的另一个方面，尤其是怎样定义和管理分析数据。我们讨论了分析数据的主流模型，包括星型模式和雪花模式，以及传统上怎样通过数据仓库和数据湖管理这些数据。</p>
+      <p>数据网格架构旨在解决传统数据管理架构的挑战。其核心是把领域驱动设计的相同原则应用到分析数据上：把分析模型拆分成可管理的单元，并确保分析数据可以通过公共接口被可靠访问和使用。最终，CQRS 与限界上下文集成模式都能支持数据网格架构的实现。</p>
+
+      <h2>练习</h2>
+      <ol class="exercise-list">
+        <li>关于事务模型（OLTP）与分析模型（OLAP）的差异，下列哪项说法正确？
+          <ol><li>OLAP 模型应该提供比 OLTP 模型更灵活的查询选项。</li><li>OLAP 模型预计会比 OLTP 模型经历更多更新，因此必须针对写入进行优化。</li><li>OLTP 数据针对实时操作优化，而 OLAP 查询等待几秒甚至几分钟也可以接受。</li><li>A 和 C 正确。</li></ol>
+        </li>
+        <li>哪一种限界上下文集成模式对实现数据网格架构至关重要？
+          <ol><li>共享内核。</li><li>开放主机服务。</li><li>防腐层。</li><li>合作关系。</li></ol>
+        </li>
+        <li>哪一种架构模式对实现数据网格架构至关重要？
+          <ol><li>分层架构。</li><li>端口与适配器。</li><li>CQRS。</li><li>架构模式无法支持 OLAP 模型的实现。</li></ol>
+        </li>
+        <li>数据网格架构的定义要求围绕“领域”拆分数据。DDD 用什么术语表示数据网格中的这些领域？
+          <ol><li>限界上下文。</li><li>业务领域。</li><li>子域。</li><li>DDD 中没有与数据网格“领域”同义的概念。</li></ol>
+        </li>
+      </ol>
+    </section>
+
+    <section id="closing">
+      <span class="chapter-kicker">全书结语 · 原书正文续篇</span>
+      <h2>结语</h2>
+      <p>为了结束我们对领域驱动设计的探索，我想回到全书开篇时引用的那句话：</p>
+      <blockquote>在我们就问题达成一致之前，讨论解决方案没有意义；在我们就解决方案达成一致之前，讨论实现步骤也没有意义。<br>—— Efrat Goldratt-Ashlag</blockquote>
+      <p>这句话简洁地概括了我们的 DDD 旅程。</p>
+
+      <h3>问题</h3>
+      <p>要提供软件解决方案，我们首先必须理解问题：我们正在处理什么业务领域？业务目标是什么？实现这些目标的战略是什么？</p>
+      <p>我们使用统一语言深入理解业务领域，以及必须在软件中实现的领域逻辑。</p>
+      <p>你学习了怎样把业务问题拆分成多个限界上下文，以管理其复杂度。每个限界上下文实现业务领域的一种模型，目标是解决一个特定问题。</p>
+      <p>我们还讨论了怎样识别和分类业务领域的构件：核心子域、支撑子域和通用子域。表 E-1 对这三类子域进行了比较。</p>
+
+      <figure>
+        <div class="figure-frame">
+          <table class="book-table">
+            <thead><tr><th>子域类型</th><th>竞争优势</th><th>复杂度</th><th>变化性</th><th>实现方式</th><th>问题性质</th></tr></thead>
+            <tbody><tr><td>核心</td><td>是</td><td>高</td><td>高</td><td>内部实现</td><td>有趣</td></tr><tr><td>通用</td><td>否</td><td>高</td><td>低</td><td>购买 / 采用</td><td>已解决</td></tr><tr><td>支撑</td><td>否</td><td>低</td><td>低</td><td>内部实现 / 外包</td><td>显而易见</td></tr></tbody>
+          </table>
+        </div>
+        <figcaption><span class="figure-number">表 E-1</span>三种子域类型</figcaption>
+      </figure>
+
+      <h3>解决方案</h3>
+      <p>你学习了怎样利用这些知识，为每种子域设计经过优化的解决方案。我们讨论了四种业务逻辑实现模式——事务脚本、活动记录、领域模型和事件溯源领域模型——以及每种模式最适合的场景。你还看到了三种为业务逻辑实现提供所需脚手架的架构模式：分层架构、端口与适配器，以及 CQRS。图 E-1 总结了使用这些模式作出战术决策的启发式方法。</p>
+
+      <figure>
+        <div class="figure-frame">
+          <div class="diagram decision">
+            <div class="label">先判断子域类型</div>
+            <div class="question">支撑 / 通用<br>数据结构复杂？</div><div class="question">支撑 / 通用<br>存在多个持久化模型？</div><div class="question">核心<br>需要资金交易、分析或审计日志？</div><div class="question">核心<br>存在多个持久化模型？</div>
+            <div class="label">业务逻辑实现模式</div>
+            <div class="choice">否 → 事务脚本</div><div class="choice">是 → 活动记录</div><div class="choice">否 → 领域模型</div><div class="choice">是 → 事件溯源领域模型</div>
+            <div class="label">架构模式</div>
+            <div class="choice">分层架构<br>（3 层）</div><div class="choice">分层架构<br>（4 层）</div><div class="choice">端口与适配器</div><div class="choice">CQRS</div>
+            <div class="label">测试策略：简单模型偏测试金字塔；复杂领域模型偏测试菱形；事件溯源模型偏测试金字塔</div>
+          </div>
+        </div>
+        <figcaption><span class="figure-number">图 E-1</span>总结战术决策启发式的决策树</figcaption>
+      </figure>
+
+      <h3>实现</h3>
+      <p>在第三部分中，我们讨论了怎样把理论变成实践。你学习了怎样通过主持一次 EventStorming 工作坊有效建立统一语言；怎样随着业务领域演进，让设计保持良好状态；以及怎样在棕地项目中引入并开始使用领域驱动设计。</p>
+      <p>在第四部分中，我们讨论了领域驱动设计与其他方法和模式之间的关系：微服务、事件驱动架构和数据网格。我们看到，DDD 不但可以与这些技术一起使用，事实上它们还彼此补充。</p>
+
+      <h3>延伸阅读</h3>
+      <p>我希望这本书让你对领域驱动设计产生了兴趣。如果还想继续学习，下面这些书是我由衷推荐的。</p>
+
+      <h4>高级领域驱动设计</h4>
+      <ul class="reading-list">
+        <li><strong>Eric Evans（2003），<em>Domain-Driven Design: Tackling Complexity in the Heart of Software</em>。</strong><br>Eric Evans 最初提出领域驱动设计方法的著作。虽然它没有覆盖领域事件和事件溯源等较新的 DDD 内容，但要成为 DDD 高手，它仍然是必读书。</li>
+        <li><strong>Cyrille Martraire（2019），<em>Living Documentation: Continuous Knowledge Sharing by Design</em>。</strong><br>本书提出了一种以领域驱动设计为基础的知识共享、文档与测试方法。</li>
+        <li><strong>Vaughn Vernon（2013），<em>Implementing Domain-Driven Design</em>。</strong><br>又一本经得起时间考验的 DDD 经典。Vaughn Vernon 深入讨论了领域驱动设计的思维方式，以及战略和战术工具集的用法。为了奠定学习基础，他使用了一个真实案例：采用 DDD 的项目怎样失败，以及团队如何通过必要纠偏重新振作。</li>
+        <li><strong>Greg Young（2017），<em>Versioning in an Event Sourced System</em>。</strong><br>第 7 章讨论过事件溯源系统的演进很有挑战，这本书专门讨论这个主题。</li>
+      </ul>
+
+      <h4>架构与集成模式</h4>
+      <ul class="reading-list">
+        <li><strong>Zhamak Dehghani（原书预计 2022 年出版），<em>Data Mesh: Delivering Data-Driven Value at Scale</em>。</strong><br>Zhamak Dehghani 是第 16 章所讨论的数据网格模式的提出者。本书解释了这种数据管理架构背后的原则，以及怎样在实践中实现数据网格。</li>
+        <li><strong>Martin Fowler（2002），<em>Patterns of Enterprise Application Architecture</em>。</strong><br>经典应用架构模式著作，本书第 5、6 章多次引用。事务脚本、活动记录和领域模型模式最初就在这里定义。</li>
+        <li><strong>Gregor Hohpe 与 Bobby Woolf（2003），<em>Enterprise Integration Patterns</em>。</strong><br>第 9 章讨论的许多模式最初在这本书中提出。想了解更多组件集成模式，可以阅读本书。</li>
+        <li><strong>Chris Richardson（2019），<em>Microservice Patterns: With Examples in Java</em>。</strong><br>本书提供了许多微服务架构常用模式的详细示例，包括第 9 章讨论的 Saga、流程管理器和发件箱模式。</li>
+      </ul>
+
+      <h4>遗留系统现代化</h4>
+      <ul class="reading-list">
+        <li><strong>Susanne Kaiser（原书预计 2022 年出版），<em>Adaptive Systems with Domain-Driven Design, Wardley Mapping, and Team Topologies</em>。</strong><br>作者分享了结合领域驱动设计、Wardley Mapping 和 Team Topologies 进行遗留系统现代化的经验。</li>
+        <li><strong>Nick Tune（原书预计 2022 年出版），<em>Architecture Modernization: Product, Domain, &amp; Team Oriented</em>。</strong><br>本书深入讨论如何运用领域驱动设计及其他技术，现代化棕地项目的架构。</li>
+        <li><strong>Vaughn Vernon 与 Tomasz Jaskula（2021），<em>Implementing Strategic Monoliths and Microservices</em>。</strong><br>一本实践著作，展示快速发现与学习、领域驱动方法，以及怎样正确实现单体和微服务解决方案中的复杂细节；始终聚焦最重要的事情：交付创新的业务战略。</li>
+        <li><strong>Vaughn Vernon 与 Tomasz Jaskula（2021），<em>Strategic Monoliths and Microservices</em>。</strong><br>本书通过基于发现的学习和领域驱动方法，探索怎样实现关键创新；怎样为工作选择最合适的架构与工具——微服务、单体或二者混合——以及怎样让它们协同工作，以推动软件战略思维。</li>
+      </ul>
+
+      <h4>EventStorming</h4>
+      <ul class="reading-list">
+        <li><strong>Alberto Brandolini（原书出版时尚未正式出版），<em>Introducing EventStorming</em>。</strong><br>Alberto Brandolini 是 EventStorming 工作坊的创造者，他在书中详细解释了 EventStorming 的过程和依据。</li>
+        <li><strong>Paul Rayner（原书出版时尚未正式出版），<em>The EventStorming Handbook</em>。</strong><br>Paul Rayner 解释了自己在实践中如何使用 EventStorming，并给出大量成功主持工作坊的技巧。</li>
+      </ul>
+
+      <h3>结论</h3>
+      <p>就是这些！非常感谢你读完本书。希望你享受了这段旅程，也会把从中学到的知识运用起来。</p>
+      <p>我希望你真正带走的，是领域驱动设计工具背后的逻辑和原则。不要把领域驱动设计当作教条盲目遵循，而要理解它所依据的推理。这样的理解会显著增加你应用 DDD 并从中获得价值的机会。理解领域驱动设计的哲学，也是单独运用其中某个概念并创造价值的关键，尤其是在棕地项目中。</p>
+      <p>最后，始终留意你的统一语言；拿不准时，就做一次 EventStorming。祝你好运！</p>
+    </section>
+
+    <p class="closing-note">本页完整收录《Learning Domain-Driven Design》第 16 章以及紧随其后的全书结语。正文、15 张编号图、表格、练习、结语中的表 E-1、图 E-1 与延伸阅读均按原书顺序整理；图表已重新绘制并翻译，侧栏只用于提示当前段落在章节与全书主线中的位置。</p>
+  </main>
+</body>
+</html>

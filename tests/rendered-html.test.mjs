@@ -131,7 +131,7 @@ test("lists the dual-view component guide once under me and defaults to the arti
 });
 
 // 同一本书只占一个学习记录入口，章节阅读器分别承载完整翻译并回到这篇整书笔记。
-test("publishes one Learning DDD record with six chapter readers", async () => {
+test("publishes one Learning DDD record with seven chapter readers", async () => {
   const article = await readOutput(
     "software-engineering/learning-domain-driven-design/index.html",
   );
@@ -155,8 +155,10 @@ test("publishes one Learning DDD record with six chapter readers", async () => {
   assert.match(article, /限界上下文给上限，聚合给下限/);
   assert.match(article, /事件不会自动带来解耦/);
   assert.match(article, /内部领域事件不应直接等于公共 API/);
+  assert.match(article, /分析数据也需要领域边界/);
+  assert.match(article, /数据网格把分析责任还给领域团队/);
 
-  for (const chapter of [10, 11, 12, 13, 14, 15]) {
+  for (const chapter of [10, 11, 12, 13, 14, 15, 16]) {
     assert.match(
       article,
       new RegExp(
@@ -191,6 +193,9 @@ test("publishes one Learning DDD record with six chapter readers", async () => {
   const chapter15 = await readOutput(
     "reading/learning-domain-driven-design/chapter-15/index.html",
   );
+  const chapter16 = await readOutput(
+    "reading/learning-domain-driven-design/chapter-16/index.html",
+  );
   assert.match(chapter10, /第 10 章｜设计启发式｜RIN III/);
   assert.match(chapter11, /migrated-from-legacy/);
   for (let figure = 1; figure <= 12; figure += 1) {
@@ -220,6 +225,18 @@ test("publishes one Learning DDD record with six chapter readers", async () => {
     assert.match(chapter15, new RegExp(`图 15-${figure}(?!\\d)`));
   }
   assert.doesNotMatch(chapter15, /data-note-filter=/);
+  assert.match(chapter16, /第 16 章｜数据网格｜RIN III/);
+  assert.match(chapter16, /分析数据模型与事务数据模型/);
+  assert.match(chapter16, /数据仓库与数据湖架构的挑战/);
+  assert.match(chapter16, /结合数据网格与领域驱动设计/);
+  assert.match(chapter16, /全书结语 · 原书正文续篇/);
+  assert.match(chapter16, /始终留意你的统一语言/);
+  assert.match(chapter16, /表 E-1/);
+  assert.match(chapter16, /图 E-1/);
+  for (let figure = 1; figure <= 15; figure += 1) {
+    assert.match(chapter16, new RegExp(`图 16-${figure}(?!\\d)`));
+  }
+  assert.doesNotMatch(chapter16, /data-note-filter=/);
 });
 
 // 已发布的章节文章地址保留跳转页，避免旧链接在合并后直接失效。
