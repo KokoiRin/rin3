@@ -130,95 +130,69 @@ test("lists the dual-view component guide once under me and defaults to the arti
   assert.doesNotMatch(softwareEngineering, /RIN III Slides 组件使用说明/);
 });
 
-// 学习记录与完整阅读器分别承担反思和沉浸阅读，两条链接在 Pages 前缀下都必须可达。
-test("publishes the DDD chapter 10 learning record with its annotated reader", async () => {
+// 同一本书只占一个学习记录入口，章节阅读器分别承载完整翻译并回到这篇整书笔记。
+test("publishes one Learning DDD record with three chapter readers", async () => {
   const article = await readOutput(
-    "software-engineering/learning-domain-driven-design-chapter-10/index.html",
+    "software-engineering/learning-domain-driven-design/index.html",
   );
   const index = await readOutput("software-engineering/index.html");
-  const reader = await readOutput(
-    "reading/learning-domain-driven-design/chapter-10/index.html",
-  );
 
-  assert.match(index, /《Learning Domain-Driven Design》第十章学习记录/);
+  assert.match(index, /《Learning Domain-Driven Design》学习记录/);
+  assert.equal(
+    index.match(
+      new RegExp(`href="${basePath}/software-engineering/learning-domain-driven-design/"`, "g"),
+    )?.length,
+    1,
+  );
+  assert.doesNotMatch(index, /第十章学习记录|第十一章学习记录|第十二章学习记录/);
   assert.match(article, /限界上下文首先是词义的边界/);
-  assert.match(article, /让业务性质决定边界、模型、架构与证据/);
-  assert.match(
-    article,
-    /href="\.\.\/\.\.\/reading\/learning-domain-driven-design\/chapter-10\/"/,
-  );
-
-  assert.match(reader, /第 10 章｜设计启发式｜RIN III/);
-  assert.match(reader, /data-note-filter="plain"/);
-  assert.match(reader, /data-note-filter="project"/);
-  assert.match(reader, /data-note-filter="action"/);
-  assert.match(
-    reader,
-    /href="\.\.\/\.\.\/\.\.\/software-engineering\/learning-domain-driven-design-chapter-10\/"/,
-  );
-});
-
-// 第十一章必须延续学习记录与完整阅读器的双层结构，并保留部署安全的双向链接。
-test("publishes the DDD chapter 11 evolution notes with its annotated reader", async () => {
-  const article = await readOutput(
-    "software-engineering/learning-domain-driven-design-chapter-11/index.html",
-  );
-  const index = await readOutput("software-engineering/index.html");
-  const reader = await readOutput(
-    "reading/learning-domain-driven-design/chapter-11/index.html",
-  );
-
-  assert.match(index, /《Learning Domain-Driven Design》第十一章学习记录/);
   assert.match(article, /设计决策应该带有失效条件/);
-  assert.match(article, /诚实的不完整，胜过精确的虚构/);
-  assert.match(
-    article,
-    /href="\.\.\/\.\.\/reading\/learning-domain-driven-design\/chapter-11\/"/,
-  );
-
-  assert.match(reader, /第 11 章｜演进设计决策｜RIN III/);
-  assert.match(reader, /图 11-1/);
-  assert.match(reader, /图 11-2/);
-  assert.match(reader, /图 11-3/);
-  assert.match(reader, /data-note-filter="plain"/);
-  assert.match(reader, /data-note-filter="project"/);
-  assert.match(reader, /data-note-filter="action"/);
-  assert.match(reader, /migrated-from-legacy/);
-  assert.match(
-    reader,
-    /href="\.\.\/\.\.\/\.\.\/software-engineering\/learning-domain-driven-design-chapter-11\/"/,
-  );
-});
-
-// 第十二章的侧栏只负责维持阅读主线，不再引入分类筛选；十二张重绘图必须完整导出。
-test("publishes the DDD chapter 12 EventStorming guide with mainline reading cues", async () => {
-  const article = await readOutput(
-    "software-engineering/learning-domain-driven-design-chapter-12/index.html",
-  );
-  const index = await readOutput("software-engineering/index.html");
-  const reader = await readOutput(
-    "reading/learning-domain-driven-design/chapter-12/index.html",
-  );
-
-  assert.match(index, /《Learning Domain-Driven Design》第十二章学习记录/);
   assert.match(article, /先有业务故事，后有边界，最后才谈实现/);
   assert.match(article, /事件模型不等于事件溯源/);
-  assert.match(
-    article,
-    /href="\.\.\/\.\.\/reading\/learning-domain-driven-design\/chapter-12\/"/,
-  );
 
-  assert.match(reader, /第 12 章｜EventStorming｜RIN III/);
-  for (let figure = 1; figure <= 12; figure += 1) {
-    assert.match(reader, new RegExp(`图 12-${figure}(?!\\d)`));
+  for (const chapter of [10, 11, 12]) {
+    assert.match(
+      article,
+      new RegExp(
+        `href="\\.\\.\\/\\.\\.\\/reading\\/learning-domain-driven-design\\/chapter-${chapter}\\/"`,
+      ),
+    );
+    const reader = await readOutput(
+      `reading/learning-domain-driven-design/chapter-${chapter}/index.html`,
+    );
+    assert.match(
+      reader,
+      /href="\.\.\/\.\.\/\.\.\/software-engineering\/learning-domain-driven-design\/"/,
+    );
+    assert.match(reader, /返回整本书学习记录/);
   }
-  assert.match(reader, /回到主线/);
-  assert.match(reader, /十步流程的终点/);
-  assert.doesNotMatch(reader, /data-note-filter=/);
-  assert.match(
-    reader,
-    /href="\.\.\/\.\.\/\.\.\/software-engineering\/learning-domain-driven-design-chapter-12\/"/,
+
+  const chapter10 = await readOutput(
+    "reading/learning-domain-driven-design/chapter-10/index.html",
   );
+  const chapter11 = await readOutput(
+    "reading/learning-domain-driven-design/chapter-11/index.html",
+  );
+  const chapter12 = await readOutput(
+    "reading/learning-domain-driven-design/chapter-12/index.html",
+  );
+  assert.match(chapter10, /第 10 章｜设计启发式｜RIN III/);
+  assert.match(chapter11, /migrated-from-legacy/);
+  for (let figure = 1; figure <= 12; figure += 1) {
+    assert.match(chapter12, new RegExp(`图 12-${figure}(?!\\d)`));
+  }
+  assert.doesNotMatch(chapter12, /data-note-filter=/);
+});
+
+// 已发布的章节文章地址保留跳转页，避免旧链接在合并后直接失效。
+test("redirects the three former chapter records to the unified book record", async () => {
+  for (const chapter of [10, 11, 12]) {
+    const redirect = await readOutput(
+      `software-engineering/learning-domain-driven-design-chapter-${chapter}/index.html`,
+    );
+    assert.match(redirect, /url=\.\.\/learning-domain-driven-design\//);
+    assert.match(redirect, /href="\.\.\/learning-domain-driven-design\/"/);
+  }
 });
 
 test("exports the component guide deck with a document switch", async () => {
