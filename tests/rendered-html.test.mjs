@@ -131,7 +131,7 @@ test("lists the dual-view component guide once under me and defaults to the arti
 });
 
 // 同一本书只占一个学习记录入口，章节阅读器分别承载完整翻译并回到这篇整书笔记。
-test("publishes one Learning DDD record with five chapter readers", async () => {
+test("publishes one Learning DDD record with six chapter readers", async () => {
   const article = await readOutput(
     "software-engineering/learning-domain-driven-design/index.html",
   );
@@ -153,8 +153,10 @@ test("publishes one Learning DDD record with five chapter readers", async () => 
   assert.match(article, /先恢复逻辑边界，再选择物理拆分/);
   assert.match(article, /微服务的“微”究竟在哪里/);
   assert.match(article, /限界上下文给上限，聚合给下限/);
+  assert.match(article, /事件不会自动带来解耦/);
+  assert.match(article, /内部领域事件不应直接等于公共 API/);
 
-  for (const chapter of [10, 11, 12, 13, 14]) {
+  for (const chapter of [10, 11, 12, 13, 14, 15]) {
     assert.match(
       article,
       new RegExp(
@@ -186,6 +188,9 @@ test("publishes one Learning DDD record with five chapter readers", async () => 
   const chapter14 = await readOutput(
     "reading/learning-domain-driven-design/chapter-14/index.html",
   );
+  const chapter15 = await readOutput(
+    "reading/learning-domain-driven-design/chapter-15/index.html",
+  );
   assert.match(chapter10, /第 10 章｜设计启发式｜RIN III/);
   assert.match(chapter11, /migrated-from-legacy/);
   for (let figure = 1; figure <= 12; figure += 1) {
@@ -207,6 +212,14 @@ test("publishes one Learning DDD record with five chapter readers", async () => 
     assert.match(chapter14, new RegExp(`图 14-${figure}(?!\\d)`));
   }
   assert.doesNotMatch(chapter14, /data-note-filter=/);
+  assert.match(chapter15, /第 15 章｜事件驱动架构｜RIN III/);
+  assert.match(chapter15, /事件携带状态转移/);
+  assert.match(chapter15, /分布式大泥球/);
+  assert.match(chapter15, /只有偏执狂才能生存/);
+  for (let figure = 1; figure <= 6; figure += 1) {
+    assert.match(chapter15, new RegExp(`图 15-${figure}(?!\\d)`));
+  }
+  assert.doesNotMatch(chapter15, /data-note-filter=/);
 });
 
 // 已发布的章节文章地址保留跳转页，避免旧链接在合并后直接失效。

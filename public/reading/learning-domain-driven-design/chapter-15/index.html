@@ -1,0 +1,604 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>第 15 章｜事件驱动架构｜RIN III</title>
+  <meta name="description" content="《Learning Domain-Driven Design》第十五章完整中文翻译、重绘图示与主线提示阅读版">
+  <style>
+    :root {
+      --paper:#fffefa; --canvas:#ecebe7; --ink:#26343b; --muted:#65757d;
+      --accent:#39728d; --accent-soft:#e7f1f5; --line:#d9e2e6;
+      --figure-bg:#f8fafb; --blue:#dcecf4; --orange:#f2ad59;
+      --shadow:0 18px 48px rgba(40,50,56,.10); color-scheme:light;
+    }
+    * { box-sizing:border-box; }
+    html { scroll-behavior:smooth; background:var(--canvas); }
+    body {
+      margin:0; color:var(--ink);
+      font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+      font-size:17px; line-height:1.78; text-rendering:optimizeLegibility;
+      -webkit-font-smoothing:antialiased;
+    }
+    .site-nav { display:flex; width:min(1160px,calc(100% - 32px)); margin:24px auto -16px; justify-content:space-between; font-size:12px; font-weight:700; letter-spacing:.08em; }
+    .site-nav a { color:var(--muted); text-decoration:none; }
+    .site-nav a:hover { color:var(--accent); }
+    .reader {
+      width:min(1160px,calc(100% - 32px)); margin:40px auto 72px;
+      padding:52px 360px 64px 64px; background:var(--paper);
+      border:1px solid rgba(57,79,90,.08); border-radius:18px; box-shadow:var(--shadow);
+    }
+    .chapter-kicker,.note-kind { display:inline-flex; padding:3px 12px; border-radius:999px; color:var(--accent); background:var(--accent-soft); font-size:12px; font-weight:800; letter-spacing:.04em; }
+    h1 { margin:14px 0 4px; font-size:clamp(34px,6vw,46px); line-height:1.18; letter-spacing:-.035em; }
+    h2 { margin:2.25em 0 .55em; font-size:27px; line-height:1.28; letter-spacing:-.02em; }
+    h3 { margin:1.7em 0 .4em; font-size:21px; line-height:1.35; }
+    h4 { margin:1.35em 0 .25em; font-size:17px; line-height:1.45; }
+    p { margin:.72em 0; text-align:justify; text-justify:inter-ideograph; }
+    ul,ol { padding-left:1.45em; }
+    li { margin:.42em 0; }
+    li::marker { color:var(--accent); }
+    .lead { margin-bottom:14px; color:#35464e; font-size:18px; line-height:1.72; }
+    .title-rule { width:52px; height:3px; margin:18px 0 28px; border-radius:99px; background:var(--accent); }
+    .chapter-nav { display:flex; margin:30px 0 38px; padding:0; flex-wrap:wrap; gap:8px; list-style:none; }
+    .chapter-nav a { display:block; padding:5px 11px; color:var(--muted); border:1px solid var(--line); border-radius:999px; font-size:13px; line-height:1.4; text-decoration:none; }
+    .chapter-nav a:hover { color:var(--accent); border-color:#9fc1d0; background:#f5fafc; }
+    .margin-note {
+      position:relative; float:right; clear:right; width:286px; margin:.15em -330px 20px 32px;
+      padding:14px 15px 15px; color:#52646c; border:1px solid #d9e4e8;
+      border-radius:13px; background:#f8fbfc; box-shadow:0 7px 18px rgba(51,71,81,.06);
+      font-size:14px; line-height:1.62;
+    }
+    .margin-note::before { position:absolute; top:22px; left:-25px; width:18px; height:1px; background:#aac3ce; content:""; }
+    .margin-note h4 { margin:8px 0 6px; color:var(--ink); font-size:16px; }
+    .margin-note p { margin:.4em 0 0; text-align:left; }
+    figure { margin:1.35em 0 1.7em; break-inside:avoid; }
+    .figure-frame { min-width:650px; padding:20px 18px; overflow-x:auto; border:1px solid #e1e8eb; border-radius:14px; background:var(--figure-bg); }
+    .figure-frame svg { display:block; width:100%; height:auto; margin:auto; }
+    figcaption { margin-top:9px; color:var(--muted); font-size:14px; line-height:1.5; }
+    .figure-number { margin-right:.55em; color:var(--accent); font-weight:800; }
+    .callout { margin:1.35em 0; padding:15px 18px; color:#43565f; border-left:3px solid #9bc2d2; border-radius:0 10px 10px 0; background:#f5fafc; font-size:18px; }
+    code { padding:.12em .35em; border-radius:5px; background:#edf2f4; font-family:"SFMono-Regular",Consolas,"Liberation Mono",monospace; font-size:.88em; }
+    pre { margin:1.15em 0 1.5em; padding:18px 20px; overflow-x:auto; color:#20313a; border:1px solid #dbe4e8; border-radius:12px; background:#f4f7f8; line-height:1.58; }
+    pre code { padding:0; background:transparent; }
+    .footnotes { margin-top:3em; padding-top:1em; border-top:1px solid var(--line); color:var(--muted); font-size:14px; }
+    .translation-note { color:var(--muted); font-size:14px; }
+    .exercise-list>li { margin:1.15em 0; padding-left:.25em; }
+    .exercise-list ol { margin-top:.4em; list-style-type:lower-alpha; }
+    .closing-note { margin-top:3em; padding:18px; border:1px solid var(--line); border-radius:12px; color:var(--muted); background:#fafcfb; font-size:14px; }
+    .event-compare { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; min-width:650px; }
+    .event-card { padding:14px; border:1.5px solid #526872; border-radius:10px; background:white; }
+    .event-card strong { display:block; color:var(--accent); font-size:16px; }
+    .event-card small { color:var(--muted); }
+    @media (max-width:900px) {
+      .site-nav,.reader { width:min(760px,calc(100% - 20px)); }
+      .reader { margin-top:28px; padding:38px 28px 50px; border-radius:14px; }
+      .margin-note { float:none; width:auto; margin:1em 0 1.25em; }
+      .margin-note::before { display:none; }
+      .figure-frame { min-width:0; overflow-x:auto; }
+      .figure-frame svg { min-width:620px; }
+      .event-compare { min-width:620px; }
+    }
+    @media (max-width:520px) {
+      body { font-size:16px; line-height:1.76; }
+      .site-nav { width:calc(100% - 24px); margin-top:16px; }
+      .reader { width:calc(100% - 14px); margin:26px auto 36px; padding:28px 18px 38px; border-radius:12px; }
+      h1 { font-size:34px; }
+      h2 { font-size:24px; }
+      h3 { font-size:20px; }
+      p { text-align:left; }
+      pre { margin-left:-4px; margin-right:-4px; padding:15px 14px; font-size:13px; }
+      .figure-frame { margin-left:-4px; margin-right:-4px; padding:14px 10px; }
+    }
+  </style>
+</head>
+<body>
+  <nav class="site-nav" aria-label="站点导航">
+    <a href="../../../software-engineering/learning-domain-driven-design/">← 返回整本书学习记录</a>
+    <a href="../chapter-14/">上一章</a>
+  </nav>
+
+  <main class="reader">
+    <header>
+      <span class="chapter-kicker">第 15 章 · 完整中文学习版</span>
+      <h1>事件驱动架构</h1>
+      <p class="lead">事件不会天然带来解耦。本章真正讨论的是：跨边界时应发布哪一种事件，以及怎样避免把内部实现、执行顺序和重复逻辑一起扩散到整个系统。</p>
+      <div class="title-rule"></div>
+      <ul class="chapter-nav" aria-label="本章目录">
+        <li><a href="#eda">事件驱动架构</a></li>
+        <li><a href="#events">事件</a></li>
+        <li><a href="#types">事件类型</a></li>
+        <li><a href="#integration">设计事件驱动集成</a></li>
+        <li><a href="#heuristics">设计启发式</a></li>
+        <li><a href="#conclusion">小结</a></li>
+        <li><a href="#exercises">练习</a></li>
+      </ul>
+    </header>
+
+    <aside class="margin-note">
+      <span class="note-kind">主线提示</span>
+      <h4>这章不是在劝你“多发事件”</h4>
+      <p>作者先拆开三个常被混用的概念，再用一个失败案例说明：消息异步，不代表系统已经解耦。全章的判断标准始终是“边界外的人到底需要知道什么”。</p>
+    </aside>
+
+    <p>和微服务一样，事件驱动架构（event-driven architecture，EDA）在现代分布式系统中无处不在。设计松耦合、可扩展、容错的分布式系统时，许多人建议默认采用事件驱动的通信方式来集成各个部分。</p>
+    <p>事件驱动架构也经常与领域驱动设计联系在一起。毕竟，EDA 建立在事件之上，而事件在 DDD 中十分突出：我们有领域事件；必要时，甚至会把事件作为系统的事实来源。因此，人们很容易想把 DDD 中的事件直接拿来作为事件驱动架构的基础。但这是个好主意吗？</p>
+    <p>事件并不是一种神秘调料，不能往遗留系统上一撒，就把它变成松耦合的分布式系统。恰恰相反，不谨慎地应用 EDA，可能把一个模块化单体变成分布式大泥球。</p>
+    <p>本章将探讨 EDA 与 DDD 之间的关系。你将了解事件驱动架构的基本构件、EDA 项目失败的常见原因，以及如何借助 DDD 的工具设计有效的异步集成系统。</p>
+
+    <section id="eda">
+      <h2>事件驱动架构</h2>
+      <p>简单来说，事件驱动架构是一种架构风格：系统组件通过交换事件消息，以异步方式彼此通信，如图 15-1 所示。组件不再同步调用服务端点，而是发布事件，通知系统中的其他元素领域发生了变化。其他组件可以订阅系统中产生的事件，并据此作出反应。第 9 章介绍的 Saga 模式，就是事件驱动执行流程的典型例子。</p>
+
+      <figure>
+        <div class="figure-frame">
+          <svg viewBox="0 0 760 190" role="img" aria-labelledby="f151t f151d">
+            <title id="f151t">服务间异步通信</title><desc id="f151d">服务 1 和服务 2 通过双向事件消息异步通信。</desc>
+            <defs><marker id="a151" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#40545d"/></marker></defs>
+            <g fill="none" stroke="#40545d" stroke-width="2">
+              <rect x="75" y="38" width="150" height="112" rx="8" fill="#dcecf4"/>
+              <rect x="535" y="38" width="150" height="112" rx="8" fill="#dcecf4"/>
+              <path d="M225 72 H535" stroke-dasharray="5 5" marker-end="url(#a151)"/>
+              <path d="M535 116 H225" stroke-dasharray="5 5" marker-end="url(#a151)"/>
+              <rect x="354" y="57" width="52" height="31" rx="3" fill="#f2ad59"/>
+              <path d="M354 58 L380 77 L406 58"/>
+              <rect x="354" y="101" width="52" height="31" rx="3" fill="#f2ad59"/>
+              <path d="M354 102 L380 121 L406 102"/>
+            </g>
+            <g fill="#26343b" font-family="system-ui,sans-serif" font-size="19" font-weight="700" text-anchor="middle">
+              <text x="150" y="100">服务 1</text><text x="610" y="100">服务 2</text>
+            </g>
+          </svg>
+        </div>
+        <figcaption><span class="figure-number">图 15-1</span>异步通信</figcaption>
+      </figure>
+
+      <aside class="margin-note">
+        <span class="note-kind">主线提示</span>
+        <h4>先把 EDA 和事件溯源分开</h4>
+        <p>一个解决服务之间怎样交流，另一个解决服务内部怎样记录状态。它们都用“事件”，却处在不同边界；后面所有取舍都建立在这个区分上。</p>
+      </aside>
+      <p>必须特别强调事件驱动架构与事件溯源之间的区别。正如第 7 章所讨论的，事件溯源是一种把状态变化记录为一系列事件的方法。</p>
+      <p>虽然事件驱动架构和事件溯源都以事件为基础，但两种模式在概念上并不相同。EDA 指的是服务之间的通信，而事件溯源发生在服务内部。为事件溯源设计的事件，表示服务中实现的状态转换——也就是事件溯源领域模型里聚合的状态转换。它们旨在捕捉业务领域的细微之处，默认并不是为了把服务与系统中的其他组件集成起来。</p>
+      <p>本章稍后会介绍三种事件类型，其中有些比另一些更适合集成。</p>
+    </section>
+
+    <section id="events">
+      <h2>事件</h2>
+      <p>在 EDA 系统中，交换事件是集成各个组件、使它们成为一个系统的关键通信机制。下面更细致地看看事件，并了解它与消息有何不同。</p>
+
+      <h3>事件、命令与消息</h3>
+      <p>到目前为止，事件的定义似乎与消息模式的定义相近。<sup><a href="#footnote-1">1</a></sup> 但两者并不相同。事件是一种消息，但消息未必是事件。消息有两种类型：</p>
+      <dl>
+        <dt><strong>事件（Event）</strong></dt>
+        <dd>描述一个已经发生的变化的消息。</dd>
+        <dt><strong>命令（Command）</strong></dt>
+        <dd>描述一个必须执行的操作的消息。</dd>
+      </dl>
+      <p>事件表示已经发生的事，命令则是要求去做某件事。事件和命令都可以作为消息异步传递。不过，命令可能被拒绝：命令的目标可以拒绝执行，例如命令无效，或与系统业务规则冲突。事件的接收方却无法取消事件，因为事件描述的是已经发生的事实。想要推翻事件，只能发出一个补偿动作——也就是一个命令，正如 Saga 模式中的做法。</p>
+      <p>因为事件描述已经发生的事，事件名称应该使用过去时，例如 <code>DeliveryScheduled</code>（配送已排期）、<code>ShipmentCompleted</code>（发货已完成）或 <code>DeliveryConfirmed</code>（配送已确认）。</p>
+
+      <h3>结构</h3>
+      <p>事件是一条数据记录，可以被序列化，并通过所选择的消息平台传输。典型的事件模式包括事件的元数据和载荷，也就是该事件传达的信息：</p>
+      <pre><code>{
+  "type": "delivery-confirmed",
+  "event-id": "14101928-4d79-4da6-9486-dbc4837bc612",
+  "correlation-id": "08011958-6066-4815-8dbe-dee6d9e5ebac",
+  "delivery-id": "05011927-a328-4860-a106-737b2929db4e",
+  "timestamp": 1615718833,
+  "payload": {
+    "confirmed-by": "17bc9223-bdd6-4382-954d-f1410fd286bd",
+    "delivery-time": 1615701406
+  }
+}</code></pre>
+      <p>事件的载荷不仅描述事件所传递的信息，也定义了事件的类型。下面详细讨论三类事件以及它们之间的差异。</p>
+    </section>
+
+    <section id="types">
+      <h2>事件类型</h2>
+      <p>事件可以归入三种类型之一：<sup><a href="#footnote-2">2</a></sup>事件通知（event notification）、事件携带状态转移（event-carried state transfer，ECST），或领域事件（domain event）。</p>
+
+      <h3>事件通知</h3>
+      <p>事件通知是一条关于业务领域发生变化的消息，其他组件会对此作出反应。例如 <code>PaycheckGenerated</code>（工资单已生成）、<code>CampaignPublished</code>（营销活动已发布）等。</p>
+      <p>事件通知不应该冗长：目标是把事件告知感兴趣的各方，但通知本身不应携带订阅者作出反应所需的全部信息。例如：</p>
+      <pre><code>{
+  "type": "paycheck-generated",
+  "event-id": "537ec7c2-d1a1-2005-8654-96aee1116b72",
+  "delivery-id": "05011927-a328-4860-a106-737b2929db4e",
+  "timestamp": 1615726445,
+  "payload": {
+    "employee-id": "456123",
+    "link": "/paychecks/456123/2021/01"
+  }
+}</code></pre>
+      <p>上面的代码通知外部组件：一张工资单已经生成。它没有携带与工资单相关的全部信息，接收方可以用其中的链接获取更详细的信息。这个通知流程如图 15-2 所示。</p>
+
+      <figure>
+        <div class="figure-frame">
+          <svg viewBox="0 0 760 270" role="img" aria-labelledby="f152t f152d">
+            <title id="f152t">事件通知流程</title><desc id="f152d">生产者先通知工资单已生成，消费者再同步查询详情。</desc>
+            <defs><marker id="a152" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#40545d"/></marker></defs>
+            <g font-family="system-ui,sans-serif" fill="#26343b" text-anchor="middle">
+              <rect x="105" y="18" width="155" height="50" rx="7" fill="#dcecf4" stroke="#40545d" stroke-width="2"/>
+              <rect x="500" y="18" width="155" height="50" rx="7" fill="#dcecf4" stroke="#40545d" stroke-width="2"/>
+              <text x="182" y="49" font-size="18" font-weight="700">生产者</text><text x="577" y="49" font-size="18" font-weight="700">消费者</text>
+              <g fill="none" stroke="#40545d" stroke-width="2">
+                <path d="M182 68 V238" stroke-dasharray="5 5"/><path d="M577 68 V238" stroke-dasharray="5 5"/>
+                <path d="M182 120 H577" stroke-dasharray="5 5" marker-end="url(#a152)"/>
+                <path d="M577 188 H182" marker-end="url(#a152)"/>
+              </g>
+              <text x="380" y="109" font-size="15">事件通知：工资单已生成</text>
+              <text x="380" y="177" font-size="15">GET /paychecks/456123/2021/01</text>
+            </g>
+          </svg>
+        </div>
+        <figcaption><span class="figure-number">图 15-2</span>事件通知流程</figcaption>
+      </figure>
+
+      <aside class="margin-note">
+        <span class="note-kind">主线提示</span>
+        <h4>通知只负责“叫你来看”</h4>
+        <p>它故意不把详情塞进消息里。这样一来，敏感数据仍在生产者手里；消费者需要时再查询，也能拿到较新的状态。代价是消费时仍依赖生产者在线。</p>
+      </aside>
+      <p>从某种意义上说，通过事件通知进行集成，类似美国的无线紧急警报（WEA）系统和欧洲的 EU-Alert 系统，如图 15-3 所示。这些系统利用蜂窝基站广播短消息，向市民通知公共卫生事件、安全威胁和其他紧急情况。系统发送的消息最长只有 360 个字符。这条短消息足以让你知道发生了紧急情况，但要获得更多细节，你必须主动查阅其他信息来源。</p>
+
+      <figure>
+        <div class="figure-frame">
+          <svg viewBox="0 0 760 235" role="img" aria-labelledby="f153t f153d">
+            <title id="f153t">紧急警报系统</title><desc id="f153d">一个只包含必要信息的龙卷风紧急警报。</desc>
+            <rect x="180" y="30" width="400" height="175" rx="8" fill="#fff" stroke="#40545d" stroke-width="2"/>
+            <rect x="180" y="30" width="400" height="48" rx="8" fill="#f1f4f5"/>
+            <path d="M205 66 L221 38 L237 66 Z" fill="#c9474f"/><text x="221" y="60" fill="#fff" font-family="system-ui" font-size="17" font-weight="800" text-anchor="middle">!</text>
+            <g fill="#26343b" font-family="system-ui,sans-serif"><text x="250" y="60" font-size="18" font-weight="800">紧急警报：极端天气</text>
+            <text x="210" y="112" font-size="18">本地区龙卷风警报持续至下午 3:30。</text><text x="210" y="142" font-size="18">请立即寻找避难处，并关注本地媒体。</text>
+            <text x="530" y="185" fill="#39728d" font-size="18" font-weight="800">确定</text></g>
+          </svg>
+        </div>
+        <figcaption><span class="figure-number">图 15-3</span>紧急警报系统</figcaption>
+      </figure>
+
+      <p>简洁的事件通知在多种场景下更合适。下面详细看看其中两种：安全性与并发。</p>
+      <p><strong>安全性。</strong>强制接收方显式查询详细信息，可以避免在消息基础设施上传播敏感信息；订阅者要访问这些数据，还需要经过额外授权。</p>
+      <p><strong>并发。</strong>由于事件驱动集成本质上是异步的，信息到达订阅者时可能已经过时。如果信息容易受到竞态条件影响，显式查询能取得最新状态。</p>
+      <p>此外，在并发消费者场景中，如果一个事件只应由一个订阅者处理，那么查询过程可以与悲观锁集成。这样，生产者一侧就能保证不会有其他消费者处理同一条消息。</p>
+
+      <h3>事件携带状态转移</h3>
+      <p>事件携带状态转移（ECST）消息向订阅者通知生产者内部状态的变化。与事件通知不同，ECST 消息包含能够反映状态变化的全部数据。</p>
+      <p>ECST 消息可以有两种形式。第一种是修改后实体状态的完整快照：</p>
+      <pre><code>{
+  "type": "customer-updated",
+  "event-id": "6b7ce6c6-8587-4e4f-924a-cec028000ce6",
+  "customer-id": "01b18d56-b79a-4873-ac99-3d9f767dbe61",
+  "timestamp": 1615728520,
+  "payload": {
+    "first-name": "Carolyn",
+    "last-name": "Hayes",
+    "phone": "555-1022",
+    "status": "follow-up-set",
+    "follow-up-date": "2021/05/08",
+    "birthday": "1982/04/05",
+    "version": 7
+  }
+}</code></pre>
+      <p>上例中的 ECST 消息包含客户更新后状态的完整快照。处理大型数据结构时，也可以只在 ECST 消息中包含实际被修改的字段：</p>
+      <pre><code>{
+  "type": "customer-updated",
+  "event-id": "6b7ce6c6-8587-4e4f-924a-cec028000ce6",
+  "customer-id": "01b18d56-b79a-4873-ac99-3d9f767dbe61",
+  "timestamp": 1615728520,
+  "payload": {
+    "status": "follow-up-set",
+    "follow-up-date": "2021/05/10",
+    "version": 8
+  }
+}</code></pre>
+      <p>无论 ECST 消息包含完整快照，还是只包含更新字段，这类事件组成的流都能让消费者在本地保存实体状态缓存，并以此工作。从概念上说，使用事件携带状态转移消息，就是一种异步数据复制机制。这种方法能提高系统容错能力：即使生产者不可用，消费者也能继续工作。对于需要处理多个来源数据的组件，它也能改善性能。消费者无需每次使用数据时都查询各个来源，而可以把所有数据缓存在本地，如图 15-4 所示。</p>
+
+      <figure>
+        <div class="figure-frame">
+          <svg viewBox="0 0 780 410" role="img" aria-labelledby="f154t f154d">
+            <title id="f154t">前端后端模式</title><desc id="f154d">移动和 Web 应用分别访问自己的后端，后端本地整合多个来源的数据。</desc>
+            <defs><marker id="a154" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#40545d"/></marker></defs>
+            <g fill="#dcecf4" stroke="#40545d" stroke-width="2">
+              <rect x="35" y="40" width="125" height="120" rx="6"/><rect x="35" y="250" width="125" height="120" rx="6"/>
+              <rect x="285" y="40" width="145" height="120" rx="6"/><rect x="285" y="250" width="145" height="120" rx="6"/>
+              <rect x="620" y="25" width="125" height="62" rx="6"/><rect x="620" y="118" width="125" height="62" rx="6"/>
+              <rect x="620" y="211" width="125" height="62" rx="6"/><rect x="620" y="304" width="125" height="62" rx="6"/>
+            </g>
+            <g fill="none" stroke="#40545d" stroke-width="2" marker-end="url(#a154)">
+              <path d="M160 100 H285"/><path d="M160 310 H285"/>
+              <path d="M620 56 L430 76"/><path d="M620 149 L430 93"/><path d="M620 242 L430 110"/><path d="M620 335 L430 128"/>
+              <path d="M620 56 L430 278"/><path d="M620 149 L430 295"/><path d="M620 242 L430 312"/><path d="M620 335 L430 330"/>
+            </g>
+            <g fill="#26343b" font-family="system-ui,sans-serif" font-size="16" font-weight="700" text-anchor="middle">
+              <text x="97" y="94">移动</text><text x="97" y="118">应用</text><text x="97" y="304">Web</text><text x="97" y="328">应用</text>
+              <text x="357" y="85">移动端</text><text x="357" y="109">专用后端</text><text x="357" y="295">Web 端</text><text x="357" y="319">专用后端</text>
+              <text x="682" y="63">CRM</text><text x="682" y="156">佣金</text><text x="682" y="249">销售台</text><text x="682" y="342">商品目录</text>
+            </g>
+          </svg>
+        </div>
+        <figcaption><span class="figure-number">图 15-4</span>前端专用后端</figcaption>
+      </figure>
+
+      <aside class="margin-note">
+        <span class="note-kind">主线提示</span>
+        <h4>ECST 负责“把状态带过来”</h4>
+        <p>消费者因此可以拥有本地副本，减少同步查询并提高容错；但它收到的是某个时刻的状态，不是发生这次变化的业务原因。</p>
+      </aside>
+
+      <h3>领域事件</h3>
+      <p>第三种事件消息，是第 6 章介绍过的领域事件。从某种意义上说，领域事件位于事件通知与 ECST 消息之间：它们都描述业务领域中的重大事件，并且包含描述该事件的全部数据。尽管如此，这几类消息在概念上仍然不同。</p>
+
+      <h3>领域事件与事件通知</h3>
+      <p>领域事件和事件通知都描述生产者业务领域中的变化，但二者存在两个概念差异。</p>
+      <p>第一，领域事件包含描述事件的全部信息。消费者不需要进一步操作，就能得到完整图景。</p>
+      <p>第二，建模意图不同。事件通知是为了减轻与其他组件集成的成本而设计；领域事件则是为了建模和描述业务领域。即使没有外部消费者感兴趣，领域事件也可能有用。在事件溯源系统中尤其如此：领域事件用来建模所有可能的状态转换。让外部消费者对全部可用领域事件都产生兴趣，会得到次优设计。本章后面会更详细地讨论这一点。</p>
+
+      <h3>领域事件与事件携带状态转移</h3>
+      <p>领域事件包含的数据，与典型 ECST 消息的模式在概念上不同。</p>
+      <p>一条 ECST 消息会提供足够的信息，让消费者保存生产者数据的本地缓存。任何单个领域事件都不应该暴露如此丰富的模型。即便某个领域事件包含了一些数据，它也不足以缓存聚合状态，因为消费者没有订阅的其他领域事件也可能影响相同字段。</p>
+      <p>此外，与事件通知一样，两类消息的建模意图也不同。领域事件中的数据不是为了描述聚合状态，而是为了描述聚合生命周期中发生的业务事件。</p>
+
+      <h3>事件类型：示例</h3>
+      <p>下面用三种方式表示“结婚”这件事，以说明三类事件的差异：</p>
+      <pre><code>eventNotification = {
+  "type": "marriage-recorded",
+  "person-id": "01b9a761",
+  "payload": {
+    "person-id": "126a7b61",
+    "details": "/01b9a761/marriage-data"
+  }
+};
+
+ecst = {
+  "type": "personal-details-changed",
+  "person-id": "01b9a761",
+  "payload": {
+    "new-last-name": "Williams"
+  }
+};
+
+domainEvent = {
+  "type": "married",
+  "person-id": "01b9a761",
+  "payload": {
+    "person-id": "126a7b61",
+    "assumed-partner-last-name": true
+  }
+};</code></pre>
+      <p><code>marriage-recorded</code> 是事件通知。除了指定 ID 的人已经结婚这一事实，它没有包含别的信息。它只提供事件的最少信息；想知道更多细节的消费者，需要访问 <code>details</code> 字段中的链接。</p>
+      <p><code>personal-details-changed</code> 是事件携带状态转移消息。它描述这个人的个人资料发生了什么变化，也就是姓氏已经改变；但没有解释变化的原因。这个人是结婚了，还是离婚了？</p>
+      <p>最后，<code>married</code> 是领域事件。它尽可能贴近业务领域中事件本身的性质来建模，包含当事人的 ID，以及此人是否采用伴侣姓氏的标记。</p>
+
+      <figure>
+        <div class="figure-frame">
+          <div class="event-compare">
+            <div class="event-card"><strong>事件通知</strong><small>婚姻已登记</small><p>告诉你“有事发生”，详情另查。</p></div>
+            <div class="event-card"><strong>ECST</strong><small>个人资料已变化</small><p>告诉你“状态变成什么”，不解释原因。</p></div>
+            <div class="event-card"><strong>领域事件</strong><small>已结婚</small><p>告诉你“业务上发生了什么”，并携带完整事件事实。</p></div>
+          </div>
+        </div>
+        <figcaption><span class="figure-number">对照</span>三种消息的差别主要不在字段多少，而在建模意图</figcaption>
+      </figure>
+    </section>
+
+    <section id="integration">
+      <h2>设计事件驱动集成</h2>
+      <aside class="margin-note">
+        <span class="note-kind">主线提示</span>
+        <h4>前半章在分辨工具，后半章开始用工具检查边界</h4>
+        <p>选择事件类型，本质上是在决定哪些信息可以穿过限界上下文。选错以后，异步消息也会把消费者绑到生产者的执行顺序和内部模型上。</p>
+      </aside>
+      <p>正如第 3 章所讨论的，软件设计主要是在设计边界。边界规定什么属于内部、什么留在外部，更重要的是规定什么会穿过边界——也就是各组件如何彼此集成。在基于 EDA 的系统中，事件是一等设计元素：它既影响组件之间如何集成，也影响组件自身的边界。选择正确的事件消息类型，可能成就一个解耦的分布式系统，也可能把它彻底耦合起来。</p>
+      <p>本节将介绍应用不同事件类型的启发式方法。但在此之前，先看看怎样用事件设计出一个强耦合的分布式大泥球。</p>
+
+      <h3>分布式大泥球</h3>
+      <p>考虑图 15-5 所示的系统。</p>
+      <p>CRM 限界上下文采用事件溯源领域模型实现。CRM 系统需要与 Marketing（营销）限界上下文集成时，团队决定利用事件溯源数据模型的灵活性，让消费者——也就是 Marketing——订阅 CRM 的领域事件，并投影出适合自己需要的模型。</p>
+      <p>后来引入 AdsOptimization（广告优化）限界上下文，它同样需要处理 CRM 限界上下文产生的信息。团队再次决定让 AdsOptimization 订阅 CRM 产生的所有领域事件，并投影出适合 AdsOptimization 需要的模型。</p>
+
+      <figure>
+        <div class="figure-frame">
+          <svg viewBox="0 0 820 560" role="img" aria-labelledby="f155t f155d">
+            <title id="f155t">强耦合的分布式系统</title><desc id="f155d">CRM 的全部领域事件同时流向营销、广告优化和报表，形成实现、功能和时间耦合。</desc>
+            <defs><marker id="a155" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#40545d"/></marker></defs>
+            <g fill="none" stroke="#40545d" stroke-width="2">
+              <rect x="70" y="220" width="150" height="115" rx="7" fill="#dcecf4"/>
+              <rect x="570" y="80" width="165" height="85" rx="7" fill="#dcecf4"/>
+              <rect x="570" y="230" width="165" height="85" rx="7" fill="#dcecf4"/>
+              <rect x="570" y="390" width="165" height="85" rx="7" fill="#dcecf4"/>
+              <path d="M220 277 H320" stroke-dasharray="5 5" marker-end="url(#a155)"/>
+              <path d="M370 277 L570 122" stroke-dasharray="5 5" marker-end="url(#a155)"/>
+              <path d="M370 277 H570" stroke-dasharray="5 5" marker-end="url(#a155)"/>
+              <path d="M370 277 L570 432" stroke-dasharray="5 5" marker-end="url(#a155)"/>
+              <path d="M652 390 V315" marker-end="url(#a155)"/>
+              <path d="M70 47 V27 H650 V47" stroke="#39728d"/>
+              <path d="M755 80 H775 V315 H755" stroke="#39728d"/>
+              <path d="M755 230 H790 V475 H755" stroke="#39728d"/>
+              <rect x="320" y="256" width="50" height="34" rx="3" fill="#f2ad59"/>
+              <path d="M320 257 L345 277 L370 257"/>
+            </g>
+            <g fill="#26343b" font-family="system-ui,sans-serif" text-anchor="middle">
+              <text x="145" y="285" font-size="19" font-weight="700">CRM</text>
+              <text x="345" y="312" font-size="15">领域事件</text>
+              <text x="652" y="132" font-size="18" font-weight="700">营销</text>
+              <text x="652" y="282" font-size="18" font-weight="700">广告优化</text>
+              <text x="652" y="442" font-size="18" font-weight="700">报表</text>
+              <text x="652" y="354" font-size="14">获取状态</text>
+              <text x="360" y="18" fill="#39728d" font-size="16" font-weight="700">实现耦合</text>
+              <text x="788" y="176" fill="#39728d" font-size="15" font-weight="700" transform="rotate(90 788 176)">功能耦合</text>
+              <text x="803" y="356" fill="#39728d" font-size="15" font-weight="700" transform="rotate(90 803 356)">时间耦合</text>
+              <text x="490" y="424" font-size="14">延迟订阅</text>
+            </g>
+          </svg>
+        </div>
+        <figcaption><span class="figure-number">图 15-5</span>强耦合的分布式系统</figcaption>
+      </figure>
+
+      <p>有意思的是，Marketing 和 AdsOptimization 两个限界上下文都需要以相同格式呈现客户信息，因此最终都从 CRM 的领域事件中投影出了同一个模型：每位客户状态的扁平快照。</p>
+      <p>Reporting（报表）限界上下文只订阅 CRM 发布的一部分领域事件，并把这些事件当作事件通知，用来获取 AdsOptimization 上下文完成的计算结果。不过，由于两个下游上下文都使用同样的事件触发自己的计算，为了确保 Reporting 模型更新时 AdsOptimization 已经完成处理，Reporting 引入了延迟：消息收到五分钟后才开始处理。</p>
+      <p>这个设计糟透了。下面分析系统中的几类耦合。</p>
+
+      <h3>时间耦合</h3>
+      <p>AdsOptimization 和 Reporting 两个限界上下文存在时间耦合：它们依赖严格的执行顺序。AdsOptimization 组件必须先完成处理，Reporting 模块才能被触发。如果顺序颠倒，Reporting 系统就会产生不一致的数据。</p>
+      <p>为了强制实现所需的执行顺序，工程师在 Reporting 系统中加入处理延迟。五分钟延迟给 AdsOptimization 组件留出了完成计算的时间。显然，这并不能真正防止错误的执行顺序：</p>
+      <ul>
+        <li>AdsOptimization 可能负载过高，无法在五分钟内完成处理；</li>
+        <li>网络问题可能延迟消息到达 AdsOptimization 服务；</li>
+        <li>AdsOptimization 组件可能发生故障，停止处理进入的消息。</li>
+      </ul>
+
+      <h3>功能耦合</h3>
+      <p>Marketing 和 AdsOptimization 两个限界上下文都订阅了 CRM 的领域事件，最终实现了相同的客户数据投影。换句话说，把进入的领域事件转换成基于状态的表示，这段业务逻辑在两个限界上下文里重复实现，而且两份逻辑拥有相同的变化原因：它们必须以相同格式呈现客户数据。因此，只要其中一个组件改变投影，另一个限界上下文也必须同步复制这项变化。</p>
+      <p>这就是功能耦合：多个组件实现同一种业务功能；一旦功能变化，多个组件就必须同时变化。</p>
+
+      <h3>实现耦合</h3>
+      <p>这种耦合更隐蔽。Marketing 和 AdsOptimization 订阅了 CRM 事件溯源模型生成的全部领域事件。因此，CRM 的任何实现变化——例如增加新的领域事件，或修改现有事件的模式——都必须同步反映在两个订阅方中！做不到就可能产生不一致数据。例如，如果事件模式改变，订阅者的投影逻辑会失败；如果 CRM 模型增加了新领域事件，它又可能影响投影模型，忽略它同样会投影出不一致的状态。</p>
+
+      <h3>重构事件驱动集成</h3>
+      <aside class="margin-note">
+        <span class="note-kind">主线提示</span>
+        <h4>修复方法不是“换消息中间件”</h4>
+        <p>三种耦合都来自边界信息设计：生产者公开了太多内部事件、消费者重复解释同一模型、报表猜测上游何时完成。重构就是逐一收回这些泄漏。</p>
+      </aside>
+      <p>可见，盲目地向系统倾倒事件，既不会让它解耦，也不会让它更有韧性。你也许会觉得这个例子不现实，但遗憾的是，它来自真实故事。下面看看怎样调整事件，从而显著改善设计。</p>
+      <p>公开构成 CRM 数据模型的全部领域事件，会让订阅者耦合到生产者的实现细节。解决实现耦合，可以只公开一组严格受限的事件，或改用其他类型的事件。</p>
+      <p>Marketing 和 AdsOptimization 订阅者因为实现同样的业务功能而彼此形成了功能耦合。</p>
+      <p>实现耦合和功能耦合，可以一起通过把投影逻辑封装到生产者——CRM 限界上下文——中来解决。CRM 不再暴露实现细节，而是遵循消费者驱动契约模式：投影消费者需要的模型，并把它作为限界上下文发布语言的一部分。这个集成专用模型与内部实现模型解耦。于是，消费者得到了所需的全部数据，却不需要知道 CRM 的实现模型。</p>
+      <p>为了消除 AdsOptimization 与 Reporting 限界上下文之间的时间耦合，AdsOptimization 组件可以在计算完成后发布一条事件通知，触发 Reporting 组件获取所需数据。重构后的系统如图 15-6 所示。</p>
+
+      <figure>
+        <div class="figure-frame">
+          <svg viewBox="0 0 820 520" role="img" aria-labelledby="f156t f156d">
+            <title id="f156t">重构后的系统</title><desc id="f156d">CRM 通过开放主机服务发布消费者需要的状态，广告优化完成后再通知报表查询。</desc>
+            <defs><marker id="a156" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#40545d"/></marker></defs>
+            <g fill="none" stroke="#40545d" stroke-width="2">
+              <rect x="60" y="190" width="160" height="125" rx="7" fill="#dcecf4"/>
+              <rect x="220" y="205" width="60" height="95" fill="#f7d69a"/>
+              <rect x="580" y="40" width="165" height="85" rx="7" fill="#dcecf4"/>
+              <rect x="580" y="210" width="165" height="85" rx="7" fill="#dcecf4"/>
+              <rect x="580" y="385" width="165" height="85" rx="7" fill="#dcecf4"/>
+              <path d="M280 252 H365" stroke-dasharray="5 5" marker-end="url(#a156)"/>
+              <path d="M415 252 L580 82" stroke-dasharray="5 5" marker-end="url(#a156)"/>
+              <path d="M415 252 H580" stroke-dasharray="5 5" marker-end="url(#a156)"/>
+              <path d="M662 385 V295" marker-end="url(#a156)"/>
+              <path d="M700 295 V385" stroke-dasharray="5 5" marker-end="url(#a156)"/>
+              <rect x="365" y="231" width="50" height="34" rx="3" fill="#f2ad59"/>
+              <path d="M365 232 L390 252 L415 232"/>
+            </g>
+            <g fill="#26343b" font-family="system-ui,sans-serif" text-anchor="middle">
+              <text x="140" y="260" font-size="19" font-weight="700">CRM</text>
+              <text x="250" y="255" font-size="14" font-weight="700" transform="rotate(-90 250 255)">开放主机服务</text>
+              <text x="390" y="292" font-size="14">投影状态（ECST）</text>
+              <text x="662" y="92" font-size="18" font-weight="700">营销</text>
+              <text x="662" y="262" font-size="18" font-weight="700">广告优化</text>
+              <text x="662" y="437" font-size="18" font-weight="700">报表</text>
+              <text x="628" y="340" font-size="14">获取状态</text>
+              <text x="742" y="340" font-size="14">事件通知</text>
+            </g>
+          </svg>
+        </div>
+        <figcaption><span class="figure-number">图 15-6</span>重构后的系统</figcaption>
+      </figure>
+    </section>
+
+    <section id="heuristics">
+      <h2>事件驱动设计启发式</h2>
+      <p>让事件类型与手头任务相匹配，能够让最终设计的耦合度下降几个数量级，同时更灵活、更容错。下面把前述修改背后的设计启发式归纳出来。</p>
+
+      <h3>假设最坏情况一定会发生</h3>
+      <p>用安迪·格鲁夫的话说，只有偏执狂才能生存。<sup><a href="#footnote-3">3</a></sup>设计事件驱动系统时，应把这句话作为指导原则：</p>
+      <ul>
+        <li>网络一定会变慢；</li>
+        <li>服务器一定会在最不方便的时刻出故障；</li>
+        <li>事件一定会乱序到达；</li>
+        <li>事件一定会重复。</li>
+      </ul>
+      <p>最重要的是，这些情况最常发生在周末和公共假期。</p>
+      <p>“事件驱动”中的“驱动”意味着：整个系统依赖消息的成功投递。因此，要像躲避瘟疫一样，避开“事情总会没问题”的心态。无论遇到什么情况，都要确保事件能够一致、可靠地交付：</p>
+      <ul>
+        <li>使用发件箱（outbox）模式可靠发布消息；</li>
+        <li>发布消息时，确保订阅者能够对消息去重，并能识别、重新排序乱序消息；</li>
+        <li>编排跨限界上下文、并且需要发出补偿动作的流程时，利用 Saga 和流程管理器模式。</li>
+      </ul>
+
+      <h3>区分公共事件与私有事件</h3>
+      <aside class="margin-note">
+        <span class="note-kind">主线提示</span>
+        <h4>领域事件不等于公共 API</h4>
+        <p>服务内部可以拥有细腻、频繁变化的事件；跨边界时却应重新设计一套稳定的发布语言。否则消费者会被迫理解你的内部模型。</p>
+      </aside>
+      <p>发布领域事件时，要警惕暴露实现细节，尤其是事件溯源聚合中的事件。事件应被视为限界上下文公共接口的内在组成部分。因此，实现开放主机服务模式时，要确保这些事件反映在限界上下文的发布语言中。第 9 章讨论了转换事件模型的模式。</p>
+      <p>设计限界上下文的公共接口时，应利用不同类型的事件。事件携带状态转移消息会把实现模型压缩为更紧凑的模型，只传达消费者真正需要的信息。</p>
+      <p>事件通知消息可以进一步缩小公共接口。最后，使用领域事件与外部限界上下文通信时要保持克制；可以考虑专门设计一套公共领域事件。</p>
+
+      <h3>评估一致性要求</h3>
+      <p>设计事件驱动通信时，还要评估限界上下文的一致性要求，把它作为选择事件类型的另一条启发式：</p>
+      <ul>
+        <li>如果组件可以接受最终一致的数据，使用事件携带状态转移消息；</li>
+        <li>如果消费者必须读取生产者状态中的最后一次写入，发送事件通知，然后由消费者查询生产者的最新状态。</li>
+      </ul>
+      <div class="callout">选择事件类型的快捷问题：消费者要的是“知道有事发生”“拿到一份可本地使用的状态”，还是“理解发生了什么业务事实”？</div>
+    </section>
+
+    <section id="conclusion">
+      <h2>小结</h2>
+      <p>本章把事件驱动架构呈现为设计限界上下文公共接口的内在组成部分。你学到了三种可用于跨限界上下文通信的事件：</p>
+      <dl>
+        <dt><strong>事件通知</strong></dt>
+        <dd>通知某件重要事情已经发生，但要求消费者显式查询生产者，取得额外信息。</dd>
+        <dt><strong>事件携带状态转移</strong></dt>
+        <dd>一种基于消息的数据复制机制。每个事件包含一个状态快照，可用于维护生产者数据的本地缓存。</dd>
+        <dt><strong>领域事件</strong></dt>
+        <dd>描述生产者业务领域中所发生事件的消息。</dd>
+      </dl>
+      <p>使用不合适的事件类型，会让基于 EDA 的系统脱轨，并在无意中变成大泥球。要为集成选择正确的事件类型，需要评估限界上下文的一致性要求，同时警惕暴露实现细节。应显式设计公共事件与私有事件。最后，要确保即使面对技术问题和系统故障，消息仍能被可靠交付。</p>
+    </section>
+
+    <section id="exercises">
+      <h2>练习</h2>
+      <ol class="exercise-list">
+        <li>下列哪项说法正确？
+          <ol>
+            <li>事件驱动架构定义了那些需要跨越组件边界的事件。</li>
+            <li>事件溯源定义了那些应留在限界上下文边界之内的事件。</li>
+            <li>事件驱动架构和事件溯源，是同一种模式的不同叫法。</li>
+            <li>A 和 B 正确。</li>
+          </ol>
+        </li>
+        <li>哪一种事件最适合传达状态变化？
+          <ol>
+            <li>事件通知。</li>
+            <li>事件携带状态转移。</li>
+            <li>领域事件。</li>
+            <li>所有事件类型都同样适合传达状态变化。</li>
+          </ol>
+        </li>
+        <li>哪一种限界上下文集成模式要求显式定义公共事件？
+          <ol>
+            <li>开放主机服务。</li>
+            <li>防腐层。</li>
+            <li>共享内核。</li>
+            <li>遵奉者。</li>
+          </ol>
+        </li>
+        <li>服务 S1 与 S2 以异步方式集成。S1 必须传达数据，而 S2 需要能够读取 S1 中最后写入的数据。哪一种事件适合这个集成场景？
+          <ol>
+            <li>S2 应发布事件携带状态转移事件。</li>
+            <li>S2 应发布公共事件通知，以通知 S1 发起同步请求，取得最新信息。</li>
+            <li>S2 应发布领域事件。</li>
+            <li>A 和 B。</li>
+          </ol>
+        </li>
+      </ol>
+    </section>
+
+    <section class="footnotes" aria-label="脚注">
+      <p id="footnote-1"><strong>1.</strong> Gregor Hohpe 与 Bobby Woolf，<em>Enterprise Integration Patterns: Designing, Building, and Deploying Messaging Solutions</em>，Addison-Wesley，2003。</p>
+      <p id="footnote-2"><strong>2.</strong> Martin Fowler，《What do you mean by “Event-Driven”?》，检索日期：2021 年 8 月 12 日。</p>
+      <p id="footnote-3"><strong>3.</strong> Andrew S. Grove，<em>Only the Paranoid Survive</em>，HarperCollins Business，1998。</p>
+    </section>
+
+    <p class="closing-note">本页为《Learning Domain-Driven Design》第 15 章的完整中文学习版。正文、代码、图示、脚注和练习按原章结构整理；图示依据原书重新绘制并翻译，侧栏只帮助你把当前段落放回全章主线。</p>
+  </main>
+</body>
+</html>
