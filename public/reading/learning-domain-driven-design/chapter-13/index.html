@@ -1,0 +1,1062 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>第 13 章｜现实世界中的领域驱动设计｜RIN III</title>
+  <meta name="description" content="《Learning Domain-Driven Design》第十三章完整中文翻译、重绘图示与主线提示阅读版">
+  <style>
+    :root {
+      --paper: #fffefa;
+      --canvas: #ecebe7;
+      --ink: #26343b;
+      --muted: #65757d;
+      --accent: #39728d;
+      --accent-soft: #e7f1f5;
+      --line: #d9e2e6;
+      --figure-bg: #f8fafb;
+      --blue: #8ebbd8;
+      --blue-soft: #dcecf4;
+      --orange: #efaa58;
+      --green: #68b985;
+      --red: #ca4850;
+      --gray: #c8ccce;
+      --shadow: 0 18px 48px rgba(40, 50, 56, .10);
+      color-scheme: light;
+    }
+
+    * { box-sizing: border-box; }
+
+    html {
+      scroll-behavior: smooth;
+      background: var(--canvas);
+    }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text",
+        "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      font-size: 17px;
+      line-height: 1.78;
+      text-rendering: optimizeLegibility;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .site-nav {
+      display: flex;
+      width: min(1160px, calc(100% - 32px));
+      margin: 24px auto -16px;
+      justify-content: space-between;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .08em;
+    }
+
+    .site-nav a {
+      color: var(--muted);
+      text-decoration: none;
+    }
+
+    .site-nav a:hover { color: var(--accent); }
+
+    .reader {
+      width: min(1160px, calc(100% - 32px));
+      margin: 40px auto 72px;
+      padding: 52px 360px 64px 64px;
+      background: var(--paper);
+      border: 1px solid rgba(57, 79, 90, .08);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+    }
+
+    .chapter-kicker,
+    .note-kind {
+      display: inline-flex;
+      padding: 3px 12px;
+      border-radius: 999px;
+      color: var(--accent);
+      background: var(--accent-soft);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: .04em;
+    }
+
+    h1 {
+      margin: 14px 0 4px;
+      font-size: clamp(34px, 6vw, 46px);
+      line-height: 1.18;
+      letter-spacing: -.035em;
+    }
+
+    h2 {
+      margin: 2.25em 0 .55em;
+      font-size: 27px;
+      line-height: 1.28;
+      letter-spacing: -.02em;
+    }
+
+    h3 {
+      margin: 1.7em 0 .4em;
+      font-size: 21px;
+      line-height: 1.35;
+    }
+
+    h4 {
+      margin: 1.35em 0 .25em;
+      font-size: 17px;
+      line-height: 1.45;
+    }
+
+    p {
+      margin: .72em 0;
+      text-align: justify;
+      text-justify: inter-ideograph;
+    }
+
+    ul, ol { padding-left: 1.45em; }
+    li { margin: .42em 0; }
+    li::marker { color: var(--accent); }
+
+    .lead {
+      margin-bottom: 14px;
+      color: #35464e;
+      font-size: 18px;
+      line-height: 1.72;
+    }
+
+    .title-rule {
+      width: 52px;
+      height: 3px;
+      margin: 18px 0 28px;
+      border-radius: 99px;
+      background: var(--accent);
+    }
+
+    .chapter-nav {
+      display: flex;
+      margin: 30px 0 38px;
+      padding: 0;
+      flex-wrap: wrap;
+      gap: 8px;
+      list-style: none;
+    }
+
+    .chapter-nav a {
+      display: block;
+      padding: 5px 11px;
+      color: var(--muted);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      font-size: 13px;
+      line-height: 1.4;
+      text-decoration: none;
+    }
+
+    .chapter-nav a:hover {
+      color: var(--accent);
+      border-color: #9fc1d0;
+      background: #f5fafc;
+    }
+
+    .margin-note {
+      position: relative;
+      float: right;
+      clear: right;
+      width: 286px;
+      margin: .15em -330px 20px 32px;
+      padding: 14px 15px 15px;
+      color: #52646c;
+      border: 1px solid #d9e4e8;
+      border-radius: 13px;
+      background: #f8fbfc;
+      box-shadow: 0 7px 18px rgba(51, 71, 81, .06);
+      font-size: 14px;
+      line-height: 1.62;
+    }
+
+    .margin-note::before {
+      position: absolute;
+      top: 22px;
+      left: -25px;
+      width: 18px;
+      height: 1px;
+      background: #aac3ce;
+      content: "";
+    }
+
+    .margin-note h4 {
+      margin: 8px 0 6px;
+      color: var(--ink);
+      font-size: 16px;
+      line-height: 1.35;
+    }
+
+    .margin-note p {
+      margin: .4em 0 0;
+      text-align: left;
+    }
+
+    figure {
+      margin: 1.35em 0 1.7em;
+      break-inside: avoid;
+    }
+
+    .figure-frame {
+      min-width: 650px;
+      padding: 20px 18px;
+      overflow-x: auto;
+      border: 1px solid #e1e8eb;
+      border-radius: 14px;
+      background: var(--figure-bg);
+    }
+
+    figcaption {
+      margin-top: 9px;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .figure-number {
+      margin-right: .55em;
+      color: var(--accent);
+      font-weight: 800;
+    }
+
+    .module-shift {
+      display: grid;
+      min-width: 640px;
+      grid-template-columns: 1fr 76px 1fr;
+      gap: 16px;
+      align-items: center;
+    }
+
+    .module-group {
+      min-height: 200px;
+      padding: 18px;
+      border: 1px solid #bfcbd0;
+      border-radius: 12px;
+      background: #fff;
+    }
+
+    .module-group strong {
+      display: block;
+      margin-bottom: 10px;
+      color: var(--accent);
+      font-size: 15px;
+    }
+
+    .module-group ul {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .module-arrow {
+      color: var(--orange);
+      font-size: 52px;
+      font-weight: 900;
+      text-align: center;
+    }
+
+    .extract-diagram {
+      display: grid;
+      min-width: 650px;
+      grid-template-columns: 1.45fr 96px .8fr;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .context-shell {
+      padding: 18px;
+      border: 2px solid #70848d;
+      border-radius: 28px;
+      background: #fff;
+    }
+
+    .context-title {
+      display: block;
+      margin-bottom: 12px;
+      color: var(--accent);
+      font-size: 14px;
+      font-weight: 800;
+      text-align: center;
+    }
+
+    .subdomain-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 7px;
+    }
+
+    .subdomain {
+      display: grid;
+      min-height: 72px;
+      padding: 10px;
+      place-items: center;
+      border-radius: 18px 28px 20px 25px;
+      color: #203038;
+      font-size: 14px;
+      font-weight: 750;
+      text-align: center;
+    }
+
+    .subdomain.ad { background: #f3bb70; }
+    .subdomain.publish { background: var(--green); }
+    .subdomain.campaign { background: #c7dfea; }
+    .subdomain.optimize { color: #fff; background: var(--red); }
+
+    .extract-arrow {
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 800;
+      text-align: center;
+    }
+
+    .extract-arrow::after {
+      display: block;
+      margin-top: -4px;
+      color: var(--accent);
+      content: "╌╌╌➜";
+      font-size: 31px;
+      letter-spacing: -5px;
+    }
+
+    .extracted-context {
+      display: grid;
+      min-height: 112px;
+      padding: 14px;
+      place-items: center;
+      border: 2px solid #70848d;
+      border-radius: 22px 31px 19px 28px;
+      background: var(--gray);
+      font-size: 15px;
+      font-weight: 800;
+      text-align: center;
+    }
+
+    .photo-frame {
+      display: grid;
+      min-height: 410px;
+      place-items: center;
+    }
+
+    .photo-frame img {
+      display: block;
+      width: min(580px, 100%);
+      height: auto;
+      border-radius: 8px;
+    }
+
+    .migration-flow {
+      display: grid;
+      min-width: 680px;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      align-items: end;
+    }
+
+    .migration-stage {
+      display: grid;
+      min-height: 255px;
+      grid-template-rows: 38px 34px 1fr 27px;
+      gap: 9px;
+      justify-items: center;
+      align-items: center;
+      padding: 13px 10px 8px;
+      border: 1px solid #d7e0e4;
+      border-radius: 12px;
+      background: #fff;
+    }
+
+    .box {
+      display: grid;
+      padding: 7px 12px;
+      place-items: center;
+      border: 2px solid #40545d;
+      background: var(--blue-soft);
+      font-size: 13px;
+      font-weight: 750;
+      text-align: center;
+    }
+
+    .client { min-width: 78px; }
+    .facade { min-width: 100px; }
+
+    .systems {
+      display: flex;
+      width: 100%;
+      min-height: 105px;
+      align-items: end;
+      justify-content: center;
+      gap: 12px;
+    }
+
+    .systems .box {
+      width: var(--size);
+      min-height: var(--height);
+    }
+
+    .modern { background: var(--blue); }
+
+    .flow-arrow {
+      color: #60747d;
+      font-size: 22px;
+      line-height: 1;
+    }
+
+    .stage-label {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .database-flow .migration-stage {
+      min-height: 238px;
+      grid-template-rows: 1fr 28px 50px 27px;
+    }
+
+    .database {
+      position: relative;
+      display: grid;
+      width: 94px;
+      height: 50px;
+      place-items: center;
+      color: #fff;
+      border: 2px solid #40545d;
+      border-radius: 50% / 22%;
+      background: #2276b3;
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .callout {
+      margin: 1.35em 0;
+      padding: 15px 18px;
+      color: #43565f;
+      border-left: 3px solid #9bc2d2;
+      border-radius: 0 10px 10px 0;
+      background: #f5fafc;
+      font-size: 18px;
+    }
+
+    .exercise-list > li {
+      margin: 1.15em 0;
+      padding-left: .25em;
+    }
+
+    .exercise-list ol {
+      margin-top: .4em;
+      list-style-type: lower-alpha;
+    }
+
+    .translation-note {
+      margin-top: 2.8em;
+      padding-top: 1.2em;
+      color: var(--muted);
+      border-top: 1px solid var(--line);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    @media (max-width: 1040px) {
+      .reader {
+        width: min(820px, calc(100% - 32px));
+        padding: 52px 64px 64px;
+      }
+
+      .margin-note {
+        float: none;
+        width: auto;
+        margin: 1em 0 1.25em;
+      }
+
+      .margin-note::before { display: none; }
+    }
+
+    @media (max-width: 680px) {
+      body { font-size: 16px; }
+
+      .site-nav {
+        width: calc(100% - 36px);
+        margin: 16px auto;
+      }
+
+      .reader {
+        width: 100%;
+        margin: 0;
+        padding: 32px 22px 48px;
+        border: 0;
+        border-radius: 0;
+        box-shadow: none;
+      }
+
+      .figure-frame {
+        min-width: 0;
+        margin-right: -6px;
+        margin-left: -6px;
+        padding: 12px 10px;
+      }
+
+      .module-shift,
+      .extract-diagram,
+      .migration-flow {
+        min-width: 620px;
+      }
+    }
+
+    @page {
+      size: 177.8mm 233.3mm;
+      margin: 13mm 15mm 14mm;
+    }
+
+    @media print {
+      html, body { background: #fff; }
+      body { font-size: 10.6pt; line-height: 1.62; }
+      .site-nav, .chapter-nav { display: none; }
+
+      .reader {
+        width: auto;
+        margin: 0;
+        padding: 0;
+        border: 0;
+        border-radius: 0;
+        box-shadow: none;
+      }
+
+      .margin-note {
+        float: none;
+        width: auto;
+        margin: 8pt 0 10pt;
+        box-shadow: none;
+        break-inside: avoid;
+      }
+
+      .margin-note::before { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <nav class="site-nav" aria-label="站点导航">
+    <a href="../../../software-engineering/learning-domain-driven-design/">← 返回整本书学习记录</a>
+    <a href="../../../">RIN III</a>
+  </nav>
+
+  <main class="reader">
+    <header>
+      <span class="chapter-kicker">第 13 章</span>
+      <h1>现实世界中的领域驱动设计</h1>
+      <div class="title-rule"></div>
+      <p class="lead">前面我们已经学过：怎样分析业务领域、共享知识，以及怎样做出战略与战术设计决策。本章要把这些工具带回不理想的现实——遗留系统、棕地项目、有限时间，以及并非人人都精通 DDD 的团队。</p>
+
+      <nav aria-label="本章导航">
+        <ul class="chapter-nav">
+          <li><a href="#intro">现实不是实验室</a></li>
+          <li><a href="#strategic-analysis">战略分析</a></li>
+          <li><a href="#modernization">现代化策略</a></li>
+          <li><a href="#pragmatic-ddd">务实地使用 DDD</a></li>
+          <li><a href="#selling-ddd">怎样推动 DDD</a></li>
+          <li><a href="#conclusion">总结</a></li>
+          <li><a href="#exercises">练习</a></li>
+        </ul>
+      </nav>
+    </header>
+
+    <section id="intro">
+      <aside class="margin-note">
+        <span class="note-kind">本段主旨</span>
+        <h4>先打破两个幻想</h4>
+        <p>DDD 不只属于从零开始的新项目，也不要求一次用齐所有模式。本章真正关心的是：条件不完美时，怎样仍然获得价值。</p>
+      </aside>
+
+      <p>想象一下这个场景：你正在做一个全新的项目。所有同事都非常熟悉领域驱动设计，从项目一开始，每个人都尽力设计有效的模型，并且坚定地使用统一语言。随着项目推进，限界上下文的边界始终清晰，并能有效保护业务领域模型。最后，因为所有战术设计决策都与业务战略保持一致，代码库一直处于极佳状态：它说着统一语言，也实现了足以承载模型复杂度的设计模式。好了，现在醒醒。</p>
+
+      <p>你遇到上述“实验室条件”的概率，大概和中彩票差不多。当然不是完全不可能，只是很不常见。遗憾的是，许多人误以为 DDD 只能用于全新的绿地项目，而且还必须满足整个团队人人都是 DDD 高手这种理想条件。讽刺的是，最能从 DDD 中受益的，往往恰恰是棕地项目：它们已经证明了自己的商业可行性，却需要一次调整，来对抗不断累积的技术债务和设计熵。也恰好是在这类棕地、遗留、大泥球代码库上，我们度过了软件工程职业生涯中的大部分时间。</p>
+
+      <p>另一个常见误解，是把 DDD 看成一道“全有或全无”的选择题：要么把这套方法提供的所有工具全部用上，要么就不算领域驱动设计。这并不正确。理解这么多概念本身就可能让人不知所措，更不用说把它们全部付诸实践。好在，你不需要应用所有模式和实践，也可以从 DDD 中获益。对棕地项目尤其如此，因为在合理时间内引入全部模式和实践，几乎不可能。</p>
+
+      <p>本章将介绍在现实世界中应用领域驱动设计工具和模式的策略，包括怎样把它们用于棕地项目和其他并不理想的环境。</p>
+    </section>
+
+    <section id="strategic-analysis">
+      <h2>战略分析</h2>
+
+      <aside class="margin-note">
+        <span class="note-kind">回到主线</span>
+        <h4>别急着改代码</h4>
+        <p>现代化的第一步不是选模式，而是同时弄清两个空间：业务究竟靠什么竞争，以及现有系统实际上怎样承载它。</p>
+      </aside>
+
+      <p>按照本书介绍 DDD 模式和实践的顺序，在组织中引入 DDD 的最佳起点，是投入时间理解组织的业务战略，以及现有系统架构的当前状态。</p>
+
+      <h3>理解业务领域</h3>
+
+      <p>首先，识别公司的业务领域：</p>
+
+      <ul>
+        <li>组织经营的是哪些业务领域？</li>
+        <li>它的客户是谁？</li>
+        <li>组织向客户提供什么服务或价值？</li>
+        <li>组织正在与哪些公司或产品竞争？</li>
+      </ul>
+
+      <p>回答这些问题，可以让你从鸟瞰视角看见公司的高层目标。接下来，再“放大”业务领域，寻找组织为了实现这些高层目标而使用的业务构件，也就是各个子域。</p>
+
+      <p>一个不错的初始线索是公司的组织结构图，包括部门和其他组织单元。观察这些单元如何相互协作，使公司得以在所属业务领域中竞争。</p>
+
+      <p>同时，还要留意不同类型子域的迹象。</p>
+
+      <h4>核心子域</h4>
+
+      <p>要识别公司的核心子域，应寻找它区别于竞争对手的地方：</p>
+
+      <ul>
+        <li>公司是否拥有竞争对手没有的“秘密配方”？例如专利、内部设计的算法等知识产权。</li>
+        <li>请记住，竞争优势以及由此产生的核心子域未必是技术性的。公司是否拥有非技术竞争优势？例如招募顶尖人才的能力、独特的艺术设计能力，等等。</li>
+      </ul>
+
+      <p>还有一条很有用、却不太令人愉快的识别线索：找到设计最糟糕的软件组件——所有工程师都讨厌的大泥球，但业务又因为风险太高而不愿从头重写。这里的关键是：这个遗留系统无法被现成产品替代，否则它就属于通用子域；而且对它的任何修改都会带来业务风险。</p>
+
+      <h4>通用子域</h4>
+
+      <p>要识别通用子域，可以寻找现成解决方案、订阅服务或开源软件集成。正如第 1 章所说，竞争对手也应能获得同样的现成方案，而且竞争对手采用同一方案，不会对你公司的业务造成影响。</p>
+
+      <h4>支撑子域</h4>
+
+      <p>支撑子域是剩下的那些软件组件：它们不能直接用现成方案替代，却也不会直接带来竞争优势。如果这些代码状态很差，工程师对它们的情绪反应通常没有那么强烈，因为它们变化不频繁。因此，次优软件设计造成的影响，也不像核心子域中那样严重。</p>
+
+      <p>你不必找出全部核心子域。即使对一家中型公司，这也不现实，甚至不可能。你需要识别整体结构，但把更多注意力放在与你正在工作的软件系统最相关的子域上。</p>
+
+      <h3>探索当前设计</h3>
+
+      <aside class="margin-note">
+        <span class="note-kind">本段主旨</span>
+        <h4>先把现状画出来</h4>
+        <p>这里不是假定现有模块就是“正确的限界上下文”，而是暂时把它们当作候选边界，检查生命周期、模型和团队关系。</p>
+      </aside>
+
+      <p>熟悉问题空间以后，就可以继续调查解决方案及其设计决策。首先从高层组件开始。这些组件未必是 DDD 意义上的限界上下文，而只是当前用来把业务领域拆成子系统的边界。</p>
+
+      <p>要寻找的关键特征，是组件之间是否拥有解耦的生命周期。即使所有子系统都由同一个源码仓库管理（单体仓库），或者所有组件都位于同一个单体代码库中，也要检查哪些组件能够独立于其他组件演进、测试和部署。</p>
+
+      <h4>评估战术设计</h4>
+
+      <p>对每个高层组件，检查它包含哪些业务子域，以及当初做了哪些技术设计决策：使用什么模式实现业务逻辑，又用什么模式定义组件架构？</p>
+
+      <p>解决方案是否匹配问题的复杂度？是否有些区域需要更精细的设计模式？反过来，有没有一些子域可以适当简化，或直接使用现成方案？利用这些信息，做出更聪明的战略和战术决策。</p>
+
+      <h4>评估战略设计</h4>
+
+      <p>利用对高层组件的了解，绘制当前设计的上下文映射图，暂时把这些高层组件当作限界上下文。按照限界上下文集成模式，识别并追踪组件之间的关系。</p>
+
+      <p>最后，分析得到的上下文映射图，从领域驱动设计的角度评估架构。是否存在次优的战略设计决策？例如：</p>
+
+      <ul>
+        <li>多个团队同时在同一个高层组件上工作；</li>
+        <li>核心子域被重复实现；</li>
+        <li>核心子域由外包公司实现；</li>
+        <li>集成频繁失败，由此产生大量摩擦；</li>
+        <li>外部服务和遗留系统中别扭的模型不断向内扩散。</li>
+      </ul>
+
+      <p>这些认识是规划设计现代化策略的良好起点。不过在此之前，既然现在对问题空间（业务领域）和解决方案空间（当前设计）都有了更深入的了解，还要寻找已经丢失的领域知识。</p>
+
+      <p>正如第 11 章所讨论的，业务领域知识可能因各种原因丢失。这个问题在核心子域中既普遍又严重，因为那里的业务逻辑既复杂，又对业务至关重要。如果遇到这种情况，可以组织 EventStorming 工作坊，尝试恢复知识，并以工作坊为基础培养统一语言。</p>
+    </section>
+
+    <section id="modernization">
+      <h2>现代化策略</h2>
+
+      <aside class="margin-note">
+        <span class="note-kind">本段主旨</span>
+        <h4>想得大，动得小</h4>
+        <p>全章从这里进入行动阶段：先让逻辑边界显现，再只把最有价值的边界物理拆开，最后逐步改善内部模型。</p>
+      </aside>
+
+      <p>工程师试图从头重写系统，并希望这一次把整个系统正确设计、正确实现的“大重写”很少成功。管理层愿意支持这种架构大改造的情况更少。</p>
+
+      <p>改善既有系统设计的一种更安全做法，是想得大，但从小处开始。正如 Eric Evans 所说，我们必须接受一个事实：大型系统不可能每一部分都设计得很好。因此，必须有策略地决定现代化投入应该放在哪里。做出这个决定的前提，是系统中存在划分各个子域的边界。</p>
+
+      <p>这些边界不必一开始就是物理边界，也不必立即把每个子域都变成完整的限界上下文。可以先确保逻辑边界——依技术栈不同，可能表现为命名空间、模块或包——与子域边界对齐，如图 13-1 所示。</p>
+
+      <figure>
+        <div class="figure-frame" role="img" aria-label="营销限界上下文的模块从技术分层改组为按业务子域组织">
+          <div class="module-shift">
+            <div class="module-group">
+              <strong>营销限界上下文</strong>
+              <ul>
+                <li>Marketing.Application</li>
+                <li>Marketing.Infrastructure</li>
+                <li>Marketing.Model</li>
+                <li>Marketing.Mobile</li>
+                <li>Marketing.Services</li>
+                <li>Marketing.UI</li>
+              </ul>
+            </div>
+            <div class="module-arrow" aria-hidden="true">➜</div>
+            <div class="module-group">
+              <strong>营销限界上下文</strong>
+              <ul>
+                <li>Marketing.AdvertisingMaterials</li>
+                <li>Marketing.Campaigns</li>
+                <li>Marketing.Optimization</li>
+                <li>Marketing.Publishing</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        <figcaption><span class="figure-number">图 13-1</span>重新组织限界上下文中的模块，让它们反映业务子域边界，而不是技术实现模式。</figcaption>
+      </figure>
+
+      <p>调整系统模块是一种相对安全的重构。你没有修改业务逻辑，只是把类型移动到组织方式更好的结构中。尽管如此，仍需确认使用完整类型名的引用没有被破坏，例如动态加载类库、反射等机制。</p>
+
+      <p>另外，还要追踪那些在其他代码库、数据库存储过程、无服务器函数等位置实现的子域业务逻辑，并确保在这些平台上也引入新的边界。例如，如果一部分逻辑由数据库存储过程处理，可以把过程重命名为能够反映所属模块的名称，或者引入专用数据库模式，再把这些存储过程迁移进去。</p>
+
+      <h3>战略现代化</h3>
+
+      <p>正如第 10 章所讨论的，过早把系统拆成尽可能小的限界上下文可能很危险。下一章会更详细地讨论限界上下文与微服务。现在，应寻找哪些地方把逻辑边界变成物理边界能够获得最大价值。通过把逻辑边界变成物理边界来提取限界上下文的过程，如图 13-2 所示。</p>
+
+      <p>可以问自己：</p>
+
+      <ul>
+        <li>是否有多个团队在同一个代码库上工作？如果有，就为各团队定义限界上下文，把开发生命周期解耦。</li>
+        <li>不同组件是否使用了彼此冲突的模型？如果有，就把冲突的模型移入不同的限界上下文。</li>
+      </ul>
+
+      <aside class="margin-note">
+        <span class="note-kind">读图提示</span>
+        <h4>不是“看到子域就拆服务”</h4>
+        <p>图 13-2 只把真正需要独立演进的“优化”子域抽出。其余逻辑仍留在原上下文，这就是“最少必要的物理边界”。</p>
+      </aside>
+
+      <figure>
+        <div class="figure-frame" role="img" aria-label="把营销上下文中的优化子域提取为独立限界上下文">
+          <div class="extract-diagram">
+            <div class="context-shell">
+              <span class="context-title">营销限界上下文</span>
+              <div class="subdomain-grid">
+                <div class="subdomain ad">广告素材</div>
+                <div class="subdomain publish">发布</div>
+                <div class="subdomain campaign">营销活动</div>
+                <div class="subdomain optimize">优化</div>
+              </div>
+            </div>
+            <div class="extract-arrow">提取</div>
+            <div>
+              <span class="context-title">优化限界上下文</span>
+              <div class="extracted-context">优化</div>
+            </div>
+          </div>
+        </div>
+        <figcaption><span class="figure-number">图 13-2</span>把逻辑边界变成物理边界，从而提取出一个限界上下文。</figcaption>
+      </figure>
+
+      <p>建立最少数量的必要限界上下文以后，再检查它们之间的关系和集成模式。观察在不同限界上下文上工作的团队如何沟通与协作。特别是当它们通过临时约定或类似共享内核的方式集成时，要确认这些团队是否有共同目标，以及足够的协作水平。</p>
+
+      <p>注意上下文集成模式能够解决的以下问题：</p>
+
+      <h4>客户—供应商关系</h4>
+
+      <p>正如第 11 章所讨论的，组织增长可能会使过去的沟通与协作模式失效。寻找那些原本按照多个工程团队的合作关系设计、但如今合作已无法维持的组件，把它们重构成合适的客户—供应商关系：遵奉者、防腐层或开放主机服务。</p>
+
+      <h4>防腐层</h4>
+
+      <p>防腐层可以保护限界上下文免受遗留系统影响，尤其是当遗留系统使用低效模型，而且这些模型容易向下游组件扩散时。</p>
+
+      <p>实现防腐层的另一个常见场景，是保护限界上下文，使其不受上游服务公共接口频繁变化的影响。</p>
+
+      <h4>开放主机服务</h4>
+
+      <p>如果一个组件实现细节的变化经常波及整个系统并影响其消费者，可以考虑把它做成开放主机服务：让内部实现模型与它对外暴露的公共 API 解耦。</p>
+
+      <h4>各行其道</h4>
+
+      <p>尤其在大型组织中，工程团队可能会因为必须共同演进一项共享功能而产生摩擦。如果这项“争端之源”并非业务关键能力，也就是说它不属于核心子域，那么团队可以各行其道，分别实现自己的解决方案，从而消除摩擦来源。</p>
+
+      <h3>战术现代化</h3>
+
+      <p>从战术角度看，首先要寻找业务价值与实现策略之间最“痛苦”的错配，例如：核心子域的模型很复杂，却使用了无法承载这种复杂度的事务脚本或活动记录模式。它们直接影响业务成败，也必须最频繁地变化，但糟糕的设计又使维护和演进十分痛苦。</p>
+
+      <h4>培养统一语言</h4>
+
+      <aside class="margin-note">
+        <span class="note-kind">回到主线</span>
+        <h4>先恢复知识，再升级模型</h4>
+        <p>如果团队连规则都说不清，直接把事务脚本改成聚合，只会把误解封进更复杂的结构里。EventStorming 在这里是知识恢复工具。</p>
+      </aside>
+
+      <p>设计现代化成功的前提，是掌握领域知识，并建立有效的业务领域模型。正如本书反复强调的，DDD 的统一语言是获取知识和构建有效解决方案模型的关键。</p>
+
+      <p>不要忘记 DDD 收集领域知识的捷径：EventStorming。与领域专家一起用 EventStorming 建立统一语言，同时探索遗留代码库；当代码库是一团没有文档、无人真正理解的混乱时，这一点尤其重要。召集所有与这项功能相关的人，一起探索业务领域。EventStorming 是恢复领域知识的绝佳工具。</p>
+
+      <p>掌握领域知识及其模型之后，再判断哪种业务逻辑实现模式最适合眼前的业务功能。可以先使用第 10 章介绍的设计启发式。接下来还要决定现代化策略：是用绞杀者模式逐步替换系统的完整组件，还是逐步重构现有解决方案。</p>
+
+      <h4>绞杀者模式</h4>
+
+      <p>图 13-3 中的绞杀榕属于一类具有特殊生长方式的热带树木：它们会依附在另一棵“宿主树”上生长。绞杀榕最初是一颗落在宿主树高处枝杈中的种子。随着生长，它一路向下，直到在土壤中扎根。最终，它长出的枝叶遮蔽宿主树，使宿主树死亡。</p>
+
+      <figure>
+        <div class="figure-frame photo-frame">
+          <img src="./strangler-fig.png" width="580" height="484" alt="生长在宿主树之上的绞杀榕，气生根从树冠垂落并包围树干">
+        </div>
+        <figcaption><span class="figure-number">图 13-3</span>生长在宿主树之上的绞杀榕（来源：<a href="https://unsplash.com/photos/y_l5tep9wxI">Unsplash</a>）。</figcaption>
+      </figure>
+
+      <p>绞杀者迁移模式借用了这类树木的生长方式。其思路是创建一个新的限界上下文——“绞杀者”——用它实现新需求，并逐步把遗留上下文中的功能迁移进去。与此同时，除了紧急修复等特殊情况，遗留限界上下文停止演进和开发。最终，全部功能都迁移到新的限界上下文，也就是绞杀者中；按照这个比喻，宿主也随之死亡，也就是遗留代码库退出使用。</p>
+
+      <p>绞杀者模式通常会与外观模式配合使用。外观是一层很薄的抽象，充当公共接口，负责根据迁移进度把请求转发给遗留限界上下文或现代化后的限界上下文。迁移完成，也就是宿主死亡以后，外观不再必要，可以一并删除，如图 13-4 所示。</p>
+
+      <aside class="margin-note">
+        <span class="note-kind">读图提示</span>
+        <h4>外观层只是迁移脚手架</h4>
+        <p>它的职责是让调用方暂时不用知道功能搬到了哪里。迁移完成后，如果它没有新的业务职责，就应该连同旧系统一起退出。</p>
+      </aside>
+
+      <figure>
+        <div class="figure-frame" role="img" aria-label="绞杀者迁移过程中外观层把客户端请求逐步从遗留系统转发到新系统，最后外观和遗留系统都被移除">
+          <div class="migration-flow">
+            <div class="migration-stage">
+              <div class="box client">客户端</div>
+              <div class="flow-arrow">↓</div>
+              <div>
+                <div class="box facade">外观层</div>
+                <div class="flow-arrow" aria-hidden="true">↙　↘</div>
+                <div class="systems">
+                  <div class="box" style="--size: 96px; --height: 92px">遗留系统</div>
+                  <div class="box modern" style="--size: 58px; --height: 46px">新系统</div>
+                </div>
+              </div>
+              <div class="stage-label">迁移早期</div>
+            </div>
+            <div class="migration-stage">
+              <div class="box client">客户端</div>
+              <div class="flow-arrow">↓</div>
+              <div>
+                <div class="box facade">外观层</div>
+                <div class="flow-arrow" aria-hidden="true">↙　↘</div>
+                <div class="systems">
+                  <div class="box" style="--size: 58px; --height: 46px">遗留系统</div>
+                  <div class="box modern" style="--size: 96px; --height: 92px">新系统</div>
+                </div>
+              </div>
+              <div class="stage-label">迁移后期</div>
+            </div>
+            <div class="migration-stage">
+              <div class="box client">客户端</div>
+              <div class="flow-arrow">↓</div>
+              <div class="systems">
+                <div class="box modern" style="--size: 142px; --height: 126px">新系统</div>
+              </div>
+              <div class="stage-label">迁移完成</div>
+            </div>
+          </div>
+        </div>
+        <figcaption><span class="figure-number">图 13-4</span>外观层按照功能从遗留系统迁往现代化系统的进度转发请求；迁移完成后，外观层和遗留系统都会被移除。</figcaption>
+      </figure>
+
+      <p>按照“每个限界上下文都是独立子系统”的原则，不同限界上下文不能共享数据库。但实现绞杀者模式时，这条规则可以暂时放宽。为了避免在两个上下文之间进行复杂集成——很多情况下甚至需要分布式事务，因为两个上下文必须操作同一份数据——现代化上下文与遗留上下文可以临时使用同一数据库，如图 13-5 所示。</p>
+
+      <p>放宽“每个限界上下文一个数据库”规则的条件是：遗留上下文最终必须退出，而且越早越好；之后数据库将只由新实现使用。</p>
+
+      <figure>
+        <div class="figure-frame" role="img" aria-label="遗留系统和新系统在迁移早期临时共享数据库，迁移完成后只有新系统访问数据库">
+          <div class="migration-flow database-flow">
+            <div class="migration-stage">
+              <div class="systems">
+                <div class="box" style="--size: 96px; --height: 92px">遗留系统</div>
+                <div class="box modern" style="--size: 58px; --height: 46px">新系统</div>
+              </div>
+              <div class="flow-arrow">↕　↕</div>
+              <div class="database">数据库</div>
+              <div class="stage-label">迁移早期</div>
+            </div>
+            <div class="migration-stage">
+              <div class="systems">
+                <div class="box" style="--size: 58px; --height: 46px">遗留系统</div>
+                <div class="box modern" style="--size: 96px; --height: 92px">新系统</div>
+              </div>
+              <div class="flow-arrow">↕　↕</div>
+              <div class="database">数据库</div>
+              <div class="stage-label">迁移后期</div>
+            </div>
+            <div class="migration-stage">
+              <div class="systems">
+                <div class="box modern" style="--size: 142px; --height: 126px">新系统</div>
+              </div>
+              <div class="flow-arrow">↕</div>
+              <div class="database">数据库</div>
+              <div class="stage-label">迁移完成</div>
+            </div>
+          </div>
+        </div>
+        <figcaption><span class="figure-number">图 13-5</span>迁移期间，遗留系统和现代化系统临时操作同一个数据库。</figcaption>
+      </figure>
+
+      <h4>重构战术设计决策</h4>
+
+      <p>绞杀者迁移之外，另一种选择是在原来的遗留代码库中直接进行现代化，也就是重构。</p>
+
+      <aside class="margin-note">
+        <span class="note-kind">别跳太快</span>
+        <h4>先学会划边界，再上事件溯源</h4>
+        <p>状态聚合更容易修改事务边界。若一开始就在错误边界上建立事件历史，纠错成本会高很多。</p>
+      </aside>
+
+      <p>第 11 章介绍了迁移战术设计决策的各个方面。不过在现代化遗留代码库时，还有两个细节需要注意。</p>
+
+      <p>第一，小步渐进比一次大重写更安全。因此，不要把事务脚本或活动记录直接重构成事件溯源领域模型。应先设计基于状态的聚合，把精力投入到寻找有效的聚合边界上，并确保所有相关业务逻辑都位于这些边界之内。与在事件溯源聚合中才发现事务边界错误相比，从基于状态的聚合迁移到事件溯源聚合，安全程度要高出几个数量级。</p>
+
+      <p>第二，同样按照小步渐进的思路，重构到领域模型不必是一次原子性变化。可以逐步引入领域模型模式中的各个元素。</p>
+
+      <p>先寻找可能的值对象。即使不使用完整的领域模型，不可变对象也能显著降低解决方案的复杂度。</p>
+
+      <p>正如第 11 章所说，把活动记录重构成聚合不必一夜完成，而可以分步进行。先收拢相关的业务逻辑，再分析事务边界：是否有必须保持强一致的决策，却建立在最终一致的数据之上？反过来，解决方案是否在最终一致已经足够的地方强制使用了强一致？分析代码库时，不要忘记这些决定由业务关注点驱动，而不是由技术关注点驱动。只有充分分析事务需求之后，才能设计聚合边界。</p>
+
+      <p>最后，在重构遗留系统的过程中，必要时使用防腐层保护新代码库不受旧模型污染；同时实现开放主机服务并暴露发布语言，使消费者不受遗留代码库变化的影响。</p>
+    </section>
+
+    <section id="pragmatic-ddd">
+      <h2>务实的领域驱动设计</h2>
+
+      <aside class="margin-note">
+        <span class="note-kind">本段主旨</span>
+        <h4>模式不是入场券</h4>
+        <p>本章在这里给出定义：只要业务领域真正驱动了设计决策，就已经在实践 DDD；聚合和值对象只是可能使用的工具。</p>
+      </aside>
+
+      <p>正如本章开头所说，应用领域驱动设计并不是“全有或全无”。你不必使用 DDD 提供的每一种工具。例如，战术模式可能由于某些原因并不适合你。也许其他设计模式在你的特定领域中效果更好，或者你只是觉得其他模式更有效。这完全没问题。</p>
+
+      <p>只要你分析业务领域及其战略，为具体问题寻找有效模型，而且最重要的是，根据业务领域的需要做设计决策——这就是领域驱动设计。</p>
+
+      <div class="callout">值得再次强调：领域驱动设计的核心不是聚合，也不是值对象。它的核心，是让业务领域驱动软件设计决策。</div>
+    </section>
+
+    <section id="selling-ddd">
+      <h2>怎样“推销”领域驱动设计</h2>
+
+      <p>我在技术大会上讲这个主题时，几乎每次都会被问到同一个问题：“这些听起来都很好，但我该怎样向团队和管理层‘推销’领域驱动设计？”这是一个极其重要的问题。</p>
+
+      <p>推销很难，我个人也讨厌推销。不过仔细想想，设计软件本身就是一种推销：我们要把自己的想法介绍给团队、管理层或客户。而像 DDD 这样覆盖大量设计决策、甚至越过工程领域去影响其他利益相关者的方法论，会格外难以推动。</p>
+
+      <p>要在组织中推动任何大规模变化，管理层支持都至关重要。但除非高层管理者已经熟悉 DDD，或者愿意花时间理解这套方法的业务价值，否则它通常不会出现在他们最优先考虑的事项中，特别是 DDD 看起来会给工程流程带来相当大的变化。幸运的是，这并不意味着你不能使用领域驱动设计。</p>
+
+      <h3>“地下”领域驱动设计</h3>
+
+      <aside class="margin-note">
+        <span class="note-kind">回到主线</span>
+        <h4>先用原理解决问题</h4>
+        <p>这里不是教你偷偷搞架构，而是不要把术语当成审批前提。先把 DDD 当作工程工具箱，用问题与逻辑解释每个选择。</p>
+      </aside>
+
+      <p>把领域驱动设计当作自己专业工具箱的一部分，而不是组织级战略。DDD 的模式和实践都是工程技术；既然软件工程是你的工作，就使用它们。</p>
+
+      <p>下面看看怎样在日常工作中融入 DDD，而不必大张旗鼓。</p>
+
+      <h4>统一语言</h4>
+
+      <p>使用统一语言是领域驱动设计的基石实践。它对于发现领域知识、沟通，以及建立有效的解决方案模型都至关重要。</p>
+
+      <p>好在，这项实践简单得几乎就是常识。认真倾听利益相关者讨论业务领域时使用的语言，温和地把术语从技术行话引回它所表达的业务含义。</p>
+
+      <p>寻找不一致的术语，并询问它们为什么不同。例如，如果同一件事有多个名称，要追问原因：是不是有不同模型被缠在同一个解决方案里？寻找这些语境，并把它们明确出来。如果含义确实相同，就按常识办事，请大家使用同一个术语。</p>
+
+      <p>还要尽可能多地与领域专家交流。这些交流未必需要正式会议，茶水间和咖啡时间也很适合沟通。和领域专家谈论业务领域，尝试使用他们的语言；遇到理解困难时就请他们澄清。不用担心——领域专家通常很乐意与那些真心想了解问题空间的工程师合作。</p>
+
+      <p>最重要的是，在代码和所有项目沟通中使用统一语言。要有耐心，改变一个组织沿用已久的术语需要时间，但最终会逐渐形成习惯。</p>
+
+      <h4>限界上下文</h4>
+
+      <p>探索可能的系统分解方案时，应回到限界上下文模式背后的原则：</p>
+
+      <ul>
+        <li>为什么应为问题设计有针对性的模型，而不是让一个模型承担所有用例？因为“包办一切”的方案很少能真正做好任何一件事。</li>
+        <li>为什么一个限界上下文不能容纳彼此冲突的模型？因为这会增加认知负担和解决方案复杂度。</li>
+        <li>为什么多个团队在同一个代码库上工作通常不是好主意？因为这会制造摩擦，并阻碍团队协作。</li>
+      </ul>
+
+      <p>对限界上下文集成模式也采用同样的思考方式：确保自己理解每个模式试图解决的具体问题。</p>
+
+      <h4>战术设计决策</h4>
+
+      <p>讨论战术设计模式时，不要诉诸权威，比如：“DDD 那本书说这里应该用聚合！”应当诉诸逻辑。例如：</p>
+
+      <ul>
+        <li>为什么显式事务边界很重要？为了保护数据一致性。</li>
+        <li>为什么一次数据库事务不能修改多个聚合实例？为了确保一致性边界划分正确。</li>
+        <li>为什么外部组件不能直接修改聚合状态？为了确保所有相关业务逻辑都位于同一处，不会被重复实现。</li>
+        <li>为什么不能把聚合的一部分功能卸载到存储过程中？为了避免逻辑重复。重复逻辑，尤其是散落在逻辑与物理距离都很远的系统组件中时，容易逐渐失去同步，最终造成数据损坏。</li>
+        <li>为什么应尽量保持较小的聚合边界？因为过宽的事务范围既会增加聚合复杂度，也会损害性能。</li>
+        <li>为什么不能不用事件溯源，只把事件写到日志文件里？因为日志无法提供长期的数据一致性保证。</li>
+      </ul>
+
+      <h4>事件溯源领域模型</h4>
+
+      <p>说到事件溯源，当解决方案确实需要事件溯源领域模型时，这种模式可能很难推动。下面有一个或许有用的“绝地心灵技巧”。</p>
+
+      <p>尽管事件溯源有很多优势，对许多人来说它仍显得过于激进。与本书讨论的其他一切一样，解决办法仍然是让业务领域驱动这项决定。</p>
+
+      <p>去和领域专家交流，向他们展示基于状态和基于事件的模型，解释两者的差异，以及事件溯源提供的优势，尤其是时间维度上的优势。很多时候，他们会非常喜欢这种模型带来的洞察力，反过来主动支持事件溯源。</p>
+
+      <p>当然，在与领域专家互动的同时，不要忘记继续打磨统一语言。</p>
+    </section>
+
+    <section id="conclusion">
+      <h2>总结</h2>
+
+      <aside class="margin-note">
+        <span class="note-kind">整章收束</span>
+        <h4>一条现实中的 DDD 路线</h4>
+        <p>业务战略 → 系统现状 → 痛点与价值 → 最少必要边界 → 渐进替换或重构。贯穿始终的是领域知识，而不是模式清单。</p>
+      </aside>
+
+      <p>本章介绍了在现实场景中使用领域驱动设计工具的多种技巧：面对棕地项目和遗留代码库，以及团队成员并非人人都是 DDD 专家时，仍然可以使用它们。</p>
+
+      <p>与绿地项目一样，永远从分析业务领域开始。公司的目标是什么？它打算用什么战略实现目标？利用组织结构和现有软件设计决策，识别组织的子域及其类型。有了这些知识，再规划现代化策略：寻找痛点，争取获得最大的业务价值；通过重构或替换相关组件来现代化遗留代码。无论采用哪种方式，都要渐进进行。大重写带来的风险，往往高于它创造的业务价值。</p>
+
+      <p>最后，即使组织没有广泛采用 DDD，你仍然可以使用领域驱动设计工具。选择正确的工具；与同事讨论时，始终解释每个模式背后的逻辑和原则。</p>
+
+      <p>至此，本书对领域驱动设计本身的讨论告一段落。在第四部分中，我们会继续学习 DDD 与其他方法论和模式之间的关系。</p>
+    </section>
+
+    <section id="exercises">
+      <h2>练习</h2>
+
+      <ol class="exercise-list">
+        <li>
+          假设你想在一个棕地项目中引入领域驱动设计工具和实践，第一步应该做什么？
+          <ol>
+            <li>把所有业务逻辑重构成事件溯源领域模型。</li>
+            <li>分析组织的业务领域及其战略。</li>
+            <li>改进系统组件，确保它们遵循正确的限界上下文原则。</li>
+            <li>棕地项目不可能使用领域驱动设计。</li>
+          </ol>
+        </li>
+        <li>
+          在迁移过程中，绞杀者模式在哪些方面违背了领域驱动设计的一些核心原则？
+          <ol>
+            <li>多个限界上下文使用共享数据库。</li>
+            <li>如果现代化后的限界上下文属于核心子域，那么旧实现和新实现中会暂时存在重复功能。</li>
+            <li>多个团队在同一个限界上下文上工作。</li>
+            <li>A 和 B。</li>
+          </ol>
+        </li>
+        <li>
+          为什么通常不应该把基于活动记录的业务逻辑直接重构成事件溯源领域模型？
+          <ol>
+            <li>在学习过程中，基于状态的模型更容易调整聚合边界。</li>
+            <li>渐进引入大型变化更加安全。</li>
+            <li>A 和 B。</li>
+            <li>以上都不是。即使是事务脚本，也完全可以直接重构成事件溯源领域模型。</li>
+          </ol>
+        </li>
+        <li>引入聚合模式时，团队问：为什么聚合不能直接引用所有可能的实体，从而让人可以从一个地方遍历整个业务领域？你会怎样回答？</li>
+      </ol>
+    </section>
+
+    <p class="translation-note">本页按原章结构完整翻译。图 13-1、13-2、13-4、13-5 依据原图语义重绘并翻译图中文字；图 13-3 保留原书照片。侧栏内容为阅读提示，不属于原文。</p>
+  </main>
+</body>
+</html>
