@@ -1,0 +1,4 @@
+interface:
+  display_name: "书籍快速精读"
+  short_description: "将长书压缩为可快速通读的章节地图，并保留回原书的定位线索"
+  default_prompt: "使用 $publish-book-quick-read 把这本长书整理成可快速通读、可按需回原书精读的章节网页。"
