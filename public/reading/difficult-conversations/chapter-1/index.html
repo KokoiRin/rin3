@@ -1,0 +1,610 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>第 1 章｜挑选出三种谈话｜RIN III</title>
+  <meta name="description" content="《高难度谈话》第一章结构化中文精读与批注阅读版">
+  <style>
+    :root {
+      --paper: #fffefa;
+      --canvas: #ecebe7;
+      --ink: #26343b;
+      --muted: #65757d;
+      --accent: #39728d;
+      --accent-soft: #e7f1f5;
+      --line: #d9e2e6;
+      --figure-bg: #f8fafb;
+      --warm: #9a6a2f;
+      --warm-soft: #fff6e8;
+      --green: #47745f;
+      --green-soft: #edf7f1;
+      --shadow: 0 18px 48px rgba(40, 50, 56, .10);
+      color-scheme: light;
+    }
+
+    * { box-sizing: border-box; }
+
+    html {
+      scroll-behavior: smooth;
+      background: var(--canvas);
+    }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text",
+        "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      font-size: 17px;
+      line-height: 1.78;
+      text-rendering: optimizeLegibility;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .site-nav {
+      display: flex;
+      width: min(1160px, calc(100% - 32px));
+      margin: 24px auto -16px;
+      justify-content: space-between;
+      gap: 16px;
+      font-size: 12px;
+      font-weight: 750;
+      letter-spacing: .06em;
+    }
+
+    .site-nav a,
+    .chapter-nav a {
+      color: var(--muted);
+      text-decoration: none;
+    }
+
+    .site-nav a:hover,
+    .chapter-nav a:hover { color: var(--accent); }
+
+    .reader {
+      width: min(1160px, calc(100% - 32px));
+      margin: 40px auto 72px;
+      padding: 52px 360px 64px 64px;
+      background: var(--paper);
+      border: 1px solid rgba(57, 79, 90, .08);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+    }
+
+    .chapter-kicker,
+    .note-kind {
+      display: inline-flex;
+      padding: 3px 12px;
+      border-radius: 999px;
+      color: var(--accent);
+      background: var(--accent-soft);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: .04em;
+    }
+
+    h1 {
+      margin: 14px 0 4px;
+      font-size: clamp(34px, 6vw, 46px);
+      line-height: 1.18;
+      letter-spacing: -.035em;
+    }
+
+    h2 {
+      margin: 2.25em 0 .55em;
+      font-size: 27px;
+      line-height: 1.28;
+      letter-spacing: -.02em;
+    }
+
+    h3 {
+      margin: 1.7em 0 .4em;
+      font-size: 20px;
+      line-height: 1.35;
+    }
+
+    p {
+      margin: .72em 0;
+      text-align: justify;
+      text-justify: inter-ideograph;
+    }
+
+    .lead {
+      margin-bottom: 1em;
+      color: #35464e;
+      font-size: 18px;
+      line-height: 1.72;
+    }
+
+    .editorial-note {
+      margin: 1.25em 0 0;
+      padding: 12px 15px;
+      color: #5c6b72;
+      border-left: 3px solid #9bc2d2;
+      background: #f5fafc;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .title-rule {
+      width: 52px;
+      height: 3px;
+      margin: 18px 0 28px;
+      border-radius: 99px;
+      background: var(--accent);
+    }
+
+    .chapter-nav {
+      display: flex;
+      margin: 30px 0 38px;
+      padding: 0;
+      flex-wrap: wrap;
+      gap: 8px;
+      list-style: none;
+    }
+
+    .chapter-nav a {
+      display: block;
+      padding: 5px 11px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    .margin-note {
+      position: relative;
+      float: right;
+      clear: right;
+      width: 286px;
+      margin: .15em -330px 20px 32px;
+      padding: 14px 15px 15px;
+      color: #52646c;
+      border: 1px solid #d9e4e8;
+      border-radius: 13px;
+      background: #f8fbfc;
+      box-shadow: 0 7px 18px rgba(51, 71, 81, .06);
+      font-size: 14px;
+      line-height: 1.62;
+    }
+
+    .margin-note::before {
+      position: absolute;
+      top: 22px;
+      left: -25px;
+      width: 18px;
+      height: 1px;
+      background: #aac3ce;
+      content: "";
+    }
+
+    .margin-note h4 {
+      margin: 8px 0 6px;
+      color: var(--ink);
+      font-size: 16px;
+      line-height: 1.35;
+    }
+
+    .margin-note p {
+      margin: .4em 0 0;
+      text-align: left;
+    }
+
+    .dialogue {
+      margin: 1.2em 0 1.55em;
+      padding: 16px 18px;
+      border: 1px solid var(--line);
+      border-radius: 13px;
+      background: var(--figure-bg);
+    }
+
+    .dialogue p {
+      margin: .42em 0;
+      text-align: left;
+    }
+
+    .speaker { color: var(--accent); font-weight: 780; }
+
+    blockquote {
+      margin: 1.25em 0;
+      padding: 2px 0 2px 20px;
+      color: #53646d;
+      border-left: 3px solid #9bc2d2;
+      font-size: 18px;
+    }
+
+    .three-layers {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      min-width: 700px;
+    }
+
+    .layer-card {
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #fff;
+    }
+
+    .layer-card strong {
+      display: block;
+      margin-bottom: 7px;
+      color: var(--accent);
+      font-size: 16px;
+    }
+
+    .layer-card p { margin: 0; text-align: left; font-size: 14px; }
+
+    figure {
+      margin: 1.35em 0 1.7em;
+      break-inside: avoid;
+    }
+
+    .figure-frame {
+      padding: 18px;
+      overflow-x: auto;
+      border: 1px solid #e1e8eb;
+      border-radius: 14px;
+      background: var(--figure-bg);
+    }
+
+    figcaption {
+      margin-top: 9px;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .figure-number {
+      margin-right: .55em;
+      color: var(--accent);
+      font-weight: 800;
+    }
+
+    .two-voices,
+    .comparison {
+      display: grid;
+      gap: 1px;
+      min-width: 720px;
+      overflow: hidden;
+      border: 1px solid #cedbe0;
+      border-radius: 10px;
+      background: #cedbe0;
+    }
+
+    .two-voices { grid-template-columns: 1fr 1fr; }
+
+    .voice-head,
+    .voice-cell,
+    .comparison > div {
+      padding: 12px 14px;
+      background: #fff;
+      font-size: 14px;
+      line-height: 1.55;
+    }
+
+    .voice-head {
+      color: #fff;
+      background: var(--accent);
+      font-weight: 800;
+      text-align: center;
+    }
+
+    .voice-cell p { margin: .35em 0; text-align: left; }
+    .unspoken { color: #734f23; background: var(--warm-soft); }
+
+    .comparison {
+      grid-template-columns: .78fr 1.18fr 1.18fr;
+    }
+
+    .comparison .head {
+      color: #fff;
+      background: var(--accent);
+      font-weight: 800;
+      text-align: center;
+    }
+
+    .comparison .challenge { background: #f2f5f6; font-weight: 760; }
+    .comparison .battle { background: var(--warm-soft); }
+    .comparison .learning { background: var(--green-soft); }
+    .comparison p { margin: .28em 0; text-align: left; }
+
+    .summary-box {
+      margin: 2em 0 0;
+      padding: 20px 22px;
+      border: 1px solid #cfe0d7;
+      border-radius: 14px;
+      background: var(--green-soft);
+    }
+
+    .summary-box h3 { margin-top: 0; color: var(--green); }
+    .summary-box ol { margin-bottom: 0; padding-left: 1.4em; }
+
+    @media (max-width: 1040px) {
+      .reader {
+        width: min(820px, calc(100% - 32px));
+        padding: 52px 64px 64px;
+      }
+
+      .margin-note {
+        float: none;
+        width: auto;
+        margin: 1em 0 1.25em;
+      }
+
+      .margin-note::before { display: none; }
+    }
+
+    @media (max-width: 680px) {
+      body { font-size: 16px; }
+
+      .site-nav {
+        width: 100%;
+        margin: 0;
+        padding: 16px 22px;
+        background: var(--paper);
+      }
+
+      .reader {
+        width: 100%;
+        margin: 0;
+        padding: 24px 22px 48px;
+        border: 0;
+        border-radius: 0;
+        box-shadow: none;
+      }
+
+      .figure-frame {
+        margin-right: -6px;
+        margin-left: -6px;
+        padding: 12px 10px;
+      }
+    }
+
+    @page { size: 177.8mm 233.3mm; margin: 13mm 15mm 14mm; }
+
+    @media print {
+      html, body { background: #fff; }
+      body { font-size: 10.6pt; line-height: 1.62; }
+      .site-nav, .chapter-nav { display: none; }
+      .reader { width: auto; margin: 0; padding: 0; border: 0; box-shadow: none; }
+      .margin-note { float: none; width: auto; margin: 8pt 0; box-shadow: none; }
+      .margin-note::before { display: none; }
+      .three-layers, .two-voices, .comparison { min-width: 0; }
+    }
+  </style>
+</head>
+<body>
+  <nav class="site-nav" aria-label="站点导航">
+    <a href="../../../me/difficult-conversations/">← 返回整本书学习记录</a>
+    <a href="../../../">RIN III</a>
+  </nav>
+
+  <main class="reader">
+    <header>
+      <span class="chapter-kicker">第 1 章</span>
+      <h1>挑选出三种谈话</h1>
+      <div class="title-rule"></div>
+      <p class="lead">一场表面上围绕工作结果的争论，内部往往同时运行着三场谈话：我们怎样解释发生的事，我们怎样处理情绪，以及这件事怎样动摇了对自己的认识。</p>
+      <p class="editorial-note"><strong>整理说明：</strong>本页按照原章顺序保留核心论证、杰克与迈克的完整冲突脉络及主要例子，并对重复铺陈做了压缩；两张原书低清表格按原意语义重绘。本页是结构化精读，不声称逐字校订；它适合建立章节地图，不替代需要引用或深入判断时回读原书。</p>
+
+      <nav aria-label="本章导航">
+        <ul class="chapter-nav">
+          <li><a href="#case">杰克与迈克</a></li>
+          <li><a href="#structure">三层结构</a></li>
+          <li><a href="#what-happened">发生了什么</a></li>
+          <li><a href="#feelings">情绪</a></li>
+          <li><a href="#identity">自我认知</a></li>
+          <li><a href="#learning">学习型谈话</a></li>
+        </ul>
+      </nav>
+    </header>
+
+    <section id="case">
+      <h2>一场看似只在谈手册的冲突</h2>
+      <aside class="margin-note">
+        <span class="note-kind">本段主旨</span>
+        <h4>真正的矛盾不只在说出口的话里</h4>
+        <p>手册只是表面议题。付出是否被看见、朋友是否可靠、自己是否胜任，这些没有说出口的内容共同决定了谈话的温度。</p>
+      </aside>
+
+      <p>杰克在一个很晚的下午接到朋友迈克的求助：第二天中午前必须赶出一本财务手册，而原来的设计师不在。杰克放下自己的项目，工作到深夜。第二天清早，迈克看过样本并同意付印；中午，杰克把成品送到他的办公室，疲惫却也因为帮上朋友而高兴。</p>
+
+      <p>回到办公室后，杰克却听到迈克的留言：收入报表不够清楚，数据有小出入，这对重要客户来说不可接受，必须立刻重做。杰克认为误差微不足道，更在意迈克早上已经审过样本。两人随即通话：</p>
+
+      <div class="dialogue" aria-label="杰克与迈克的关键对话">
+        <p><span class="speaker">杰克：</span>我收到留言了。我知道成品不完美，但图表已经很清楚，不至于造成误解。</p>
+        <p><span class="speaker">迈克：</span>我们没法拿这样的东西交差，这件事必须重做。</p>
+        <p><span class="speaker">杰克：</span>那你早上审阅的时候为什么不说？</p>
+        <p><span class="speaker">迈克：</span>校对不是我的工作。现在我承受着巨大压力，我只需要一个答复：你重不重做？</p>
+        <p><span class="speaker">杰克：</span>（犹豫）好吧，我做。</p>
+      </div>
+
+      <p>谈话结束了，问题却没有结束。几个月后，杰克仍对此耿耿于怀，两人的关系也变得疏远。他想知道，当时是否有更好的处理方式，现在又该怎样修复关系。</p>
+
+      <h3>弦外之音才揭示真实结构</h3>
+
+      <p>说出口的话只传递了表面信息。杰克没有说出的是：他为了帮朋友牺牲了自己的时间，迈克早上明明同意付印，现在却把错误全推给他；他感到被羞辱，也怀疑迈克是否值得当朋友。迈克没有说出的是：他本来就对杰克过去的工作不完全满意，这次是冒险再给朋友机会；成品出错让他怀疑自己当初的判断。</p>
+
+      <figure>
+        <div class="figure-frame">
+          <div class="two-voices" role="img" aria-label="杰克和迈克说出口的话与没有说出口的想法对照">
+            <div class="voice-head">说出口的话</div>
+            <div class="voice-head">杰克没有说出口的想法与感受</div>
+            <div class="voice-cell"><p>“我知道成品不完美，但图表已经很清楚。”</p></div>
+            <div class="voice-cell unspoken"><p>我为了帮你放下自己的事，你却取消原本的认可，还把整个问题推给我。</p></div>
+            <div class="voice-cell"><p>“你早上审阅时为什么不说？”</p></div>
+            <div class="voice-cell unspoken"><p>难道你认为校对都是我的职责？你到底把我当朋友，还是只想让我承担后果？</p></div>
+            <div class="voice-cell"><p>“好吧，我做。”</p></div>
+            <div class="voice-cell unspoken"><p>事情已经让你毁了。我再做一次，但我不会忘记。</p></div>
+          </div>
+        </div>
+        <figcaption><span class="figure-number">图 1-1</span>杰克话语与内心信息的对照。根据原书表格语义重绘并压缩。</figcaption>
+      </figure>
+    </section>
+
+    <section id="structure">
+      <h2>每段高难度谈话都有三层结构</h2>
+      <aside class="margin-note">
+        <span class="note-kind">回到主线</span>
+        <h4>三层不是三个阶段</h4>
+        <p>它们会在同一时刻并行发生。谈话卡住时，不妨检查自己究竟在争事实、压情绪，还是保护某种自我形象。</p>
+      </aside>
+
+      <p>对大量谈话的研究显示，无论主题怎样变化，谈话者的思想和情绪通常都会进入相同的三个层面。每一层都有可预测的错误，而这些错误会扭曲我们对局面的理解。</p>
+
+      <figure>
+        <div class="figure-frame">
+          <div class="three-layers" role="img" aria-label="高难度谈话的三个同时发生的层面">
+            <div class="layer-card">
+              <strong>01 “发生了什么”</strong>
+              <p>谁说了什么、做了什么？谁正确？对方想做什么？谁应当负责？</p>
+            </div>
+            <div class="layer-card">
+              <strong>02 情绪</strong>
+              <p>我的感受是否合理？该说出来还是藏起来？对方的情绪又意味着什么？</p>
+            </div>
+            <div class="layer-card">
+              <strong>03 自我认知</strong>
+              <p>这件事是否说明我不称职、不善良，或不值得被爱与尊重？</p>
+            </div>
+          </div>
+        </div>
+        <figcaption><span class="figure-number">图 1-2</span>三层谈话同时存在；改善谈话需要分别管理它们。</figcaption>
+      </figure>
+
+      <h3>能改变的是应对方式，不是困难本身</h3>
+
+      <p>再高明的技巧也无法消除所有复杂性。我们不可能拥有全部信息，也很难让对方立刻意识到自己看不见的东西；情绪仍会挣扎，重要的自我形象仍可能受到威胁。</p>
+
+      <p>能够改变的是应对：不再假设自己已经知道全部事实，而去寻找对方掌握的信息；不把情绪简单压住或爆发出来，而是识别并管理它；不假装谈话与自我无关，而是弄清楚究竟哪部分自我认知受到了触动。</p>
+    </section>
+
+    <section id="what-happened">
+      <h2>“发生了什么”对话：三个常见陷阱</h2>
+
+      <h3>陷阱一：把自己的故事当成唯一真相</h3>
+      <aside class="margin-note">
+        <span class="note-kind">别跳太快</span>
+        <h4>作者不是说事实不存在</h4>
+        <p>争执往往不在原始事实，而在事实的意义、评价标准和价值取舍。先承认这些差异，才可能继续核对事实。</p>
+      </aside>
+
+      <p>我们很容易从“我是对的，你是错的”开始。但许多高难度谈话真正争论的并不是合同写了什么，而是合同意味着什么；不是图表有无误差，而是这个误差是否严重到必须重做。</p>
+
+      <p>杰克和迈克都承认图表并不完美。他们的分歧在于：这点偏差重要到什么程度，应当怎样补救。继续证明谁“正确”，只会让双方错过真正需要交换的感知、解释和价值标准。</p>
+
+      <blockquote>从“证明我是对的”转向“理解我们为什么会看到不同的故事”。</blockquote>
+
+      <h3>陷阱二：根据影响编造对方的意图</h3>
+
+      <p>意图看不见，我们看到的只是行为及其影响，却常常直接推断对方是故意控制、伤害或轻视自己。当意图不明确时，人还尤其容易补上一个坏意图。</p>
+
+      <p>但人的行为可能同时包含多种意图，也可能根本没有针对我们的意图；甚至善意行为也可能造成伤害。把假设当事实，会让谈话在开始前就把对方定义成敌人。</p>
+
+      <h3>陷阱三：专注指责，忽略共同归责</h3>
+
+      <p>杰克认为迈克应在付印前指出问题；迈克认为杰克既然负责设计，就应承担错误。双方都急于让责任离开自己，结果只能加深否认与防御。</p>
+
+      <p>作者把“谁该受罚”与“局面是怎样共同形成的”区分开。一个巴掌拍不响：行动与不行动都可能对结果作出贡献。理解各自的贡献，才能找出真正原因并防止重演。</p>
+    </section>
+
+    <section id="feelings">
+      <h2>情绪对话：情绪不是噪声</h2>
+      <aside class="margin-note">
+        <span class="note-kind">本段主旨</span>
+        <h4>压住情绪并不等于理性</h4>
+        <p>未被讨论的情绪仍会进入语气、判断和关系。理性不是没有情绪，而是能识别情绪在告诉我们什么。</p>
+      </aside>
+
+      <p>面对强烈情绪，许多人会试图把它排除在工作谈话之外：情绪可能干扰判断，让人失控，也可能让彼此受伤。于是，看起来最稳妥的建议是只谈手册、只谈业务。</p>
+
+      <p>问题是，情绪并不是冲突的副产品，而常常就是冲突的一部分。杰克真正难以放下的，并非那张图表，而是自己的付出没有得到认可，并且受到不公正对待。把情绪从谈话里拿掉，就像演一出没有音乐的歌剧：情节还在，灵魂却消失了。</p>
+
+      <p>谈论情绪当然有风险，也并非每次都需要把所有感受摊开。但如果情绪正是矛盾的核心，完全不谈它就不可能真正化解矛盾。识别、表达和管理情绪是一项可学习的能力。</p>
+    </section>
+
+    <section id="identity">
+      <h2>自我认知对话：这说明我是怎样的人</h2>
+      <aside class="margin-note">
+        <span class="note-kind">回到主线</span>
+        <h4>局部反馈为何让人失衡</h4>
+        <p>当一句意见被听成对整个人的判决，我们就会迅速防御、过度承诺或逃离。先看见这层自我对话，才有机会恢复平衡。</p>
+      </aside>
+
+      <p>自我认知对话发生在内心：这件事是否说明我很称职、是个好人、值得被尊重或关爱？它会怎样影响我的未来？高难度谈话之所以困难，通常正因为表面议题触碰到了一个我们非常重视的人——自己。</p>
+
+      <p>请求升职表面上与职位和收入有关，被拒绝时真正令人发冷的却可能是：“我一直以为自己是一名优秀、受尊敬的员工，难道不是吗？”即使是传递坏消息的人，也可能因为不想成为“让人失望的人”，而给出自己并不相信的模糊承诺。</p>
+
+      <h3>保持自我平衡</h3>
+
+      <p>自我形象受到威胁时，人会失去信心、忘记要说的话，甚至大脑空白，只想逃离。知道自我认知对话必然存在，本身就能减轻一些焦虑。目标不是保证永不失衡，而是让“我做错了一件事”不再自动等于“我是一个失败的人”。</p>
+    </section>
+
+    <section id="learning">
+      <h2>从信息之战转向学习型谈话</h2>
+      <aside class="margin-note">
+        <span class="note-kind">本章落点</span>
+        <h4>目的先变，技巧才有用</h4>
+        <p>如果目标仍是让对方认输，再温和的句式也只是更精致的说服。学习型姿态首先承认：双方都拥有对方不知道的重要信息。</p>
+      </aside>
+
+      <p>我们发起谈话时，常常想证明自己的观点，让对方接受或照做。这是一场传递信息的战争。但当我们承认双方的感知与意图都更复杂，问题由彼此共同造成，情绪和自我认知又一直在场时，单向传递就不再足够。</p>
+
+      <p>谈话的新目标是：理解对方怎样看待发生的事，也清楚解释自己的观点；分享并了解双方的情绪；共同寻找解决问题的方法。我们不再只想说服，而是邀请对方一起补全局面。</p>
+
+      <figure>
+        <div class="figure-frame">
+          <div class="comparison" role="img" aria-label="信息之战与学习型谈话在三层谈话中的差异">
+            <div class="head">谈话层次</div>
+            <div class="head">信息之战</div>
+            <div class="head">学习型谈话</div>
+
+            <div class="challenge">“发生了什么”</div>
+            <div class="battle"><p><strong>假设：</strong>我拥有理解局面的全部信息。</p><p><strong>目标：</strong>让你接受我的观点。</p></div>
+            <div class="learning"><p><strong>假设：</strong>双方都掌握对方不知道的重要信息。</p><p><strong>目标：</strong>理解双方故事怎样形成。</p></div>
+
+            <div class="challenge">意图</div>
+            <div class="battle"><p><strong>假设：</strong>我知道你想做什么。</p><p><strong>目标：</strong>让你承认自己的错误意图。</p></div>
+            <div class="learning"><p><strong>假设：</strong>我只知道行为对我的影响，不可能直接知道你的意图。</p><p><strong>目标：</strong>分享影响，也好奇彼此真正的意图。</p></div>
+
+            <div class="challenge">责任</div>
+            <div class="battle"><p><strong>假设：</strong>错的是你，或我必须证明错的不是我。</p><p><strong>目标：</strong>归罪并让责任离开自己。</p></div>
+            <div class="learning"><p><strong>假设：</strong>局面通常由双方共同造成。</p><p><strong>目标：</strong>画出归责系统，理解彼此的贡献。</p></div>
+
+            <div class="challenge">情绪</div>
+            <div class="battle"><p><strong>假设：</strong>情绪与问题无关，谈它只会碍事。</p><p><strong>目标：</strong>压住情绪，或让情绪一次爆发完。</p></div>
+            <div class="learning"><p><strong>假设：</strong>情绪位于谈话核心，通常很复杂。</p><p><strong>目标：</strong>理解并表达情绪，不让评价替代情绪。</p></div>
+
+            <div class="challenge">自我认知</div>
+            <div class="battle"><p><strong>假设：</strong>称职或不称职、好或坏，只能二选一。</p><p><strong>目标：</strong>不惜代价捍卫单一自我形象。</p></div>
+            <div class="learning"><p><strong>假设：</strong>每个人都是优点与缺点并存的复杂组合。</p><p><strong>目标：</strong>让自我认识更完整，从而恢复平衡。</p></div>
+          </div>
+        </div>
+        <figcaption><span class="figure-number">图 1-3</span>信息之战与学习型谈话。根据原书章末表格语义重绘并精简。</figcaption>
+      </figure>
+
+      <div class="summary-box">
+        <h3>第一章留下的准备动作</h3>
+        <ol>
+          <li>先辨认自己正在经历哪三层谈话；</li>
+          <li>把事实、解释和对意图的假设分开；</li>
+          <li>找出没有说出口的情绪；</li>
+          <li>识别受到威胁的自我形象；</li>
+          <li>把目标从“传递正确答案”改为“共同补全局面”。</li>
+        </ol>
+      </div>
+
+      <p>接下来的章节会分别深入这些问题：第二至第四章处理“发生了什么”对话中的真相、意图和责任；第五章讨论情绪；第六章讨论自我认知；之后再回到何时谈、怎样开场、如何倾听表达与共同解决问题。</p>
+    </section>
+
+    <nav aria-label="章节切换">
+      <ul class="chapter-nav">
+        <li><a href="../../../me/difficult-conversations/">← 返回学习记录</a></li>
+        <li><a href="../chapter-2/">第 2 章 →</a></li>
+      </ul>
+    </nav>
+  </main>
+</body>
+</html>

@@ -126,8 +126,71 @@ test("lists the dual-view component guide once under me and defaults to the arti
   assert.match(index, /RIN III Slides 组件使用说明/);
   assert.match(index, /ARTICLE \+ SLIDES/);
   assert.match(index, new RegExp(`href="${basePath}/me/component-guide/"`));
-  assert.equal(index.match(/<li lang="zh-CN">/g)?.length, 1);
+  assert.equal(
+    index.match(new RegExp(`href="${basePath}/me/component-guide/"`, "g"))?.length,
+    1,
+  );
   assert.doesNotMatch(softwareEngineering, /RIN III Slides 组件使用说明/);
+});
+
+test("publishes one Difficult Conversations record with all twelve quick-read chapters", async () => {
+  const index = await readOutput("me/index.html");
+  const article = await readOutput("me/difficult-conversations/index.html");
+
+  assert.match(index, /《高难度谈话》学习记录/);
+  assert.equal(
+    index.match(new RegExp(`href="${basePath}/me/difficult-conversations/"`, "g"))?.length,
+    1,
+  );
+  for (let chapter = 1; chapter <= 12; chapter += 1) {
+    assert.match(
+      article,
+      new RegExp(
+        `href="\\.\\.\\/\\.\\.\\/reading\\/difficult-conversations\\/chapter-${chapter}\\/"`,
+      ),
+    );
+    const reader = await readOutput(
+      `reading/difficult-conversations/chapter-${chapter}/index.html`,
+    );
+    assert.match(reader, /href="\.\.\/\.\.\/\.\.\/me\/difficult-conversations\/"/);
+  }
+
+  assert.match(article, /证据清楚不等于谈话已经清楚/);
+  assert.match(article, /把影响与意图拆开/);
+  assert.match(article, /从责任判决转向系统归责/);
+  assert.match(article, /专业性不是一场谈话可以判决的/);
+  assert.match(article, /下一次谈话前的 90 秒准备/);
+
+  const chapter1 = await readOutput("reading/difficult-conversations/chapter-1/index.html");
+  const chapter2 = await readOutput("reading/difficult-conversations/chapter-2/index.html");
+  const chapter3 = await readOutput("reading/difficult-conversations/chapter-3/index.html");
+  const chapter4 = await readOutput("reading/difficult-conversations/chapter-4/index.html");
+  const chapter5 = await readOutput("reading/difficult-conversations/chapter-5/index.html");
+  const chapter6 = await readOutput("reading/difficult-conversations/chapter-6/index.html");
+  const chapter7 = await readOutput("reading/difficult-conversations/chapter-7/index.html");
+  const chapter8 = await readOutput("reading/difficult-conversations/chapter-8/index.html");
+  const chapter9 = await readOutput("reading/difficult-conversations/chapter-9/index.html");
+  const chapter10 = await readOutput("reading/difficult-conversations/chapter-10/index.html");
+  const chapter11 = await readOutput("reading/difficult-conversations/chapter-11/index.html");
+  const chapter12 = await readOutput("reading/difficult-conversations/chapter-12/index.html");
+  const readerCss = await readOutput("reading/difficult-conversations/reader.css");
+
+  assert.match(chapter1, /三层谈话同时存在/);
+  assert.match(chapter1, /本页是结构化精读，不声称逐字校订/);
+  assert.match(chapter2, /聆听双方故事：“和”姿态/);
+  assert.match(chapter3, /把行动、影响和假设分开/);
+  assert.match(chapter4, /四种不容易看见的责任/);
+  assert.match(chapter5, /表达情绪，而不是发泄评价/);
+  assert.match(chapter6, /真正的技巧不是永不失衡/);
+  assert.match(chapter7, /三类很可能无效的谈话/);
+  assert.match(chapter8, /像仲裁人一样描述“差异”/);
+  assert.match(chapter9, /真诚先于“积极倾听”动作/);
+  assert.match(chapter10, /结论不是事实/);
+  assert.match(chapter11, /再构造：不接住攻击的原始框架/);
+  assert.match(chapter12, /原书信息表 12-1 · 语义重绘/);
+  assert.match(article, /全书之后，我想保留的一张路线图/);
+  assert.match(article, /哪些情况值得回到原书/);
+  assert.match(readerCss, /--paper: #fffefa/);
 });
 
 // 同一本书只占一个学习记录入口，章节阅读器分别承载完整翻译并回到这篇整书笔记。
