@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 790" role="img" aria-labelledby="title desc">
+  <title id="title">过度拆分形成集成复杂度</title>
+  <desc id="desc">八个细粒度服务分别列出执行、发布和处理事件的方法，二十五条服务间连线在中央交织成密集的依赖网络。</desc>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto" markerUnits="strokeWidth"><path d="M0 0 10 5 0 10Z" fill="#425b66"/></marker>
+    <style>
+      text{font-family="Noto Sans SC, PingFang SC, Microsoft YaHei, sans-serif";fill:#263b44}.title{font-size:25px;font-weight:800}.label{font-size:21px;font-weight:700}.body{font-size:18px}.small{font-size:16px}.muted{fill:#60737c}.danger{fill:#bd454d}.safe{fill:#357a64}.mono{font-family:SFMono-Regular,Consolas,monospace;font-size:16px}.line{stroke:#425b66;stroke-width:2.5;fill:none}.dash{stroke-dasharray:7 7}
+    </style>
+
+  </defs>
+  <rect x="1" y="1" width="758" height="788" rx="20" fill="#f7fafb" stroke="#dce6ea"/>
+
+  <path d="M306 93H316V113H454" fill="none" stroke="#526972" stroke-width="1.35" opacity=".62" stroke-linejoin="round"/><path d="M306 93H321V249H306" fill="none" stroke="#526972" stroke-width="1.35" opacity=".62" stroke-linejoin="round"/><path d="M306 93H326V307H454" fill="none" stroke="#526972" stroke-width="1.35" opacity=".62" stroke-linejoin="round"/><path d="M306 93H331V409H306" fill="none" stroke="#526972" stroke-width="1.35" opacity=".62" stroke-linejoin="round"/><path d="M306 93H336V623H306" fill="none" stroke="#526972" stroke-width="1.35" opacity=".62" stroke-linejoin="round"/><path d="M306 93H341V501H454" fill="none" stroke="#526972" stroke-width="1.35" opacity=".62" stroke-linejoin="round"/><path d="M306 93H346V655H454" fill="none" stroke="#526972" stroke-width="1.35" opacity=".62" stroke-linejoin="round"/><path d="M454 93H351V429H306" fill="none" stroke="#526972" stroke-width="1.35" opacity=".62" stroke-linejoin="round"/><path d="M454 93H356V643H306" fill="none" stroke="#526972" stroke-width="1.35" opacity=".62" stroke-linejoin="round"/><path d="M454 93H361V675H454" fill="none" stroke="#526972" stroke-width="1.35" opacity=".62" stroke-linejoin="round"/><path d="M306 229H366V133H454" fill="none" stroke="#526972" stroke-width="1.35" opacity=".62" stroke-linejoin="round"/><path d="M306 229H371V327H454" fill="none" stroke="#526972" stroke-width="1.35" opacity=".62" stroke-linejoin="round"/><path d="M306 229H376V489H306" fill="none" stroke="#526972" stroke-width="1.35" opacity=".62" stroke-linejoin="round"/><path d="M306 229H381V703H306" fill="none" stroke="#526972" stroke-width="1.35" opacity=".62" stroke-linejoin="round"/><path d="M306 229H386V521H454" fill="none" stroke="#526972" stroke-width="1.35" opacity=".62" stroke-linejoin="round"/><path d="M306 229H391V735H454" fill="none" stroke="#526972" stroke-width="1.35" opacity=".62" stroke-linejoin="round"/><path d="M454 287H396V449H306" fill="none" stroke="#526972" stroke-width="1.35" opacity=".62" stroke-linejoin="round"/><path d="M454 287H401V663H306" fill="none" stroke="#526972" stroke-width="1.35" opacity=".62" stroke-linejoin="round"/><path d="M454 287H406V695H454" fill="none" stroke="#526972" stroke-width="1.35" opacity=".62" stroke-linejoin="round"/><path d="M454 481H411V153H454" fill="none" stroke="#526972" stroke-width="1.35" opacity=".62" stroke-linejoin="round"/><path d="M454 481H416V269H306" fill="none" stroke="#526972" stroke-width="1.35" opacity=".62" stroke-linejoin="round"/><path d="M454 481H421V347H454" fill="none" stroke="#526972" stroke-width="1.35" opacity=".62" stroke-linejoin="round"/><path d="M454 481H426V469H306" fill="none" stroke="#526972" stroke-width="1.35" opacity=".62" stroke-linejoin="round"/><path d="M454 481H431V683H306" fill="none" stroke="#526972" stroke-width="1.35" opacity=".62" stroke-linejoin="round"/><path d="M454 481H436V715H454" fill="none" stroke="#526972" stroke-width="1.35" opacity=".62" stroke-linejoin="round"/>
+  <g>
+      <rect x="34" y="24" width="272" height="108" rx="10" fill="#dcecf3" stroke="#405963" stroke-width="2"/>
+      <path d="M34 58H306" stroke="#405963" stroke-width="1.5"/>
+      <text x="44" y="47" font-size="14" font-weight="800">添加待办项服务</text>
+      <ellipse cx="280" cy="43" rx="18" ry="5" fill="#2f7fa4"/><path d="M262 43v18c0 4 9 7 18 7s18-1 18-7V43" fill="#2f7fa4"/><text x="280" y="58" text-anchor="middle" font-size="9" font-weight="800" fill="#fff">DB</text>
+      <path d="M42 83H298" stroke="#8ea3ac" stroke-width="1" stroke-dasharray="3 3"/>
+      <text x="46" y="76" font-size="11.5" fill="#263b44">+ Execute</text><text x="46" y="96" font-size="11.5" fill="#8a5926" font-weight="700">+ 发布 ItemAdded</text>
+    </g><g>
+      <rect x="34" y="160" width="272" height="152" rx="10" fill="#dcecf3" stroke="#405963" stroke-width="2"/>
+      <path d="M34 194H306" stroke="#405963" stroke-width="1.5"/>
+      <text x="44" y="183" font-size="14" font-weight="800">归档待办项服务</text>
+      <ellipse cx="280" cy="179" rx="18" ry="5" fill="#2f7fa4"/><path d="M262 179v18c0 4 9 7 18 7s18-1 18-7V179" fill="#2f7fa4"/><text x="280" y="194" text-anchor="middle" font-size="9" font-weight="800" fill="#fff">DB</text>
+      <path d="M42 219H298" stroke="#8ea3ac" stroke-width="1" stroke-dasharray="3 3"/>
+      <path d="M42 239H298" stroke="#8ea3ac" stroke-width="1" stroke-dasharray="3 3"/><text x="46" y="212" font-size="11.5" fill="#263b44">+ Execute</text><text x="46" y="232" font-size="11.5" fill="#8a5926" font-weight="700">+ 发布 ItemArchived</text><text x="46" y="252" font-size="11.5" fill="#365b69">+ 处理 ItemAdded</text><text x="46" y="272" font-size="11.5" fill="#365b69">+ 处理 ItemAssignedToSprint</text>
+    </g><g>
+      <rect x="34" y="340" width="272" height="186" rx="10" fill="#dcecf3" stroke="#405963" stroke-width="2"/>
+      <path d="M34 374H306" stroke="#405963" stroke-width="1.5"/>
+      <text x="44" y="363" font-size="14" font-weight="800">列出全部待办项服务</text>
+      <ellipse cx="280" cy="359" rx="18" ry="5" fill="#2f7fa4"/><path d="M262 359v18c0 4 9 7 18 7s18-1 18-7V359" fill="#2f7fa4"/><text x="280" y="374" text-anchor="middle" font-size="9" font-weight="800" fill="#fff">DB</text>
+      <path d="M42 399H298" stroke="#8ea3ac" stroke-width="1" stroke-dasharray="3 3"/>
+      <text x="46" y="392" font-size="11.5" fill="#263b44">+ Execute</text><text x="46" y="412" font-size="11.5" fill="#365b69">+ 处理 ItemAdded</text><text x="46" y="432" font-size="11.5" fill="#365b69">+ 处理 ItemUpdated</text><text x="46" y="452" font-size="11.5" fill="#365b69">+ 处理 PriorityUpdated</text><text x="46" y="472" font-size="11.5" fill="#365b69">+ 处理 ItemAssignedToSprint</text><text x="46" y="492" font-size="11.5" fill="#365b69">+ 处理 ItemArchived</text>
+    </g><g>
+      <rect x="34" y="554" width="272" height="186" rx="10" fill="#dcecf3" stroke="#405963" stroke-width="2"/>
+      <path d="M34 588H306" stroke="#405963" stroke-width="1.5"/>
+      <text x="44" y="577" font-size="14" font-weight="800">查看待办项服务</text>
+      <ellipse cx="280" cy="573" rx="18" ry="5" fill="#2f7fa4"/><path d="M262 573v18c0 4 9 7 18 7s18-1 18-7V573" fill="#2f7fa4"/><text x="280" y="588" text-anchor="middle" font-size="9" font-weight="800" fill="#fff">DB</text>
+      <path d="M42 613H298" stroke="#8ea3ac" stroke-width="1" stroke-dasharray="3 3"/>
+      <text x="46" y="606" font-size="11.5" fill="#263b44">+ Execute</text><text x="46" y="626" font-size="11.5" fill="#365b69">+ 处理 ItemAdded</text><text x="46" y="646" font-size="11.5" fill="#365b69">+ 处理 ItemUpdated</text><text x="46" y="666" font-size="11.5" fill="#365b69">+ 处理 PriorityUpdated</text><text x="46" y="686" font-size="11.5" fill="#365b69">+ 处理 ItemAssignedToSprint</text><text x="46" y="706" font-size="11.5" fill="#365b69">+ 处理 ItemArchived</text>
+    </g><g>
+      <rect x="454" y="24" width="272" height="166" rx="10" fill="#dcecf3" stroke="#405963" stroke-width="2"/>
+      <path d="M454 58H726" stroke="#405963" stroke-width="1.5"/>
+      <text x="464" y="47" font-size="14" font-weight="800">更新待办项服务</text>
+      <ellipse cx="700" cy="43" rx="18" ry="5" fill="#2f7fa4"/><path d="M682 43v18c0 4 9 7 18 7s18-1 18-7V43" fill="#2f7fa4"/><text x="700" y="58" text-anchor="middle" font-size="9" font-weight="800" fill="#fff">DB</text>
+      <path d="M462 83H718" stroke="#8ea3ac" stroke-width="1" stroke-dasharray="3 3"/>
+      <path d="M462 103H718" stroke="#8ea3ac" stroke-width="1" stroke-dasharray="3 3"/><text x="466" y="76" font-size="11.5" fill="#263b44">+ Execute</text><text x="466" y="96" font-size="11.5" fill="#8a5926" font-weight="700">+ 发布 ItemUpdated</text><text x="466" y="116" font-size="11.5" fill="#365b69">+ 处理 ItemAdded</text><text x="466" y="136" font-size="11.5" fill="#365b69">+ 处理 ItemArchived</text><text x="466" y="156" font-size="11.5" fill="#365b69">+ 处理 ItemAssignedToSprint</text>
+    </g><g>
+      <rect x="454" y="218" width="272" height="166" rx="10" fill="#dcecf3" stroke="#405963" stroke-width="2"/>
+      <path d="M454 252H726" stroke="#405963" stroke-width="1.5"/>
+      <text x="464" y="241" font-size="14" font-weight="800">设置待办项优先级服务</text>
+      <ellipse cx="700" cy="237" rx="18" ry="5" fill="#2f7fa4"/><path d="M682 237v18c0 4 9 7 18 7s18-1 18-7V237" fill="#2f7fa4"/><text x="700" y="252" text-anchor="middle" font-size="9" font-weight="800" fill="#fff">DB</text>
+      <path d="M462 277H718" stroke="#8ea3ac" stroke-width="1" stroke-dasharray="3 3"/>
+      <path d="M462 297H718" stroke="#8ea3ac" stroke-width="1" stroke-dasharray="3 3"/><text x="466" y="270" font-size="11.5" fill="#263b44">+ Execute</text><text x="466" y="290" font-size="11.5" fill="#8a5926" font-weight="700">+ 发布 PriorityUpdated</text><text x="466" y="310" font-size="11.5" fill="#365b69">+ 处理 ItemAdded</text><text x="466" y="330" font-size="11.5" fill="#365b69">+ 处理 ItemArchived</text><text x="466" y="350" font-size="11.5" fill="#365b69">+ 处理 ItemAssignedToSprint</text>
+    </g><g>
+      <rect x="454" y="412" width="272" height="146" rx="10" fill="#dcecf3" stroke="#405963" stroke-width="2"/>
+      <path d="M454 446H726" stroke="#405963" stroke-width="1.5"/>
+      <text x="464" y="435" font-size="14" font-weight="800">分配待办项到迭代服务</text>
+      <ellipse cx="700" cy="431" rx="18" ry="5" fill="#2f7fa4"/><path d="M682 431v18c0 4 9 7 18 7s18-1 18-7V431" fill="#2f7fa4"/><text x="700" y="446" text-anchor="middle" font-size="9" font-weight="800" fill="#fff">DB</text>
+      <path d="M462 471H718" stroke="#8ea3ac" stroke-width="1" stroke-dasharray="3 3"/>
+      <path d="M462 491H718" stroke="#8ea3ac" stroke-width="1" stroke-dasharray="3 3"/><text x="466" y="464" font-size="11.5" fill="#263b44">+ Execute</text><text x="466" y="484" font-size="11.5" fill="#8a5926" font-weight="700">+ 发布 ItemAssignedToSprint</text><text x="466" y="504" font-size="11.5" fill="#365b69">+ 处理 ItemAdded</text><text x="466" y="524" font-size="11.5" fill="#365b69">+ 处理 ItemArchived</text>
+    </g><g>
+      <rect x="454" y="586" width="272" height="186" rx="10" fill="#dcecf3" stroke="#405963" stroke-width="2"/>
+      <path d="M454 620H726" stroke="#405963" stroke-width="1.5"/>
+      <text x="464" y="609" font-size="14" font-weight="800">搜索待办项服务</text>
+      <ellipse cx="700" cy="605" rx="18" ry="5" fill="#2f7fa4"/><path d="M682 605v18c0 4 9 7 18 7s18-1 18-7V605" fill="#2f7fa4"/><text x="700" y="620" text-anchor="middle" font-size="9" font-weight="800" fill="#fff">DB</text>
+      <path d="M462 645H718" stroke="#8ea3ac" stroke-width="1" stroke-dasharray="3 3"/>
+      <text x="466" y="638" font-size="11.5" fill="#263b44">+ Execute</text><text x="466" y="658" font-size="11.5" fill="#365b69">+ 处理 ItemAdded</text><text x="466" y="678" font-size="11.5" fill="#365b69">+ 处理 ItemUpdated</text><text x="466" y="698" font-size="11.5" fill="#365b69">+ 处理 PriorityUpdated</text><text x="466" y="718" font-size="11.5" fill="#365b69">+ 处理 ItemAssignedToSprint</text><text x="466" y="738" font-size="11.5" fill="#365b69">+ 处理 ItemArchived</text>
+    </g>
+  <circle cx="306" cy="93" r="2.8" fill="#d98c35" stroke="#fff" stroke-width="1"/><circle cx="306" cy="229" r="2.8" fill="#d98c35" stroke="#fff" stroke-width="1"/><circle cx="306" cy="249" r="2.8" fill="#2f7189" stroke="#fff" stroke-width="1"/><circle cx="306" cy="269" r="2.8" fill="#2f7189" stroke="#fff" stroke-width="1"/><circle cx="306" cy="409" r="2.8" fill="#2f7189" stroke="#fff" stroke-width="1"/><circle cx="306" cy="429" r="2.8" fill="#2f7189" stroke="#fff" stroke-width="1"/><circle cx="306" cy="449" r="2.8" fill="#2f7189" stroke="#fff" stroke-width="1"/><circle cx="306" cy="469" r="2.8" fill="#2f7189" stroke="#fff" stroke-width="1"/><circle cx="306" cy="489" r="2.8" fill="#2f7189" stroke="#fff" stroke-width="1"/><circle cx="306" cy="623" r="2.8" fill="#2f7189" stroke="#fff" stroke-width="1"/><circle cx="306" cy="643" r="2.8" fill="#2f7189" stroke="#fff" stroke-width="1"/><circle cx="306" cy="663" r="2.8" fill="#2f7189" stroke="#fff" stroke-width="1"/><circle cx="306" cy="683" r="2.8" fill="#2f7189" stroke="#fff" stroke-width="1"/><circle cx="306" cy="703" r="2.8" fill="#2f7189" stroke="#fff" stroke-width="1"/><circle cx="454" cy="93" r="2.8" fill="#d98c35" stroke="#fff" stroke-width="1"/><circle cx="454" cy="113" r="2.8" fill="#2f7189" stroke="#fff" stroke-width="1"/><circle cx="454" cy="133" r="2.8" fill="#2f7189" stroke="#fff" stroke-width="1"/><circle cx="454" cy="153" r="2.8" fill="#2f7189" stroke="#fff" stroke-width="1"/><circle cx="454" cy="287" r="2.8" fill="#d98c35" stroke="#fff" stroke-width="1"/><circle cx="454" cy="307" r="2.8" fill="#2f7189" stroke="#fff" stroke-width="1"/><circle cx="454" cy="327" r="2.8" fill="#2f7189" stroke="#fff" stroke-width="1"/><circle cx="454" cy="347" r="2.8" fill="#2f7189" stroke="#fff" stroke-width="1"/><circle cx="454" cy="481" r="2.8" fill="#d98c35" stroke="#fff" stroke-width="1"/><circle cx="454" cy="501" r="2.8" fill="#2f7189" stroke="#fff" stroke-width="1"/><circle cx="454" cy="521" r="2.8" fill="#2f7189" stroke="#fff" stroke-width="1"/><circle cx="454" cy="655" r="2.8" fill="#2f7189" stroke="#fff" stroke-width="1"/><circle cx="454" cy="675" r="2.8" fill="#2f7189" stroke="#fff" stroke-width="1"/><circle cx="454" cy="695" r="2.8" fill="#2f7189" stroke="#fff" stroke-width="1"/><circle cx="454" cy="715" r="2.8" fill="#2f7189" stroke="#fff" stroke-width="1"/><circle cx="454" cy="735" r="2.8" fill="#2f7189" stroke="#fff" stroke-width="1"/>
+</svg>

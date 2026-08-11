@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 570" role="img" aria-labelledby="title desc">
+  <title id="title">营销活动发布服务的公共接口</title>
+  <desc id="desc">公共接口像一扇前门，用五个方法清楚描述服务对外提供的能力。</desc>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto" markerUnits="strokeWidth"><path d="M0 0 10 5 0 10Z" fill="#425b66"/></marker>
+    <style>
+      text{font-family="Noto Sans SC, PingFang SC, Microsoft YaHei, sans-serif";fill:#263b44}.title{font-size:25px;font-weight:800}.label{font-size:21px;font-weight:700}.body{font-size:18px}.small{font-size:16px}.muted{fill:#60737c}.danger{fill:#bd454d}.safe{fill:#357a64}.mono{font-family:SFMono-Regular,Consolas,monospace;font-size:16px}.line{stroke:#425b66;stroke-width:2.5;fill:none}.dash{stroke-dasharray:7 7}
+    </style>
+
+  </defs>
+  <rect x="1" y="1" width="758" height="568" rx="20" fill="#f7fafb" stroke="#dce6ea"/>
+
+  <rect x="60" y="48" width="640" height="452" rx="18" fill="#fff" stroke="#334f5b" stroke-width="3"/>
+  <path d="M60 118H700" class="line"/>
+  <rect x="60" y="48" width="112" height="452" rx="18" fill="#f5ae55"/>
+  <path d="M172 48V500" class="line"/>
+  <text x="116" y="226" text-anchor="middle" class="label"><tspan x="116">公共</tspan><tspan x="116" dy="30">接口</tspan></text>
+  <text x="422" y="92" text-anchor="middle" class="title">营销活动发布服务</text>
+  <g class="mono">
+    <text x="205" y="151"><tspan fill="#2f7189" font-weight="800">发布</tspan><tspan dx="12">Publish(CampaignId)</tspan></text><text x="205" y="177" class="muted">返回 → PublishingResult</text>
+    <text x="205" y="221"><tspan fill="#2f7189" font-weight="800">暂停</tspan><tspan dx="12">Pause(CampaignId)</tspan></text><text x="205" y="247" class="muted">返回 → Confirmation</text>
+    <text x="205" y="291"><tspan fill="#2f7189" font-weight="800">改期</tspan><tspan dx="12">Reschedule(CampaignId, Schedule)</tspan></text><text x="205" y="317" class="muted">返回 → Confirmation</text>
+    <text x="205" y="361"><tspan fill="#2f7189" font-weight="800">统计</tspan><tspan dx="12">GetStatistics(CampaignId)</tspan></text><text x="205" y="387" class="muted">返回 → PublishingStatistics</text>
+    <text x="205" y="431"><tspan fill="#2f7189" font-weight="800">停用</tspan><tspan dx="12">Deactivate(CampaignId, Reason)</tspan></text><text x="205" y="457" class="muted">返回 → PublishingStatus</text>
+  </g>
+  <text x="380" y="540" text-anchor="middle" class="small muted">只看这扇“前门”，就能知道服务提供什么能力</text>
+</svg>

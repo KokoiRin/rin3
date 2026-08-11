@@ -1,11 +1,15 @@
 import assert from "node:assert/strict";
 import { createServer } from "node:http";
-import { readFile, stat } from "node:fs/promises";
+import { mkdir, readFile, stat } from "node:fs/promises";
 import { extname, join, resolve } from "node:path";
 import { after, before, test } from "node:test";
 import { chromium } from "playwright-chromium";
 
-const outputRoot = resolve(import.meta.dirname, "../out");
+const outputRoot = resolve(import.meta.dirname, "../../out");
+const gateArtifactRoot = resolve(
+  import.meta.dirname,
+  "../output/artifacts/HOME-GATE-001",
+);
 const basePath = process.env.GITHUB_ACTIONS === "true" ? "/rin3" : "";
 const mimeTypes = new Map([
   [".css", "text/css; charset=utf-8"],
@@ -21,13 +25,44 @@ let browser;
 let server;
 let origin;
 
-function outputPath(requestUrl) {
+async function withGateEvidence(name, contextOptions, verify) {
+  await mkdir(gateArtifactRoot, { recursive: true });
+  const context = await browser.newContext(contextOptions);
+  await context.tracing.start({ screenshots: true, snapshots: true, sources: true });
+  const page = await context.newPage();
+  let traceStopped = false;
+
+  try {
+    await verify(page);
+    await page.screenshot({
+      path: join(gateArtifactRoot, `${name}-revealed.png`),
+      fullPage: false,
+    });
+    await context.tracing.stop();
+    traceStopped = true;
+  } catch (error) {
+    await page.screenshot({
+      path: join(gateArtifactRoot, `${name}-failure.png`),
+      fullPage: false,
+    }).catch(() => {});
+    await context.tracing.stop({
+      path: join(gateArtifactRoot, `${name}-trace.zip`),
+    }).catch(() => {});
+    traceStopped = true;
+    throw error;
+  } finally {
+    if (!traceStopped) await context.tracing.stop().catch(() => {});
+    await context.close();
+  }
+}
+
+function outputPath(requestUrl, root = outputRoot) {
   let pathname = decodeURIComponent(new URL(requestUrl, "http://localhost").pathname);
   if (basePath && pathname.startsWith(`${basePath}/`)) {
     pathname = pathname.slice(basePath.length);
   }
   const relativePath = pathname.replace(/^\/+/, "");
-  const candidate = join(outputRoot, relativePath);
+  const candidate = join(root, relativePath);
   return pathname.endsWith("/") ? join(candidate, "index.html") : candidate;
 }
 
@@ -63,7 +98,7 @@ after(async () => {
 });
 
 // 直接打开生产静态导出，守住 Reveal ready、唯一活动页和播放器计数同步。
-test("initializes the exported Slides player and advances from the cover", async () => {
+test("[SLIDES-RUNTIME-001] 导出的 Slides 初始化单一活动页并同步下一页页码", async () => {
   const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
   const runtimeErrors = [];
   page.on("response", (response) => {
@@ -185,21 +220,77 @@ test("renders Mermaid and deploy-safe images in the exported component guide", a
 });
 
 // 真实 wheel 事件必须忽略纵向滚动，并在第三次独立横向手势后才解锁第四入口。
-test("reveals the fourth entrance only after three horizontal wheel gestures", async () => {
-  const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
-  await page.goto(`${origin}${basePath}/`);
-  const extraGate = page.locator('[data-extra-gate]');
+test("[HOME-GATE-001] 真实桌面浏览器在第三次横滑后显示第四入口", async () => {
+  await withGateEvidence("desktop", { viewport: { width: 1440, height: 900 } }, async (page) => {
+    await page.goto(`${origin}${basePath}/`);
+    const extraGate = page.locator('[data-extra-gate]');
 
-  await page.mouse.wheel(0, 180);
-  assert.equal(await extraGate.getAttribute("data-extra-gate"), "hidden");
-
-  for (let index = 0; index < 2; index += 1) {
-    await page.mouse.wheel(180, 0);
-    await page.waitForTimeout(100);
+    await page.mouse.wheel(0, 180);
     assert.equal(await extraGate.getAttribute("data-extra-gate"), "hidden");
-  }
-  await page.mouse.wheel(180, 0);
-  await page.waitForFunction(() => document.querySelector('[data-extra-gate]')?.getAttribute("data-extra-gate") === "revealed");
-  assert.equal(await extraGate.getAttribute("aria-hidden"), null);
-  await page.close();
+
+    for (let index = 0; index < 2; index += 1) {
+      await page.mouse.wheel(180, 0);
+      await page.waitForTimeout(100);
+      assert.equal(await extraGate.getAttribute("data-extra-gate"), "hidden");
+    }
+    await page.mouse.wheel(180, 0);
+    await page.waitForFunction(() => document.querySelector('[data-extra-gate]')?.getAttribute("data-extra-gate") === "revealed");
+    assert.equal(await extraGate.getAttribute("aria-hidden"), null);
+  });
+});
+
+// 手机浏览器必须真实经过“滚到末端 → 三次触摸滑动”，而不是只验证手势计算函数。
+test("[HOME-GATE-001] 真实手机浏览器到达末端并三次滑动后显示第四入口", async () => {
+  await withGateEvidence("mobile", {
+    viewport: { width: 390, height: 844 },
+    hasTouch: true,
+    isMobile: true,
+    reducedMotion: "reduce",
+  }, async (page) => {
+    await page.goto(`${origin}${basePath}/`);
+    const gates = page.locator(".gates");
+    const extraGate = page.locator('[data-extra-gate]');
+    await gates.evaluate((element) => {
+      element.scrollLeft = element.scrollWidth;
+    });
+
+    for (let index = 0; index < 3; index += 1) {
+      await gates.evaluate((element) => {
+        const start = new Touch({
+          identifier: 1,
+          target: element,
+          clientX: 330,
+          clientY: 420,
+        });
+        const end = new Touch({
+          identifier: 1,
+          target: element,
+          clientX: 220,
+          clientY: 420,
+        });
+        element.dispatchEvent(new TouchEvent("touchstart", {
+          bubbles: true,
+          cancelable: true,
+          changedTouches: [start],
+          targetTouches: [start],
+          touches: [start],
+        }));
+        element.dispatchEvent(new TouchEvent("touchend", {
+          bubbles: true,
+          cancelable: true,
+          changedTouches: [end],
+          targetTouches: [],
+          touches: [],
+        }));
+      });
+      await page.waitForTimeout(80);
+      if (index < 2) {
+        assert.equal(await extraGate.getAttribute("data-extra-gate"), "hidden");
+      }
+    }
+
+    await page.waitForFunction(() => document.querySelector('[data-extra-gate]')?.getAttribute("data-extra-gate") === "revealed");
+    assert.equal(await extraGate.getAttribute("aria-hidden"), null);
+    assert.equal(await extraGate.isVisible(), true);
+  });
 });

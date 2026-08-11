@@ -3,7 +3,7 @@ import test from "node:test";
 import { advanceTouchGesture, advanceWheelGesture } from "../app/edge-gesture.js";
 
 // 到达末端后，连续三次向后浏览才展开额外分区，前两次仅保留计数。
-test("reveals the extra section after three end swipes", () => {
+test("[HOME-GATE-001] 手机端只有到达末端并连续三次向后滑动才显示第四入口", () => {
   let state = { count: 0, shouldReveal: false };
 
   for (let index = 0; index < 3; index += 1) {
@@ -18,7 +18,7 @@ test("reveals the extra section after three end swipes", () => {
 });
 
 // 未到末端或反向的大幅滑动会清空进度，轻微手指移动则不应误伤已有计数。
-test("resets only for a full invalid swipe", () => {
+test("[HOME-GATE-001] 无效手机滑动清空进度而轻微移动保留进度", () => {
   assert.deepEqual(
     advanceTouchGesture({ count: 2, startedAtEnd: false, horizontalDistance: 120 }),
     { count: 0, shouldReveal: false },
@@ -34,7 +34,7 @@ test("resets only for a full invalid swipe", () => {
 });
 
 // 桌面端一次滑动产生的连续滚轮事件只计一次，第三次独立前进滑动才展开额外分区。
-test("reveals the extra section after three desktop wheel gestures", () => {
+test("[HOME-GATE-001] 桌面连续滚轮事件只计一次且第三次独立横滑显示第四入口", () => {
   let state = { count: 0, lastEventAt: null, shouldReveal: false };
 
   for (const eventAt of [0, 20, 40]) {
@@ -71,7 +71,7 @@ test("reveals the extra section after three desktop wheel gestures", () => {
 });
 
 // 用户快速连续完成三次独立横向滑动也必须被逐次识别，不能被过长的事件合并窗口吞成一次。
-test("reveals the extra section after three quick independent wheel gestures", () => {
+test("[HOME-GATE-001] 快速完成的三次独立横滑也能显示第四入口", () => {
   let state = { count: 0, lastEventAt: null, shouldReveal: false };
 
   for (const eventAt of [0, 100, 200]) {
@@ -88,7 +88,7 @@ test("reveals the extra section after three quick independent wheel gestures", (
 });
 
 // PC 上普通的纵向滚动不是“继续向左浏览”，因此不能推进隐藏入口的解锁进度。
-test("ignores vertical desktop wheel gestures", () => {
+test("[HOME-GATE-001] 桌面纵向滚动不推进第四入口的解锁进度", () => {
   assert.deepEqual(
     advanceWheelGesture({
       count: 1,

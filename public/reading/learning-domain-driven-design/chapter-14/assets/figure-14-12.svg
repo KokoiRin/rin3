@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 430" role="img" aria-labelledby="title desc">
+  <title id="title">通过开放主机服务和发布语言集成</title>
+  <desc id="desc">两个下游上下文调用上游边界上的开放主机服务。上游把内部模型翻译成稳定的发布语言，下游不直接依赖内部模型。</desc>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto" markerUnits="strokeWidth"><path d="M0 0 10 5 0 10Z" fill="#425b66"/></marker>
+    <style>
+      text{font-family="Noto Sans SC, PingFang SC, Microsoft YaHei, sans-serif";fill:#263b44}.title{font-size:25px;font-weight:800}.label{font-size:21px;font-weight:700}.body{font-size:18px}.small{font-size:16px}.muted{fill:#60737c}.danger{fill:#bd454d}.safe{fill:#357a64}.mono{font-family:SFMono-Regular,Consolas,monospace;font-size:16px}.line{stroke:#425b66;stroke-width:2.5;fill:none}.dash{stroke-dasharray:7 7}
+    </style>
+
+  </defs>
+  <rect x="1" y="1" width="758" height="428" rx="20" fill="#f7fafb" stroke="#dce6ea"/>
+
+  <text x="380" y="42" text-anchor="middle" class="label">生产方负责把内部模型翻译成稳定的发布语言</text>
+  <rect x="42" y="82" width="332" height="274" rx="24" fill="#dcecf3" stroke="#405963" stroke-width="3"/>
+  <text x="70" y="119" class="small muted">上游限界上下文</text>
+  <rect x="75" y="150" width="172" height="136" rx="15" fill="#fff" stroke="#6b838e" stroke-width="2"/>
+  <text x="161" y="197" text-anchor="middle" class="body" font-weight="800">内部领域模型</text><text x="161" y="230" text-anchor="middle" class="small muted">复杂 · 可独立演进</text>
+  <path d="M247 218H278" class="line" marker-end="url(#arrow)"/>
+  <rect x="281" y="126" width="74" height="184" rx="14" fill="#f5ae55" stroke="#405963" stroke-width="2"/>
+  <text x="318" y="166" text-anchor="middle" class="small" font-weight="800"><tspan x="318">开放主机</tspan><tspan x="318" dy="24">服务</tspan></text>
+  <path d="M297 195H339M297 210H339" stroke="#fff" stroke-width="3"/>
+  <text x="318" y="250" text-anchor="middle" class="small"><tspan x="318">发布</tspan><tspan x="318" dy="23">语言</tspan></text>
+  <rect x="462" y="92" width="254" height="112" rx="18" fill="#fff" stroke="#405963" stroke-width="2"/>
+  <text x="589" y="139" text-anchor="middle" class="body" font-weight="800">下游限界上下文 A</text><text x="589" y="170" text-anchor="middle" class="small muted">只依赖发布语言</text>
+  <rect x="462" y="234" width="254" height="112" rx="18" fill="#fff" stroke="#405963" stroke-width="2"/>
+  <text x="589" y="281" text-anchor="middle" class="body" font-weight="800">下游限界上下文 B</text><text x="589" y="312" text-anchor="middle" class="small muted">不感知内部模型</text>
+  <path d="M462 148C414 148 405 194 355 198" class="line" marker-end="url(#arrow)"/>
+  <path d="M462 290C414 290 405 244 355 238" class="line" marker-end="url(#arrow)"/>
+  <text x="414" y="221" text-anchor="middle" font-size="14" class="muted">调用</text>
+  <rect x="160" y="378" width="440" height="34" rx="17" fill="#eaf3ef"/><text x="380" y="401" text-anchor="middle" class="small safe">复杂度由生产方封装，下游得到稳定而克制的接口</text>
+</svg>

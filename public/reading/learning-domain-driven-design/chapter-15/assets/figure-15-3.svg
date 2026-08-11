@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1180" height="440" viewBox="0 0 1180 440" role="img" aria-labelledby="title desc">
+  <title id="title">图 15-3 紧急警报系统</title>
+  <desc id="desc">图 15-3 紧急警报系统</desc>
+
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#48636d"/>
+    </marker>
+    <marker id="arrow-orange" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#f7b35b"/>
+    </marker>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#29434d" flood-opacity="0.14"/>
+    </filter>
+  </defs>
+  <rect width="1180" height="440" rx="28" fill="#fbfcfd"/>
+  <style>
+    text { font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Noto Sans CJK SC", sans-serif; fill: #29434d; }
+    .h { font-size: 34px; font-weight: 760; }
+    .t { font-size: 28px; font-weight: 700; }
+    .b { font-size: 24px; font-weight: 560; }
+    .s { font-size: 20px; font-weight: 500; fill: #647b85; }
+    .tiny { font-size: 17px; font-weight: 520; fill: #647b85; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+  </style>
+
+  <rect x="250" y="58" width="680" height="320" rx="10" fill="#ffffff" stroke="#48636d" stroke-width="3" filter="url(#shadow)"/>
+  <polygon points="300,92 328,142 272,142" fill="#c94c55"/>
+  <text x="300" y="132" text-anchor="middle" style="font-size:28px;font-weight:800;fill:white">!</text>
+  <text x="350" y="128" class="t">紧急警报：极端</text>
+  <text x="290" y="212" class="b">本地区龙卷风警报持续至 15:30。</text>
+  <text x="290" y="258" class="b">请立即寻找掩蔽处，并查看当地媒体。</text>
+  <text x="870" y="330" text-anchor="end" class="t" style="fill:#1774a5">好</text>
+
+</svg>

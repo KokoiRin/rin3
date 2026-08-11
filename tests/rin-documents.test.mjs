@@ -22,7 +22,7 @@ slides:
 ---`;
 
 // 显式分页必须保持作者顺序，同时文章投影只能去掉指令外壳。
-test("parses explicit slide boundaries in source order and keeps readable article Markdown", () => {
+test("[RIN-DOC-001] 显式 Slide 顺序生成双视图且文章不保留指令外壳", () => {
   const document = parseRinDocument(`${frontmatter}
 
 :::slide {"kind":"prose","chapter":"basics","eyebrow":"BASICS / PROSE"}
@@ -117,7 +117,7 @@ test("does not treat directive examples inside fenced code as the slide closing 
 });
 
 // detail 在文档结束前没有闭合时，解析必须指出来源和起始行，不能静默吞掉后续内容。
-test("rejects an unclosed detail block with source context", () => {
+test("[RIN-PROJECTION-001] 未闭合详情块必须报告来源和起始行", () => {
   assert.throws(
     () => parseRinDocument(`${frontmatter}
 
@@ -131,7 +131,7 @@ test("rejects an unclosed detail block with source context", () => {
 });
 
 // fenced code 中出现 detail 标记只是示例文本，文章与 Slides 都必须完整保留它。
-test("keeps detail marker examples inside fenced code as core content", () => {
+test("[RIN-PROJECTION-001] 代码围栏中的详情标记保持为普通代码内容", () => {
   const document = parseRinDocument(`${frontmatter}
 
 :::slide {"kind":"code","chapter":"basics","eyebrow":"EXAMPLE"}

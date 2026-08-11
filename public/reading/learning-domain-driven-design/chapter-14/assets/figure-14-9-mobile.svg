@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 390 1410" role="img" aria-labelledby="title desc">
+  <title id="title">限界上下文的三种有效拆分（手机布局）</title>
+  <desc id="desc">三套拆分方案依次纵向展示，每套都把冲突的潜在客户模型分在不同上下文。</desc>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto" markerUnits="strokeWidth"><path d="M0 0 10 5 0 10Z" fill="#425b66"/></marker>
+    <style>
+      text{font-family="Noto Sans SC, PingFang SC, Microsoft YaHei, sans-serif";fill:#263b44}.title{font-size:25px;font-weight:800}.label{font-size:21px;font-weight:700}.body{font-size:18px}.small{font-size:16px}.muted{fill:#60737c}.danger{fill:#bd454d}.safe{fill:#357a64}.mono{font-family:SFMono-Regular,Consolas,monospace;font-size:16px}.line{stroke:#425b66;stroke-width:2.5;fill:none}.dash{stroke-dasharray:7 7}
+    </style>
+
+  </defs>
+  <rect x="1" y="1" width="388" height="1408" rx="20" fill="#f7fafb" stroke="#dce6ea"/>
+
+  <text x="195" y="40" text-anchor="middle" class="label"><tspan x="195">边界没有唯一答案</tspan><tspan x="195" dy="28">但冲突模型必须分开</tspan></text>
+  <text x="24" y="113" class="small" font-weight="800" fill="#2f7189">方案 1</text><rect x="24" y="132" width="342" height="124" rx="18" fill="#dcecf3" stroke="#607a86" stroke-width="2"/><text x="42" y="161" class="body" font-weight="800">营销</text><text x="42" y="188" class="small muted"><tspan x="42">客服台 · 电话 · 合同</tspan><tspan x="42" dy="23">活动管理 · 优化 · 身份访问</tspan></text><text x="42" y="240" class="small danger" font-weight="800">潜在客户模型 A</text><rect x="24" y="274" width="342" height="124" rx="18" fill="#dcecf3" stroke="#607a86" stroke-width="2"/><text x="42" y="303" class="body" font-weight="800">销售</text><text x="42" y="330" class="small muted"><tspan x="42">CRM · 计费 · 创意目录</tspan><tspan x="42" dy="23">优化 · 佣金 · 身份访问</tspan></text><text x="42" y="382" class="small danger" font-weight="800">潜在客户模型 B</text>
+  <path d="M24 420H366" stroke="#c6d4d9" stroke-dasharray="6 6"/>
+  <text x="24" y="465" class="small" font-weight="800" fill="#2f7189">方案 2</text><rect x="24" y="484" width="342" height="124" rx="18" fill="#dcecf3" stroke="#607a86" stroke-width="2"/><text x="42" y="513" class="body" font-weight="800">营销</text><text x="42" y="540" class="small muted"><tspan x="42">创意目录 · 活动管理 · 优化</tspan><tspan x="42" dy="23"></tspan></text><text x="42" y="592" class="small danger" font-weight="800">模型 A</text><rect x="24" y="626" width="342" height="124" rx="18" fill="#dcecf3" stroke="#607a86" stroke-width="2"/><text x="42" y="655" class="body" font-weight="800">支撑</text><text x="42" y="682" class="small muted"><tspan x="42">客服台 · 电话 · 合同</tspan><tspan x="42" dy="23">计费 · 身份访问</tspan></text><rect x="24" y="768" width="342" height="124" rx="18" fill="#dcecf3" stroke="#607a86" stroke-width="2"/><text x="42" y="797" class="body" font-weight="800">销售</text><text x="42" y="824" class="small muted"><tspan x="42">CRM · 佣金 · 优化</tspan><tspan x="42" dy="23"></tspan></text><text x="42" y="876" class="small danger" font-weight="800">模型 B</text>
+  <path d="M24 914H366" stroke="#c6d4d9" stroke-dasharray="6 6"/>
+  <text x="24" y="959" class="small" font-weight="800" fill="#2f7189">方案 3</text><rect x="24" y="978" width="342" height="124" rx="18" fill="#dcecf3" stroke="#607a86" stroke-width="2"/><text x="42" y="1007" class="body" font-weight="800">营销</text><text x="42" y="1034" class="small muted"><tspan x="42">创意目录 · 计费 · 合同</tspan><tspan x="42" dy="23">活动管理 · 优化 · 身份访问</tspan></text><text x="42" y="1086" class="small danger" font-weight="800">模型 A</text><rect x="24" y="1120" width="342" height="124" rx="18" fill="#dcecf3" stroke="#607a86" stroke-width="2"/><text x="42" y="1149" class="body" font-weight="800">销售</text><text x="42" y="1176" class="small muted"><tspan x="42">CRM · 电话 · 客服台</tspan><tspan x="42" dy="23">佣金 · 身份访问</tspan></text><text x="42" y="1228" class="small danger" font-weight="800">模型 B</text>
+  <rect x="28" y="1290" width="334" height="82" rx="20" fill="#eaf3ef"/>
+  <text x="195" y="1324" text-anchor="middle" class="small safe"><tspan x="195">模型 A 与模型 B 始终分开</tspan><tspan x="195" dy="24">所以三种拆分都有效</tspan></text>
+</svg>

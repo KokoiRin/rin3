@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 460" role="img" aria-labelledby="title desc">
+  <title id="title">同一业务词在两个限界上下文中拥有不同模型</title>
+  <desc id="desc">推广上下文和销售上下文都使用潜在客户这个词，但各自维护一个只在本边界内有效的模型。</desc>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto" markerUnits="strokeWidth"><path d="M0 0 10 5 0 10Z" fill="#425b66"/></marker>
+    <style>
+      text{font-family="Noto Sans SC, PingFang SC, Microsoft YaHei, sans-serif";fill:#263b44}.title{font-size:25px;font-weight:800}.label{font-size:21px;font-weight:700}.body{font-size:18px}.small{font-size:16px}.muted{fill:#60737c}.danger{fill:#bd454d}.safe{fill:#357a64}.mono{font-family:SFMono-Regular,Consolas,monospace;font-size:16px}.line{stroke:#425b66;stroke-width:2.5;fill:none}.dash{stroke-dasharray:7 7}
+    </style>
+
+  </defs>
+  <rect x="1" y="1" width="758" height="458" rx="20" fill="#f7fafb" stroke="#dce6ea"/>
+
+  <text x="380" y="43" text-anchor="middle" class="label">同一个词，不代表同一个模型</text>
+  <rect x="42" y="76" width="322" height="322" rx="34" fill="#dcecf3" stroke="#405963" stroke-width="3"/>
+  <text x="203" y="116" text-anchor="middle" class="title">推广上下文</text>
+  <rect x="68" y="140" width="104" height="36" rx="18" fill="#fff" stroke="#b9cbd2"/><text x="120" y="164" text-anchor="middle" class="small ">营销活动</text><rect x="184" y="140" width="76" height="36" rx="18" fill="#fff" stroke="#b9cbd2"/><text x="222" y="164" text-anchor="middle" class="small ">漏斗</text><rect x="270" y="140" width="68" height="36" rx="18" fill="#fff" stroke="#b9cbd2"/><text x="304" y="164" text-anchor="middle" class="small ">代理商</text>
+  <rect x="68" y="190" width="104" height="36" rx="18" fill="#fff" stroke="#b9cbd2"/><text x="120" y="214" text-anchor="middle" class="small ">投放位置</text><rect x="184" y="190" width="104" height="36" rx="18" fill="#fff" stroke="#b9cbd2"/><text x="236" y="214" text-anchor="middle" class="small ">落地页</text><rect x="68" y="240" width="128" height="36" rx="18" fill="#fff" stroke="#b9cbd2"/><text x="132" y="264" text-anchor="middle" class="small ">插入订单</text>
+  <rect x="92" y="303" width="222" height="62" rx="19" fill="#fff" stroke="#c9474f" stroke-width="3"/>
+  <text x="203" y="328" text-anchor="middle" class="small danger" font-weight="800">潜在客户 · 推广模型</text><text x="203" y="351" text-anchor="middle" class="small muted">关注来源、漏斗与投放</text>
+  <rect x="396" y="76" width="322" height="322" rx="34" fill="#dcecf3" stroke="#405963" stroke-width="3"/>
+  <text x="557" y="116" text-anchor="middle" class="title">销售上下文</text>
+  <rect x="422" y="140" width="76" height="36" rx="18" fill="#fff" stroke="#b9cbd2"/><text x="460" y="164" text-anchor="middle" class="small ">联系人</text><rect x="508" y="140" width="66" height="36" rx="18" fill="#fff" stroke="#b9cbd2"/><text x="541" y="164" text-anchor="middle" class="small ">CDR</text><rect x="584" y="140" width="104" height="36" rx="18" fill="#fff" stroke="#b9cbd2"/><text x="636" y="164" text-anchor="middle" class="small ">营销活动</text>
+  <rect x="422" y="190" width="76" height="36" rx="18" fill="#fff" stroke="#b9cbd2"/><text x="460" y="214" text-anchor="middle" class="small ">转化</text><rect x="508" y="190" width="66" height="36" rx="18" fill="#fff" stroke="#b9cbd2"/><text x="541" y="214" text-anchor="middle" class="small ">坐席</text><rect x="584" y="190" width="76" height="36" rx="18" fill="#fff" stroke="#b9cbd2"/><text x="622" y="214" text-anchor="middle" class="small ">提案</text><rect x="422" y="240" width="76" height="36" rx="18" fill="#fff" stroke="#b9cbd2"/><text x="460" y="264" text-anchor="middle" class="small ">消息</text>
+  <rect x="446" y="303" width="222" height="62" rx="19" fill="#fff" stroke="#c9474f" stroke-width="3"/>
+  <text x="557" y="328" text-anchor="middle" class="small danger" font-weight="800">潜在客户 · 销售模型</text><text x="557" y="351" text-anchor="middle" class="small muted">关注联系、转化与成交</text>
+  <text x="380" y="435" text-anchor="middle" class="small muted">边界保护的，是各自模型内部的一致性</text>
+</svg>

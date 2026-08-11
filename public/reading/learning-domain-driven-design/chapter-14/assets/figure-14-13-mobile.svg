@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 390 680" role="img" aria-labelledby="title desc">
+  <title id="title">作为独立服务的防腐层（手机布局）</title>
+  <desc id="desc">两个下游从下方向上调用独立 ACL 服务，ACL 再向上调用上游，并负责隔离模型与翻译协议。</desc>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto" markerUnits="strokeWidth"><path d="M0 0 10 5 0 10Z" fill="#425b66"/></marker>
+    <style>
+      text{font-family="Noto Sans SC, PingFang SC, Microsoft YaHei, sans-serif";fill:#263b44}.title{font-size:25px;font-weight:800}.label{font-size:21px;font-weight:700}.body{font-size:18px}.small{font-size:16px}.muted{fill:#60737c}.danger{fill:#bd454d}.safe{fill:#357a64}.mono{font-family:SFMono-Regular,Consolas,monospace;font-size:16px}.line{stroke:#425b66;stroke-width:2.5;fill:none}.dash{stroke-dasharray:7 7}
+    </style>
+
+  </defs>
+  <rect x="1" y="1" width="388" height="678" rx="20" fill="#f7fafb" stroke="#dce6ea"/>
+
+  <text x="195" y="41" text-anchor="middle" class="label"><tspan x="195">消费方不直接适配上游</tspan><tspan x="195" dy="28">集成复杂度交给 ACL</tspan></text>
+  <rect x="44" y="98" width="302" height="118" rx="20" fill="#dcecf3" stroke="#405963" stroke-width="3"/>
+  <text x="195" y="143" text-anchor="middle" class="title">上游限界上下文</text><text x="195" y="181" text-anchor="middle" class="small muted">复杂的生产方接口</text>
+  <path d="M195 270V216" class="line" marker-end="url(#arrow)"/>
+  <rect x="72" y="270" width="246" height="126" rx="20" fill="#f5ae55" stroke="#405963" stroke-width="3"/>
+  <text x="195" y="316" text-anchor="middle" class="title">独立 ACL 服务</text><text x="195" y="351" text-anchor="middle" class="small"><tspan x="195">隔离上游模型</tspan><tspan x="195" dy="23">翻译集成协议</tspan></text>
+  <rect x="20" y="470" width="170" height="112" rx="18" fill="#fff" stroke="#405963" stroke-width="2"/><text x="105" y="509" text-anchor="middle" class="body" font-weight="800"><tspan x="105">下游限界</tspan><tspan x="105" dy="25">上下文 A</tspan></text><text x="105" y="562" text-anchor="middle" font-size="14" class="muted">使用便利模型</text>
+  <rect x="200" y="470" width="170" height="112" rx="18" fill="#fff" stroke="#405963" stroke-width="2"/><text x="285" y="509" text-anchor="middle" class="body" font-weight="800"><tspan x="285">下游限界</tspan><tspan x="285" dy="25">上下文 B</tspan></text><text x="285" y="562" text-anchor="middle" font-size="14" class="muted">业务不被污染</text>
+  <path d="M105 470C105 432 150 420 164 396" class="line" marker-end="url(#arrow)"/>
+  <path d="M285 470C285 432 240 420 226 396" class="line" marker-end="url(#arrow)"/>
+  <rect x="28" y="612" width="334" height="38" rx="19" fill="#eaf3ef"/><text x="195" y="638" text-anchor="middle" class="small safe">下游 → ACL → 上游；翻译停在业务边界外</text>
+</svg>

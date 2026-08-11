@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 470" role="img" aria-labelledby="title desc">
+  <title id="title">服务粒度与局部、全局复杂度</title>
+  <desc id="desc">粒度越细，服务内部的局部复杂度下降，但服务协作带来的全局复杂度上升。</desc>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto" markerUnits="strokeWidth"><path d="M0 0 10 5 0 10Z" fill="#425b66"/></marker>
+    <style>
+      text{font-family="Noto Sans SC, PingFang SC, Microsoft YaHei, sans-serif";fill:#263b44}.title{font-size:25px;font-weight:800}.label{font-size:21px;font-weight:700}.body{font-size:18px}.small{font-size:16px}.muted{fill:#60737c}.danger{fill:#bd454d}.safe{fill:#357a64}.mono{font-family:SFMono-Regular,Consolas,monospace;font-size:16px}.line{stroke:#425b66;stroke-width:2.5;fill:none}.dash{stroke-dasharray:7 7}
+    </style>
+
+  </defs>
+  <rect x="1" y="1" width="758" height="468" rx="20" fill="#f7fafb" stroke="#dce6ea"/>
+
+  <text x="380" y="42" text-anchor="middle" class="label">拆分不是消灭复杂度，而是在局部与全局之间搬运复杂度</text>
+  <path d="M92 380H690M92 380V78" class="line" marker-end="url(#arrow)"/>
+  <path d="M112 112L650 348" fill="none" stroke="#c9474f" stroke-width="6" stroke-dasharray="12 9"/>
+  <path d="M112 348L650 112" fill="none" stroke="#5aa0c1" stroke-width="6"/>
+  <rect x="326" y="192" width="108" height="106" rx="18" fill="#eaf3ef" opacity=".85"/>
+  <text x="380" y="230" text-anchor="middle" class="small safe" font-weight="800">需要平衡</text><text x="380" y="256" text-anchor="middle" class="small safe">两种复杂度</text>
+  <text x="136" y="98" class="body danger" font-weight="800">局部复杂度</text><text x="545" y="98" class="body" fill="#2f7189" font-weight="800">全局复杂度</text>
+  <text x="49" y="244" text-anchor="middle" class="small muted" transform="rotate(-90 49 244)">复杂度</text>
+  <text x="377" y="425" text-anchor="middle" class="small muted">服务粒度：粗　→　细</text>
+  <text x="92" y="412" text-anchor="middle" class="small danger"><tspan x="92">大泥球</tspan><tspan x="92" dy="20">局部太复杂</tspan></text>
+  <text x="656" y="412" text-anchor="middle" class="small danger"><tspan x="656">分布式大泥球</tspan><tspan x="656" dy="20">协作太复杂</tspan></text>
+</svg>

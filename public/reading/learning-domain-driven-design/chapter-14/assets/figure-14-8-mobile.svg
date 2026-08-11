@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 390 810" role="img" aria-labelledby="title desc">
+  <title id="title">同一业务词在两个限界上下文中拥有不同模型（手机布局）</title>
+  <desc id="desc">推广模型和销售模型上下排列，清楚比较同一潜在客户概念的不同含义。</desc>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto" markerUnits="strokeWidth"><path d="M0 0 10 5 0 10Z" fill="#425b66"/></marker>
+    <style>
+      text{font-family="Noto Sans SC, PingFang SC, Microsoft YaHei, sans-serif";fill:#263b44}.title{font-size:25px;font-weight:800}.label{font-size:21px;font-weight:700}.body{font-size:18px}.small{font-size:16px}.muted{fill:#60737c}.danger{fill:#bd454d}.safe{fill:#357a64}.mono{font-family:SFMono-Regular,Consolas,monospace;font-size:16px}.line{stroke:#425b66;stroke-width:2.5;fill:none}.dash{stroke-dasharray:7 7}
+    </style>
+
+  </defs>
+  <rect x="1" y="1" width="388" height="808" rx="20" fill="#f7fafb" stroke="#dce6ea"/>
+
+  <text x="195" y="42" text-anchor="middle" class="label">同一个词，不代表同一个模型</text>
+  <rect x="24" y="70" width="342" height="316" rx="28" fill="#dcecf3" stroke="#405963" stroke-width="3"/>
+  <text x="195" y="108" text-anchor="middle" class="title">推广上下文</text>
+  <rect x="48" y="132" width="90" height="36" rx="18" fill="#fff" stroke="#b9cbd2"/><text x="93" y="156" text-anchor="middle" class="small ">营销活动</text><rect x="148" y="132" width="68" height="36" rx="18" fill="#fff" stroke="#b9cbd2"/><text x="182" y="156" text-anchor="middle" class="small ">漏斗</text><rect x="226" y="132" width="90" height="36" rx="18" fill="#fff" stroke="#b9cbd2"/><text x="271" y="156" text-anchor="middle" class="small ">代理商</text>
+  <rect x="48" y="178" width="90" height="36" rx="18" fill="#fff" stroke="#b9cbd2"/><text x="93" y="202" text-anchor="middle" class="small ">投放位置</text><rect x="148" y="178" width="90" height="36" rx="18" fill="#fff" stroke="#b9cbd2"/><text x="193" y="202" text-anchor="middle" class="small ">落地页</text><rect x="248" y="178" width="90" height="36" rx="18" fill="#fff" stroke="#b9cbd2"/><text x="293" y="202" text-anchor="middle" class="small ">插入订单</text>
+  <rect x="60" y="248" width="270" height="98" rx="19" fill="#fff" stroke="#c9474f" stroke-width="3"/>
+  <text x="195" y="282" text-anchor="middle" class="small danger" font-weight="800">潜在客户 · 推广模型</text><text x="195" y="310" text-anchor="middle" class="small muted">来源 · 漏斗 · 投放</text>
+  <text x="195" y="424" text-anchor="middle" class="small muted">相同名称　≠　相同含义</text>
+  <rect x="24" y="454" width="342" height="316" rx="28" fill="#dcecf3" stroke="#405963" stroke-width="3"/>
+  <text x="195" y="492" text-anchor="middle" class="title">销售上下文</text>
+  <rect x="48" y="516" width="76" height="36" rx="18" fill="#fff" stroke="#b9cbd2"/><text x="86" y="540" text-anchor="middle" class="small ">联系人</text><rect x="134" y="516" width="58" height="36" rx="18" fill="#fff" stroke="#b9cbd2"/><text x="163" y="540" text-anchor="middle" class="small ">CDR</text><rect x="202" y="516" width="90" height="36" rx="18" fill="#fff" stroke="#b9cbd2"/><text x="247" y="540" text-anchor="middle" class="small ">营销活动</text>
+  <rect x="48" y="562" width="68" height="36" rx="18" fill="#fff" stroke="#b9cbd2"/><text x="82" y="586" text-anchor="middle" class="small ">转化</text><rect x="126" y="562" width="58" height="36" rx="18" fill="#fff" stroke="#b9cbd2"/><text x="155" y="586" text-anchor="middle" class="small ">坐席</text><rect x="194" y="562" width="68" height="36" rx="18" fill="#fff" stroke="#b9cbd2"/><text x="228" y="586" text-anchor="middle" class="small ">提案</text><rect x="272" y="562" width="68" height="36" rx="18" fill="#fff" stroke="#b9cbd2"/><text x="306" y="586" text-anchor="middle" class="small ">消息</text>
+  <rect x="60" y="632" width="270" height="98" rx="19" fill="#fff" stroke="#c9474f" stroke-width="3"/>
+  <text x="195" y="666" text-anchor="middle" class="small danger" font-weight="800">潜在客户 · 销售模型</text><text x="195" y="694" text-anchor="middle" class="small muted">联系 · 转化 · 成交</text>
+  <text x="195" y="796" text-anchor="middle" class="small muted">每个模型只在自己的边界内有效</text>
+</svg>

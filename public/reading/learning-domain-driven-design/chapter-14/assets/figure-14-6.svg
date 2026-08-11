@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 460" role="img" aria-labelledby="title desc">
+  <title id="title">深模块与浅模块</title>
+  <desc id="desc">深模块用较窄公共接口封装大量实现复杂度；浅模块接口很宽，却只隐藏少量实现。</desc>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto" markerUnits="strokeWidth"><path d="M0 0 10 5 0 10Z" fill="#425b66"/></marker>
+    <style>
+      text{font-family="Noto Sans SC, PingFang SC, Microsoft YaHei, sans-serif";fill:#263b44}.title{font-size:25px;font-weight:800}.label{font-size:21px;font-weight:700}.body{font-size:18px}.small{font-size:16px}.muted{fill:#60737c}.danger{fill:#bd454d}.safe{fill:#357a64}.mono{font-family:SFMono-Regular,Consolas,monospace;font-size:16px}.line{stroke:#425b66;stroke-width:2.5;fill:none}.dash{stroke-dasharray:7 7}
+    </style>
+
+  </defs>
+  <rect x="1" y="1" width="758" height="458" rx="20" fill="#f7fafb" stroke="#dce6ea"/>
+
+  <text x="380" y="43" text-anchor="middle" class="label">模块价值 = 用多小的接口，隐藏了多少实现复杂度</text>
+  <text x="205" y="88" text-anchor="middle" class="small muted">接口窄</text><path d="M205 97V126" class="line" marker-end="url(#arrow)"/>
+  <rect x="140" y="132" width="130" height="240" rx="6" fill="#fff" stroke="#405963" stroke-width="3"/>
+  <rect x="140" y="132" width="130" height="18" rx="5" fill="#2f89b5"/>
+  <text x="205" y="236" text-anchor="middle" class="body muted"><tspan x="205">大量</tspan><tspan x="205" dy="28">实现复杂度</tspan></text>
+  <rect x="118" y="392" width="174" height="42" rx="21" fill="#eaf3ef"/><text x="205" y="420" text-anchor="middle" class="body safe" font-weight="800">深模块</text>
+  <text x="555" y="88" text-anchor="middle" class="small muted">接口宽</text><path d="M555 97V174" class="line" marker-end="url(#arrow)"/>
+  <rect x="390" y="180" width="330" height="96" rx="6" fill="#fff" stroke="#405963" stroke-width="3"/>
+  <rect x="390" y="180" width="330" height="18" rx="5" fill="#2f89b5"/>
+  <text x="555" y="244" text-anchor="middle" class="body muted">少量实现</text>
+  <rect x="468" y="296" width="174" height="42" rx="21" fill="#fdebec"/><text x="555" y="324" text-anchor="middle" class="body danger" font-weight="800">浅模块</text>
+  <text x="555" y="390" text-anchor="middle" class="small muted"><tspan x="555">接口几乎和实现一样复杂</tspan><tspan x="555" dy="22">没有真正封装住什么</tspan></text>
+</svg>

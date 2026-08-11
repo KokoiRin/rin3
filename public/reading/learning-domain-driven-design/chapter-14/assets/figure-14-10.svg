@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 460" role="img" aria-labelledby="title desc">
+  <title id="title">限界上下文与微服务之间的安全粒度区间</title>
+  <desc id="desc">从大泥球到分布式大泥球，限界上下文是最大有效边界，微服务是最小有效边界，两者之间是安全区。</desc>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto" markerUnits="strokeWidth"><path d="M0 0 10 5 0 10Z" fill="#425b66"/></marker>
+    <style>
+      text{font-family="Noto Sans SC, PingFang SC, Microsoft YaHei, sans-serif";fill:#263b44}.title{font-size:25px;font-weight:800}.label{font-size:21px;font-weight:700}.body{font-size:18px}.small{font-size:16px}.muted{fill:#60737c}.danger{fill:#bd454d}.safe{fill:#357a64}.mono{font-family:SFMono-Regular,Consolas,monospace;font-size:16px}.line{stroke:#425b66;stroke-width:2.5;fill:none}.dash{stroke-dasharray:7 7}
+    </style>
+
+  </defs>
+  <rect x="1" y="1" width="758" height="458" rx="20" fill="#f7fafb" stroke="#dce6ea"/>
+
+  <text x="380" y="42" text-anchor="middle" class="label">有效边界是一段安全区间，不是唯一答案</text>
+  <path d="M90 355H690M90 355V80" class="line" marker-end="url(#arrow)"/>
+  <path d="M112 100C145 210 245 284 350 318S564 348 655 349" fill="none" stroke="#2f89b5" stroke-width="8" stroke-linecap="round"/>
+  <path d="M292 292C353 320 426 338 500 344" fill="none" stroke="#f2bf3a" stroke-width="12" stroke-linecap="round"/>
+  <circle cx="292" cy="292" r="10" fill="#f2bf3a" stroke="#2f7189" stroke-width="2"/><circle cx="500" cy="344" r="10" fill="#f2bf3a" stroke="#2f7189" stroke-width="2"/>
+  <rect x="310" y="218" width="174" height="50" rx="25" fill="#eaf3ef"/><text x="397" y="250" text-anchor="middle" class="body safe" font-weight="800">有效设计安全区</text>
+  <path d="M330 269L310 291M466 269L486 334" stroke="#4f9278" stroke-width="2"/>
+  <text x="48" y="120" class="small muted">粒度</text>
+  <text x="112" y="390" text-anchor="middle" class="small danger"><tspan x="112">大泥球</tspan><tspan x="112" dy="20">边界太宽</tspan></text>
+  <text x="292" y="390" text-anchor="middle" class="small"><tspan x="292">限界上下文</tspan><tspan x="292" dy="20">最大有效边界</tspan></text>
+  <text x="500" y="390" text-anchor="middle" class="small"><tspan x="500">微服务</tspan><tspan x="500" dy="20">最小有效边界</tspan></text>
+  <text x="654" y="390" text-anchor="middle" class="small danger"><tspan x="654">分布式大泥球</tspan><tspan x="654" dy="20">边界太窄</tspan></text>
+</svg>

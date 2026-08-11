@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 500" role="img" aria-labelledby="title desc">
+  <title id="title">子域天然形成深模块</title>
+  <desc id="desc">活动优化、发布、客户关系管理和佣金四个子域都用相对简单的接口封装各自不同规模的实现复杂度。</desc>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto" markerUnits="strokeWidth"><path d="M0 0 10 5 0 10Z" fill="#425b66"/></marker>
+    <style>
+      text{font-family="Noto Sans SC, PingFang SC, Microsoft YaHei, sans-serif";fill:#263b44}.title{font-size:25px;font-weight:800}.label{font-size:21px;font-weight:700}.body{font-size:18px}.small{font-size:16px}.muted{fill:#60737c}.danger{fill:#bd454d}.safe{fill:#357a64}.mono{font-family:SFMono-Regular,Consolas,monospace;font-size:16px}.line{stroke:#425b66;stroke-width:2.5;fill:none}.dash{stroke-dasharray:7 7}
+    </style>
+
+  </defs>
+  <rect x="1" y="1" width="758" height="498" rx="20" fill="#f7fafb" stroke="#dce6ea"/>
+
+  <text x="380" y="42" text-anchor="middle" class="label">子域描述“做什么”，把“怎么做”的复杂度藏在内部</text>
+  <rect x="510" y="66" width="212" height="72" rx="14" fill="#fff" stroke="#d2dee3"/>
+  <rect x="530" y="83" width="42" height="10" rx="5" fill="#2f89b5"/><text x="584" y="94" class="small muted">公共接口</text>
+  <rect x="530" y="108" width="42" height="18" rx="4" fill="#dcecf3"/><text x="584" y="123" class="small muted">实现复杂度</text>
+  <rect x="95" y="194" width="122" height="205" rx="6" fill="#fff" stroke="#405963" stroke-width="3"/><rect x="95" y="194" width="122" height="15" rx="5" fill="#2f89b5"/><rect x="105" y="224" width="102" height="161" rx="8" fill="#dcecf3"/><text x="156" y="433" text-anchor="middle" class="body" font-weight="800">活动优化</text><rect x="264" y="266" width="92" height="133" rx="6" fill="#fff" stroke="#405963" stroke-width="3"/><rect x="264" y="266" width="92" height="15" rx="5" fill="#2f89b5"/><rect x="274" y="296" width="72" height="89" rx="8" fill="#dcecf3"/><text x="310" y="433" text-anchor="middle" class="body" font-weight="800">发布</text><rect x="406" y="224" width="156" height="175" rx="6" fill="#fff" stroke="#405963" stroke-width="3"/><rect x="406" y="224" width="156" height="15" rx="5" fill="#2f89b5"/><rect x="416" y="254" width="136" height="131" rx="8" fill="#dcecf3"/><text x="484" y="433" text-anchor="middle" class="body" font-weight="800">CRM</text><rect x="624" y="158" width="82" height="241" rx="6" fill="#fff" stroke="#405963" stroke-width="3"/><rect x="624" y="158" width="82" height="15" rx="5" fill="#2f89b5"/><rect x="634" y="188" width="62" height="197" rx="8" fill="#dcecf3"/><text x="665" y="433" text-anchor="middle" class="body" font-weight="800">佣金</text>
+  <text x="380" y="478" text-anchor="middle" class="small muted">接口都相对克制；内部实现可以按业务能力需要保持不同深度</text>
+</svg>

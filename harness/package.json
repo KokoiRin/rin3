@@ -1,0 +1,21 @@
+{
+  "name": "rin3-harness",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "scripts": {
+    "behavior": "node scripts/behavior.mjs",
+    "check": "node scripts/behavior.mjs check",
+    "test:registry": "node --test tests/behavior-registry.test.mjs",
+    "test:e2e": "npm --prefix .. run build && node --test tests/browser-runtime.test.mjs",
+    "verify": "node scripts/behavior.mjs run all",
+    "test": "npm run check && npm run test:registry"
+  },
+  "devDependencies": {
+    "playwright-chromium": "^1.61.1",
+    "typescript": "5.9.3"
+  }
+}

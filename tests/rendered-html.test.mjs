@@ -93,7 +93,7 @@ test("exports rich document media and editorial lists with deploy-safe markup", 
 });
 
 // 模型论笔记迁移后必须保留原 Slides 地址，同时新增默认文章入口和双向切换。
-test("publishes model theory as one dual-view RIN document", async () => {
+test("[RIN-DOC-001] 模型论 RIN 文档发布为同源文章和 Slides", async () => {
   const article = await readOutput("mathematics/model-theory-for-software-engineering/index.html");
   const deck = await readOutput("slides/model-theory-for-software-engineering/index.html");
   const index = await readOutput("mathematics/index.html");

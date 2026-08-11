@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 480" role="img" aria-labelledby="title desc">
+  <title id="title">粒度与变化成本</title>
+  <desc id="desc">从大泥球开始拆分时变化成本下降；到达合适的微服务粒度后继续拆分，变化成本重新上升。</desc>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto" markerUnits="strokeWidth"><path d="M0 0 10 5 0 10Z" fill="#425b66"/></marker>
+    <style>
+      text{font-family="Noto Sans SC, PingFang SC, Microsoft YaHei, sans-serif";fill:#263b44}.title{font-size:25px;font-weight:800}.label{font-size:21px;font-weight:700}.body{font-size:18px}.small{font-size:16px}.muted{fill:#60737c}.danger{fill:#bd454d}.safe{fill:#357a64}.mono{font-family:SFMono-Regular,Consolas,monospace;font-size:16px}.line{stroke:#425b66;stroke-width:2.5;fill:none}.dash{stroke-dasharray:7 7}
+    </style>
+
+  </defs>
+  <rect x="1" y="1" width="758" height="478" rx="20" fill="#f7fafb" stroke="#dce6ea"/>
+
+  <text x="380" y="42" text-anchor="middle" class="label">服务并非越小越好：变化成本存在最低区间</text>
+  <path d="M88 390H690M88 390V80" class="line" marker-end="url(#arrow)"/>
+  <rect x="288" y="281" width="190" height="109" fill="#eaf3ef" opacity=".9"/>
+  <path d="M118 108C155 292 260 336 380 336S607 292 650 108" fill="none" stroke="#2f89b5" stroke-width="8" stroke-linecap="round"/>
+  <path d="M118 108V390M380 336V390M650 108V390" fill="none" stroke="#8ba0a9" stroke-width="2" stroke-dasharray="7 7"/>
+  <circle cx="380" cy="336" r="9" fill="#4f9278"/>
+  <text x="45" y="242" text-anchor="middle" class="small muted" transform="rotate(-90 45 242)">引入一次变化的成本</text>
+  <text x="118" y="424" text-anchor="middle" class="small danger"><tspan x="118">大泥球</tspan><tspan x="118" dy="20">内部牵一发动全身</tspan></text>
+  <text x="380" y="424" text-anchor="middle" class="small safe"><tspan x="380">合适的微服务粒度</tspan><tspan x="380" dy="20">变化成本最低</tspan></text>
+  <text x="650" y="424" text-anchor="middle" class="small danger"><tspan x="650">分布式大泥球</tspan><tspan x="650" dy="20">跨服务协调爆炸</tspan></text>
+</svg>

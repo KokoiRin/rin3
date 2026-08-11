@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 430" role="img" aria-labelledby="title desc">
+  <title id="title">作为独立服务的防腐层</title>
+  <desc id="desc">两个下游上下文调用独立防腐层服务；防腐层再调用上游，并把上游复杂接口翻译成适合下游的模型。</desc>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto" markerUnits="strokeWidth"><path d="M0 0 10 5 0 10Z" fill="#425b66"/></marker>
+    <style>
+      text{font-family="Noto Sans SC, PingFang SC, Microsoft YaHei, sans-serif";fill:#263b44}.title{font-size:25px;font-weight:800}.label{font-size:21px;font-weight:700}.body{font-size:18px}.small{font-size:16px}.muted{fill:#60737c}.danger{fill:#bd454d}.safe{fill:#357a64}.mono{font-family:SFMono-Regular,Consolas,monospace;font-size:16px}.line{stroke:#425b66;stroke-width:2.5;fill:none}.dash{stroke-dasharray:7 7}
+    </style>
+
+  </defs>
+  <rect x="1" y="1" width="758" height="428" rx="20" fill="#f7fafb" stroke="#dce6ea"/>
+
+  <text x="380" y="42" text-anchor="middle" class="label">消费方把集成复杂度卸载给独立的防腐层服务</text>
+  <rect x="42" y="126" width="228" height="190" rx="22" fill="#dcecf3" stroke="#405963" stroke-width="3"/>
+  <text x="156" y="183" text-anchor="middle" class="title"><tspan x="156">上游</tspan><tspan x="156" dy="31">限界上下文</tspan></text><text x="156" y="263" text-anchor="middle" class="small muted">复杂的生产方接口</text>
+  <path d="M346 221H270" class="line" marker-end="url(#arrow)"/>
+  <rect x="346" y="106" width="148" height="230" rx="22" fill="#f5ae55" stroke="#405963" stroke-width="3"/>
+  <text x="420" y="159" text-anchor="middle" class="title">ACL 服务</text>
+  <path d="M376 187H464M376 208H464M376 229H442" stroke="#fff" stroke-width="4" stroke-linecap="round"/>
+  <text x="420" y="274" text-anchor="middle" class="small"><tspan x="420">隔离上游模型</tspan><tspan x="420" dy="23">翻译集成协议</tspan></text>
+  <path d="M548 146L494 201M548 296L494 241" class="line" marker-end="url(#arrow)"/>
+  <rect x="548" y="80" width="174" height="132" rx="18" fill="#fff" stroke="#405963" stroke-width="2"/>
+  <text x="635" y="128" text-anchor="middle" class="body" font-weight="800"><tspan x="635">下游</tspan><tspan x="635" dy="27">限界上下文 A</tspan></text><text x="635" y="183" text-anchor="middle" class="small muted">使用便利模型</text>
+  <rect x="548" y="230" width="174" height="132" rx="18" fill="#fff" stroke="#405963" stroke-width="2"/>
+  <text x="635" y="278" text-anchor="middle" class="body" font-weight="800"><tspan x="635">下游</tspan><tspan x="635" dy="27">限界上下文 B</tspan></text><text x="635" y="333" text-anchor="middle" class="small muted">业务不被污染</text>
+  <rect x="152" y="382" width="456" height="34" rx="17" fill="#eaf3ef"/><text x="380" y="405" text-anchor="middle" class="small safe">ACL 是独立服务：消费方业务模型与集成模型分离</text>
+</svg>

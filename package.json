@@ -11,8 +11,14 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build --webpack",
-    "test": "npm run build && node --test tests/*.test.mjs packages/rin-document/tests/*.test.mjs",
-    "lint": "eslint . --ignore-pattern out --ignore-pattern dist --ignore-pattern .next --ignore-pattern .vinext --ignore-pattern .wrangler"
+    "typecheck": "tsc --noEmit --incremental false",
+    "test:domain": "node --test tests/edge-gesture.test.mjs tests/rin-documents.test.mjs packages/rin-document/tests/*.test.mjs",
+    "test:content": "node --test tests/content-contract.test.mjs tests/public-safety.test.mjs",
+    "test:build": "npm run build && node --test tests/rendered-html.test.mjs",
+    "check:fast": "npm run lint && npm run typecheck && npm run test:domain && npm run test:content",
+    "check:publish": "PUBLIC_RELEASE=true node --test tests/public-safety.test.mjs",
+    "test": "npm run check:fast && npm run test:build",
+    "lint": "eslint . --ignore-pattern harness --ignore-pattern out --ignore-pattern dist --ignore-pattern .next --ignore-pattern .vinext --ignore-pattern .wrangler"
   },
   "dependencies": {
     "@rin/document": "*",
@@ -33,7 +39,6 @@
     "@types/react-dom": "19.2.3",
     "eslint": "9.39.4",
     "eslint-config-next": "16.2.6",
-    "playwright-chromium": "^1.61.1",
     "tailwindcss": "4.2.1",
     "typescript": "5.9.3"
   },

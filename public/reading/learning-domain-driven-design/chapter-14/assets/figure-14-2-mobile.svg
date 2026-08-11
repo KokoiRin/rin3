@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 390 690" role="img" aria-labelledby="title desc">
+  <title id="title">营销活动发布服务的公共接口（手机布局）</title>
+  <desc id="desc">五个对外方法纵向排列，方法名、参数和返回值分行显示。</desc>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto" markerUnits="strokeWidth"><path d="M0 0 10 5 0 10Z" fill="#425b66"/></marker>
+    <style>
+      text{font-family="Noto Sans SC, PingFang SC, Microsoft YaHei, sans-serif";fill:#263b44}.title{font-size:25px;font-weight:800}.label{font-size:21px;font-weight:700}.body{font-size:18px}.small{font-size:16px}.muted{fill:#60737c}.danger{fill:#bd454d}.safe{fill:#357a64}.mono{font-family:SFMono-Regular,Consolas,monospace;font-size:16px}.line{stroke:#425b66;stroke-width:2.5;fill:none}.dash{stroke-dasharray:7 7}
+    </style>
+
+  </defs>
+  <rect x="1" y="1" width="388" height="688" rx="20" fill="#f7fafb" stroke="#dce6ea"/>
+
+  <rect x="24" y="28" width="342" height="600" rx="18" fill="#fff" stroke="#334f5b" stroke-width="3"/>
+  <rect x="24" y="28" width="342" height="82" rx="18" fill="#f5ae55"/>
+  <text x="195" y="63" text-anchor="middle" class="small" font-weight="700">公共接口 · 服务的前门</text>
+  <text x="195" y="92" text-anchor="middle" class="label">营销活动发布服务</text>
+  <g class="body">
+    <text x="48" y="150" font-weight="800" fill="#2f7189">发布 Publish</text><text x="48" y="176" class="small">CampaignId → PublishingResult</text>
+    <path d="M48 195H342" stroke="#dce6ea"/>
+    <text x="48" y="231" font-weight="800" fill="#2f7189">暂停 Pause</text><text x="48" y="257" class="small">CampaignId → Confirmation</text>
+    <path d="M48 276H342" stroke="#dce6ea"/>
+    <text x="48" y="312" font-weight="800" fill="#2f7189">改期 Reschedule</text><text x="48" y="338" class="small">CampaignId, Schedule</text><text x="48" y="362" class="small">→ Confirmation</text>
+    <path d="M48 383H342" stroke="#dce6ea"/>
+    <text x="48" y="419" font-weight="800" fill="#2f7189">统计 GetStatistics</text><text x="48" y="445" class="small">CampaignId → PublishingStatistics</text>
+    <path d="M48 464H342" stroke="#dce6ea"/>
+    <text x="48" y="500" font-weight="800" fill="#2f7189">停用 Deactivate</text><text x="48" y="526" class="small">CampaignId, Reason</text><text x="48" y="550" class="small">→ PublishingStatus</text>
+  </g>
+  <rect x="46" y="575" width="298" height="34" rx="17" fill="#e7f1f5"/>
+  <text x="195" y="598" text-anchor="middle" class="small" fill="#2f7189">接口本身就在描述服务能力</text>
+  <text x="195" y="662" text-anchor="middle" class="small muted">所有输入与输出，都从这里经过</text>
+</svg>
