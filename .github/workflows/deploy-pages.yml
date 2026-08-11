@@ -29,6 +29,12 @@ jobs:
           cache: npm
       - name: Install dependencies
         run: npm ci
+      - name: Install harness dependencies
+        run: npm --prefix harness ci --ignore-scripts
+      - name: Validate behavior harness
+        run: npm --prefix harness test
+      - name: Verify public release safety
+        run: npm run check:publish
       - name: Build and test static site
         run: npm test
       - name: Configure Pages

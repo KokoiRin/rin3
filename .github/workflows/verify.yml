@@ -1,0 +1,31 @@
+name: Verify Pull Request
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: verify-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Install harness dependencies
+        run: npm --prefix harness ci --ignore-scripts
+      - name: Validate behavior harness
+        run: npm --prefix harness test
+      - name: Build and test static site
+        run: npm test
