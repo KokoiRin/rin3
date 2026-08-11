@@ -34,7 +34,7 @@ slides:
 `;
 
 // 公共入口应从一个字符串生成文章和 Slides 投影，并保留宿主尚未适配的中立 identity 与资源路径。
-test("compiles portable article and slides projections through the package entrypoint", async () => {
+test("[RIN-DOC-001] 一份有效 RIN 文档通过公共入口同时生成文章和 Slides", async () => {
   const document = parseRinDocument(source, "/virtual/portable.md", "notes", "portable");
   const article = await renderArticleMarkdown(document.articleMarkdown);
   const deck = compileRinDeck(document);
@@ -209,7 +209,7 @@ test("projects labelled Markdown items as article lists and slide cards", async 
 });
 
 // 作者在同一页中标记长篇 detail 后，文章必须保留完整解释，而 Slides 只投影简短 core。
-test("projects core content to both views and detail content to the article only", async () => {
+test("[RIN-PROJECTION-001] 核心内容进入双视图而详情内容只进入文章", async () => {
   const roleSource = source.replace(
     "这个 package 不知道网站路由。",
     `核心判断会进入两个视图。

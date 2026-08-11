@@ -1,0 +1,306 @@
+{
+  "schemaVersion": 1,
+  "codeRoots": [
+    "app",
+    "components",
+    "lib",
+    "packages/rin-document/src",
+    "harness/scripts"
+  ],
+  "testRoots": [
+    "tests",
+    "packages/rin-document/tests",
+    "harness/tests"
+  ],
+  "behaviors": [
+    {
+      "id": "HOME-GATE-001",
+      "version": 2,
+      "status": "active",
+      "nameZh": "第四入口手势解锁",
+      "behaviorZh": "首页第四入口只有在满足端侧条件并完成第三次独立横向手势后才显示，纵向滚动不能推进解锁进度。",
+      "lastReviewedOn": "2026-08-11",
+      "code": [
+        {
+          "file": "app/edge-gesture.js",
+          "symbol": "advanceTouchGesture",
+          "roleZh": "计算手机滑动后的解锁进度"
+        },
+        {
+          "file": "app/edge-gesture.js",
+          "symbol": "advanceWheelGesture",
+          "roleZh": "计算桌面滚轮手势后的解锁进度"
+        },
+        {
+          "file": "app/entrance-gates.tsx",
+          "symbol": "EntranceGates",
+          "roleZh": "把手势结果映射为第四入口的可见与可访问状态"
+        }
+      ],
+      "tests": [
+        {
+          "file": "tests/edge-gesture.test.mjs",
+          "name": "[HOME-GATE-001] 手机端只有到达末端并连续三次向后滑动才显示第四入口",
+          "level": "unit",
+          "behaviorZh": "手机端未到末端或不足三次时保持隐藏，第三次有效滑动后显示第四入口。"
+        },
+        {
+          "file": "tests/edge-gesture.test.mjs",
+          "name": "[HOME-GATE-001] 无效手机滑动清空进度而轻微移动保留进度",
+          "level": "unit",
+          "behaviorZh": "反向或未到末端的完整滑动清空进度，轻微移动不破坏已经累计的进度。"
+        },
+        {
+          "file": "tests/edge-gesture.test.mjs",
+          "name": "[HOME-GATE-001] 桌面连续滚轮事件只计一次且第三次独立横滑显示第四入口",
+          "level": "unit",
+          "behaviorZh": "同一次桌面滑动产生的连续事件只计一次，第三次独立横向滑动才解锁。"
+        },
+        {
+          "file": "tests/edge-gesture.test.mjs",
+          "name": "[HOME-GATE-001] 快速完成的三次独立横滑也能显示第四入口",
+          "level": "unit",
+          "behaviorZh": "用户快速完成三次独立横向手势时，每次手势仍被正确计数。"
+        },
+        {
+          "file": "tests/edge-gesture.test.mjs",
+          "name": "[HOME-GATE-001] 桌面纵向滚动不推进第四入口的解锁进度",
+          "level": "unit",
+          "behaviorZh": "普通纵向滚动不属于继续横向浏览，不能增加解锁次数。"
+        },
+        {
+          "file": "harness/tests/browser-runtime.test.mjs",
+          "name": "[HOME-GATE-001] 真实桌面浏览器在第三次横滑后显示第四入口",
+          "level": "browser",
+          "behaviorZh": "真实浏览器中纵向滚动无效，第三次横向滚动后第四入口可见并可访问。"
+        },
+        {
+          "file": "harness/tests/browser-runtime.test.mjs",
+          "name": "[HOME-GATE-001] 真实手机浏览器到达末端并三次滑动后显示第四入口",
+          "level": "browser",
+          "behaviorZh": "真实手机尺寸浏览器滚到前三个入口末端后，第三次完整触摸滑动显示第四入口。"
+        }
+      ]
+    },
+    {
+      "id": "RIN-DOC-001",
+      "version": 1,
+      "status": "active",
+      "nameZh": "RIN 文档生成双视图",
+      "behaviorZh": "一份有效的 RIN Markdown 是文章和 Slides 的共同内容源，并通过公共编译入口生成两个可互相访问的视图。",
+      "lastReviewedOn": "2026-08-10",
+      "code": [
+        {
+          "file": "packages/rin-document/src/parser.ts",
+          "symbol": "parseRinDocument",
+          "roleZh": "把 RIN Markdown 解析为中立文档模型"
+        },
+        {
+          "file": "packages/rin-document/src/slide-compiler.ts",
+          "symbol": "compileRinDeck",
+          "roleZh": "把中立文档模型编译为 Slides 数据"
+        },
+        {
+          "file": "lib/content/catalog.ts",
+          "symbol": "readArticleSource",
+          "roleZh": "发现站点内容并生成文章侧数据"
+        },
+        {
+          "file": "lib/content/slides.ts",
+          "symbol": "adaptDerivedDeck",
+          "roleZh": "为可移植 Slides 补充站点路由和资源地址"
+        }
+      ],
+      "tests": [
+        {
+          "file": "packages/rin-document/tests/compiler.test.mjs",
+          "name": "[RIN-DOC-001] 一份有效 RIN 文档通过公共入口同时生成文章和 Slides",
+          "level": "unit",
+          "behaviorZh": "公共 package 入口不依赖网站模块也能生成文章内容和 Slides 数据。"
+        },
+        {
+          "file": "tests/rin-documents.test.mjs",
+          "name": "[RIN-DOC-001] 显式 Slide 顺序生成双视图且文章不保留指令外壳",
+          "level": "unit",
+          "behaviorZh": "作者声明的 Slide 顺序保持不变，文章保留正文但不显示 RIN 指令。"
+        },
+        {
+          "file": "tests/rendered-html.test.mjs",
+          "name": "[RIN-DOC-001] 模型论 RIN 文档发布为同源文章和 Slides",
+          "level": "static",
+          "behaviorZh": "静态产物同时包含模型论文章和同 slug Slides，并提供双向入口。"
+        }
+      ]
+    },
+    {
+      "id": "RIN-PROJECTION-001",
+      "version": 1,
+      "status": "active",
+      "nameZh": "RIN 核心与详情内容投影",
+      "behaviorZh": "RIN 文档的核心内容同时进入文章和 Slides，显式详情内容只进入文章，并且结构错误必须指出来源。",
+      "lastReviewedOn": "2026-08-10",
+      "code": [
+        {
+          "file": "packages/rin-document/src/domain.ts",
+          "symbol": "projectRinContent",
+          "roleZh": "按照目标视图区分核心内容和详情内容"
+        },
+        {
+          "file": "packages/rin-document/src/parser.ts",
+          "symbol": "parseSlides",
+          "roleZh": "解析显式 Slide 与详情块边界"
+        }
+      ],
+      "tests": [
+        {
+          "file": "packages/rin-document/tests/compiler.test.mjs",
+          "name": "[RIN-PROJECTION-001] 核心内容进入双视图而详情内容只进入文章",
+          "level": "unit",
+          "behaviorZh": "同一份源内容按 core/detail 角色稳定投影，Slides 不携带详情块。"
+        },
+        {
+          "file": "tests/rin-documents.test.mjs",
+          "name": "[RIN-PROJECTION-001] 未闭合详情块必须报告来源和起始行",
+          "level": "unit",
+          "behaviorZh": "详情块结构损坏时解析立即失败，并告诉作者具体文件和行号。"
+        },
+        {
+          "file": "tests/rin-documents.test.mjs",
+          "name": "[RIN-PROJECTION-001] 代码围栏中的详情标记保持为普通代码内容",
+          "level": "unit",
+          "behaviorZh": "示例代码中的详情标记不会被误认为真实投影指令。"
+        }
+      ]
+    },
+    {
+      "id": "SLIDES-RUNTIME-001",
+      "version": 1,
+      "status": "active",
+      "nameZh": "Slides 播放器初始化与翻页",
+      "behaviorZh": "导出的 Slides 在真实浏览器中只激活一页，用户翻到下一页时活动页和页码必须同步。",
+      "lastReviewedOn": "2026-08-10",
+      "code": [
+        {
+          "file": "components/slides/player.tsx",
+          "symbol": "SlideDeckView",
+          "roleZh": "拥有 Reveal 生命周期、导航状态和页码同步"
+        }
+      ],
+      "tests": [
+        {
+          "file": "harness/tests/browser-runtime.test.mjs",
+          "name": "[SLIDES-RUNTIME-001] 导出的 Slides 初始化单一活动页并同步下一页页码",
+          "level": "browser",
+          "behaviorZh": "打开导出页面后 Reveal 正常 ready，点击下一页只激活第二页且计数显示 02。"
+        }
+      ]
+    },
+    {
+      "id": "CONTENT-CONTRACT-001",
+      "version": 1,
+      "status": "active",
+      "nameZh": "内容源快速契约检查",
+      "behaviorZh": "所有 Markdown 在完整构建前必须满足栏目、slug、元数据、RIN 结构和全局 Slides 路由唯一性约束。",
+      "lastReviewedOn": "2026-08-10",
+      "code": [
+        {
+          "file": "lib/content/catalog.ts",
+          "symbol": "readArticleSource",
+          "roleZh": "定义站点实际消费的文章元数据契约"
+        },
+        {
+          "file": "packages/rin-document/src/parser.ts",
+          "symbol": "parseRinDocument",
+          "roleZh": "定义 RIN 文档的结构契约"
+        }
+      ],
+      "tests": [
+        {
+          "file": "tests/content-contract.test.mjs",
+          "name": "[CONTENT-CONTRACT-001] 每个内容源在完整构建前通过快速契约检查",
+          "level": "unit",
+          "behaviorZh": "错误的栏目、slug、日期、语言、标签或 RIN 结构在快速检查阶段直接失败。"
+        },
+        {
+          "file": "tests/content-contract.test.mjs",
+          "name": "[CONTENT-CONTRACT-001] 全站派生 Slides 路由保持唯一",
+          "level": "unit",
+          "behaviorZh": "不同分区不能生成相同的全局 Slides 地址。"
+        }
+      ]
+    },
+    {
+      "id": "PUBLISH-SAFETY-001",
+      "version": 1,
+      "status": "active",
+      "nameZh": "私人内容公开发布门禁",
+      "behaviorZh": "私人批注必须可被机器识别，公开发布只能来自 main 且不能携带任何私人内容标记。",
+      "lastReviewedOn": "2026-08-10",
+      "code": [
+        {
+          "file": "tests/public-safety.test.mjs",
+          "symbol": "listFiles",
+          "roleZh": "枚举需要检查的内容和公开产物"
+        }
+      ],
+      "tests": [
+        {
+          "file": "tests/public-safety.test.mjs",
+          "name": "[PUBLISH-SAFETY-001] 每条私人阅读批注都具备可机械识别的双重标记",
+          "level": "unit",
+          "behaviorZh": "私人批注同时携带 data-private-note 和 private-note class，便于门禁可靠识别。"
+        },
+        {
+          "file": "tests/public-safety.test.mjs",
+          "name": "[PUBLISH-SAFETY-001] 公开发布拒绝私人分支和私人内容标记",
+          "level": "release",
+          "behaviorZh": "非 main 分支或包含私人标记的工作树不能通过公开发布门禁。"
+        }
+      ]
+    },
+    {
+      "id": "HARNESS-TRACE-001",
+      "version": 3,
+      "status": "active",
+      "nameZh": "业务行为追踪与执行",
+      "behaviorZh": "独立 Harness 可以从函数反查业务与测试、校验映射完整性、按行为运行测试，并把结果和证据保留在产品之外。",
+      "lastReviewedOn": "2026-08-11",
+      "code": [
+        {
+          "file": "harness/scripts/behavior.mjs",
+          "symbol": "validateRegistry",
+          "roleZh": "校验行为、函数和测试之间的结构化关系"
+        },
+        {
+          "file": "harness/scripts/behavior.mjs",
+          "symbol": "findBehaviors",
+          "roleZh": "按照行为 ID、函数名或文件路径反查业务"
+        },
+        {
+          "file": "harness/scripts/behavior.mjs",
+          "symbol": "runBehaviors",
+          "roleZh": "运行一个或全部业务行为对应的测试"
+        },
+        {
+          "file": "harness/scripts/behavior.mjs",
+          "symbol": "writeRunResult",
+          "roleZh": "把最近一次通过或失败及证据文件写成工具可读取的结果"
+        }
+      ],
+      "tests": [
+        {
+          "file": "harness/tests/behavior-registry.test.mjs",
+          "name": "[HARNESS-TRACE-001] 输入函数名可以反查中文业务行为和对应测试",
+          "level": "unit",
+          "behaviorZh": "查询 advanceWheelGesture 时能够定位第四入口业务、实现函数和中文测试说明。"
+        },
+        {
+          "file": "harness/tests/behavior-registry.test.mjs",
+          "name": "[HARNESS-TRACE-001] 行为执行输出可以转换为结构化验收结果",
+          "level": "unit",
+          "behaviorZh": "行为工具能够从测试输出中提取通过、失败和跳过数量，供后续工具稳定读取。"
+        }
+      ]
+    }
+  ]
+}
