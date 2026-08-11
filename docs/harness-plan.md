@@ -134,6 +134,7 @@ npm --prefix harness run verify
 - [x] 建立业务行为数据库和首批基线行为；
 - [x] 增加函数反查、按行为执行和代码同步检查工具；
 - [x] 将 Harness 拆成独立 package，移除产品运行时反向依赖；
+- [x] 将 Harness 自检和公开发布安全门禁接入 CI；
 - [ ] 建立全站静态链接巡检；
 - [ ] 迁移到标准 Playwright Test；
-- [ ] 增加 Pull Request CI。
+- [x] 增加 Pull Request CI。

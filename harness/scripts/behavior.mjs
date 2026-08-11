@@ -312,6 +312,14 @@ export function writeRunResult({ behaviorId, startedAt, status, output, phase = 
   return result;
 }
 
+export function environmentForBehaviors(behaviors, baseEnvironment = process.env) {
+  const includesReleaseCheck = behaviors.some((behavior) =>
+    behavior.tests.some((testCase) => testCase.level === "release"));
+  return includesReleaseCheck
+    ? { ...baseEnvironment, PUBLIC_RELEASE: "true" }
+    : baseEnvironment;
+}
+
 export function runBehaviors(registry, ids) {
   const startedAt = new Date().toISOString();
   const selected = ids.includes("all")
@@ -344,7 +352,11 @@ export function runBehaviors(registry, ids) {
   const result = spawnSync(
     process.execPath,
     ["--test", `--test-name-pattern=${pattern}`, ...files],
-    { cwd: repositoryRoot, encoding: "utf8" },
+    {
+      cwd: repositoryRoot,
+      encoding: "utf8",
+      env: environmentForBehaviors(selected),
+    },
   );
   const output = `${result.stdout ?? ""}${result.stderr ?? ""}`;
   process.stdout.write(result.stdout ?? "");

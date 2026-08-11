@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  environmentForBehaviors,
   findBehaviors,
   loadRegistry,
   parseTestSummary,
@@ -34,4 +35,13 @@ test("[HARNESS-TRACE-001] 行为执行输出可以转换为结构化验收结果
     failed: 0,
     skipped: 1,
   });
+});
+
+test("[HARNESS-TRACE-001] 发布级行为执行时不会跳过公开发布门禁", () => {
+  const environment = environmentForBehaviors([
+    { tests: [{ level: "unit" }, { level: "release" }] },
+  ], { EXISTING_VALUE: "kept" });
+
+  assert.equal(environment.PUBLIC_RELEASE, "true");
+  assert.equal(environment.EXISTING_VALUE, "kept");
 });

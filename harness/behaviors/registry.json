@@ -231,11 +231,11 @@
     },
     {
       "id": "PUBLISH-SAFETY-001",
-      "version": 1,
+      "version": 2,
       "status": "active",
       "nameZh": "私人内容公开发布门禁",
       "behaviorZh": "私人批注必须可被机器识别，公开发布只能来自 main 且不能携带任何私人内容标记。",
-      "lastReviewedOn": "2026-08-10",
+      "lastReviewedOn": "2026-08-11",
       "code": [
         {
           "file": "tests/public-safety.test.mjs",
@@ -255,12 +255,18 @@
           "name": "[PUBLISH-SAFETY-001] 公开发布拒绝私人分支和私人内容标记",
           "level": "release",
           "behaviorZh": "非 main 分支或包含私人标记的工作树不能通过公开发布门禁。"
+        },
+        {
+          "file": "harness/tests/ci-workflows.test.mjs",
+          "name": "[PUBLISH-SAFETY-001] 公开部署在上传产物前执行发布安全门禁",
+          "level": "ci",
+          "behaviorZh": "公开部署必须在上传静态产物前执行私人内容发布检查。"
         }
       ]
     },
     {
       "id": "HARNESS-TRACE-001",
-      "version": 3,
+      "version": 4,
       "status": "active",
       "nameZh": "业务行为追踪与执行",
       "behaviorZh": "独立 Harness 可以从函数反查业务与测试、校验映射完整性、按行为运行测试，并把结果和证据保留在产品之外。",
@@ -285,6 +291,11 @@
           "file": "harness/scripts/behavior.mjs",
           "symbol": "writeRunResult",
           "roleZh": "把最近一次通过或失败及证据文件写成工具可读取的结果"
+        },
+        {
+          "file": "harness/scripts/behavior.mjs",
+          "symbol": "environmentForBehaviors",
+          "roleZh": "让发布级行为执行真实的公开发布门禁而不是跳过"
         }
       ],
       "tests": [
@@ -299,6 +310,18 @@
           "name": "[HARNESS-TRACE-001] 行为执行输出可以转换为结构化验收结果",
           "level": "unit",
           "behaviorZh": "行为工具能够从测试输出中提取通过、失败和跳过数量，供后续工具稳定读取。"
+        },
+        {
+          "file": "harness/tests/behavior-registry.test.mjs",
+          "name": "[HARNESS-TRACE-001] 发布级行为执行时不会跳过公开发布门禁",
+          "level": "unit",
+          "behaviorZh": "执行包含发布级测试的行为时必须启用公开发布检查模式。"
+        },
+        {
+          "file": "harness/tests/ci-workflows.test.mjs",
+          "name": "[HARNESS-TRACE-001] 部署和拉取请求都会自动校验行为数据库",
+          "level": "ci",
+          "behaviorZh": "部署和拉取请求都必须自动校验行为数据库与测试映射。"
         }
       ]
     }

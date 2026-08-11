@@ -28,3 +28,5 @@ npm --prefix harness run check
 行为数据库在 `harness/behaviors/registry.json`。浏览器截图、失败 Trace 和最近结果写入 `harness/output/`，不会进入产品静态产物或 Git 提交。
 
 项目内保留快速单元测试、类型检查、Lint 和静态构建测试；Chromium、跨层行为编排、证据与行为索引由这个独立 package 负责。
+
+拉取请求和公开部署都会独立安装 Harness 依赖并自动运行 `npm --prefix harness test`；非浏览器检查使用 `--ignore-scripts`，不会额外下载 Chromium。公开部署还会在上传静态产物前运行产品侧的 `npm run check:publish`，确保行为映射与发布安全门禁不会只依赖人工执行。
