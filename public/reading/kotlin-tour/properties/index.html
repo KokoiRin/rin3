@@ -1,0 +1,326 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="理解幕后字段、扩展属性与委托属性，控制值如何计算、保存和观察。">
+  <title>属性｜RIN III</title>
+  <link rel="stylesheet" href="../reader.css">
+</head>
+<body>
+  <nav class="site-nav" aria-label="站点导航">
+    <a href="../index.html">← Kotlin Tour 中文学习版</a>
+    <a href="../../../computer-science/kotlin-tour/">RIN III 学习记录</a>
+  </nav>
+  <main class="reader">
+    <header class="chapter-header">
+      <span class="chapter-kicker">中级 · 第 7 章</span>
+      <h1>属性</h1>
+      <p class="lead">理解幕后字段、扩展属性与委托属性，控制值如何计算、保存和观察。</p>
+      <div class="title-rule"></div>
+      <aside class="learning-note" aria-label="学习主线">
+        <strong>学习主线</strong>
+        <p>属性不是裸字段：getter、setter 与 delegate 可以把读取和写入规则封装在声明背后。</p>
+      </aside>
+      <nav class="chapter-switcher" aria-label="章节导航">
+    <a href="../open-and-special-classes/index.html">← 开放类与特殊类</a>
+    <a class="course-home" href="../index.html">全部章节</a>
+    <a href="../advanced-null-safety/index.html">进阶空安全 →</a>
+  </nav>
+    </header>
+    <article class="translated-article">
+<p id="tfbvgl_3">在初学者教程中, 你已经学习了如何使用属性来声明类实例的特征, 以及如何访问属性. 在这一章中, 我们进一步深入介绍 Kotlin 中的属性如何工作, 并探索在代码中使用属性的其它方式.</p><section class="chapter"><h2 id="backing-fields" data-toc="backing-fields">后端域变量(Backing Field)</h2><p id="tfbvgl_36">在 Kotlin 中, 属性拥有默认的 <code class="code" id="tfbvgl_54">get()</code> 和 <code class="code" id="tfbvgl_55">set()</code> 函数, 称为属性访问器, 负责获取和修改属性值. 这些默认函数在代码中并不明确的可见, 编译器自动生成这些函数, 在后台管理属性的访问. 这些访问器使用一个 <span class="control" id="tfbvgl_56">后端域变量(Backing Field)</span> 来存储实际的属性值.</p><p id="tfbvgl_37">如果以下条件中的任何一个成立, 后端域变量就会存在:</p><ul class="list _bullet" id="tfbvgl_38"><li class="list__item" id="tfbvgl_57"><p id="tfbvgl_59">你对属性使用默认的 <code class="code" id="tfbvgl_60">get()</code> 或 <code class="code" id="tfbvgl_61">set()</code> 函数.</p></li><li class="list__item" id="tfbvgl_58"><p id="tfbvgl_62">你在代码中使用 <code class="code" id="tfbvgl_63">field</code> 关键字访问属性值.</p></li></ul><aside class="prompt" data-type="tip" data-title="" id="tfbvgl_39"><p id="tfbvgl_64"><code class="code" id="tfbvgl_65">get()</code> 和 <code class="code" id="tfbvgl_66">set()</code> 函数也叫做取值函数(getter)和设值函数(setter).</p></aside><p id="tfbvgl_40">例如, 这段代码有一个 <code class="code" id="tfbvgl_67">category</code> 属性, 它没有自定义的 <code class="code" id="tfbvgl_68">get()</code> 或 <code class="code" id="tfbvgl_69">set()</code> 函数, 因此使用默认的实现:</p><pre><code>class Contact(val id: Int, var email: String) {
+    var category: String = &quot;&quot;
+}</code></pre><p id="tfbvgl_42">在底层实现中, 这段代码等价于下面的伪代码:</p><pre><code>class Contact(val id: Int, var email: String) {
+    var category: String = &quot;&quot;
+        get() = field
+        set(value) {
+            field = value
+        }
+}</code></pre><p id="tfbvgl_44">在这个示例中:</p><ul class="list _bullet" id="tfbvgl_45"><li class="list__item" id="tfbvgl_70"><p id="tfbvgl_72"><code class="code" id="tfbvgl_73">get()</code> 函数从域变量获取属性值: <code class="code" id="tfbvgl_74">&quot;&quot;</code>.</p></li><li class="list__item" id="tfbvgl_71"><p id="tfbvgl_75"><code class="code" id="tfbvgl_76">set()</code> 函数接受参数 <code class="code" id="tfbvgl_77">value</code>, 并将它赋值给域变量, 其中 <code class="code" id="tfbvgl_78">value</code> 为 <code class="code" id="tfbvgl_79">&quot;&quot;</code>.</p></li></ul><p id="tfbvgl_46">当你想要在你的 <code class="code" id="tfbvgl_80">get()</code> 或 <code class="code" id="tfbvgl_81">set()</code> 函数中添加额外的逻辑, 又不引起无限的循环, 访问后端域变量会很有用. 例如, 你有一个 <code class="code" id="tfbvgl_82">Person</code> 类, 它有一个 <code class="code" id="tfbvgl_83">name</code> 属性:</p><pre><code>class Person {
+    var name: String = &quot;&quot;
+}</code></pre><p id="tfbvgl_48">你想要确保 <code class="code" id="tfbvgl_84">name</code> 属性的首字母为大写, 因此创建了一个自定义 <code class="code" id="tfbvgl_85">set()</code> 函数, 它使用 <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.text/replace-first-char.html" id="tfbvgl_86" data-external="true" rel="noopener noreferrer"><code class="code" id="tfbvgl_90">.replaceFirstChar()</code></a> 和 <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.text/uppercase-char.html" id="tfbvgl_87" data-external="true" rel="noopener noreferrer"><code class="code" id="tfbvgl_91">.uppercase()</code></a> extension 函数. 但是, 如果在你的 <code class="code" id="tfbvgl_88">set()</code> 函数中直接引用属性, 就会导致无限循环, 并在运行期发生 <code class="code" id="tfbvgl_89">StackOverflowError</code> 错误:</p><pre><code>class Person {
+    var name: String = &quot;&quot;
+        set(value) {
+            // 这里会导致运行期错误
+            name = value.replaceFirstChar { firstChar -&gt; firstChar.uppercase() }
+        }
+}
+
+fun main() {
+    val person = Person()
+    person.name = &quot;kodee&quot;
+    println(person.name)
+    // 这里会发生错误: Exception in thread &quot;main&quot; java.lang.StackOverflowError
+}</code></pre><p id="tfbvgl_50">要解决这个问题, 可以在你的 <code class="code" id="tfbvgl_92">set()</code> 函数中改为通过 <code class="code" id="tfbvgl_93">field</code> 关键字引用后端域变量:</p><pre><code>class Person {
+    var name: String = &quot;&quot;
+        set(value) {
+            field = value.replaceFirstChar { firstChar -&gt; firstChar.uppercase() }
+        }
+}
+
+fun main() {
+    val person = Person()
+    person.name = &quot;kodee&quot;
+    println(person.name)
+    // 输出结果为: Kodee
+}</code></pre><p id="tfbvgl_52">当你想要添加日志, 在属性值变更时发送通知, 或者使用附加逻辑比较属性的旧值和新值时, 后端域变量也很有用.</p><p id="tfbvgl_53">详情请参见 <a href="https://kotlinlang.org/docs/properties.html#backing-fields" id="tfbvgl_94">后端域变量</a>.</p></section><section class="chapter"><h2 id="extension-properties" data-toc="extension-properties">扩展属性</h2><p id="tfbvgl_95">和扩展函数一样, 也有扩展属性. 扩展属性让你能够向既有的类添加新的属性, 而不必修改它们的源代码. 但是, Kotlin 中的扩展属性 <span class="control" id="tfbvgl_105">没有</span> 后端域变量. 这就意味着你需要自己编写 <code class="code" id="tfbvgl_106">get()</code> 和 <code class="code" id="tfbvgl_107">set()</code> 函数. 此外, 没有后端域变量也意味着扩展属性不能保存任何状态.</p><p id="tfbvgl_96">要声明一个扩展属性, 请在你想要扩展的类的名称之后加上 <code class="code" id="tfbvgl_108">.</code>, 再加上属性的名称. 和通常的类属性一样, 你需要为你的属性声明类型. 例如:</p><pre><code>val String.lastChar: Char</code></pre><p id="tfbvgl_98">当你想要属性包含计算得到的值, 而不使用继承时, 扩展属性是很有用的. 你可以将扩展属性想象为一个函数, 只有一个参数: 接受者.</p><p id="tfbvgl_99">例如, 假设你有一个数据类 <code class="code" id="tfbvgl_109">Person</code>, 它有 2 个属性: <code class="code" id="tfbvgl_110">firstName</code> 和 <code class="code" id="tfbvgl_111">lastName</code>.</p><pre><code>data class Person(val firstName: String, val lastName: String)</code></pre><p id="tfbvgl_101">你想要得到人的全名, 但不要修改 <code class="code" id="tfbvgl_112">Person</code> data 类, 也不要继承它. 你可以创建一个带有自定义 <code class="code" id="tfbvgl_113">get()</code> 函数的扩展属性来实现这一点:</p><pre><code>data class Person(val firstName: String, val lastName: String)
+
+// 扩展属性, 用于得到全名
+val Person.fullName: String
+    get() = &quot;$firstName $lastName&quot;
+
+fun main() {
+    val person = Person(firstName = &quot;John&quot;, lastName = &quot;Doe&quot;)
+
+    // 使用扩展属性
+    println(person.fullName)
+    // 输出结果为: John Doe
+}</code></pre><aside class="prompt" data-type="note" data-title="" id="tfbvgl_103"><p id="tfbvgl_114">扩展属性不能覆盖既有的类属性.</p></aside><p id="tfbvgl_104">与扩展函数一样, Kotlin 标准库大量使用了扩展属性. 例如, 请参见 <code class="code" id="tfbvgl_115">CharSequence</code> 的 <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.text/last-index.html" id="tfbvgl_116" data-external="true" rel="noopener noreferrer"><code class="code" id="tfbvgl_117">lastIndex</code> 属性</a>.</p></section><section class="chapter"><h2 id="delegated-properties" data-toc="delegated-properties">委托属性(Delegated Property)</h2><p id="tfbvgl_118">在 <a href="../classes-and-interfaces/index.html#delegation" id="tfbvgl_141">类与接口</a> 章节中, 你已经学习了委托. 你也可以对属性使用委托, 将它们的属性访问器委托给另一个对象. 当你的需求比存储属性更加复杂, 简单的后端域变量无法处理时, 委托属性会很有用, 例如需要将值存储到数据表中, 浏览器会话中, 或 Map 中. 使用委托属性(Delegated Property) 也可以减少样板代码, 因为取得和设置你的属性的逻辑只存在于你委托的对象中.</p><p id="tfbvgl_119">委托属性的语法与类的委托类似, 但操作层级不同. 请声明你的属性, 后面加上 <code class="code" id="tfbvgl_142">by</code> 关键字, 再加上你想要委托的对象. 例如:</p><pre><code>val displayName: String by Delegate</code></pre><p id="tfbvgl_121">这里, 委托属性 <code class="code" id="tfbvgl_143">displayName</code> 使用 <code class="code" id="tfbvgl_144">Delegate</code> 对象作为它的属性访问器.</p><p id="tfbvgl_122">你委托的每个对象 <span class="control" id="tfbvgl_145">必须</span> 有一个 <code class="code" id="tfbvgl_146">getValue()</code> 操作符函数, Kotlin 使用它来获取委托属性的值. 如果属性是可变的, 还必须有一个 <code class="code" id="tfbvgl_147">setValue()</code> 操作符函数, Kotlin 使用它来设置委托属性的值.</p><p id="tfbvgl_123">默认情况下, <code class="code" id="tfbvgl_148">getValue()</code> 和 <code class="code" id="tfbvgl_149">setValue()</code> 函数的结构如下:</p><pre><code>operator fun getValue(thisRef: Any?, property: KProperty&lt;*&gt;): String {}
+
+operator fun setValue(thisRef: Any?, property: KProperty&lt;*&gt;, value: String) {}</code></pre><p id="tfbvgl_125">在这些函数中:</p><ul class="list _bullet" id="tfbvgl_126"><li class="list__item" id="tfbvgl_150"><p id="tfbvgl_153"><code class="code" id="tfbvgl_154">operator</code> 关键字将这些函数标记为操作符函数, 允许它们覆盖 <code class="code" id="tfbvgl_155">get()</code> 和 <code class="code" id="tfbvgl_156">set()</code> 函数.</p></li><li class="list__item" id="tfbvgl_151"><p id="tfbvgl_157"><code class="code" id="tfbvgl_158">thisRef</code> 参数表示 <span class="control" id="tfbvgl_159">包含</span> 委托属性的对象. 默认情况下, 类型设置为 <code class="code" id="tfbvgl_160">Any?</code>, 但你可能需要声明更具体的类型.</p></li><li class="list__item" id="tfbvgl_152"><p id="tfbvgl_161"><code class="code" id="tfbvgl_162">property</code> 参数表示值正在被访问或被修改的那个属性. 你可以使用这个参数来获取属性信息, 例如属性的名称或类型. 默认情况下, 类型设置为 <code class="code" id="tfbvgl_163">KProperty&lt;*&gt;</code>, 但你也可以使用 <code class="code" id="tfbvgl_164">Any?</code>. 在你的代码中, 不必进行修改.</p></li></ul><p id="tfbvgl_127"><code class="code" id="tfbvgl_165">getValue()</code> 函数的返回类型默认为 <code class="code" id="tfbvgl_166">String</code>, 但如果你需要, 可以调整这个类型.</p><p id="tfbvgl_128"><code class="code" id="tfbvgl_167">setValue()</code> 函数有一个额外的参数 <code class="code" id="tfbvgl_168">value</code>, 用来保存正在赋值给属性的新值.</p><p id="tfbvgl_129">那么, 在实际运用中是什么样的呢? 假设你想要一个计算得到的属性, 例如用户的显示名称, 它只计算一次, 因为这个操作性能开销较大, 而你的应用程序对性能比较敏感. 你可以使用一个委托属性来缓存显示名称, 让它只计算一次, 但可以随时读取, 而不带来性能损失.</p><p id="tfbvgl_130">首先, 你需要创建负责委托的对象. 在这个示例中, 对象将是 <code class="code" id="tfbvgl_169">CachedStringDelegate</code> 类的一个实例:</p><pre><code>class CachedStringDelegate {
+    var cachedValue: String? = null
+}</code></pre><p id="tfbvgl_132"><code class="code" id="tfbvgl_170">cachedValue</code> 属性包含缓存的值. 在 <code class="code" id="tfbvgl_171">CachedStringDelegate</code> 类中, 将你在委托属性的 <code class="code" id="tfbvgl_172">get()</code> 函数中想要的行为, 添加到 <code class="code" id="tfbvgl_173">getValue()</code> 操作符函数的 body 部:</p><pre><code>class CachedStringDelegate {
+    var cachedValue: String? = null
+
+    operator fun getValue(thisRef: Any?, property: KProperty&lt;*&gt;): String {
+        if (cachedValue == null) {
+            cachedValue = &quot;Default Value&quot;
+            println(&quot;Computed and cached: $cachedValue&quot;)
+        } else {
+            println(&quot;Accessed from cache: $cachedValue&quot;)
+        }
+        return cachedValue ?: &quot;Unknown&quot;
+    }
+}</code></pre><p id="tfbvgl_134"><code class="code" id="tfbvgl_174">getValue()</code> 函数检查 <code class="code" id="tfbvgl_175">cachedValue</code> 属性是否为 <code class="code" id="tfbvgl_176">null</code>. 如果是, 函数将它赋值为 <code class="code" id="tfbvgl_177">&quot;Default value&quot;</code>, 并打印输出一个字符串, 作为日志. 如果 <code class="code" id="tfbvgl_178">cachedValue</code> 属性已经有了计算的值, 那么属性不为 <code class="code" id="tfbvgl_179">null</code>. 这种情况下, 并打印输出另一个字符串, 作为日志. 最后, 函数使用 Elvis 操作符, 返回缓存的值, 或者如果值为 <code class="code" id="tfbvgl_180">null</code>, 则返回 <code class="code" id="tfbvgl_181">&quot;Unknown&quot;</code>.</p><p id="tfbvgl_135">现在你可以将想要缓存的属性(<code class="code" id="tfbvgl_182">val displayName</code> )委托给 <code class="code" id="tfbvgl_183">CachedStringDelegate</code> 类的实例:</p><pre><code>import kotlin.reflect.KProperty
+
+class CachedStringDelegate {
+    var cachedValue: String? = null
+
+    operator fun getValue(thisRef: User, property: KProperty&lt;*&gt;): String {
+        if (cachedValue == null) {
+            cachedValue = &quot;${thisRef.firstName} ${thisRef.lastName}&quot;
+            println(&quot;Computed and cached: $cachedValue&quot;)
+        } else {
+            println(&quot;Accessed from cache: $cachedValue&quot;)
+        }
+        return cachedValue ?: &quot;Unknown&quot;
+    }
+}
+
+class User(val firstName: String, val lastName: String) {
+    val displayName: String by CachedStringDelegate()
+}
+
+fun main() {
+    val user = User(&quot;John&quot;, &quot;Doe&quot;)
+
+    // 第 1 次访问属性时, 计算值, 并缓存
+    println(user.displayName)
+    // 输出结果为: Computed and cached: John Doe
+    // 输出结果为: John Doe
+
+    // 后续访问属性时, 会从缓存获取值
+    println(user.displayName)
+    // 输出结果为: Accessed from cache: John Doe
+    // 输出结果为: John Doe
+}</code></pre><p id="tfbvgl_137">在这个示例中:</p><ul class="list _bullet" id="tfbvgl_138"><li class="list__item" id="tfbvgl_184"><p id="tfbvgl_188">创建一个 <code class="code" id="tfbvgl_189">User</code> 类, 它的 header 部有 2 个属性, <code class="code" id="tfbvgl_190">firstName</code>, 和 <code class="code" id="tfbvgl_191">lastName</code>, body 部有 1 个 属性, <code class="code" id="tfbvgl_192">displayName</code>.</p></li><li class="list__item" id="tfbvgl_185"><p id="tfbvgl_193">将 <code class="code" id="tfbvgl_194">displayName</code> 属性委托给 <code class="code" id="tfbvgl_195">CachedStringDelegate</code> 类的实例.</p></li><li class="list__item" id="tfbvgl_186"><p id="tfbvgl_196">创建 <code class="code" id="tfbvgl_197">User</code> 类的一个实例 <code class="code" id="tfbvgl_198">user</code>.</p></li><li class="list__item" id="tfbvgl_187"><p id="tfbvgl_199">打印输出对 <code class="code" id="tfbvgl_200">user</code> 实例访问 <code class="code" id="tfbvgl_201">displayName</code> 属性的结果.</p></li></ul><p id="tfbvgl_139">请注意, 在 <code class="code" id="tfbvgl_202">getValue()</code> 函数中, <code class="code" id="tfbvgl_203">thisRef</code> 参数的类型从 <code class="code" id="tfbvgl_204">Any?</code> 类型缩小到了对象类型: <code class="code" id="tfbvgl_205">User</code>. 这是为了让编译器能够访问 <code class="code" id="tfbvgl_206">User</code> 类的 <code class="code" id="tfbvgl_207">firstName</code> 和 <code class="code" id="tfbvgl_208">lastName</code> 属性.</p><section class="chapter"><h3 id="standard-delegates" data-toc="standard-delegates">标准委托</h3><p id="tfbvgl_209">Kotlin 标准库提供了一些有用的委托, 让你不必总是从头创建. 如果你使用这些委托, 你不需要定义 <code class="code" id="tfbvgl_212">getValue()</code> 和 <code class="code" id="tfbvgl_213">setValue()</code> 函数, 因为标准库会自动提供.</p><section class="chapter"><h4 id="lazy-properties" data-toc="lazy-properties">延迟加载(Lazy)属性</h4><p id="tfbvgl_214">为了只在初次访问时才初始化一个属性, 请使用延迟加载(Lazy)属性. 标准库为委托提供了 <code class="code" id="tfbvgl_222">Lazy</code> 接口.</p><p id="tfbvgl_215">要创建 <code class="code" id="tfbvgl_223">Lazy</code> 接口的实例, 请使用 <code class="code" id="tfbvgl_224">lazy()</code> 函数, 给它提供一个 Lambda 表达式, <code class="code" id="tfbvgl_225">get()</code> 函数第一次被调用时会执行这个 Lambda 表达式. 之后对 <code class="code" id="tfbvgl_226">get()</code> 函数的任何调用都会返回与第一次调用时提供的相同结果. 延迟加载属性使用 <a href="../functions/index.html#trailing-lambdas" id="tfbvgl_227">尾缀 Lambda 表达式(Trailing Lambda)</a> 语法来传递 Lambda 表达式.</p><p id="tfbvgl_216">例如:</p><pre><code>class Database {
+    fun connect() {
+        println(&quot;Connecting to the database...&quot;)
+    }
+
+    fun query(sql: String): List&lt;String&gt; {
+        return listOf(&quot;Data1&quot;, &quot;Data2&quot;, &quot;Data3&quot;)
+    }
+}
+
+val databaseConnection: Database by lazy {
+    val db = Database()
+    db.connect()
+    db
+}
+
+fun fetchData() {
+    val data = databaseConnection.query(&quot;SELECT * FROM data&quot;)
+    println(&quot;Data: $data&quot;)
+}
+
+fun main() {
+    // 第 1 次访问 databaseConnection
+    fetchData()
+    // 输出结果为: Connecting to the database...
+    // 输出结果为: Data: [Data1, Data2, Data3]
+
+    // 后续访问, 会使用已有的连接
+    fetchData()
+    // 输出结果为: Data: [Data1, Data2, Data3]
+}</code></pre><p id="tfbvgl_218">在这个示例中:</p><ul class="list _bullet" id="tfbvgl_219"><li class="list__item" id="tfbvgl_228"><p id="tfbvgl_234">有一个 <code class="code" id="tfbvgl_235">Database</code> 类,它有 <code class="code" id="tfbvgl_236">connect()</code> 和 <code class="code" id="tfbvgl_237">query()</code> 成员函数.</p></li><li class="list__item" id="tfbvgl_229"><p id="tfbvgl_238"><code class="code" id="tfbvgl_239">connect()</code> 函数向控制台打印输出一个字符串, <code class="code" id="tfbvgl_240">query()</code> 函数接受一个 SQL 查询, 返回一个 List.</p></li><li class="list__item" id="tfbvgl_230"><p id="tfbvgl_241">有一个 <code class="code" id="tfbvgl_242">databaseConnection</code> 属性, 它是延迟加载属性.</p></li><li class="list__item" id="tfbvgl_231"><p id="tfbvgl_243">向 <code class="code" id="tfbvgl_245">lazy()</code> 函数提供的 Lambda 表达式:</p><ul class="list _bullet" id="tfbvgl_244"><li class="list__item" id="tfbvgl_246"><p id="tfbvgl_249">创建一个 <code class="code" id="tfbvgl_250">Database</code> 类实例.</p></li><li class="list__item" id="tfbvgl_247"><p id="tfbvgl_251">对这个实例(<code class="code" id="tfbvgl_252">db</code> )调用 <code class="code" id="tfbvgl_253">connect()</code> 成员函数.</p></li><li class="list__item" id="tfbvgl_248"><p id="tfbvgl_254">返回这个实例.</p></li></ul></li><li class="list__item" id="tfbvgl_232"><p id="tfbvgl_255">有一个 <code class="code" id="tfbvgl_257">fetchData()</code> 函数:</p><ul class="list _bullet" id="tfbvgl_256"><li class="list__item" id="tfbvgl_258"><p id="tfbvgl_261">对 <code class="code" id="tfbvgl_262">databaseConnection</code> 属性调用 <code class="code" id="tfbvgl_263">query()</code> 函数, 创建一个 SQL 查询.</p></li><li class="list__item" id="tfbvgl_259"><p id="tfbvgl_264">将 SQL 查询赋值给 <code class="code" id="tfbvgl_265">data</code> 变量.</p></li><li class="list__item" id="tfbvgl_260"><p id="tfbvgl_266">将 <code class="code" id="tfbvgl_267">data</code> 变量打印输出到控制台.</p></li></ul></li><li class="list__item" id="tfbvgl_233"><p id="tfbvgl_268"><code class="code" id="tfbvgl_269">main()</code> 函数调用 the <code class="code" id="tfbvgl_270">fetchData()</code> 函数. 第 1 次被调用时, 延迟加载属性会被初始化. 第 2 次被调用时, 会返回与第 1 次调用相同的结果.</p></li></ul><p id="tfbvgl_220">延迟加载属性不仅对资源密集型的初始化有用, 而且对于你的代码中可能不会用到的属性也很有用. 此外, 延迟加载属性默认是线程安全的, 这一点对于并发环境尤其有用.</p><p id="tfbvgl_221">详情请参见 <a href="https://kotlinlang.org/docs/delegated-properties.html#lazy-properties" id="tfbvgl_271">延迟加载属性</a>.</p></section><section class="chapter"><h4 id="observable-properties" data-toc="observable-properties">可观察(Observable)属性</h4><p id="tfbvgl_272">要监测属性值的变更, 请使用可观察(Observable)属性. 可观察属性 is useful when 如果你想要监测属性值的变更, 并利用这个信息来触发某种反应, 可观察属性会很有用. 标准库提供了 <code class="code" id="tfbvgl_280">Delegates</code> 对象可以用作委托.</p><p id="tfbvgl_273">要创建一个可观察属性, 你首先要导入 <code class="code" id="tfbvgl_281">kotlin.properties.Delegates.observable</code>. 然后, 使用 <code class="code" id="tfbvgl_282">observable()</code> 函数, 并为这个函数提供一个 Lambda 表达式, 当属性发生变更时会执行这个 Lambda 表达式. 与延迟加载属性一样, 可观察属性使用 <a href="../functions/index.html#trailing-lambdas" id="tfbvgl_283">尾缀 Lambda 表达式(Trailing Lambda)</a> 语法来传递 Lambda 表达式.</p><p id="tfbvgl_274">例如:</p><pre><code>import kotlin.properties.Delegates.observable
+
+class Thermostat {
+    var temperature: Double by observable(20.0) { _, old, new -&gt;
+        if (new &gt; 25) {
+            println(&quot;Warning: Temperature is too high! ($old°C -&gt; $new°C)&quot;)
+        } else {
+            println(&quot;Temperature updated: $old°C -&gt; $new°C&quot;)
+        }
+    }
+}
+
+fun main() {
+    val thermostat = Thermostat()
+    thermostat.temperature = 22.5
+    // 输出结果为: Temperature updated: 20.0°C -&gt; 22.5°C
+
+    thermostat.temperature = 27.0
+    // 输出结果为: Warning: Temperature is too high! (22.5°C -&gt; 27.0°C)
+}</code></pre><p id="tfbvgl_276">在这个示例中:</p><ul class="list _bullet" id="tfbvgl_277"><li class="list__item" id="tfbvgl_284"><p id="tfbvgl_288">有一个 <code class="code" id="tfbvgl_289">Thermostat</code> 类, 包含一个可观察属性: <code class="code" id="tfbvgl_290">temperature</code>.</p></li><li class="list__item" id="tfbvgl_285"><p id="tfbvgl_291"><code class="code" id="tfbvgl_292">observable()</code> 函数接受参数 <code class="code" id="tfbvgl_293">20.0</code>, 并将使用它来初始化属性.</p></li><li class="list__item" id="tfbvgl_286"><p id="tfbvgl_294">提供给 <code class="code" id="tfbvgl_296">observable()</code> 函数的 Lambda 表达式:</p><ul class="list _bullet" id="tfbvgl_295"><li class="list__item" id="tfbvgl_297"><p id="tfbvgl_299">有 3 个参数:</p><ul class="list _bullet" id="tfbvgl_300"><li class="list__item" id="tfbvgl_301"><p id="tfbvgl_304"><code class="code" id="tfbvgl_305">_</code>, 表示属性本身.</p></li><li class="list__item" id="tfbvgl_302"><p id="tfbvgl_306"><code class="code" id="tfbvgl_307">old</code>, 表示属性的旧值.</p></li><li class="list__item" id="tfbvgl_303"><p id="tfbvgl_308"><code class="code" id="tfbvgl_309">new</code>, 表示属性的新值.</p></li></ul></li><li class="list__item" id="tfbvgl_298"><p id="tfbvgl_310">检查 <code class="code" id="tfbvgl_311">new</code> 参数是否大于 <code class="code" id="tfbvgl_312">25</code>, 根据检查结果, 向控制台打印输出一个字符串.</p></li></ul></li><li class="list__item" id="tfbvgl_287"><p id="tfbvgl_313"><code class="code" id="tfbvgl_315">main()</code> 函数:</p><ul class="list _bullet" id="tfbvgl_314"><li class="list__item" id="tfbvgl_316"><p id="tfbvgl_319">创建 <code class="code" id="tfbvgl_320">Thermostat</code> 类的一个实例 <code class="code" id="tfbvgl_321">thermostat</code>.</p></li><li class="list__item" id="tfbvgl_317"><p id="tfbvgl_322">将实例的 <code class="code" id="tfbvgl_323">temperature</code> 属性值更新到 <code class="code" id="tfbvgl_324">22.5</code>, 这时会触发温度更新信息的打印输出语句.</p></li><li class="list__item" id="tfbvgl_318"><p id="tfbvgl_325">将实例的 <code class="code" id="tfbvgl_326">temperature</code> 属性值更新到 <code class="code" id="tfbvgl_327">27.0</code>, 这时会触发警告信息的打印输出语句.</p></li></ul></li></ul><p id="tfbvgl_278">可观察属性不仅可用于日志输出和调试目的. 还可以用于其它使用场景, 例如UI 更新, 或执行额外检查, 例如验证数据有效性.</p><p id="tfbvgl_279">详情请参见 <a href="https://kotlinlang.org/docs/delegated-properties.html#observable-properties" id="tfbvgl_328">可观察属性</a>.</p></section></section></section><section class="chapter"><h2 id="practice" data-toc="practice">实际练习</h2><section class="chapter"><div class="collapse"><div class="collapse__title"><h3 id="properties-exercise-1" data-toc="properties-exercise-1">习题 1</h3></div><div class="collapse__content"><p id="tfbvgl_333">你管理着一家书店的库存系统. 库存信息保存在一个 List 中, 其中的每个元素表示某种书的数量. 例如, <code class="code" id="tfbvgl_343">listOf(3, 0, 7, 12)</code> 表示书店中第 1 种书有 3 份, 第 2 种书有 0 份, 第 3 种书有 7 份, 第 4 种书有 12 份.</p><p id="tfbvgl_334">请编写一个函数 <code class="code" id="tfbvgl_344">findOutOfStockBooks()</code>, 返回一个 List, 其中包含所有缺货书籍的索引.</p><dl id="tfbvgl_335" data-style="title-top"><dt id="tfbvgl_345" data-expandable="true" data-expanded="false">提示 1</dt><dd><p>使用标准库中的 <a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.collections/indices.html" id="tfbvgl_346" data-external="true" rel="noopener noreferrer"><code class="code" id="tfbvgl_347">indices</code></a> 扩展属性.</p></dd></dl><dl id="tfbvgl_336" data-style="title-top"><dt id="tfbvgl_348" data-expandable="true" data-expanded="false">提示 2</dt><dd><p>你可以使用 <a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.collections/build-list.html" id="tfbvgl_349" data-external="true" rel="noopener noreferrer"><code class="code" id="tfbvgl_351">buildList()</code></a> 函数来创建和管理 List, 而不是手动的创建并返回一个可变的 List. <code class="code" id="tfbvgl_350">buildList()</code> 函数使用一个带接受者的 Lambda 表达式, 你在前面的章节中已经学过.</p></dd></dl><pre><code>fun findOutOfStockBooks(inventory: List&lt;Int&gt;): List&lt;Int&gt; {
+    // 请在这里编写你的代码
+}
+
+fun main() {
+    val inventory = listOf(3, 0, 7, 0, 5)
+    println(findOutOfStockBooks(inventory))
+    // 输出结果为: [1, 3]
+}</code></pre><details class="solution"><summary>参考答案 1</summary><pre><code>fun findOutOfStockBooks(inventory: List&lt;Int&gt;): List&lt;Int&gt; {
+    val outOfStockIndices = mutableListOf&lt;Int&gt;()
+    for (index in inventory.indices) {
+        if (inventory[index] == 0) {
+            outOfStockIndices.add(index)
+        }
+    }
+    return outOfStockIndices
+}
+
+fun main() {
+    val inventory = listOf(3, 0, 7, 0, 5)
+    println(findOutOfStockBooks(inventory))
+    // 输出结果为: [1, 3]
+}</code></pre></details><details class="solution"><summary>参考答案 2</summary><pre><code>fun findOutOfStockBooks(inventory: List&lt;Int&gt;): List&lt;Int&gt; = buildList {
+    for (index in inventory.indices) {
+        if (inventory[index] == 0) {
+            add(index)
+        }
+    }
+}
+
+fun main() {
+    val inventory = listOf(3, 0, 7, 0, 5)
+    println(findOutOfStockBooks(inventory))
+    // 输出结果为: [1, 3]
+}</code></pre></details></div></div></section><section class="chapter"><div class="collapse"><div class="collapse__title"><h3 id="properties-exercise-2" data-toc="properties-exercise-2">习题 2</h3></div><div class="collapse__content"><p id="tfbvgl_352">你有一个旅行 App, 需要以公里和英里为单位显示距离. 请为 <code class="code" id="tfbvgl_359">Double</code> 类型创建一个扩展属性 <code class="code" id="tfbvgl_360">asMiles</code>, 将距离从公里转换为英里:</p><aside class="prompt" data-type="note" data-title="" id="tfbvgl_353"><p id="tfbvgl_361">从公里转换为英里的公式是 <code class="code" id="tfbvgl_362">miles = kilometers * 0.621371</code>.</p></aside><dl id="tfbvgl_354" data-style="title-top"><dt id="tfbvgl_363" data-expandable="true" data-expanded="false">提示</dt><dd><p>请记住, 扩展属性需要自定义的 <code class="code" id="tfbvgl_364">get()</code> 函数.</p></dd></dl><pre><code>val // 请在这里编写你的代码
+
+fun main() {
+    val distanceKm = 5.0
+    println(&quot;$distanceKm km is ${distanceKm.asMiles} miles&quot;)
+    // 输出结果为: 5.0 km is 3.106855 miles
+
+    val marathonDistance = 42.195
+    println(&quot;$marathonDistance km is ${marathonDistance.asMiles} miles&quot;)
+    // 输出结果为: 42.195 km is 26.218757 miles
+}</code></pre><details class="solution"><summary>参考答案</summary><pre><code>val Double.asMiles: Double
+    get() = this * 0.621371
+
+fun main() {
+    val distanceKm = 5.0
+    println(&quot;$distanceKm km is ${distanceKm.asMiles} miles&quot;)
+    // 输出结果为: 5.0 km is 3.106855 miles
+
+    val marathonDistance = 42.195
+    println(&quot;$marathonDistance km is ${marathonDistance.asMiles} miles&quot;)
+    // 输出结果为: 42.195 km is 26.218757 miles
+}</code></pre></details></div></div></section><section class="chapter"><div class="collapse"><div class="collapse__title"><h3 id="properties-exercise-3" data-toc="properties-exercise-3">习题 3</h3></div><div class="collapse__content"><p id="tfbvgl_365">你有一个系统健康状况检查器, 能够检查云系统的状态. 它有 2 个函数用来执行健康状况检查, 但是这 2 个函数会消耗大量性能. 请使用延迟加载属性来初始化这些检查, 让这些性能消耗巨大的函数只在需要是运行:</p><pre><code>fun checkAppServer(): Boolean {
+    println(&quot;Performing application server health check...&quot;)
+    return true
+}
+
+fun checkDatabase(): Boolean {
+    println(&quot;Performing database health check...&quot;)
+    return false
+}
+
+fun main() {
+    // 请在这里编写你的代码
+
+    when {
+        isAppServerHealthy -&gt; println(&quot;Application server is online and healthy&quot;)
+        isDatabaseHealthy -&gt; println(&quot;Database is healthy&quot;)
+        else -&gt; println(&quot;System is offline&quot;)
+    }
+    // 输出结果为: Performing application server health check...
+    // 输出结果为: Application server is online and healthy
+}</code></pre><details class="solution"><summary>参考答案</summary><pre><code>fun checkAppServer(): Boolean {
+    println(&quot;Performing application server health check...&quot;)
+    return true
+}
+
+fun checkDatabase(): Boolean {
+    println(&quot;Performing database health check...&quot;)
+    return false
+}
+
+fun main() {
+    val isAppServerHealthy by lazy { checkAppServer() }
+    val isDatabaseHealthy by lazy { checkDatabase() }
+
+    when {
+        isAppServerHealthy -&gt; println(&quot;Application server is online and healthy&quot;)
+        isDatabaseHealthy -&gt; println(&quot;Database is healthy&quot;)
+        else -&gt; println(&quot;System is offline&quot;)
+    }
+   // 输出结果为: Performing application server health check...
+   // 输出结果为: Application server is online and healthy
+}</code></pre></details></div></div></section><section class="chapter"><div class="collapse"><div class="collapse__title"><h3 id="properties-exercise-4" data-toc="properties-exercise-4">习题 4</h3></div><div class="collapse__content"><p id="tfbvgl_370">你正在构建一个简单的预算追踪 App. App 需要监测用户预算余额的变化, 并在余额低于某个阈值时通知用户. 你有一个 <code class="code" id="tfbvgl_376">Budget</code> 类, 使用 <code class="code" id="tfbvgl_377">totalBudget</code> 属性初始化, 这个属性包含预算初始金额. 请在这个类中创建一个可观察属性 <code class="code" id="tfbvgl_378">remainingBudget</code>, 它需要:</p><ul class="list _bullet" id="tfbvgl_371"><li class="list__item" id="tfbvgl_379"><p id="tfbvgl_381">当余额低于预算初始金额的 20% 时, 打印输出一个警告信息.</p></li><li class="list__item" id="tfbvgl_380"><p id="tfbvgl_382">当预算高于前一个值时, 打印输出一个鼓励信息.</p></li></ul><pre><code>import kotlin.properties.Delegates.observable
+
+class Budget(val totalBudget: Int) {
+    var remainingBudget: Int // 请在这里编写你的代码
+}
+
+fun main() {
+    val myBudget = Budget(totalBudget = 1000)
+    myBudget.remainingBudget = 800
+    myBudget.remainingBudget = 150
+    // 输出结果为: Warning: Your remaining budget (150) is below 20% of your total budget.
+    myBudget.remainingBudget = 50
+    // 输出结果为: Warning: Your remaining budget (50) is below 20% of your total budget.
+    myBudget.remainingBudget = 300
+    // 输出结果为: Good news: Your remaining budget increased to 300.
+}</code></pre><details class="solution"><summary>参考答案</summary><pre><code>import kotlin.properties.Delegates.observable
+
+class Budget(val totalBudget: Int) {
+    var remainingBudget: Int by observable(totalBudget) { _, oldValue, newValue -&gt;
+        if (newValue &lt; totalBudget * 0.2) {
+            println(&quot;Warning: Your remaining budget ($newValue) is below 20% of your total budget.&quot;)
+        } else if (newValue &gt; oldValue) {
+            println(&quot;Good news: Your remaining budget increased to $newValue.&quot;)
+        }
+    }
+}
+
+fun main() {
+    val myBudget = Budget(totalBudget = 1000)
+    myBudget.remainingBudget = 800
+    myBudget.remainingBudget = 150
+    // 输出结果为: Warning: Your remaining budget (150) is below 20% of your total budget.
+    myBudget.remainingBudget = 50
+    // 输出结果为: Warning: Your remaining budget (50) is below 20% of your total budget.
+    myBudget.remainingBudget = 300
+    // 输出结果为: Good news: Your remaining budget increased to 300.
+}</code></pre></details></div></div></section></section><section class="chapter"><h2 id="next-step" data-toc="next-step">下一步</h2><p id="tfbvgl_383"><a href="../advanced-null-safety/index.html" id="tfbvgl_384">中级教程: Null 值安全性</a></p></section>
+    </article>
+    <section class="recall" aria-labelledby="recall-title">
+      <span class="note-kind">读完自测</span>
+      <h2 id="recall-title">先不看正文，回答这三个问题</h2>
+      <ol><li>field 关键字在什么位置可用？</li><li>扩展属性为什么不能拥有幕后字段？</li><li>lazy 与 observable 委托分别适合什么场景？</li></ol>
+      <p class="transfer"><strong>迁移练习：</strong>从你正在读的一段 Kotlin 代码里，找出本章概念的一个真实用法；用一句话解释它为什么这样写。</p>
+    </section>
+    <nav class="chapter-switcher" aria-label="章节导航">
+    <a href="../open-and-special-classes/index.html">← 开放类与特殊类</a>
+    <a class="course-home" href="../index.html">全部章节</a>
+    <a href="../advanced-null-safety/index.html">进阶空安全 →</a>
+  </nav>
+    <footer class="license-note">
+      <p>这是用于个人学习的非官方中文阅读版。正文依据 <a href="https://kotlinlang.org/docs/kotlin-tour-intermediate-properties.html">Kotlin 官方文档</a>整理，并参考公开中文译文对照整理；原始内容由 JetBrains 与 Kotlin 贡献者维护，采用 <a href="https://github.com/JetBrains/kotlin-web-site/blob/master/LICENSE">Apache License 2.0</a>。</p>
+    </footer>
+  </main>
+</body>
+</html>

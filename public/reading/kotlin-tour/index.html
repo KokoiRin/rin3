@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Kotlin 官方 Tour 初学者与中级共 16 章中文学习阅读器，保留代码、练习和参考答案。">
+  <title>Kotlin Tour 中文学习版｜RIN III</title>
+  <link rel="stylesheet" href="./reader.css">
+</head>
+<body>
+  <nav class="site-nav" aria-label="站点导航">
+    <a href="../../computer-science/kotlin-tour/">← 返回 RIN III 学习记录</a>
+    <a href="https://kotlinlang.org/docs/kotlin-tour-welcome.html">Kotlin 官方原文</a>
+  </nav>
+  <main class="course-shell">
+    <header class="course-hero">
+      <span class="chapter-kicker">KOTLIN TOUR · 中文学习版</span>
+      <h1>从第一行 Kotlin，走到能读懂语言设计</h1>
+      <p class="lead">完整收录官方 Tour 的初学者 7 章与中级 9 章。正文、代码、练习和参考答案都保留；每章另加一条学习主线、三道回忆题和一个迁移练习。</p>
+      <div class="course-stats"><span><strong>16</strong> 章</span><span><strong>7</strong> 初学者</span><span><strong>9</strong> 中级</span></div>
+    </header>
+    <section class="how-to-study">
+      <h2>怎么用这套网页</h2>
+      <ol><li>先读“学习主线”，知道这一章要解决什么问题。</li><li>正文中的代码自己敲一遍，练习先独立完成，再展开答案。</li><li>合上正文回答三道自测题，再去真实项目里找一个对应用法。</li></ol>
+    </section>
+    <section class="course-phase">
+      <div class="phase-heading"><span>BEGINNER</span><h2>初学者</h2><p>先建立语法骨架：值、类型、集合、分支、函数、对象与空值。</p></div>
+      <div class="chapter-grid"><a class="chapter-card" href="./hello-world/index.html">
+      <span class="chapter-number">01</span>
+      <span><strong>Hello world 与变量</strong><small>从程序入口、val 与 var 开始，学会把值放进变量，再用字符串模板把结果表达出来。</small></span>
+    </a>
+<a class="chapter-card" href="./basic-types/index.html">
+      <span class="chapter-number">02</span>
+      <span><strong>基本类型</strong><small>理解类型推断、显式类型声明，以及整数、浮点数、布尔值、字符和字符串。</small></span>
+    </a>
+<a class="chapter-card" href="./collections/index.html">
+      <span class="chapter-number">03</span>
+      <span><strong>集合</strong><small>用 List、Set 与 Map 组织一组值，并分清只读视图与可变集合。</small></span>
+    </a>
+<a class="chapter-card" href="./control-flow/index.html">
+      <span class="chapter-number">04</span>
+      <span><strong>控制流</strong><small>通过 if、when、区间和循环，让程序根据条件选择路线并重复执行。</small></span>
+    </a>
+<a class="chapter-card" href="./functions/index.html">
+      <span class="chapter-number">05</span>
+      <span><strong>函数</strong><small>学习参数、返回值、默认参数、命名参数，以及把行为当作值传递的 lambda。</small></span>
+    </a>
+<a class="chapter-card" href="./classes/index.html">
+      <span class="chapter-number">06</span>
+      <span><strong>类</strong><small>用类把数据与行为放在一起，并通过 data class 获得常用的数据对象能力。</small></span>
+    </a>
+<a class="chapter-card" href="./null-safety/index.html">
+      <span class="chapter-number">07</span>
+      <span><strong>空安全</strong><small>把“可能没有值”写进类型，并用空值检查、安全调用和 Elvis 运算符处理它。</small></span>
+    </a></div>
+    </section>
+    <section class="course-phase">
+      <div class="phase-heading"><span>INTERMEDIATE</span><h2>中级</h2><p>再理解 Kotlin 怎样组织上下文、扩展行为、抽象类型并控制不确定性。</p></div>
+      <div class="chapter-grid"><a class="chapter-card" href="./extension-functions/index.html">
+      <span class="chapter-number">01</span>
+      <span><strong>扩展函数</strong><small>在不修改原类的前提下，为类型补充可以像成员函数一样调用的新能力。</small></span>
+    </a>
+<a class="chapter-card" href="./scope-functions/index.html">
+      <span class="chapter-number">02</span>
+      <span><strong>作用域函数</strong><small>分清 let、apply、run、also 与 with 如何引用上下文对象、返回什么结果。</small></span>
+    </a>
+<a class="chapter-card" href="./lambdas-with-receiver/index.html">
+      <span class="chapter-number">03</span>
+      <span><strong>带接收者的 lambda</strong><small>让 lambda 在某个对象的上下文中执行，为构建器和领域专用语言打下基础。</small></span>
+    </a>
+<a class="chapter-card" href="./classes-and-interfaces/index.html">
+      <span class="chapter-number">04</span>
+      <span><strong>类与接口</strong><small>理解继承、抽象类、接口实现与类委托，建立可替换的行为边界。</small></span>
+    </a>
+<a class="chapter-card" href="./objects/index.html">
+      <span class="chapter-number">05</span>
+      <span><strong>对象</strong><small>使用对象声明、数据对象与伴生对象表达单例和与类型相关的共享能力。</small></span>
+    </a>
+<a class="chapter-card" href="./open-and-special-classes/index.html">
+      <span class="chapter-number">06</span>
+      <span><strong>开放类与特殊类</strong><small>通过 open、sealed、enum 与 value class 控制继承范围并表达有限状态和值语义。</small></span>
+    </a>
+<a class="chapter-card" href="./properties/index.html">
+      <span class="chapter-number">07</span>
+      <span><strong>属性</strong><small>理解幕后字段、扩展属性与委托属性，控制值如何计算、保存和观察。</small></span>
+    </a>
+<a class="chapter-card" href="./advanced-null-safety/index.html">
+      <span class="chapter-number">08</span>
+      <span><strong>进阶空安全</strong><small>结合智能转换、安全类型转换、集合处理与提前返回，缩短可空值的影响范围。</small></span>
+    </a>
+<a class="chapter-card" href="./libraries-and-apis/index.html">
+      <span class="chapter-number">09</span>
+      <span><strong>库与 API</strong><small>认识标准库、第三方库、API 稳定性与 opt-in，学会先查找再自己实现。</small></span>
+    </a></div>
+    </section>
+    <footer class="license-note">
+      <p>非官方中文学习版。课程结构与正文来自 <a href="https://kotlinlang.org/docs/kotlin-tour-welcome.html">Kotlin 官方 Tour</a>；Kotlin 官方允许翻译并在自己的网站发布，原始内容采用 <a href="https://github.com/JetBrains/kotlin-web-site/blob/master/LICENSE">Apache License 2.0</a>。本地版本不会替代官方文档，遇到版本差异以官方原文为准。</p>
+    </footer>
+  </main>
+</body>
+</html>

@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="用类把数据与行为放在一起，并通过 data class 获得常用的数据对象能力。">
+  <title>类｜RIN III</title>
+  <link rel="stylesheet" href="../reader.css">
+</head>
+<body>
+  <nav class="site-nav" aria-label="站点导航">
+    <a href="../index.html">← Kotlin Tour 中文学习版</a>
+    <a href="../../../computer-science/kotlin-tour/">RIN III 学习记录</a>
+  </nav>
+  <main class="reader">
+    <header class="chapter-header">
+      <span class="chapter-kicker">初学者 · 第 6 章</span>
+      <h1>类</h1>
+      <p class="lead">用类把数据与行为放在一起，并通过 data class 获得常用的数据对象能力。</p>
+      <div class="title-rule"></div>
+      <aside class="learning-note" aria-label="学习主线">
+        <strong>学习主线</strong>
+        <p>普通类表达拥有状态与行为的对象；data class 更适合以数据为主的值。</p>
+      </aside>
+      <nav class="chapter-switcher" aria-label="章节导航">
+    <a href="../functions/index.html">← 函数</a>
+    <a class="course-home" href="../index.html">全部章节</a>
+    <a href="../null-safety/index.html">空安全 →</a>
+  </nav>
+    </header>
+    <article class="translated-article">
+<p id="-w2sx6i_3">Kotlin 通过类和对象支持面向对象的编程. 要在你的程序中存储数据, 对象是非常有用的. 类允许你为一个对象声明一组特性. 当你从一个类创建对象时, 你就可以节省时间和精力, 因为你不需要每次都声明这些特性.</p><p id="-w2sx6i_4">要声明一个类, 请使用 <code class="code" id="-w2sx6i_34">class</code> 关键字:</p><pre><code>class Customer</code></pre><section class="chapter"><h2 id="-w2sx6i_6" data-toc="-w2sx6i_6">属性</h2><p id="-w2sx6i_35">可以在属性中声明一个类的对象的特性. 你可以为一个类声明属性:</p><ul class="list _bullet" id="-w2sx6i_36"><li class="list__item" id="-w2sx6i_45"><p id="-w2sx6i_46">放在类的名称之后的小括号 <code class="code" id="-w2sx6i_47">()</code> 之内.</p></li></ul><pre><code>class Contact(val id: Int, var email: String)</code></pre><ul class="list _bullet" id="-w2sx6i_38"><li class="list__item" id="-w2sx6i_48"><p id="-w2sx6i_49">放在大括号 <code class="code" id="-w2sx6i_50">{}</code> 定义的类的 body 部之内.</p></li></ul><pre><code>class Contact(val id: Int, var email: String) {
+    val category: String = &quot;&quot;
+}</code></pre><p id="-w2sx6i_40">除非在类的实例创建之后需要修改属性的值, 否则我们推荐将属性声明为只读的 (<code class="code" id="-w2sx6i_51">val</code>).</p><p id="-w2sx6i_41">在小括号内声明属性时, 你可以不使用 <code class="code" id="-w2sx6i_52">val</code> 或 <code class="code" id="-w2sx6i_53">var</code>, 但在实例创建之后, 这样的属性将不可访问.</p><aside class="prompt" data-type="note" data-title="" id="-w2sx6i_42"><ul class="list _bullet" id="-w2sx6i_54"><li class="list__item" id="-w2sx6i_55"><p id="-w2sx6i_57">包含在小括号 <code class="code" id="-w2sx6i_58">()</code> 之内的内容称为 <span class="control" id="-w2sx6i_59">类头部(Class Header)</span>.</p></li><li class="list__item" id="-w2sx6i_56"><p id="-w2sx6i_60">声明类的属性时, 你可以使用 <a href="https://kotlinlang.org/docs/coding-conventions.html#trailing-commas" id="-w2sx6i_61">尾随逗号(Trailing Comma)</a>.</p></li></ul></aside><p id="-w2sx6i_43">和函数参数一样, 类的属性可以有默认值:</p><pre><code>class Contact(val id: Int, var email: String = &quot;example@gmail.com&quot;) {
+    val category: String = &quot;work&quot;
+}</code></pre></section><section class="chapter"><h2 id="-w2sx6i_7" data-toc="-w2sx6i_7">创建实例</h2><p id="-w2sx6i_62">要从一个类创建一个对象, 你需要使用 <span class="control" id="-w2sx6i_69">构造器(Constructor)</span>, 声明一个类的 <span class="control" id="-w2sx6i_70">实例</span>.</p><p id="-w2sx6i_63">默认情况下, Kotlin 会使用类头部(Class Header)中声明的参数, 自动创建一个构造器.</p><p id="-w2sx6i_64">例如:</p><pre><code>class Contact(val id: Int, var email: String)
+
+fun main() {
+    val contact = Contact(1, &quot;mary@gmail.com&quot;)
+}</code></pre><p id="-w2sx6i_66">在上面的示例中:</p><ul class="list _bullet" id="-w2sx6i_67"><li class="list__item" id="-w2sx6i_71"><p id="-w2sx6i_75"><code class="code" id="-w2sx6i_76">Contact</code> 是一个类.</p></li><li class="list__item" id="-w2sx6i_72"><p id="-w2sx6i_77"><code class="code" id="-w2sx6i_78">contact</code> 是 <code class="code" id="-w2sx6i_79">Contact</code> 类的一个实例.</p></li><li class="list__item" id="-w2sx6i_73"><p id="-w2sx6i_80"><code class="code" id="-w2sx6i_81">id</code> 和 <code class="code" id="-w2sx6i_82">email</code> 是属性.</p></li><li class="list__item" id="-w2sx6i_74"><p id="-w2sx6i_83"><code class="code" id="-w2sx6i_84">id</code> 和 <code class="code" id="-w2sx6i_85">email</code> 和默认构造器一起, 用来创建 <code class="code" id="-w2sx6i_86">contact</code>.</p></li></ul><p id="-w2sx6i_68">Kotlin 类可以有多个构造器, 包括你自己定义的构造器. 关于如何声明多个构造器, 详情请参见 <a href="https://kotlinlang.org/docs/classes.html#constructors-and-initializer-blocks" id="-w2sx6i_87">构造器</a>.</p></section><section class="chapter"><h2 id="-w2sx6i_8" data-toc="-w2sx6i_8">访问属性</h2><p id="-w2sx6i_88">要访问一个实例的属性, 请在实例名称之后加上点号 <code class="code" id="-w2sx6i_91">.</code>, 然后写上属性名称:</p><pre><code>class Contact(val id: Int, var email: String)
+
+fun main() {
+    val contact = Contact(1, &quot;mary@gmail.com&quot;)
+
+    // 打印属性的值: email
+    println(contact.email)
+    // mary@gmail.com
+
+    // 更新属性的值: email
+    contact.email = &quot;jane@gmail.com&quot;
+
+    // 打印属性的新值: email
+    println(contact.email)
+    // 输出结果为 jane@gmail.com
+}</code></pre><aside class="prompt" data-type="tip" data-title="" id="-w2sx6i_90"><p id="-w2sx6i_92">要把属性的值拼接为字符串的一部分, 你可以使用字符串模板 (<code class="code" id="-w2sx6i_94">$</code>). 例如:</p><pre><code>println(&quot;Their email address is: ${contact.email}&quot;)</code></pre></aside></section><section class="chapter"><h2 id="-w2sx6i_9" data-toc="-w2sx6i_9">成员函数</h2><p id="-w2sx6i_95">除了声明属性作为一个对象的特性之外, 你还可以通过成员函数来定义一个对象的行为.</p><p id="-w2sx6i_96">在 Kotlin 中, 成员函数必须在类的 body 部之内声明. 要调用一个实例上的成员函数, 请在实例名称之后加上点号 <code class="code" id="-w2sx6i_98">.</code>, 然后写上函数名称. 例如:</p><pre><code>class Contact(val id: Int, var email: String) {
+    fun printId() {
+        println(id)
+    }
+}
+
+fun main() {
+    val contact = Contact(1, &quot;mary@gmail.com&quot;)
+    // 调用成员函数 printId()
+    contact.printId()
+    // 输出结果为 1
+}</code></pre></section><section class="chapter"><h2 id="-w2sx6i_10" data-toc="-w2sx6i_10">数据类</h2><p id="-w2sx6i_99">Kotlin 有 <span class="control" id="-w2sx6i_109">数据类(Data Class)</span>, 非常适合于存储数据. 数据类有和普通类一样的功能, 但它们还自动带有一些额外的成员函数. 这些成员函数可以将实例打印为易于阅读的字符串输出, 比较类的实例, 复制实例, 等等等等. 由于这些函数是自动存在的, 因此你不必耗费时间为每个类编写相同的样板代码(Boilerplate Code).</p><p id="-w2sx6i_100">要声明一个数据类, 请使用关键字 <code class="code" id="-w2sx6i_110">data</code>:</p><pre><code>data class User(val name: String, val id: Int)</code></pre><p id="-w2sx6i_102">数据类的预先定义的成员函数中, 最有用的是:</p><div class="table-wrapper"><table class="wide" id="-w2sx6i_103"><thead><tr class="ijRowHead" id="-w2sx6i_111"><th id="-w2sx6i_115"><p><span class="control" id="-w2sx6i_117">函数</span></p></th><th id="-w2sx6i_116"><p><span class="control" id="-w2sx6i_118">描述</span></p></th></tr></thead><tbody><tr id="-w2sx6i_112"><td id="-w2sx6i_119"><p><code class="code" id="-w2sx6i_121">toString()</code></p></td><td id="-w2sx6i_120"><p>将类实例和它的属性打印为一个易于阅读的字符串.</p></td></tr><tr id="-w2sx6i_113"><td id="-w2sx6i_122"><p><code class="code" id="-w2sx6i_124">equals()</code> 或 <code class="code" id="-w2sx6i_125">==</code></p></td><td id="-w2sx6i_123"><p>比较一个类的实例.</p></td></tr><tr id="-w2sx6i_114"><td id="-w2sx6i_126"><p><code class="code" id="-w2sx6i_128">copy()</code></p></td><td id="-w2sx6i_127"><p>创建一个类的实例, 从另一个实例复制, 一部分属性可以不同.</p></td></tr></tbody></table></div><p id="-w2sx6i_104">关于这些函数的使用示例, 请参见以下小节:</p><ul class="list _bullet" id="-w2sx6i_105"><li class="list__item" id="-w2sx6i_129"><p id="-w2sx6i_132"><a href="#print-as-string" id="-w2sx6i_133">打印为字符串</a></p></li><li class="list__item" id="-w2sx6i_130"><p id="-w2sx6i_134"><a href="#compare-instances" id="-w2sx6i_135">比较实例</a></p></li><li class="list__item" id="-w2sx6i_131"><p id="-w2sx6i_136"><a href="#copy-instance" id="-w2sx6i_137">复制实例</a></p></li></ul><section class="chapter"><h3 id="print-as-string" data-toc="print-as-string">打印为字符串</h3><p id="-w2sx6i_138">要将一个类的实例打印为易于阅读的字符串, 你可以明确调用 <code class="code" id="-w2sx6i_141">toString()</code> 函数, 或使用打印函数(<code class="code" id="-w2sx6i_142">println()</code> 和 <code class="code" id="-w2sx6i_143">print()</code>), 这些函数会自动为你调用 <code class="code" id="-w2sx6i_144">toString()</code>:</p><pre><code>data class User(val name: String, val id: Int)
+
+fun main() {
+    //sampleStart
+    val user = User(&quot;Alex&quot;, 1)
+
+    // 自动使用 toString() 函数, 让输出结果易于阅读
+    println(user)
+    // 输出结果为 User(name=Alex, id=1)
+    //sampleEnd
+}</code></pre><p id="-w2sx6i_140">这个功能在调试程序或创建 log 时, 非常有用.</p></section><section class="chapter"><h3 id="compare-instances" data-toc="compare-instances">比较实例</h3><p id="-w2sx6i_145">要比较数据类的实例, 请使用相等比较操作符 <code class="code" id="-w2sx6i_147">==</code>:</p><pre><code>data class User(val name: String, val id: Int)
+
+fun main() {
+    //sampleStart
+    val user = User(&quot;Alex&quot;, 1)
+    val secondUser = User(&quot;Alex&quot;, 1)
+    val thirdUser = User(&quot;Max&quot;, 2)
+
+    // 比较 user 和 second user
+    println(&quot;user == secondUser: ${user == secondUser}&quot;)
+    // 输出结果为 user == secondUser: true
+
+    // 比较 user 和 third user
+    println(&quot;user == thirdUser: ${user == thirdUser}&quot;)
+    // 输出结果为 user == thirdUser: false
+    //sampleEnd
+}</code></pre></section><section class="chapter"><h3 id="copy-instance" data-toc="copy-instance">复制实例</h3><p id="-w2sx6i_148">要对一个数据类的实例创建一个完全相同的复制, 请对这个实例调用 <code class="code" id="-w2sx6i_155">copy()</code> 函数.</p><p id="-w2sx6i_149">要对一个数据类的实例创建一个复制, <span class="control" id="-w2sx6i_156">并且</span> 改变一部分属性, 请对这个实例调用 <code class="code" id="-w2sx6i_157">copy()</code> 函数, <span class="control" id="-w2sx6i_158">并</span> 加上要替换的属性值, 作为函数的参数.</p><p id="-w2sx6i_150">例如:</p><pre><code>data class User(val name: String, val id: Int)
+
+fun main() {
+    //sampleStart
+    val user = User(&quot;Alex&quot;, 1)
+
+    // 创建 user 的完全相同的复制
+    println(user.copy())
+    // 输出结果为 User(name=Alex, id=1)
+
+    // 创建 user 的复制, 但使用另一个 name: &quot;Max&quot;
+    println(user.copy(&quot;Max&quot;))
+    // 输出结果为 User(name=Max, id=1)
+
+    // 创建 user 的复制, 但使用另一个 id: 3
+    println(user.copy(id = 3))
+    // 输出结果为 User(name=Alex, id=3)
+    //sampleEnd
+}</code></pre><p id="-w2sx6i_152">创建一个实例的复制, 要比修改原来的实例更加安全, 因为你对复制品所做的任何操作, 不会影响到依赖于原来那个实例的其他代码.</p><p id="-w2sx6i_153">关于数据类, 更多详情请参见 <a href="https://kotlinlang.org/docs/data-classes.html" id="-w2sx6i_159">数据类</a>.</p><p id="-w2sx6i_154">本教程的最后一章是介绍 Kotlin 的 <a href="../null-safety/index.html" id="-w2sx6i_160">Null 值安全性</a>.</p></section></section><section class="chapter"><h2 id="-w2sx6i_11" data-toc="-w2sx6i_11">实际练习</h2><section class="chapter"><div class="collapse"><div class="collapse__title"><h3 id="1" data-toc="1">习题 1</h3></div><div class="collapse__content"><p id="-w2sx6i_164">定义一个数据类 <code class="code" id="-w2sx6i_169">Employee</code>, 带有两个属性: 一个是姓名, 一个是工资. 请确保工资的属性是可变的, 否则你在年底就不可能涨工资了! 主函数演示你如何使用这个数据类.</p><pre><code>// 在这里编写你的代码
+
+fun main() {
+    val emp = Employee(&quot;Mary&quot;, 20)
+    println(emp)
+    emp.salary += 10
+    println(emp)
+}</code></pre><details class="solution"><summary>参考答案</summary><pre><code>data class Employee(val name: String, var salary: Int)
+
+fun main() {
+    val emp = Employee(&quot;Mary&quot;, 20)
+    println(emp)
+    emp.salary += 10
+    println(emp)
+}</code></pre></details></div></div></section><section class="chapter"><div class="collapse"><div class="collapse__title"><h3 id="2" data-toc="2">习题 2</h3></div><div class="collapse__content"><p id="-w2sx6i_170">为了让下面的代码能够编译, 声明所需要的数据类.</p><pre><code>data class Person(val name: Name, val address: Address, val ownsAPet: Boolean = true)
+// 在这里编写你的代码
+// data class Name(...)
+
+fun main() {
+    val person = Person(
+        Name(&quot;John&quot;, &quot;Smith&quot;),
+        Address(&quot;123 Fake Street&quot;, City(&quot;Springfield&quot;, &quot;US&quot;)),
+        ownsAPet = false
+    )
+}</code></pre><details class="solution"><summary>参考答案</summary><pre><code>data class Person(val name: Name, val address: Address, val ownsAPet: Boolean = true)
+data class Name(val first: String, val last: String)
+data class Address(val street: String, val city: City)
+data class City(val name: String, val countryCode: String)
+
+fun main() {
+    val person = Person(
+        Name(&quot;John&quot;, &quot;Smith&quot;),
+        Address(&quot;123 Fake Street&quot;, City(&quot;Springfield&quot;, &quot;US&quot;)),
+        ownsAPet = false
+    )
+}</code></pre></details></div></div></section><section class="chapter"><div class="collapse"><div class="collapse__title"><h3 id="3" data-toc="3">习题 3</h3></div><div class="collapse__content"><p id="-w2sx6i_175">为了测试你的代码, 你需要一个生成器, 它能够创建随机的员工数据. 定义一个 <code class="code" id="-w2sx6i_183">RandomEmployeeGenerator</code> 类, 其中包括可用的姓名的固定列表 (包含在类的 body 部之内). 还可以指定工资的最小值和最大值 (包含在类头部之内) 来配置这个类. 在类的 body 部之内, 定义 <code class="code" id="-w2sx6i_184">generateEmployee()</code> 函数. 这次也一样, 主函数演示你如何使用这个类.</p><aside class="prompt" data-type="tip" data-title="" id="-w2sx6i_176"><p id="-w2sx6i_185">在这个习题中, 你会导入一个包, 这样就可以使用 <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.random/-random/next-int.html" id="-w2sx6i_186" data-external="true" rel="noopener noreferrer"><code class="code" id="-w2sx6i_188">Random.nextInt()</code></a> 函数. 关于包的导入, 更多详情请参见 <a href="https://kotlinlang.org/docs/packages.html" id="-w2sx6i_187">包(Package)与导入(Import)</a>.</p></aside><dl id="kotlin-tour-classes-exercise-3-hint-1" data-style="title-top"><dt id="-w2sx6i_189" data-expandable="true" data-expanded="false">提示 1</dt><dd><p>List 有一个名为 <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/random.html" id="-w2sx6i_190" data-external="true" rel="noopener noreferrer"><code class="code" id="-w2sx6i_191">.random()</code></a> 的扩展函数, 它返回 List 内的一个随机元素.</p></dd></dl><dl id="kotlin-tour-classes-exercise-3-hint-2" data-style="title-top"><dt id="-w2sx6i_192" data-expandable="true" data-expanded="false">提示 2</dt><dd><p><code class="code" id="-w2sx6i_193">Random.nextInt(from = ..., until = ...)</code> 返回给你一个随机的 <code class="code" id="-w2sx6i_194">Int</code> 值, 它在指定的上下限值之内.</p></dd></dl><pre><code>import kotlin.random.Random
+
+data class Employee(val name: String, var salary: Int)
+
+// 在这里编写你的代码
+
+fun main() {
+    val empGen = RandomEmployeeGenerator(10, 30)
+    println(empGen.generateEmployee())
+    println(empGen.generateEmployee())
+    println(empGen.generateEmployee())
+    empGen.minSalary = 50
+    empGen.maxSalary = 100
+    println(empGen.generateEmployee())
+}</code></pre><details class="solution"><summary>参考答案</summary><pre><code>import kotlin.random.Random
+
+data class Employee(val name: String, var salary: Int)
+
+class RandomEmployeeGenerator(var minSalary: Int, var maxSalary: Int) {
+    val names = listOf(&quot;John&quot;, &quot;Mary&quot;, &quot;Ann&quot;, &quot;Paul&quot;, &quot;Jack&quot;, &quot;Elizabeth&quot;)
+    fun generateEmployee() =
+        Employee(names.random(),
+            Random.nextInt(from = minSalary, until = maxSalary))
+}
+
+fun main() {
+    val empGen = RandomEmployeeGenerator(10, 30)
+    println(empGen.generateEmployee())
+    println(empGen.generateEmployee())
+    println(empGen.generateEmployee())
+    empGen.minSalary = 50
+    empGen.maxSalary = 100
+    println(empGen.generateEmployee())
+}</code></pre></details></div></div></section></section><section class="chapter"><h2 id="-w2sx6i_12" data-toc="-w2sx6i_12">下一步</h2><p id="-w2sx6i_195"><a href="../null-safety/index.html" id="-w2sx6i_196">Null 值安全性</a></p></section>
+    </article>
+    <section class="recall" aria-labelledby="recall-title">
+      <span class="note-kind">读完自测</span>
+      <h2 id="recall-title">先不看正文，回答这三个问题</h2>
+      <ol><li>构造参数怎样成为类的属性？</li><li>成员函数如何访问对象状态？</li><li>data class 自动提供了哪些常用能力？</li></ol>
+      <p class="transfer"><strong>迁移练习：</strong>从你正在读的一段 Kotlin 代码里，找出本章概念的一个真实用法；用一句话解释它为什么这样写。</p>
+    </section>
+    <nav class="chapter-switcher" aria-label="章节导航">
+    <a href="../functions/index.html">← 函数</a>
+    <a class="course-home" href="../index.html">全部章节</a>
+    <a href="../null-safety/index.html">空安全 →</a>
+  </nav>
+    <footer class="license-note">
+      <p>这是用于个人学习的非官方中文阅读版。正文依据 <a href="https://kotlinlang.org/docs/kotlin-tour-classes.html">Kotlin 官方文档</a>整理，并参考公开中文译文对照整理；原始内容由 JetBrains 与 Kotlin 贡献者维护，采用 <a href="https://github.com/JetBrains/kotlin-web-site/blob/master/LICENSE">Apache License 2.0</a>。</p>
+    </footer>
+  </main>
+</body>
+</html>

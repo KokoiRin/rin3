@@ -1,0 +1,318 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="通过 open、sealed、enum 与 value class 控制继承范围并表达有限状态和值语义。">
+  <title>开放类与特殊类｜RIN III</title>
+  <link rel="stylesheet" href="../reader.css">
+</head>
+<body>
+  <nav class="site-nav" aria-label="站点导航">
+    <a href="../index.html">← Kotlin Tour 中文学习版</a>
+    <a href="../../../computer-science/kotlin-tour/">RIN III 学习记录</a>
+  </nav>
+  <main class="reader">
+    <header class="chapter-header">
+      <span class="chapter-kicker">中级 · 第 6 章</span>
+      <h1>开放类与特殊类</h1>
+      <p class="lead">通过 open、sealed、enum 与 value class 控制继承范围并表达有限状态和值语义。</p>
+      <div class="title-rule"></div>
+      <aside class="learning-note" aria-label="学习主线">
+        <strong>学习主线</strong>
+        <p>默认 final 保护封装；只有确实需要扩展时才 open，有限分支优先用 sealed 或 enum 明确表达。</p>
+      </aside>
+      <nav class="chapter-switcher" aria-label="章节导航">
+    <a href="../objects/index.html">← 对象</a>
+    <a class="course-home" href="../index.html">全部章节</a>
+    <a href="../properties/index.html">属性 →</a>
+  </nav>
+    </header>
+    <article class="translated-article">
+<p id="x2bre1_3">在这一章中, 你将学习开放类, 它们如何与接口一起工作, 以及 Kotlin 中其他特殊类型的类.</p><section class="chapter"><h2 id="open-classes" data-toc="open-classes">开放类</h2><p id="x2bre1_35">如果你不能使用接口或抽象类, 你可以将一个类声明为 <span class="control" id="x2bre1_42">open</span>, 明确的让它能够被继承. 方法是, 在你的类声明之前使用 <code class="code" id="x2bre1_43">open</code> 关键字:</p><pre><code>open class Vehicle(val make: String, val model: String)</code></pre><p id="x2bre1_37">要创建一个从另一个类继承的类, 请在你的类头部之后添加一个冒号, 然后调用你想要继承的父类的构造器. 这个示例中, <code class="code" id="x2bre1_44">Car</code> 类继承 <code class="code" id="x2bre1_45">Vehicle</code> 类:</p><pre><code>open class Vehicle(val make: String, val model: String)
+
+class Car(make: String, model: String, val numberOfDoors: Int) : Vehicle(make, model)
+
+fun main() {
+    // 创建 Car 类的一个实例
+    val car = Car(&quot;Toyota&quot;, &quot;Corolla&quot;, 4)
+
+    // 打印输出汽车的详细信息
+    println(&quot;Car Info: Make - ${car.make}, Model - ${car.model}, Number of doors - ${car.numberOfDoors}&quot;)
+    // 输出结果为: Car Info: Make - Toyota, Model - Corolla, Number of doors - 4
+}</code></pre><p id="x2bre1_39">和创建普通类的实例一样, 如果你的类继承一个父类, 那么它必须初始化父类头部中定义的所有参数. 因此在这个示例中, <code class="code" id="x2bre1_46">Car</code> 类的 <code class="code" id="x2bre1_47">car</code> 实例初始化父类参数: <code class="code" id="x2bre1_48">make</code> 和 <code class="code" id="x2bre1_49">model</code>.</p><section class="chapter"><h3 id="overriding-inherited-behavior" data-toc="overriding-inherited-behavior">覆盖继承的行为</h3><p id="x2bre1_50">如果你想要从一个类继承, 但改变某些行为, 你可以覆盖继承的行为.</p><p id="x2bre1_51">默认情况下, 不能覆盖父类的成员函数或属性. 与抽象类一样, 你需要添加特殊的关键字.</p><section class="chapter"><h4 id="member-functions" data-toc="member-functions">成员函数</h4><p id="x2bre1_54">要让父类中的函数能够被覆盖, 请在父类中它的声明之前使用 <code class="code" id="x2bre1_62">open</code> 关键字:</p><pre><code>open fun displayInfo() {}</code></pre><p id="x2bre1_56">要覆盖一个继承的成员函数, 请在子类中函数声明之前使用 <code class="code" id="x2bre1_63">override</code> 关键字:</p><pre><code>override fun displayInfo() {}</code></pre><p id="x2bre1_58">例如:</p><pre><code>open class Vehicle(val make: String, val model: String) {
+    open fun displayInfo() {
+        println(&quot;Vehicle Info: Make - $make, Model - $model&quot;)
+    }
+}
+
+class Car(make: String, model: String, val numberOfDoors: Int) : Vehicle(make, model) {
+    override fun displayInfo() {
+        println(&quot;Car Info: Make - $make, Model - $model, Number of Doors - $numberOfDoors&quot;)
+    }
+}
+
+fun main() {
+    val car1 = Car(&quot;Toyota&quot;, &quot;Corolla&quot;, 4)
+    val car2 = Car(&quot;Honda&quot;, &quot;Civic&quot;, 2)
+
+    // 使用覆盖的 displayInfo() 函数
+    car1.displayInfo()
+    // 输出结果为: Car Info: Make - Toyota, Model - Corolla, Number of Doors - 4
+    car2.displayInfo()
+    // 输出结果为: Car Info: Make - Honda, Model - Civic, Number of Doors - 2
+}</code></pre><p id="x2bre1_60">在这个示例中:</p><ul class="list _bullet" id="x2bre1_61"><li class="list__item" id="x2bre1_64"><p id="x2bre1_67"><code class="code" id="x2bre1_68">Car</code> 类继承自 <code class="code" id="x2bre1_69">Vehicle</code> 类, 创建 <code class="code" id="x2bre1_70">Car</code> 类的 2 个实例: <code class="code" id="x2bre1_71">car1</code> 和 <code class="code" id="x2bre1_72">car2</code>.</p></li><li class="list__item" id="x2bre1_65"><p id="x2bre1_73">在 <code class="code" id="x2bre1_74">Car</code> 类中, 覆盖 <code class="code" id="x2bre1_75">displayInfo()</code> 函数, 也打印输出车门数量.</p></li><li class="list__item" id="x2bre1_66"><p id="x2bre1_76">对 <code class="code" id="x2bre1_77">car1</code> 和 <code class="code" id="x2bre1_78">car2</code> 实例调用覆盖的 <code class="code" id="x2bre1_79">displayInfo()</code> 函数.</p></li></ul></section><section class="chapter"><h4 id="properties" data-toc="properties">属性</h4><p id="x2bre1_80">在 Kotlin 中, 使用 <code class="code" id="x2bre1_88">open</code> 关键字让一个属性能够继承, 并在之后覆盖它, 这样的方法不是常见的做法. 大多数情况下, 使用抽象类或接口, 其中的属性默认能够继承.</p><p id="x2bre1_81">开放类中的属性能够被子类访问. 一般来说, 最好直接访问属性, 而不要用新的属性覆盖它们.</p><p id="x2bre1_82">例如, 假设你有一个属性 <code class="code" id="x2bre1_89">transmissionType</code>, 你想要之后覆盖它. 覆盖属性的语法与覆盖成员函数完全一样. 你可以这样做:</p><pre><code>open class Vehicle(val make: String, val model: String) {
+    open val transmissionType: String = &quot;Manual&quot;
+}
+
+class Car(make: String, model: String, val numberOfDoors: Int) : Vehicle(make, model) {
+    override val transmissionType: String = &quot;Automatic&quot;
+}</code></pre><p id="x2bre1_84">但是, 这不是好的做法. 相反, 你可以将属性添加到可继承的类的构造中, 并在创建 <code class="code" id="x2bre1_90">Car</code> 子类时声明它的值:</p><pre><code>open class Vehicle(val make: String, val model: String, val transmissionType: String = &quot;Manual&quot;)
+
+class Car(make: String, model: String, val numberOfDoors: Int) : Vehicle(make, model, &quot;Automatic&quot;)</code></pre><p id="x2bre1_86">直接访问属性, 而不是覆盖, 可以让代码更加简单, 更加易读. 只在父类中声明属性一次, 然后通过构造器传递属性值, 就不再需要在子类中进行覆盖.</p><p id="x2bre1_87">关于类的继承, 以及覆盖类的行为, 详情请参见 <a href="https://kotlinlang.org/docs/inheritance.html" id="x2bre1_91">继承</a>.</p></section></section><section class="chapter"><h3 id="open-classes-and-interfaces" data-toc="open-classes-and-interfaces">开放类与接口</h3><p id="x2bre1_92">你可以创建一个类, 它继承一个类 <span class="control" id="x2bre1_94">并且</span> 实现多个接口. 这种情况下, 你必须在冒号之后先声明父类, 然后列出接口:</p><pre><code>// 定义接口
+interface EcoFriendly {
+    val emissionLevel: String
+}
+
+interface ElectricVehicle {
+    val batteryCapacity: Double
+}
+
+// 父类
+open class Vehicle(val make: String, val model: String)
+
+// 子类
+open class Car(make: String, model: String, val numberOfDoors: Int) : Vehicle(make, model)
+
+// 新的类, 继承 Car, 并实现 2 个接口
+class ElectricCar(
+    make: String,
+    model: String,
+    numberOfDoors: Int,
+    val capacity: Double,
+    val emission: String
+) : Car(make, model, numberOfDoors), EcoFriendly, ElectricVehicle {
+    override val batteryCapacity: Double = capacity
+    override val emissionLevel: String = emission
+}</code></pre></section></section><section class="chapter"><h2 id="special-classes" data-toc="special-classes">特殊类</h2><p id="x2bre1_95">除抽象类, 开放类, 数据类之外, Kotlin 还有一些特殊类型的类, 是为各种目的设计的, 例如限制特定的行为, 或减少创建小对象时的性能损失.</p><section class="chapter"><h3 id="sealed-classes" data-toc="sealed-classes">封闭类(Sealed Class)</h3><p id="x2bre1_99">有些时候你可能会想要限制继承. 你可以使用封闭类(Sealed Class)来实现. 封闭类是一个特殊类型的 <a href="../classes-and-interfaces/index.html#abstract-classes" id="x2bre1_109">抽象类</a>. 一旦将一个类声明为封闭, 就只能在同一个包之内创建它的子类. 在这个范围之外, 不能继承封闭类.</p><aside class="prompt" data-type="tip" data-title="" id="x2bre1_100"><p id="x2bre1_110">包是一组相关的类和函数的代码的集合, 通常放在一个目录中. 关于 Kotlin 中的包, 详情请参见 <a href="https://kotlinlang.org/docs/packages.html" id="x2bre1_111">包与导入</a>.</p></aside><p id="x2bre1_101">要创建一个封闭类, 请使用 <code class="code" id="x2bre1_112">sealed</code> 关键字:</p><pre><code>sealed class Mammal</code></pre><p id="x2bre1_103">封闭类在与 <code class="code" id="x2bre1_113">when</code> 表达式一起使用时特别有用. 使用 <code class="code" id="x2bre1_114">when</code> 表达式, 你可以对所有可能的子类定义行为. 例如:</p><pre><code>sealed class Mammal(val name: String)
+
+class Cat(val catName: String) : Mammal(catName)
+class Human(val humanName: String, val job: String) : Mammal(humanName)
+
+fun greetMammal(mammal: Mammal): String {
+    when (mammal) {
+        is Human -&gt; return &quot;Hello ${mammal.name}; You're working as a ${mammal.job}&quot;
+        is Cat -&gt; return &quot;Hello ${mammal.name}&quot;
+    }
+}
+
+fun main() {
+    println(greetMammal(Cat(&quot;Snowy&quot;)))
+    // 输出结果为: Hello Snowy
+}</code></pre><p id="x2bre1_105">在这个示例中:</p><ul class="list _bullet" id="x2bre1_106"><li class="list__item" id="x2bre1_115"><p id="x2bre1_121">有一个封闭类 <code class="code" id="x2bre1_122">Mammal</code>, 构造器参数为 <code class="code" id="x2bre1_123">name</code>.</p></li><li class="list__item" id="x2bre1_116"><p id="x2bre1_124"><code class="code" id="x2bre1_125">Cat</code> 类继承 <code class="code" id="x2bre1_126">Mammal</code> 封闭类, 并使用它自己的构造器中的 <code class="code" id="x2bre1_127">catName</code> 参数, 作为 <code class="code" id="x2bre1_128">Mammal</code> 类的 <code class="code" id="x2bre1_129">name</code> 参数.</p></li><li class="list__item" id="x2bre1_117"><p id="x2bre1_130"><code class="code" id="x2bre1_131">Human</code> 类继承 <code class="code" id="x2bre1_132">Mammal</code> 封闭类, 并使用它自己的构造器中的 <code class="code" id="x2bre1_133">humanName</code> 参数, 作为 <code class="code" id="x2bre1_134">Mammal</code> 类的 <code class="code" id="x2bre1_135">name</code> 参数. 它的构造器中还有 <code class="code" id="x2bre1_136">job</code> 参数.</p></li><li class="list__item" id="x2bre1_118"><p id="x2bre1_137"><code class="code" id="x2bre1_138">greetMammal()</code> 函数接受 <code class="code" id="x2bre1_139">Mammal</code> 类型的参数, 并返回一个字符串.</p></li><li class="list__item" id="x2bre1_119"><p id="x2bre1_140">在 <code class="code" id="x2bre1_141">greetMammal()</code> 的函数 body 部, 有一个 <code class="code" id="x2bre1_142">when</code> 表达式, 使用 <a href="https://kotlinlang.org/docs/typecasts.html#is-and-is-operators" id="x2bre1_143"><code class="code" id="x2bre1_145">is</code> 操作符</a> 检查 <code class="code" id="x2bre1_144">mammal</code> 的类型, 决定执行哪个动作.</p></li><li class="list__item" id="x2bre1_120"><p id="x2bre1_146"><code class="code" id="x2bre1_147">main()</code> 函数调用 <code class="code" id="x2bre1_148">greetMammal()</code> 函数, 使用 <code class="code" id="x2bre1_149">Cat</code> 类的一个实例, <code class="code" id="x2bre1_150">name</code> 参数为 <code class="code" id="x2bre1_151">Snowy</code>.</p></li></ul><aside class="prompt" data-type="tip" data-title="" id="x2bre1_107"><p id="x2bre1_152">这个教程系列关于 <code class="code" id="x2bre1_153">is</code> 操作符的详细讨论, 请参见 <a href="../advanced-null-safety/index.html" id="x2bre1_154">Null 值安全性</a>.</p></aside><p id="x2bre1_108">关于封闭类, 以及推荐的使用场景, 详情请参见 <a href="https://kotlinlang.org/docs/sealed-classes.html" id="x2bre1_155">封闭类与封闭接口</a>.</p></section><section class="chapter"><h3 id="enum-classes" data-toc="enum-classes">枚举类(Enum Class)</h3><p id="x2bre1_156">当你想用一个类表达一组有限的, 不同的值, 适合使用枚举类(Enum Class). 一个枚举类包含一些枚举常数, 枚举常数自身又是枚举类的实例.</p><p id="x2bre1_157">要创建枚举类, 请使用 <code class="code" id="x2bre1_173">enum</code> 关键字:</p><pre><code>enum class State</code></pre><p id="x2bre1_159">假设你想要创建一个枚举类, 包含一个进程的不同状态. 各个枚举常数必须使用逗号 <code class="code" id="x2bre1_174">,</code> 分隔:</p><pre><code>enum class State {
+    IDLE, RUNNING, FINISHED
+}</code></pre><p id="x2bre1_161"><code class="code" id="x2bre1_175">State</code> 枚举类包含枚举常数: <code class="code" id="x2bre1_176">IDLE</code>, <code class="code" id="x2bre1_177">RUNNING</code>, 和 <code class="code" id="x2bre1_178">FINISHED</code>. 要访问一个枚举常数, 请使用类名称, 加上 <code class="code" id="x2bre1_179">.</code>, 再加上枚举常数的名称:</p><pre><code>val state = State.RUNNING</code></pre><p id="x2bre1_163">你可以在 <code class="code" id="x2bre1_180">when</code> 表达式中使用这个枚举类, 根据枚举常数的值定义要执行的动作:</p><pre><code>enum class State {
+    IDLE, RUNNING, FINISHED
+}
+
+fun main() {
+    val state = State.RUNNING
+    val message = when (state) {
+        State.IDLE -&gt; &quot;It's idle&quot;
+        State.RUNNING -&gt; &quot;It's running&quot;
+        State.FINISHED -&gt; &quot;It's finished&quot;
+    }
+    println(message)
+    // 输出结果为: It's running
+}</code></pre><p id="x2bre1_165">和通常的类一样, 枚举类可以拥有属性和成员函数.</p><p id="x2bre1_166">例如, 假设你在使用 HTML, 想要创建一个枚举类, 包含一些颜色. 你想要每个颜色拥有一个属性, 假设叫做 <code class="code" id="x2bre1_181">rgb</code>, 其中包含它们的 16 进制 RGB 值. 在创建枚举常数时, 你必须使用这个属性来初始化它:</p><pre><code>enum class Color(val rgb: Int) {
+    RED(0xFF0000),
+    GREEN(0x00FF00),
+    BLUE(0x0000FF),
+    YELLOW(0xFFFF00)
+}</code></pre><aside class="prompt" data-type="note" data-title="" id="x2bre1_168"><p id="x2bre1_182">Kotlin 将 16 进制数保存为整数, 因此 <code class="code" id="x2bre1_183">rgb</code> 属性使用 <code class="code" id="x2bre1_184">Int</code> 类型, 而不是 <code class="code" id="x2bre1_185">String</code> 类型.</p></aside><p id="x2bre1_169">要添加对这个类一个成员函数, 将函数与枚举常数用分号 <code class="code" id="x2bre1_186">;</code> 分隔:</p><pre><code>enum class Color(val rgb: Int) {
+    RED(0xFF0000),
+    GREEN(0x00FF00),
+    BLUE(0x0000FF),
+    YELLOW(0xFFFF00);
+
+    fun containsRed() = (this.rgb and 0xFF0000 != 0)
+}
+
+fun main() {
+    val red = Color.RED
+
+    // 对枚举常数调用 containsRed() 函数
+    println(red.containsRed())
+    // 输出结果为: true
+
+    // 使用类名称, 对枚举常数调用 containsRed() 函数
+    println(Color.BLUE.containsRed())
+    // 输出结果为: false
+
+    println(Color.YELLOW.containsRed())
+    // 输出结果为: true
+}</code></pre><p id="x2bre1_171">在这个示例中, <code class="code" id="x2bre1_187">containsRed()</code> 成员函数使用 <code class="code" id="x2bre1_188">this</code> 关键字访问枚举常数的 <code class="code" id="x2bre1_189">rgb</code> 属性的值, 并检查 16 进制值的最先头的位是否包含 <code class="code" id="x2bre1_190">FF</code>, 并返回一个 boolean 值.</p><p id="x2bre1_172">详情请参见 <a href="https://kotlinlang.org/docs/enum-classes.html" id="x2bre1_191">枚举类</a>.</p></section><section class="chapter"><h3 id="inline-value-classes" data-toc="inline-value-classes">内联的值类(Inline Value Class)</h3><p id="x2bre1_192">有时候在你的代码中, 你可能想要创建小的类对象, 而且只是短暂的使用它们. 这种方法可能造成性能损失. 内联的值类(Inline Value Class) 是一种特殊类型的类, 可以避免这样的性能损失. 但是, 它们只能包含值.</p><p id="x2bre1_193">要创建一个内联的值类, 请使用 <code class="code" id="x2bre1_203">value</code> 关键字, 以及 <code class="code" id="x2bre1_204">@JvmInline</code> 注解:</p><pre><code>@JvmInline
+value class Email</code></pre><aside class="prompt" data-type="tip" data-title="" id="x2bre1_195"><p id="x2bre1_205"><code class="code" id="x2bre1_206">@JvmInline</code> 注解 指示 Kotlin 在编译代码时进行优化. 详情请参见 <a href="https://kotlinlang.org/docs/annotations.html" id="x2bre1_207">注解</a>.</p></aside><p id="x2bre1_196">内联的值类 <span class="control" id="x2bre1_208">必须</span> 拥有单个属性, 在类的 header 部初始化.</p><p id="x2bre1_197">假设你想要创建一个类, 收集 EMail 地址:</p><pre><code>// address 属性在类的 header 部初始化.
+@JvmInline
+value class Email(val address: String)
+
+fun sendEmail(email: Email) {
+    println(&quot;Sending email to ${email.address}&quot;)
+}
+
+fun main() {
+    val myEmail = Email(&quot;example@example.com&quot;)
+    sendEmail(myEmail)
+    // 输出结果为: Sending email to example@example.com
+}</code></pre><p id="x2bre1_199">在这个示例中:</p><ul class="list _bullet" id="x2bre1_200"><li class="list__item" id="x2bre1_209"><p id="x2bre1_212"><code class="code" id="x2bre1_213">Email</code> 是一个内联的值类, 在类的 header 部有一个属性: <code class="code" id="x2bre1_214">address</code>.</p></li><li class="list__item" id="x2bre1_210"><p id="x2bre1_215"><code class="code" id="x2bre1_216">sendEmail()</code> 函数接受 <code class="code" id="x2bre1_217">Email</code> 类型的对象作为参数, 并向标准输出打印一个字符串.</p></li><li class="list__item" id="x2bre1_211"><p id="x2bre1_218"><code class="code" id="x2bre1_220">main()</code> 函数:</p><ul class="list _bullet" id="x2bre1_219"><li class="list__item" id="x2bre1_221"><p id="x2bre1_223">创建 <code class="code" id="x2bre1_224">Email</code> 类的一个实例 <code class="code" id="x2bre1_225">myEmail</code>.</p></li><li class="list__item" id="x2bre1_222"><p id="x2bre1_226">对 <code class="code" id="x2bre1_227">myEmail</code> 对象调用 <code class="code" id="x2bre1_228">sendEmail()</code> 函数.</p></li></ul></li></ul><p id="x2bre1_201">通过使用内联的值类, 你让你的类成为内联的, 可以在代码中直接使用它, 而不必创建对象. 这样可以显著的减少内存使用量, 并改善你的代码的运行时性能.</p><p id="x2bre1_202">关于内联的值类, 详情请参见 <a href="https://kotlinlang.org/docs/inline-classes.html" id="x2bre1_229">内联的值类</a>.</p></section></section><section class="chapter"><h2 id="practice" data-toc="practice">实际练习</h2><section class="chapter"><div class="collapse"><div class="collapse__title"><h3 id="special-classes-exercise-1" data-toc="special-classes-exercise-1">习题 1</h3></div><div class="collapse__content"><p id="x2bre1_232">你管理着一家快递公司, 需要一种方法来追踪包裹的状态. 请创建一个封闭类 <code class="code" id="x2bre1_237">DeliveryStatus</code>, 包含数据类, 表示以下状态: <code class="code" id="x2bre1_238">Pending</code>, <code class="code" id="x2bre1_239">InTransit</code>, <code class="code" id="x2bre1_240">Delivered</code>, <code class="code" id="x2bre1_241">Canceled</code>. 请完成 <code class="code" id="x2bre1_242">DeliveryStatus</code> 类的声明, 让 <code class="code" id="x2bre1_243">main()</code> 函数中的代码运行成功:</p><pre><code>sealed class // 请在这里编写你的代码
+
+fun printDeliveryStatus(status: DeliveryStatus) {
+    when (status) {
+        is DeliveryStatus.Pending -&gt; {
+            println(&quot;The package is pending pickup from ${status.sender}.&quot;)
+        }
+        is DeliveryStatus.InTransit -&gt; {
+            println(&quot;The package is in transit and expected to arrive by ${status.estimatedDeliveryDate}.&quot;)
+        }
+        is DeliveryStatus.Delivered -&gt; {
+            println(&quot;The package was delivered to ${status.recipient} on ${status.deliveryDate}.&quot;)
+        }
+        is DeliveryStatus.Canceled -&gt; {
+            println(&quot;The delivery was canceled due to: ${status.reason}.&quot;)
+        }
+    }
+}
+
+fun main() {
+    val status1: DeliveryStatus = DeliveryStatus.Pending(&quot;Alice&quot;)
+    val status2: DeliveryStatus = DeliveryStatus.InTransit(&quot;2024-11-20&quot;)
+    val status3: DeliveryStatus = DeliveryStatus.Delivered(&quot;2024-11-18&quot;, &quot;Bob&quot;)
+    val status4: DeliveryStatus = DeliveryStatus.Canceled(&quot;Address not found&quot;)
+
+    printDeliveryStatus(status1)
+    // 输出结果为: The package is pending pickup from Alice.
+    printDeliveryStatus(status2)
+    // 输出结果为: The package is in transit and expected to arrive by 2024-11-20.
+    printDeliveryStatus(status3)
+    // 输出结果为: The package was delivered to Bob on 2024-11-18.
+    printDeliveryStatus(status4)
+    // 输出结果为: The delivery was canceled due to: Address not found.
+}</code></pre><details class="solution"><summary>参考答案</summary><pre><code>sealed class DeliveryStatus {
+    data class Pending(val sender: String) : DeliveryStatus()
+    data class InTransit(val estimatedDeliveryDate: String) : DeliveryStatus()
+    data class Delivered(val deliveryDate: String, val recipient: String) : DeliveryStatus()
+    data class Canceled(val reason: String) : DeliveryStatus()
+}
+
+fun printDeliveryStatus(status: DeliveryStatus) {
+    when (status) {
+        is DeliveryStatus.Pending -&gt; {
+            println(&quot;The package is pending pickup from ${status.sender}.&quot;)
+        }
+        is DeliveryStatus.InTransit -&gt; {
+            println(&quot;The package is in transit and expected to arrive by ${status.estimatedDeliveryDate}.&quot;)
+        }
+        is DeliveryStatus.Delivered -&gt; {
+            println(&quot;The package was delivered to ${status.recipient} on ${status.deliveryDate}.&quot;)
+        }
+        is DeliveryStatus.Canceled -&gt; {
+            println(&quot;The delivery was canceled due to: ${status.reason}.&quot;)
+        }
+    }
+}
+
+fun main() {
+    val status1: DeliveryStatus = DeliveryStatus.Pending(&quot;Alice&quot;)
+    val status2: DeliveryStatus = DeliveryStatus.InTransit(&quot;2024-11-20&quot;)
+    val status3: DeliveryStatus = DeliveryStatus.Delivered(&quot;2024-11-18&quot;, &quot;Bob&quot;)
+    val status4: DeliveryStatus = DeliveryStatus.Canceled(&quot;Address not found&quot;)
+
+    printDeliveryStatus(status1)
+    // 输出结果为: The package is pending pickup from Alice.
+    printDeliveryStatus(status2)
+    // 输出结果为: The package is in transit and expected to arrive by 2024-11-20.
+    printDeliveryStatus(status3)
+    // 输出结果为: The package was delivered to Bob on 2024-11-18.
+    printDeliveryStatus(status4)
+    // 输出结果为: The delivery was canceled due to: Address not found.
+}</code></pre></details></div></div></section><section class="chapter"><div class="collapse"><div class="collapse__title"><h3 id="special-classes-exercise-2" data-toc="special-classes-exercise-2">习题 2</h3></div><div class="collapse__content"><p id="x2bre1_244">在你的程序中, 需要处理不同状态和类型的错误. 你有一个封闭类, 捕捉数据类或对象中声明的各种状态. 请完成下面的代码, 创建枚举类 <code class="code" id="x2bre1_249">Problem</code>, 表示不同的问题类型: <code class="code" id="x2bre1_250">NETWORK</code>, <code class="code" id="x2bre1_251">TIMEOUT</code>, and <code class="code" id="x2bre1_252">UNKNOWN</code>.</p><pre><code>sealed class Status {
+    data object Loading : Status()
+    data class Error(val problem: Problem) : Status() {
+        // 请在这里编写你的代码
+    }
+
+    data class OK(val data: List&lt;String&gt;) : Status()
+}
+
+fun handleStatus(status: Status) {
+    when (status) {
+        is Status.Loading -&gt; println(&quot;Loading...&quot;)
+        is Status.OK -&gt; println(&quot;Data received: ${status.data}&quot;)
+        is Status.Error -&gt; when (status.problem) {
+            Status.Error.Problem.NETWORK -&gt; println(&quot;Network issue&quot;)
+            Status.Error.Problem.TIMEOUT -&gt; println(&quot;Request timed out&quot;)
+            Status.Error.Problem.UNKNOWN -&gt; println(&quot;Unknown error occurred&quot;)
+        }
+    }
+}
+
+fun main() {
+    val status1: Status = Status.Error(Status.Error.Problem.NETWORK)
+    val status2: Status = Status.OK(listOf(&quot;Data1&quot;, &quot;Data2&quot;))
+
+    handleStatus(status1)
+    // 输出结果为: Network issue
+    handleStatus(status2)
+    // 输出结果为: Data received: [Data1, Data2]
+}</code></pre><details class="solution"><summary>参考答案</summary><pre><code>sealed class Status {
+    data object Loading : Status()
+    data class Error(val problem: Problem) : Status() {
+        enum class Problem {
+            NETWORK,
+            TIMEOUT,
+            UNKNOWN
+        }
+    }
+
+    data class OK(val data: List&lt;String&gt;) : Status()
+}
+
+fun handleStatus(status: Status) {
+    when (status) {
+        is Status.Loading -&gt; println(&quot;Loading...&quot;)
+        is Status.OK -&gt; println(&quot;Data received: ${status.data}&quot;)
+        is Status.Error -&gt; when (status.problem) {
+            Status.Error.Problem.NETWORK -&gt; println(&quot;Network issue&quot;)
+            Status.Error.Problem.TIMEOUT -&gt; println(&quot;Request timed out&quot;)
+            Status.Error.Problem.UNKNOWN -&gt; println(&quot;Unknown error occurred&quot;)
+        }
+    }
+}
+
+fun main() {
+    val status1: Status = Status.Error(Status.Error.Problem.NETWORK)
+    val status2: Status = Status.OK(listOf(&quot;Data1&quot;, &quot;Data2&quot;))
+
+    handleStatus(status1)
+    // 输出结果为: Network issue
+    handleStatus(status2)
+    // 输出结果为: Data received: [Data1, Data2]
+}</code></pre></details></div></div></section></section><section class="chapter"><h2 id="next-step" data-toc="next-step">下一步</h2><p id="x2bre1_253"><a href="../properties/index.html" id="x2bre1_254">中级教程: 属性</a></p></section>
+    </article>
+    <section class="recall" aria-labelledby="recall-title">
+      <span class="note-kind">读完自测</span>
+      <h2 id="recall-title">先不看正文，回答这三个问题</h2>
+      <ol><li>为什么 Kotlin 的类和成员默认不能继承或重写？</li><li>sealed class 与 enum class 如何选择？</li><li>value class 解决什么建模问题？</li></ol>
+      <p class="transfer"><strong>迁移练习：</strong>从你正在读的一段 Kotlin 代码里，找出本章概念的一个真实用法；用一句话解释它为什么这样写。</p>
+    </section>
+    <nav class="chapter-switcher" aria-label="章节导航">
+    <a href="../objects/index.html">← 对象</a>
+    <a class="course-home" href="../index.html">全部章节</a>
+    <a href="../properties/index.html">属性 →</a>
+  </nav>
+    <footer class="license-note">
+      <p>这是用于个人学习的非官方中文阅读版。正文依据 <a href="https://kotlinlang.org/docs/kotlin-tour-intermediate-open-special-classes.html">Kotlin 官方文档</a>整理，并参考公开中文译文对照整理；原始内容由 JetBrains 与 Kotlin 贡献者维护，采用 <a href="https://github.com/JetBrains/kotlin-web-site/blob/master/LICENSE">Apache License 2.0</a>。</p>
+    </footer>
+  </main>
+</body>
+</html>

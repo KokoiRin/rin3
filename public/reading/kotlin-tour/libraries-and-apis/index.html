@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="认识标准库、第三方库、API 稳定性与 opt-in，学会先查找再自己实现。">
+  <title>库与 API｜RIN III</title>
+  <link rel="stylesheet" href="../reader.css">
+</head>
+<body>
+  <nav class="site-nav" aria-label="站点导航">
+    <a href="../index.html">← Kotlin Tour 中文学习版</a>
+    <a href="../../../computer-science/kotlin-tour/">RIN III 学习记录</a>
+  </nav>
+  <main class="reader">
+    <header class="chapter-header">
+      <span class="chapter-kicker">中级 · 第 9 章</span>
+      <h1>库与 API</h1>
+      <p class="lead">认识标准库、第三方库、API 稳定性与 opt-in，学会先查找再自己实现。</p>
+      <div class="title-rule"></div>
+      <aside class="learning-note" aria-label="学习主线">
+        <strong>学习主线</strong>
+        <p>先在标准库与可信库中寻找成熟能力；使用实验性 API 时，要让风险在代码中显式可见。</p>
+      </aside>
+      <nav class="chapter-switcher" aria-label="章节导航">
+    <a href="../advanced-null-safety/index.html">← 进阶空安全</a>
+    <a class="course-home" href="../index.html">全部章节</a>
+    <span></span>
+  </nav>
+    </header>
+    <article class="translated-article">
+<p id="yqouk5_3">为了更加充分的利用 Kotlin, 请使用既有的库和 API, 这样你就可以将更多的时间用来编码, 花更少的时间来重新发明轮子.</p><p id="yqouk5_4">库分发了可重用的代码, 简化常见任务. 库中包含了包和对象, 将相关的类, 函数, 和实用工具组织在一起. 库公开了 API (Application Programming Interface), 包含一组函数, 类, 或属性, 开发者可以在他们的代码中使用.</p><figure id="yqouk5_5"><img alt="Kotlin 库和 API" src="../assets/kotlin-library-diagram.svg" title="Kotlin 库和 API" width="600" height="284"></figure><p id="yqouk5_6">我们来探索一下 Kotlin 能够做到什么.</p><section class="chapter"><h2 id="the-standard-library" data-toc="the-standard-library">标准库</h2><p id="yqouk5_40">Kotlin 有一个标准库, 提供了必要的类型, 函数, 集合, 以及实用工具, 让你的代码更加简洁, 而且富有表现力. 在任何 Kotlin 文件中可以使用标准库 (everything in the <a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/" id="yqouk5_51" data-external="true" rel="noopener noreferrer"><code class="code" id="yqouk5_52">kotlin</code> 包</a>) 的大部分内容, 不需要明确的导入:</p><pre><code>fun main() {
+    val text = &quot;emosewa si niltoK&quot;
+
+   // 使用标准库的 reversed() 函数
+    val reversedText = text.reversed()
+
+    // 使用标准库的 print() 函数
+    print(reversedText)
+    // 输出结果为: Kotlin is awesome
+}</code></pre><p id="yqouk5_42">但是, 标准库的有些部分, 在你的代码中使用之前需要导入. 例如, 如果你想要使用标准库的时间测量功能, 你需要导入 <a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.time/" id="yqouk5_53" data-external="true" rel="noopener noreferrer"><code class="code" id="yqouk5_54">kotlin.time</code> 包</a>.</p><p id="yqouk5_43">请你的文件的最上方, 添加 <code class="code" id="yqouk5_55">import</code> 关键字, 之后是你需要的包:</p><pre><code>import kotlin.time.*</code></pre><p id="yqouk5_45">星号 <code class="code" id="yqouk5_56">*</code> 是通配符导入, 告诉 Kotlin 导入包中的所有内容. 你不能对同伴对象使用 <code class="code" id="yqouk5_57">*</code>. 相反, 对于你想要使用的同伴对象成员, 需要明确声明.</p><p id="yqouk5_46">例如:</p><pre><code>import kotlin.time.Duration
+import kotlin.time.Duration.Companion.hours
+import kotlin.time.Duration.Companion.minutes
+
+fun main() {
+    val thirtyMinutes: Duration = 30.minutes
+    val halfHour: Duration = 0.5.hours
+    println(thirtyMinutes == halfHour)
+    // 输出结果为: true
+}</code></pre><p id="yqouk5_48">在这个示例中:</p><ul class="list _bullet" id="yqouk5_49"><li class="list__item" id="yqouk5_58"><p id="yqouk5_62">导入 <code class="code" id="yqouk5_63">Duration</code> 类, 以及它的同伴对象中的 <code class="code" id="yqouk5_64">hours</code> 和 <code class="code" id="yqouk5_65">minutes</code> 扩展属性.</p></li><li class="list__item" id="yqouk5_59"><p id="yqouk5_66">使用 <code class="code" id="yqouk5_67">minutes</code> 属性, 将 <code class="code" id="yqouk5_68">30</code> 转换为一个表示 30 分钟时间长度的 <code class="code" id="yqouk5_69">Duration</code>.</p></li><li class="list__item" id="yqouk5_60"><p id="yqouk5_70">使用 <code class="code" id="yqouk5_71">hours</code> 属性, 将 <code class="code" id="yqouk5_72">0.5</code> 转换为一个表示 30 分钟时间长度的 <code class="code" id="yqouk5_73">Duration</code>.</p></li><li class="list__item" id="yqouk5_61"><p id="yqouk5_74">检查这两个时间长度是否相等, 并打印输出结果.</p></li></ul><section class="chapter"><h3 id="search-before-you-build" data-toc="search-before-you-build">在构建库之前请先检索</h3><p id="yqouk5_75">在你决定编写你自己的代码之前, 请先检查标准库, 看看你在寻找的东西是否已经存在了. 标准库已经为你提供了很多类, 函数, 和属性, 下面是一个列表:</p><ul class="list _bullet" id="yqouk5_76"><li class="list__item" id="yqouk5_78"><p id="yqouk5_82"><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.collections/" id="yqouk5_83" data-external="true" rel="noopener noreferrer">集合</a></p></li><li class="list__item" id="yqouk5_79"><p id="yqouk5_84"><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.sequences/" id="yqouk5_85" data-external="true" rel="noopener noreferrer">序列</a></p></li><li class="list__item" id="yqouk5_80"><p id="yqouk5_86"><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.text/" id="yqouk5_87" data-external="true" rel="noopener noreferrer">字符串操作</a></p></li><li class="list__item" id="yqouk5_81"><p id="yqouk5_88"><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.time/" id="yqouk5_89" data-external="true" rel="noopener noreferrer">时间管理</a></p></li></ul><p id="yqouk5_77">关于标准库中的其它内容, 请查看它的 <a href="https://kotlinlang.org/api/core/kotlin-stdlib/" id="yqouk5_90" data-external="true" rel="noopener noreferrer">API 参考文档</a>.</p></section></section><section class="chapter"><h2 id="kotlin-libraries" data-toc="kotlin-libraries">Kotlin 库</h2><p id="yqouk5_91">标准库涵盖了很多常见的使用场景, 但还有一些它没有解决的情况. 幸运的是, Kotlin 开发组和社区的其它成员开发了大量的库, 来完善和补充标准库. 例如, <a href="https://kotlinlang.org/api/kotlinx-datetime/" id="yqouk5_98" data-external="true" rel="noopener noreferrer"><code class="code" id="yqouk5_99">kotlinx-datetime</code></a> 能够帮助你在不同的平台上管理时间.</p><p id="yqouk5_92">你可以在我们的 <a href="https://klibs.io/" id="yqouk5_100" data-external="true" rel="noopener noreferrer">检索平台</a> 找到有用的库. 要使用这些库, 你需要一些额外的步骤, 例如添加依赖项或 plugin. 每个库都有一个 GitHub 代码仓库, 包含如何将它包含到你的 Kotlin 项目的说明.</p><p id="yqouk5_93">添加库之后, 你就可以导入其中的任何包. 下面是一个示例, 演示如何导入 <code class="code" id="yqouk5_101">kotlinx-datetime</code> 包, 查找纽约的当前时间:</p><pre><code>import kotlinx.datetime.*
+
+fun main() {
+    val now = Clock.System.now() // 得到当前时刻
+    println(&quot;Current instant: $now&quot;)
+
+    val zone = TimeZone.of(&quot;America/New_York&quot;)
+    val localDateTime = now.toLocalDateTime(zone)
+    println(&quot;Local date-time in NY: $localDateTime&quot;)
+}</code></pre><p id="yqouk5_95">在这个示例中:</p><ul class="list _bullet" id="yqouk5_96"><li class="list__item" id="yqouk5_102"><p id="yqouk5_109">导入 <code class="code" id="yqouk5_110">kotlinx.datetime</code> 包.</p></li><li class="list__item" id="yqouk5_103"><p id="yqouk5_111">使用 <code class="code" id="yqouk5_112">Clock.System.now()</code> 函数, 创建 <code class="code" id="yqouk5_113">Instant</code> 类的一个实例, 其中包含当前时间, 并将结果赋值给 <code class="code" id="yqouk5_114">now</code> 变量.</p></li><li class="list__item" id="yqouk5_104"><p id="yqouk5_115">打印输出当前时间.</p></li><li class="list__item" id="yqouk5_105"><p id="yqouk5_116">使用 <code class="code" id="yqouk5_117">TimeZone.of()</code> 函数, 找到纽约的时区, 并将结果赋值给 <code class="code" id="yqouk5_118">zone</code> 变量.</p></li><li class="list__item" id="yqouk5_106"><p id="yqouk5_119">在包含当前时间的实例上调用 <code class="code" id="yqouk5_120">.toLocalDateTime()</code> 函数, 使用纽约的时区作为参数.</p></li><li class="list__item" id="yqouk5_107"><p id="yqouk5_121">将结果赋值给 <code class="code" id="yqouk5_122">localDateTime</code> 变量.</p></li><li class="list__item" id="yqouk5_108"><p id="yqouk5_123">打印输出针对纽约的时区调整后的时间.</p></li></ul><aside class="prompt" data-type="tip" data-title="" id="yqouk5_97"><p id="yqouk5_124">要了解这个示例中使用的函数和类, 详情请参见 <a href="https://kotlinlang.org/api/kotlinx-datetime/kotlinx-datetime/kotlinx.datetime/" id="yqouk5_125" data-external="true" rel="noopener noreferrer">API 参考文档</a>.</p></aside></section><section class="chapter"><h2 id="opt-in-to-apis" data-toc="opt-in-to-apis">对 API 选择使用者同意(Opt-in)</h2><p id="yqouk5_126">库的作者可能会对某些 API 标记为, 在你的代码中使用之前, 需要使用者同意(Opt-in). 当 API 还处于开发阶段, 未来可能发生变化时, 通常会这样做. 如果你不进行用者同意(Opt-in), 你会看到类似这样的警告或错误信息:</p><pre><code>This declaration needs opt-in. Its usage should be marked with '@...' or '@OptIn(...)'</code></pre><p id="yqouk5_128">要选择使用者同意(Opt-in), 请标注 <code class="code" id="yqouk5_136">@OptIn</code>, 之后是括号, 括号之内是对 API 进行分组的类名称, 之后是 2 个冒号 <code class="code" id="yqouk5_137">::</code> 和 <code class="code" id="yqouk5_138">class</code>.</p><p id="yqouk5_129">例如, 标准库的 <code class="code" id="yqouk5_139">uintArrayOf()</code> 函数属于 <code class="code" id="yqouk5_140">@ExperimentalUnsignedTypes</code>, 如 <a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.collections/to-u-int-array.html" id="yqouk5_141" data-external="true" rel="noopener noreferrer">API 参考文档</a> 所示:</p><pre><code>@ExperimentalUnsignedTypes
+inline fun uintArrayOf(vararg elements: UInt): UIntArray</code></pre><p id="yqouk5_131">在你的代码中, 使用者同意(Opt-in)大致如下:</p><pre><code>@OptIn(ExperimentalUnsignedTypes::class)</code></pre><p id="yqouk5_133">下面是一个示例, 对使用 <code class="code" id="yqouk5_142">uintArrayOf()</code> 函数选择使用者同意(Opt-in), 创建一个无符号整数的数组, 并修改其中一个元素:</p><pre><code>@OptIn(ExperimentalUnsignedTypes::class)
+fun main() {
+    // 创建一个无符号整数的数组
+    val unsignedArray: UIntArray = uintArrayOf(1u, 2u, 3u, 4u, 5u)
+
+    // 修改一个元素
+    unsignedArray[2] = 42u
+    println(&quot;Updated array: ${unsignedArray.joinToString()}&quot;)
+    // 输出结果为: Updated array: 1, 2, 42, 4, 5
+}</code></pre><p id="yqouk5_135">这是选择使用者同意(Opt-in)的最简单的方法, 但也有其它方法. 详情请参见 <a href="https://kotlinlang.org/docs/opt-in-requirements.html" id="yqouk5_143">明确要求使用者同意的功能</a>.</p></section><section class="chapter"><h2 id="practice" data-toc="practice">实际练习</h2><section class="chapter"><div class="collapse"><div class="collapse__title"><h3 id="libraries-exercise-1" data-toc="libraries-exercise-1">习题 1</h3></div><div class="collapse__content"><p id="yqouk5_147">你正在开发一个金融应用程序, 帮助使用者计算他们的投资的未来价值. 计算复利的公式是:</p><p> <mjx-container class="MathJax" jax="SVG"><svg style="vertical-align: -1.577ex;" xmlns="http://www.w3.org/2000/svg" width="18.914ex" height="4.106ex" role="img" focusable="false" viewBox="0 -1118 8360 1815"><g stroke="currentColor" fill="currentColor" stroke-width="0" transform="scale(1,-1)"><g data-mml-node="math"><g data-mml-node="mi"><path data-c="1D434" d="M208 74Q208 50 254 46Q272 46 272 35Q272 34 270 22Q267 8 264 4T251 0Q249 0 239 0T205 1T141 2Q70 2 50 0H42Q35 7 35 11Q37 38 48 46H62Q132 49 164 96Q170 102 345 401T523 704Q530 716 547 716H555H572Q578 707 578 706L606 383Q634 60 636 57Q641 46 701 46Q726 46 726 36Q726 34 723 22Q720 7 718 4T704 0Q701 0 690 0T651 1T578 2Q484 2 455 0H443Q437 6 437 9T439 27Q443 40 445 43L449 46H469Q523 49 533 63L521 213H283L249 155Q208 86 208 74ZM516 260Q516 271 504 416T490 562L463 519Q447 492 400 412L310 260L413 259Q516 259 516 260Z"></path></g><g data-mml-node="mo" transform="translate(1027.8,0)"><path data-c="3D" d="M56 347Q56 360 70 367H707Q722 359 722 347Q722 336 708 328L390 327H72Q56 332 56 347ZM56 153Q56 168 72 173H708Q722 163 722 153Q722 140 707 133H70Q56 140 56 153Z"></path></g><g data-mml-node="mi" transform="translate(2083.6,0)"><path data-c="1D443" d="M287 628Q287 635 230 637Q206 637 199 638T192 648Q192 649 194 659Q200 679 203 681T397 683Q587 682 600 680Q664 669 707 631T751 530Q751 453 685 389Q616 321 507 303Q500 302 402 301H307L277 182Q247 66 247 59Q247 55 248 54T255 50T272 48T305 46H336Q342 37 342 35Q342 19 335 5Q330 0 319 0Q316 0 282 1T182 2Q120 2 87 2T51 1Q33 1 33 11Q33 13 36 25Q40 41 44 43T67 46Q94 46 127 49Q141 52 146 61Q149 65 218 339T287 628ZM645 554Q645 567 643 575T634 597T609 619T560 635Q553 636 480 637Q463 637 445 637T416 636T404 636Q391 635 386 627Q384 621 367 550T332 412T314 344Q314 342 395 342H407H430Q542 342 590 392Q617 419 631 471T645 554Z"></path></g><g data-mml-node="mo" transform="translate(3056.8,0)"><path data-c="D7" d="M630 29Q630 9 609 9Q604 9 587 25T493 118L389 222L284 117Q178 13 175 11Q171 9 168 9Q160 9 154 15T147 29Q147 36 161 51T255 146L359 250L255 354Q174 435 161 449T147 471Q147 480 153 485T168 490Q173 490 175 489Q178 487 284 383L389 278L493 382Q570 459 587 475T609 491Q630 491 630 471Q630 464 620 453T522 355L418 250L522 145Q606 61 618 48T630 29Z"></path></g><g data-mml-node="mo" transform="translate(4057,0)"><path data-c="28" d="M94 250Q94 319 104 381T127 488T164 576T202 643T244 695T277 729T302 750H315H319Q333 750 333 741Q333 738 316 720T275 667T226 581T184 443T167 250T184 58T225 -81T274 -167T316 -220T333 -241Q333 -250 318 -250H315H302L274 -226Q180 -141 137 -14T94 250Z"></path></g><g data-mml-node="mn" transform="translate(4446,0)"><path data-c="31" d="M213 578L200 573Q186 568 160 563T102 556H83V602H102Q149 604 189 617T245 641T273 663Q275 666 285 666Q294 666 302 660V361L303 61Q310 54 315 52T339 48T401 46H427V0H416Q395 3 257 3Q121 3 100 0H88V46H114Q136 46 152 46T177 47T193 50T201 52T207 57T213 61V578Z"></path></g><g data-mml-node="mo" transform="translate(5168.2,0)"><path data-c="2B" d="M56 237T56 250T70 270H369V420L370 570Q380 583 389 583Q402 583 409 568V270H707Q722 262 722 250T707 230H409V-68Q401 -82 391 -82H389H387Q375 -82 369 -68V230H70Q56 237 56 250Z"></path></g><g data-mml-node="mstyle" transform="translate(6168.4,0)"><g data-mml-node="mfrac"><g data-mml-node="mi" transform="translate(294.5,676)"><path data-c="1D45F" d="M21 287Q22 290 23 295T28 317T38 348T53 381T73 411T99 433T132 442Q161 442 183 430T214 408T225 388Q227 382 228 382T236 389Q284 441 347 441H350Q398 441 422 400Q430 381 430 363Q430 333 417 315T391 292T366 288Q346 288 334 299T322 328Q322 376 378 392Q356 405 342 405Q286 405 239 331Q229 315 224 298T190 165Q156 25 151 16Q138 -11 108 -11Q95 -11 87 -5T76 7T74 17Q74 30 114 189T154 366Q154 405 128 405Q107 405 92 377T68 316T57 280Q55 278 41 278H27Q21 284 21 287Z"></path></g><g data-mml-node="mi" transform="translate(220,-686)"><path data-c="1D45B" d="M21 287Q22 293 24 303T36 341T56 388T89 425T135 442Q171 442 195 424T225 390T231 369Q231 367 232 367L243 378Q304 442 382 442Q436 442 469 415T503 336T465 179T427 52Q427 26 444 26Q450 26 453 27Q482 32 505 65T540 145Q542 153 560 153Q580 153 580 145Q580 144 576 130Q568 101 554 73T508 17T439 -10Q392 -10 371 17T350 73Q350 92 386 193T423 345Q423 404 379 404H374Q288 404 229 303L222 291L189 157Q156 26 151 16Q138 -11 108 -11Q95 -11 87 -5T76 7T74 17Q74 30 112 180T152 343Q153 348 153 366Q153 405 129 405Q91 405 66 305Q60 285 60 284Q58 278 41 278H27Q21 284 21 287Z"></path></g><rect width="800" height="60" x="120" y="220"></rect></g><g data-mml-node="msup" transform="translate(1040,0)"><g data-mml-node="mo"><path data-c="29" d="M60 749L64 750Q69 750 74 750H86L114 726Q208 641 251 514T294 250Q294 182 284 119T261 12T224 -76T186 -143T145 -194T113 -227T90 -246Q87 -249 86 -250H74Q66 -250 63 -250T58 -247T55 -238Q56 -237 66 -225Q221 -64 221 250T66 725Q56 737 55 738Q55 746 60 749Z"></path></g><g data-mml-node="TeXAtom" transform="translate(422,413) scale(0.707)" data-mjx-texclass="ORD"><g data-mml-node="mi"><path data-c="1D45B" d="M21 287Q22 293 24 303T36 341T56 388T89 425T135 442Q171 442 195 424T225 390T231 369Q231 367 232 367L243 378Q304 442 382 442Q436 442 469 415T503 336T465 179T427 52Q427 26 444 26Q450 26 453 27Q482 32 505 65T540 145Q542 153 560 153Q580 153 580 145Q580 144 576 130Q568 101 554 73T508 17T439 -10Q392 -10 371 17T350 73Q350 92 386 193T423 345Q423 404 379 404H374Q288 404 229 303L222 291L189 157Q156 26 151 16Q138 -11 108 -11Q95 -11 87 -5T76 7T74 17Q74 30 112 180T152 343Q153 348 153 366Q153 405 129 405Q91 405 66 305Q60 285 60 284Q58 278 41 278H27Q21 284 21 287Z"></path></g><g data-mml-node="mi" transform="translate(600,0)"><path data-c="1D461" d="M26 385Q19 392 19 395Q19 399 22 411T27 425Q29 430 36 430T87 431H140L159 511Q162 522 166 540T173 566T179 586T187 603T197 615T211 624T229 626Q247 625 254 615T261 596Q261 589 252 549T232 470L222 433Q222 431 272 431H323Q330 424 330 420Q330 398 317 385H210L174 240Q135 80 135 68Q135 26 162 26Q197 26 230 60T283 144Q285 150 288 151T303 153H307Q322 153 322 145Q322 142 319 133Q314 117 301 95T267 48T216 6T155 -11Q125 -11 98 4T59 56Q57 64 57 83V101L92 241Q127 382 128 383Q128 385 77 385H26Z"></path></g></g></g></g></g></g></svg></mjx-container></p><p id="yqouk5_149">其中:</p><ul class="list _bullet" id="yqouk5_150"><li class="list__item" id="yqouk5_157"><p id="yqouk5_162"><code class="code" id="yqouk5_163">A</code> 是计算利息后的累计金额 (本金 + 利息).</p></li><li class="list__item" id="yqouk5_158"><p id="yqouk5_164"><code class="code" id="yqouk5_165">P</code> 是本金 (初始投资额).</p></li><li class="list__item" id="yqouk5_159"><p id="yqouk5_166"><code class="code" id="yqouk5_167">r</code> 是年利率 (小数).</p></li><li class="list__item" id="yqouk5_160"><p id="yqouk5_168"><code class="code" id="yqouk5_169">n</code> 是每年计算复利的次数.</p></li><li class="list__item" id="yqouk5_161"><p id="yqouk5_170"><code class="code" id="yqouk5_171">t</code> 是投资时间 (年).</p></li></ul><p id="yqouk5_151">请更新代码:</p><ol class="list _decimal" id="yqouk5_152" type="1"><li class="list__item" id="yqouk5_172"><p id="yqouk5_174">从 <a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.math/" id="yqouk5_175" data-external="true" rel="noopener noreferrer"><code class="code" id="yqouk5_176">kotlin.math</code> 包</a> 导入必要的函数.</p></li><li class="list__item" id="yqouk5_173"><p id="yqouk5_177">向 <code class="code" id="yqouk5_178">calculateCompoundInterest()</code> 函数添加函数体, 计算应用复利后的最终金额.</p></li></ol><pre><code>// 请在这里编写你的代码
+
+fun calculateCompoundInterest(P: Double, r: Double, n: Int, t: Int): Double {
+    // 请在这里编写你的代码
+}
+
+fun main() {
+    val principal = 1000.0
+    val rate = 0.05
+    val timesCompounded = 4
+    val years = 5
+    val amount = calculateCompoundInterest(principal, rate, timesCompounded, years)
+    println(&quot;The accumulated amount is: $amount&quot;)
+    // 输出结果为: The accumulated amount is: 1282.0372317085844
+}</code></pre><details class="solution"><summary>参考答案</summary><pre><code>import kotlin.math.*
+
+fun calculateCompoundInterest(P: Double, r: Double, n: Int, t: Int): Double {
+    return P * (1 + r / n).pow(n * t)
+}
+
+fun main() {
+    val principal = 1000.0
+    val rate = 0.05
+    val timesCompounded = 4
+    val years = 5
+    val amount = calculateCompoundInterest(principal, rate, timesCompounded, years)
+    println(&quot;The accumulated amount is: $amount&quot;)
+    // 输出结果为: The accumulated amount is: 1282.0372317085844
+}</code></pre></details></div></div></section><section class="chapter"><div class="collapse"><div class="collapse__title"><h3 id="libraries-exercise-2" data-toc="libraries-exercise-2">习题 2</h3></div><div class="collapse__content"><p id="yqouk5_179">你想要测量在你的程序中执行多个数据处理任务消耗的时间. 请更新代码, 加入正确的导入语句, 以及 <a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.time/" id="yqouk5_184" data-external="true" rel="noopener noreferrer"><code class="code" id="yqouk5_185">kotlin.time</code></a> 包中的正确的函数:</p><pre><code>// 请在这里编写你的代码
+
+fun main() {
+    val timeTaken = /* 请在这里编写你的代码 */ {
+        // 模拟某些数据处理
+        val data = List(1000) { it * 2 }
+        val filteredData = data.filter { it % 3 == 0 }
+
+        // 模拟处理过滤后的数据
+        val processedData = filteredData.map { it / 2 }
+        println(&quot;Processed data&quot;)
+    }
+
+    println(&quot;Time taken: $timeTaken&quot;) // 例如: 16 ms
+}</code></pre><details class="solution"><summary>参考答案</summary><pre><code>import kotlin.time.measureTime
+
+fun main() {
+    val timeTaken = measureTime {
+        // 模拟某些数据处理
+        val data = List(1000) { it * 2 }
+        val filteredData = data.filter { it % 3 == 0 }
+
+        // 模拟处理过滤后的数据
+        val processedData = filteredData.map { it / 2 }
+        println(&quot;Processed data&quot;)
+    }
+
+    println(&quot;Time taken: $timeTaken&quot;) // 例如: 16 ms
+}</code></pre></details></div></div></section><section class="chapter"><div class="collapse"><div class="collapse__title"><h3 id="properties-exercise-3" data-toc="properties-exercise-3">习题 3</h3></div><div class="collapse__content"><p id="yqouk5_186">在最新的 Kotlin 发布版中, 标准库中有一个新的功能. 你想要试用这个功能, 但它要求使用者同意. 这个功能属于 <a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-experimental-stdlib-api/" id="yqouk5_189" data-external="true" rel="noopener noreferrer"><code class="code" id="yqouk5_190">@ExperimentalStdlibApi</code></a>. 那么你的代码中, 选择使用者同意的代码应该是什么样的?</p><details class="solution"><summary>参考答案</summary><pre><code>@OptIn(ExperimentalStdlibApi::class)</code></pre></details></div></div></section></section><section class="chapter"><h2 id="what-s-next" data-toc="what-s-next">下一步做什么?</h2><p id="yqouk5_191">恭喜你! 你已经完成了中级教程! 欢迎 <a href="https://surveys.hotjar.com/bf4ce865-99ce-4fc1-b107-e9b16bc31592" id="yqouk5_194" data-external="true" rel="noopener noreferrer">分享你的阅读体验</a>.</p><p id="yqouk5_192">下一步, 请查看我们针对流行的 Kotlin 应用程序的教程:</p><ul class="list _bullet" id="yqouk5_193"><li class="list__item" id="yqouk5_195"><p id="yqouk5_197"><a href="https://kotlinlang.org/docs/jvm-create-project-with-spring-boot.html" id="yqouk5_198">使用 Spring Boot 和 Kotlin 创建一个后端应用程序</a></p></li><li class="list__item" id="yqouk5_196"><p id="yqouk5_199">从头创建一个针对 Android 和 iOS 的跨平台应用程序, 并且:</p><ul class="list _bullet" id="yqouk5_200"><li class="list__item" id="yqouk5_201"><p id="yqouk5_203"><a href="https://kotlinlang.org/docs/multiplatform/multiplatform-create-first-app.html" id="yqouk5_204" data-external="true" rel="noopener noreferrer">共用业务逻辑, 但使用原生 UI</a></p></li><li class="list__item" id="yqouk5_202"><p id="yqouk5_205"><a href="https://kotlinlang.org/docs/multiplatform/compose-multiplatform-create-first-app.html" id="yqouk5_206" data-external="true" rel="noopener noreferrer">共用业务逻辑与 UI</a></p></li></ul></li></ul></section>
+    </article>
+    <section class="recall" aria-labelledby="recall-title">
+      <span class="note-kind">读完自测</span>
+      <h2 id="recall-title">先不看正文，回答这三个问题</h2>
+      <ol><li>标准库与第三方库分别从哪里获得？</li><li>为什么实现前应先搜索已有 API？</li><li>@OptIn 表达了怎样的兼容性风险？</li></ol>
+      <p class="transfer"><strong>迁移练习：</strong>从你正在读的一段 Kotlin 代码里，找出本章概念的一个真实用法；用一句话解释它为什么这样写。</p>
+    </section>
+    <nav class="chapter-switcher" aria-label="章节导航">
+    <a href="../advanced-null-safety/index.html">← 进阶空安全</a>
+    <a class="course-home" href="../index.html">全部章节</a>
+    <span></span>
+  </nav>
+    <footer class="license-note">
+      <p>这是用于个人学习的非官方中文阅读版。正文依据 <a href="https://kotlinlang.org/docs/kotlin-tour-intermediate-libraries-and-apis.html">Kotlin 官方文档</a>整理，并参考公开中文译文对照整理；原始内容由 JetBrains 与 Kotlin 贡献者维护，采用 <a href="https://github.com/JetBrains/kotlin-web-site/blob/master/LICENSE">Apache License 2.0</a>。</p>
+    </footer>
+  </main>
+</body>
+</html>

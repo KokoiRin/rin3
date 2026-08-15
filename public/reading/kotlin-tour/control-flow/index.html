@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="通过 if、when、区间和循环，让程序根据条件选择路线并重复执行。">
+  <title>控制流｜RIN III</title>
+  <link rel="stylesheet" href="../reader.css">
+</head>
+<body>
+  <nav class="site-nav" aria-label="站点导航">
+    <a href="../index.html">← Kotlin Tour 中文学习版</a>
+    <a href="../../../computer-science/kotlin-tour/">RIN III 学习记录</a>
+  </nav>
+  <main class="reader">
+    <header class="chapter-header">
+      <span class="chapter-kicker">初学者 · 第 4 章</span>
+      <h1>控制流</h1>
+      <p class="lead">通过 if、when、区间和循环，让程序根据条件选择路线并重复执行。</p>
+      <div class="title-rule"></div>
+      <aside class="learning-note" aria-label="学习主线">
+        <strong>学习主线</strong>
+        <p>Kotlin 的 if 与 when 都能产生值；when 适合把多种情况明确列成分支。</p>
+      </aside>
+      <nav class="chapter-switcher" aria-label="章节导航">
+    <a href="../collections/index.html">← 集合</a>
+    <a class="course-home" href="../index.html">全部章节</a>
+    <a href="../functions/index.html">函数 →</a>
+  </nav>
+    </header>
+    <article class="translated-article">
+<p id="-o649r4_3">和其他的编程语言一样, Kotlin 能够根据一个代码片段的计算结果是否为 true 来做出决策. 这样的代码片段称为 <span class="control" id="-o649r4_31">条件表达式</span>. Kotlin 还能够创建循环, 并在循环上迭代.</p><section class="chapter"><h2 id="-o649r4_4" data-toc="-o649r4_4">条件表达式</h2><p id="-o649r4_32">Kotlin 提供了 <code class="code" id="-o649r4_36">if</code> 和 <code class="code" id="-o649r4_37">when</code> 来检测条件表达式.</p><aside class="prompt" data-type="note" data-title="" id="-o649r4_33"><p id="-o649r4_38">如果你必须在 <code class="code" id="-o649r4_40">if</code> 和 <code class="code" id="-o649r4_41">when</code> 之间做选择, 我们推荐使用 <code class="code" id="-o649r4_42">when</code>, 因为它能够:</p><ul class="list _bullet" id="-o649r4_39"><li class="list__item" id="-o649r4_43"><p id="-o649r4_46">让你的代码更加易于阅读.</p></li><li class="list__item" id="-o649r4_44"><p id="-o649r4_47">易于添加新的分支.</p></li><li class="list__item" id="-o649r4_45"><p id="-o649r4_48">让你的代码更少出现错误.</p></li></ul></aside><section class="chapter"><h3 id="if" data-toc="if">If</h3><p id="-o649r4_49">要使用 <code class="code" id="-o649r4_53">if</code>, 请将条件表达式放在小括号 <code class="code" id="-o649r4_54">()</code> 之内, 当调节表达式的结果为 true 时要做的操作放在大括号 <code class="code" id="-o649r4_55">{}</code> 之内:</p><pre><code>fun main() {
+//sampleStart
+    val d: Int
+    val check = true
+
+    if (check) {
+        d = 1
+    } else {
+        d = 2
+    }
+
+    println(d)
+    // 输出结果为 1
+//sampleEnd
+}</code></pre><p id="-o649r4_51">在 Kotlin 中没有三元操作符 <code class="code" id="-o649r4_56">condition ? then : else</code>. <code class="code" id="-o649r4_57">if</code> 可以用作表达式, 替代三元操作符的功能. 如果每个分支中只有 1 行代码, 那么大括号 <code class="code" id="-o649r4_58">{}</code> 可以省略:</p><pre><code>fun main() {
+//sampleStart
+    val a = 1
+    val b = 2
+
+    println(if (a &gt; b) a else b) // 返回值: 2
+//sampleEnd
+}</code></pre></section><section class="chapter"><h3 id="when" data-toc="when">When</h3><p id="-o649r4_59">如果你的条件表达式存在多个分支, 请使用 <code class="code" id="-o649r4_75">when</code>.</p><p id="-o649r4_60">要使用 <code class="code" id="-o649r4_76">when</code>, 你应该:</p><ul class="list _bullet" id="-o649r4_61"><li class="list__item" id="-o649r4_77"><p id="-o649r4_80">将你想要计算的值放在括号 <code class="code" id="-o649r4_81">()</code> 之内.</p></li><li class="list__item" id="-o649r4_78"><p id="-o649r4_82">将所有的分支放在大括号 <code class="code" id="-o649r4_83">{}</code> 之内.</p></li><li class="list__item" id="-o649r4_79"><p id="-o649r4_84">在每个分支中使用 <code class="code" id="-o649r4_85">-&gt;</code> 来分隔, <code class="code" id="-o649r4_86">-&gt;</code> 之前是分支的检查条件, 之后是检查成功时执行的操作.</p></li></ul><p id="-o649r4_62"><code class="code" id="-o649r4_87">when</code> 可以用作语句, 也可以用作表达式. <span class="control" id="-o649r4_88">语句</span> 不会返回任何值, 只是执行一些动作.</p><p id="-o649r4_63">下面是将 <code class="code" id="-o649r4_89">when</code> 用作语句的例子:</p><pre><code>fun main() {
+//sampleStart
+    val obj = &quot;Hello&quot;
+
+    when (obj) {
+        // 检查 obj 是否等于 &quot;1&quot;
+        &quot;1&quot; -&gt; println(&quot;One&quot;)
+        // 检查 obj 是否等于 &quot;Hello&quot;
+        &quot;Hello&quot; -&gt; println(&quot;Greeting&quot;)
+        // 默认语句
+        else -&gt; println(&quot;Unknown&quot;)
+    }
+    // 输出结果为 Greeting
+//sampleEnd
+}</code></pre><aside class="prompt" data-type="note" data-title="" id="-o649r4_65"><p id="-o649r4_90">注意, 会按顺序检查所有的分支条件, 直到遇到一个条件被满足. 因此只有第一个满足条件的分支会被执行.</p></aside><p id="-o649r4_66"><span class="control" id="-o649r4_91">表达式</span> 返回一个值, 可以在之后的代码中使用.</p><p id="-o649r4_67">下面是将 <code class="code" id="-o649r4_92">when</code> 用作表达式的例子. <code class="code" id="-o649r4_93">when</code> 表达式的结果被立即赋值给一个变量, 之后的 <code class="code" id="-o649r4_94">println()</code> 函数使用这个变量:</p><pre><code>fun main() {
+//sampleStart
+    val obj = &quot;Hello&quot;
+
+    val result = when (obj) {
+        // 如果 obj 等于 &quot;1&quot;, 将 result 设置为 &quot;one&quot;
+        &quot;1&quot; -&gt; &quot;One&quot;
+        // 如果 obj 等于 &quot;Hello&quot;, 将 result 设置为 &quot;Greeting&quot;
+        &quot;Hello&quot; -&gt; &quot;Greeting&quot;
+        // 如果前面的条件都不满足, 将 result 设置为 &quot;Unknown&quot;
+        else -&gt; &quot;Unknown&quot;
+    }
+    println(result)
+    // 输出结果为 Greeting
+//sampleEnd
+}</code></pre><p id="-o649r4_69">到此为止的示例中, <code class="code" id="-o649r4_95">when</code> 都存在一个判定对象: <code class="code" id="-o649r4_96">obj</code>. 但 <code class="code" id="-o649r4_97">when</code> 也可以不使用判定对象.</p><p id="-o649r4_70">下面的例子使用 <span class="control" id="-o649r4_98">没有</span> 判定对象的 <code class="code" id="-o649r4_99">when</code> 表达式, 来判定一系列的 Boolean 表达式:</p><pre><code>fun main() {
+    val trafficLightState = &quot;Red&quot; // 可以是 &quot;Green&quot;, &quot;Yellow&quot;, 或 &quot;Red&quot;
+
+    val trafficAction = when {
+        trafficLightState == &quot;Green&quot; -&gt; &quot;Go&quot;
+        trafficLightState == &quot;Yellow&quot; -&gt; &quot;Slow down&quot;
+        trafficLightState == &quot;Red&quot; -&gt; &quot;Stop&quot;
+        else -&gt; &quot;Malfunction&quot;
+    }
+
+    println(trafficAction)
+    // 输出结果为 Stop
+}</code></pre><p id="-o649r4_72">但是, 你也可以使用 <code class="code" id="-o649r4_100">trafficLightState</code> 作为判定对象, 来编写这段代码:</p><pre><code>fun main() {
+    val trafficLightState = &quot;Red&quot; // 可以是 &quot;Green&quot;, &quot;Yellow&quot;, 或 &quot;Red&quot;
+
+    val trafficAction = when (trafficLightState) {
+        &quot;Green&quot; -&gt; &quot;Go&quot;
+        &quot;Yellow&quot; -&gt; &quot;Slow down&quot;
+        &quot;Red&quot; -&gt; &quot;Stop&quot;
+        else -&gt; &quot;Malfunction&quot;
+    }
+
+    println(trafficAction)
+    // 输出结果为 Stop
+}</code></pre><p id="-o649r4_74">使用带有判定对象的 <code class="code" id="-o649r4_101">when</code> 可以让你的代码更加易于阅读和维护. 当你对 <code class="code" id="-o649r4_102">when</code> 表达式使用判定对象时, 也有助于 Kotlin 检查是否覆盖了所有的可能情况. 否则, 如果你对 <code class="code" id="-o649r4_103">when</code> 表达式不使用判定对象, 你就需要添加一个 else 分支.</p></section></section><section class="chapter"><h2 id="-o649r4_5" data-toc="-o649r4_5">条件表达式的实际练习</h2><section class="chapter"><div class="collapse"><div class="collapse__title"><h3 id="conditional-expressions-exercise-1" data-toc="conditional-expressions-exercise-1">习题 1</h3></div><div class="collapse__content"><p id="-o649r4_106">创建一个简单的游戏, 当你的 2 个骰子掷出相同的结果时, 可以获胜. 使用 <code class="code" id="-o649r4_113">if</code> 来做判断, 如果骰子结果相同, 打印 <code class="code" id="-o649r4_114">You win :)</code>, 否则打印 <code class="code" id="-o649r4_115">You lose :(</code>.</p><aside class="prompt" data-type="tip" data-title="" id="-o649r4_107"><p id="-o649r4_116">在这个习题中, 你要导入包, 以便使用 <code class="code" id="-o649r4_117">Random.nextInt()</code> 函数, 得到一个随机的 <code class="code" id="-o649r4_118">Int</code> 值. 关于导入包, 详情请参见 <a href="https://kotlinlang.org/docs/packages.html" id="-o649r4_119">包与导入</a>.</p></aside><dl id="-o649r4_108" data-style="title-top"><dt id="-o649r4_120" data-expandable="true" data-expanded="false">提示</dt><dd><p>使用 <a href="https://kotlinlang.org/docs/operator-overloading.html#equality-and-inequality-operators" id="-o649r4_121">相等运算符</a> (<code class="code" id="-o649r4_122">==</code>) 比较骰子的结果.</p></dd></dl><pre><code>import kotlin.random.Random
+
+fun main() {
+    val firstResult = Random.nextInt(6)
+    val secondResult = Random.nextInt(6)
+    // 在这里编写你的代码
+}</code></pre><details class="solution"><summary>参考答案</summary><pre><code>import kotlin.random.Random
+
+fun main() {
+    val firstResult = Random.nextInt(6)
+    val secondResult = Random.nextInt(6)
+    if (firstResult == secondResult)
+        println(&quot;You win :)&quot;)
+    else
+        println(&quot;You lose :(&quot;)
+}</code></pre></details></div></div></section><section class="chapter"><div class="collapse"><div class="collapse__title"><h3 id="conditional-expressions-exercise-2" data-toc="conditional-expressions-exercise-2">习题 2</h3></div><div class="collapse__content"><p id="-o649r4_123">使用 <code class="code" id="-o649r4_129">when</code> 表达式, 更新下面的程序, 当你输入游戏控制台按钮的名称时, 打印对应的动作.</p><div class="table-wrapper"><table class="wide" id="-o649r4_124"><thead><tr class="ijRowHead" id="-o649r4_130"><th id="-o649r4_136"><p><span class="control" id="-o649r4_138">按钮</span></p></th><th id="-o649r4_137"><p><span class="control" id="-o649r4_139">动作</span></p></th></tr></thead><tbody><tr id="-o649r4_131"><td id="-o649r4_140"><p>A</p></td><td id="-o649r4_141"><p>Yes</p></td></tr><tr id="-o649r4_132"><td id="-o649r4_142"><p>B</p></td><td id="-o649r4_143"><p>No</p></td></tr><tr id="-o649r4_133"><td id="-o649r4_144"><p>X</p></td><td id="-o649r4_145"><p>Menu</p></td></tr><tr id="-o649r4_134"><td id="-o649r4_146"><p>Y</p></td><td id="-o649r4_147"><p>Nothing</p></td></tr><tr id="-o649r4_135"><td id="-o649r4_148"><p>其他</p></td><td id="-o649r4_149"><p>There is no such button</p></td></tr></tbody></table></div><pre><code>fun main() {
+    val button = &quot;A&quot;
+
+    println(
+        // 在这里编写你的代码
+    )
+}</code></pre><details class="solution"><summary>参考答案</summary><pre><code>fun main() {
+    val button = &quot;A&quot;
+
+    println(
+        when (button) {
+            &quot;A&quot; -&gt; &quot;Yes&quot;
+            &quot;B&quot; -&gt; &quot;No&quot;
+            &quot;X&quot; -&gt; &quot;Menu&quot;
+            &quot;Y&quot; -&gt; &quot;Nothing&quot;
+            else -&gt; &quot;There is no such button&quot;
+        }
+    )
+}</code></pre></details></div></div></section></section><section class="chapter"><h2 id="-o649r4_6" data-toc="-o649r4_6">值范围</h2><p id="-o649r4_150">在讨论循环之前, 有必要了解如何构造一个作为循环迭代对象的值范围.</p><p id="-o649r4_151">在 Kotlin 中, 创建值范围最常见的办法是使用 <code class="code" id="-o649r4_157">..</code> 操作符. 例如, <code class="code" id="-o649r4_158">1..4</code> 相当于 <code class="code" id="-o649r4_159">1, 2, 3, 4</code>.</p><p id="-o649r4_152">要声明一个值范围, 不包含它的终端值, 请使用 <code class="code" id="-o649r4_160">..&lt;</code> 操作符. 例如, <code class="code" id="-o649r4_161">1..&lt;4</code> 相当于 <code class="code" id="-o649r4_162">1, 2, 3</code>.</p><p id="-o649r4_153">要声明一个相反顺序的值范围, 请使用 <a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.ranges/down-to.html" id="-o649r4_163" data-external="true" rel="noopener noreferrer"><code class="code" id="-o649r4_166">downTo</code></a>. 例如, <code class="code" id="-o649r4_164">4 downTo 1</code> 相当于 <code class="code" id="-o649r4_165">4, 3, 2, 1</code>.</p><p id="-o649r4_154">要声明一个值范围, 递增步长不为 1, 请使用 <a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.ranges/step.html" id="-o649r4_167" data-external="true" rel="noopener noreferrer"><code class="code" id="-o649r4_170">step</code></a> 指定你希望的递增步长值. 例如, <code class="code" id="-o649r4_168">1..5 step 2</code> 相当于 <code class="code" id="-o649r4_169">1, 3, 5</code>.</p><p id="-o649r4_155">你也可以对 <code class="code" id="-o649r4_171">Char</code> 的值范围进行相同的操作:</p><ul class="list _bullet" id="-o649r4_156"><li class="list__item" id="-o649r4_172"><p id="-o649r4_174"><code class="code" id="-o649r4_175">'a'..'d'</code> 相当于 <code class="code" id="-o649r4_176">'a', 'b', 'c', 'd'</code></p></li><li class="list__item" id="-o649r4_173"><p id="-o649r4_177"><code class="code" id="-o649r4_178">'z' downTo 's' step 2</code> 相当于 <code class="code" id="-o649r4_179">'z', 'x', 'v', 't'</code></p></li></ul></section><section class="chapter"><h2 id="-o649r4_7" data-toc="-o649r4_7">循环</h2><p id="-o649r4_180">在编程中两种最常见的循环结构是 <code class="code" id="-o649r4_183">for</code> 和 <code class="code" id="-o649r4_184">while</code>. 使用 <code class="code" id="-o649r4_185">for</code> 可以对一个值范围进行遍历, 并执行某个操作. 使用 <code class="code" id="-o649r4_186">while</code> 可以反复执行某个操作, 直到满足某个条件为止.</p><section class="chapter"><h3 id="for" data-toc="for">for</h3><p id="-o649r4_187">使用关于值范围的新知识, 你可以创建一个 <code class="code" id="-o649r4_192">for</code> 循环, 对数字 1 到 5 进行遍历, 并打印每个数字.</p><p id="-o649r4_188">请将迭代器(iterator)和值范围放在小括号 <code class="code" id="-o649r4_193">()</code> 之内, 并使用关键字 <code class="code" id="-o649r4_194">in</code>. 将你想要执行的操作放在大括号 <code class="code" id="-o649r4_195">{}</code> 之内:</p><pre><code>fun main() {
+//sampleStart
+    for (number in 1..5) {
+        // number 是迭代器(iterator), 1..5 是值范围
+        print(number)
+    }
+    // 输出结果为 12345
+//sampleEnd
+}</code></pre><p id="-o649r4_190"><code class="code" id="-o649r4_196">for</code> 循环也可以对集合(Collection)进行遍历:</p><pre><code>fun main() {
+//sampleStart
+    val cakes = listOf(&quot;carrot&quot;, &quot;cheese&quot;, &quot;chocolate&quot;)
+
+    for (cake in cakes) {
+        println(&quot;Yummy, it's a $cake cake!&quot;)
+    }
+    // 输出结果为 Yummy, it's a carrot cake!
+    // 输出结果为 Yummy, it's a cheese cake!
+    // 输出结果为 Yummy, it's a chocolate cake!
+//sampleEnd
+}</code></pre></section><section class="chapter"><h3 id="while" data-toc="while">while</h3><p id="-o649r4_197"><code class="code" id="-o649r4_208">while</code> 有两种使用方式:</p><ul class="list _bullet" id="-o649r4_198"><li class="list__item" id="-o649r4_209"><p id="-o649r4_211">当一个条件表达式为 true 时, 执行一个代码段. (<code class="code" id="-o649r4_212">while</code>)</p></li><li class="list__item" id="-o649r4_210"><p id="-o649r4_213">先执行一个代码段, 然后再检查条件表达式. (<code class="code" id="-o649r4_214">do-while</code>)</p></li></ul><p id="-o649r4_199">在第一种使用场景 (<code class="code" id="-o649r4_215">while</code>) 中:</p><ul class="list _bullet" id="-o649r4_200"><li class="list__item" id="-o649r4_216"><p id="-o649r4_218">在小括号 <code class="code" id="-o649r4_219">()</code> 中声明条件表达式, 当满足这个条件表达式时, 循环会继续.</p></li><li class="list__item" id="-o649r4_217"><p id="-o649r4_220">在大括号 <code class="code" id="-o649r4_221">{}</code> 中, 添加你想要执行的操作.</p></li></ul><aside class="prompt" data-type="note" data-title="" id="-o649r4_201"><p id="-o649r4_222">下面的示例使用 <a href="https://kotlinlang.org/docs/operator-overloading.html#increments-and-decrements" id="-o649r4_223">递增操作符</a> <code class="code" id="-o649r4_224">++</code> 来增加 <code class="code" id="-o649r4_225">cakesEaten</code> 变量的值.</p></aside><pre><code>fun main() {
+//sampleStart
+    var cakesEaten = 0
+    while (cakesEaten &lt; 3) {
+        println(&quot;Eat a cake&quot;)
+        cakesEaten++
+    }
+    // 输出结果为 Eat a cake
+    // 输出结果为 Eat a cake
+    // 输出结果为 Eat a cake
+//sampleEnd
+}</code></pre><p id="-o649r4_203">在第二种使用场景 (<code class="code" id="-o649r4_226">do-while</code>) 中:</p><ul class="list _bullet" id="-o649r4_204"><li class="list__item" id="-o649r4_227"><p id="-o649r4_229">在小括号 <code class="code" id="-o649r4_230">()</code> 中声明条件表达式, 当满足这个条件表达式时, 循环会继续.</p></li><li class="list__item" id="-o649r4_228"><p id="-o649r4_231">在大括号 <code class="code" id="-o649r4_232">{}</code> 中, 添加你想要执行的操作, 并添加关键字 <code class="code" id="-o649r4_233">do</code>.</p></li></ul><pre><code>fun main() {
+//sampleStart
+    var cakesEaten = 0
+    var cakesBaked = 0
+    while (cakesEaten &lt; 3) {
+        println(&quot;Eat a cake&quot;)
+        cakesEaten++
+    }
+    do {
+        println(&quot;Bake a cake&quot;)
+        cakesBaked++
+    } while (cakesBaked &lt; cakesEaten)
+    // 输出结果为 Eat a cake
+    // 输出结果为 Eat a cake
+    // 输出结果为 Eat a cake
+    // 输出结果为 Bake a cake
+    // 输出结果为 Bake a cake
+    // 输出结果为 Bake a cake
+//sampleEnd
+}</code></pre><p id="-o649r4_206">关于条件表达式与循环的更多示例, 请参见 <a href="https://kotlinlang.org/docs/control-flow.html" id="-o649r4_234">条件与循环</a>.</p><p id="-o649r4_207">现在你已经直到了 Kotlin 控制流的基本知识, 下面我们来学习如何编写你自己的 <a href="../functions/index.html" id="-o649r4_235">函数</a>.</p></section></section><section class="chapter"><h2 id="-o649r4_8" data-toc="-o649r4_8">循环的实际练习</h2><section class="chapter"><div class="collapse"><div class="collapse__title"><h3 id="loops-exercise-1" data-toc="loops-exercise-1">习题 1</h3></div><div class="collapse__content"><p id="-o649r4_239">你有一个程序, 计算批萨的片数, 直到有了 8 片, 组成一整个批萨. 请用两种方式重构这个程序:</p><ul class="list _bullet" id="-o649r4_240"><li class="list__item" id="-o649r4_247"><p id="-o649r4_249">使用 <code class="code" id="-o649r4_250">while</code> 循环.</p></li><li class="list__item" id="-o649r4_248"><p id="-o649r4_251">使用 <code class="code" id="-o649r4_252">do-while</code> 循环.</p></li></ul><pre><code>fun main() {
+    var pizzaSlices = 0
+    // 要重构的代码从这里开始
+    pizzaSlices++
+    println(&quot;There's only $pizzaSlices slice/s of pizza :(&quot;)
+    pizzaSlices++
+    println(&quot;There's only $pizzaSlices slice/s of pizza :(&quot;)
+    pizzaSlices++
+    println(&quot;There's only $pizzaSlices slice/s of pizza :(&quot;)
+    pizzaSlices++
+    println(&quot;There's only $pizzaSlices slice/s of pizza :(&quot;)
+    pizzaSlices++
+    println(&quot;There's only $pizzaSlices slice/s of pizza :(&quot;)
+    pizzaSlices++
+    println(&quot;There's only $pizzaSlices slice/s of pizza :(&quot;)
+    pizzaSlices++
+    println(&quot;There's only $pizzaSlices slice/s of pizza :(&quot;)
+    pizzaSlices++
+    // 要重构的代码到这里结束
+    println(&quot;There are $pizzaSlices slices of pizza. Hooray! We have a whole pizza! :D&quot;)
+}</code></pre><details class="solution"><summary>参考答案 1</summary><pre><code>fun main() {
+    var pizzaSlices = 0
+    while ( pizzaSlices &lt; 7 ) {
+        pizzaSlices++
+        println(&quot;There's only $pizzaSlices slice/s of pizza :(&quot;)
+    }
+    pizzaSlices++
+    println(&quot;There are $pizzaSlices slices of pizza. Hooray! We have a whole pizza! :D&quot;)
+}</code></pre></details><details class="solution"><summary>参考答案 2</summary><pre><code>fun main() {
+    var pizzaSlices = 0
+    pizzaSlices++
+    do {
+        println(&quot;There's only $pizzaSlices slice/s of pizza :(&quot;)
+        pizzaSlices++
+    } while ( pizzaSlices &lt; 8 )
+    println(&quot;There are $pizzaSlices slices of pizza. Hooray! We have a whole pizza! :D&quot;)
+}</code></pre></details></div></div></section><section class="chapter"><div class="collapse"><div class="collapse__title"><h3 id="loops-exercise-2" data-toc="loops-exercise-2">习题 2</h3></div><div class="collapse__content"><p id="-o649r4_253">编写一个程序, 模拟 <a href="https://en.wikipedia.org/wiki/Fizz_buzz" id="-o649r4_260" data-external="true" rel="noopener noreferrer">Fizz buzz</a> 游戏. 你的任务是打印从 1 到 100 的数字, 如果数字能被 3 整除, 则将它替换为 &quot;fizz&quot;, 能被 5 整除, 则将它替换为 &quot;buzz&quot;. 同时能被 3 和 5 整除, 则将它替换为 &quot;fizzbuzz&quot;.</p><dl id="-o649r4_254" data-style="title-top"><dt id="-o649r4_261" data-expandable="true" data-expanded="false">提示 1</dt><dd><p>使用 <code class="code" id="-o649r4_262">for</code> 循环来计数, 使用 <code class="code" id="-o649r4_263">when</code> 表达式来决定每一步打印什么内容.</p></dd></dl><dl id="-o649r4_255" data-style="title-top"><dt id="-o649r4_264" data-expandable="true" data-expanded="false">提示 2</dt><dd><p>使用取模运算符 (<code class="code" id="-o649r4_265">%</code>) 返回被除数的余数. 使用 <a href="https://kotlinlang.org/docs/operator-overloading.html#equality-and-inequality-operators" id="-o649r4_266">相等运算符</a> (<code class="code" id="-o649r4_267">==</code>) 检查余数是否为 0.</p></dd></dl><pre><code>fun main() {
+    // 在这里编写你的代码
+}</code></pre><details class="solution"><summary>参考答案</summary><pre><code>fun main() {
+    for (number in 1..100) {
+        println(
+            when {
+                number % 15 == 0 -&gt; &quot;fizzbuzz&quot;
+                number % 3 == 0 -&gt; &quot;fizz&quot;
+                number % 5 == 0 -&gt; &quot;buzz&quot;
+                else -&gt; &quot;$number&quot;
+            }
+        )
+    }
+}</code></pre></details></div></div></section><section class="chapter"><div class="collapse"><div class="collapse__title"><h3 id="loops-exercise-3" data-toc="loops-exercise-3">习题 3</h3></div><div class="collapse__content"><p id="-o649r4_268">你有一个单词列表. 使用 <code class="code" id="-o649r4_274">for</code> 和 <code class="code" id="-o649r4_275">if</code> 来打印以 <code class="code" id="-o649r4_276">l</code> 字母开头的单词.</p><dl id="-o649r4_269" data-style="title-top"><dt id="-o649r4_277" data-expandable="true" data-expanded="false">提示</dt><dd><p>使用 <code class="code" id="-o649r4_278">String</code> 类型的 <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.text/starts-with.html" id="-o649r4_279" data-external="true" rel="noopener noreferrer"><code class="code" id="-o649r4_280">.startsWith()</code></a> 函数.</p></dd></dl><pre><code>fun main() {
+    val words = listOf(&quot;dinosaur&quot;, &quot;limousine&quot;, &quot;magazine&quot;, &quot;language&quot;)
+    // 在这里编写你的代码
+}</code></pre><details class="solution"><summary>参考答案</summary><pre><code>fun main() {
+    val words = listOf(&quot;dinosaur&quot;, &quot;limousine&quot;, &quot;magazine&quot;, &quot;language&quot;)
+    for (w in words) {
+        if (w.startsWith(&quot;l&quot;))
+            println(w)
+    }
+}</code></pre></details></div></div></section></section><section class="chapter"><h2 id="-o649r4_9" data-toc="-o649r4_9">下一步</h2><p id="-o649r4_281"><a href="../functions/index.html" id="-o649r4_282">函数</a></p></section>
+    </article>
+    <section class="recall" aria-labelledby="recall-title">
+      <span class="note-kind">读完自测</span>
+      <h2 id="recall-title">先不看正文，回答这三个问题</h2>
+      <ol><li>if 作为表达式时会返回什么？</li><li>什么时候 when 比 if 更清楚？</li><li>for、while 与 do-while 的执行条件有什么不同？</li></ol>
+      <p class="transfer"><strong>迁移练习：</strong>从你正在读的一段 Kotlin 代码里，找出本章概念的一个真实用法；用一句话解释它为什么这样写。</p>
+    </section>
+    <nav class="chapter-switcher" aria-label="章节导航">
+    <a href="../collections/index.html">← 集合</a>
+    <a class="course-home" href="../index.html">全部章节</a>
+    <a href="../functions/index.html">函数 →</a>
+  </nav>
+    <footer class="license-note">
+      <p>这是用于个人学习的非官方中文阅读版。正文依据 <a href="https://kotlinlang.org/docs/kotlin-tour-control-flow.html">Kotlin 官方文档</a>整理，并参考公开中文译文对照整理；原始内容由 JetBrains 与 Kotlin 贡献者维护，采用 <a href="https://github.com/JetBrains/kotlin-web-site/blob/master/LICENSE">Apache License 2.0</a>。</p>
+    </footer>
+  </main>
+</body>
+</html>

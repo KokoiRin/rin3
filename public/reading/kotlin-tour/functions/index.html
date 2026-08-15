@@ -1,0 +1,277 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="学习参数、返回值、默认参数、命名参数，以及把行为当作值传递的 lambda。">
+  <title>函数｜RIN III</title>
+  <link rel="stylesheet" href="../reader.css">
+</head>
+<body>
+  <nav class="site-nav" aria-label="站点导航">
+    <a href="../index.html">← Kotlin Tour 中文学习版</a>
+    <a href="../../../computer-science/kotlin-tour/">RIN III 学习记录</a>
+  </nav>
+  <main class="reader">
+    <header class="chapter-header">
+      <span class="chapter-kicker">初学者 · 第 5 章</span>
+      <h1>函数</h1>
+      <p class="lead">学习参数、返回值、默认参数、命名参数，以及把行为当作值传递的 lambda。</p>
+      <div class="title-rule"></div>
+      <aside class="learning-note" aria-label="学习主线">
+        <strong>学习主线</strong>
+        <p>函数给一段行为命名；lambda 进一步让行为本身可以存储、传递和组合。</p>
+      </aside>
+      <nav class="chapter-switcher" aria-label="章节导航">
+    <a href="../control-flow/index.html">← 控制流</a>
+    <a class="course-home" href="../index.html">全部章节</a>
+    <a href="../classes/index.html">类 →</a>
+  </nav>
+    </header>
+    <article class="translated-article">
+<p id="-lyoo5r_3">在 Kotlin 中, 你可以使用 <code class="code" id="-lyoo5r_42">fun</code> 关键字声明你自己的函数.</p><pre><code>fun hello() {
+    return println(&quot;Hello, world!&quot;)
+}
+
+fun main() {
+    hello()
+    // 输出结果为 Hello, world!
+}</code></pre><p id="-lyoo5r_5">在 Kotlin 中:</p><ul class="list _bullet" id="-lyoo5r_6"><li class="list__item" id="-lyoo5r_43"><p id="-lyoo5r_48">函数参数写在小括号 <code class="code" id="-lyoo5r_49">()</code> 之内.</p></li><li class="list__item" id="-lyoo5r_44"><p id="-lyoo5r_50">每个参数必须指定类型, 多个参数必须用逗号 <code class="code" id="-lyoo5r_51">,</code> 隔开.</p></li><li class="list__item" id="-lyoo5r_45"><p id="-lyoo5r_52">返回值类型写在函数的小括号 <code class="code" id="-lyoo5r_53">()</code> 之后, 用冒号 <code class="code" id="-lyoo5r_54">:</code> 隔开.</p></li><li class="list__item" id="-lyoo5r_46"><p id="-lyoo5r_55">函数的 body 部写在大括号 <code class="code" id="-lyoo5r_56">{}</code> 之内.</p></li><li class="list__item" id="-lyoo5r_47"><p id="-lyoo5r_57"><code class="code" id="-lyoo5r_58">return</code> 关键字用来退出函数, 或从函数返回某个值.</p></li></ul><aside class="prompt" data-type="note" data-title="" id="-lyoo5r_7"><p id="-lyoo5r_59">如果函数不返回任何有用的值, 那么可以省略返回值类型和 <code class="code" id="-lyoo5r_60">return</code> 关键字. 关于这个问题, 详情请参见 <a href="#functions-without-return" id="-lyoo5r_61">没有返回值的函数</a>.</p></aside><p id="-lyoo5r_8">在下面的示例中:</p><ul class="list _bullet" id="-lyoo5r_9"><li class="list__item" id="-lyoo5r_62"><p id="-lyoo5r_66"><code class="code" id="-lyoo5r_67">x</code> 和 <code class="code" id="-lyoo5r_68">y</code> 是函数参数.</p></li><li class="list__item" id="-lyoo5r_63"><p id="-lyoo5r_69"><code class="code" id="-lyoo5r_70">x</code> 和 <code class="code" id="-lyoo5r_71">y</code> 类型为 <code class="code" id="-lyoo5r_72">Int</code>.</p></li><li class="list__item" id="-lyoo5r_64"><p id="-lyoo5r_73">函数的返回值类型为 <code class="code" id="-lyoo5r_74">Int</code>.</p></li><li class="list__item" id="-lyoo5r_65"><p id="-lyoo5r_75">函数被调用时返回 <code class="code" id="-lyoo5r_76">x</code> 和 <code class="code" id="-lyoo5r_77">y</code> 的和.</p></li></ul><pre><code>fun sum(x: Int, y: Int): Int {
+    return x + y
+}
+
+fun main() {
+    println(sum(1, 2))
+    // 输出结果为 3
+}</code></pre><aside class="prompt" data-type="note" data-title="" id="-lyoo5r_11"><p id="-lyoo5r_78">在我们的 <a href="https://kotlinlang.org/docs/coding-conventions.html#function-names" id="-lyoo5r_79">编码规约</a> 中, 我们建议函数名称以小写字母开头, 并使用驼峰式大小写(Camel case), 不使用下划线.</p></aside><section class="chapter"><h2 id="named-arguments" data-toc="named-arguments">命名参数</h2><p id="-lyoo5r_80">为了让代码更简洁, 调用函数时, 你不必指定参数名称. 但是, 指定参数名称可以让你的代码更易于阅读. 这种方式称为 <span class="control" id="-lyoo5r_83">命名参数(named argument)</span>. 如果你指定了参数名称, 那么可以用任意的顺序来写这些参数.</p><aside class="prompt" data-type="tip" data-title="" id="-lyoo5r_81"><p id="-lyoo5r_84">在下面的示例中, 使用了 <a href="https://kotlinlang.org/docs/strings.html#string-templates" id="-lyoo5r_85">字符串模板</a> (<code class="code" id="-lyoo5r_86">$</code>) 来访问参数值, 并将它们转换为 <code class="code" id="-lyoo5r_87">String</code> 类型, 然后拼接到一个字符串中, 用于打印输出.</p></aside><pre><code>fun printMessageWithPrefix(message: String, prefix: String) {
+    println(&quot;[$prefix] $message&quot;)
+}
+
+fun main() {
+    // 使用命名参数, 交换了参数的顺序
+    printMessageWithPrefix(prefix = &quot;Log&quot;, message = &quot;Hello&quot;)
+    // 输出结果为 [Log] Hello
+}</code></pre></section><section class="chapter"><h2 id="default-parameter-values" data-toc="default-parameter-values">默认的参数值</h2><p id="-lyoo5r_88">你可以为函数参数定义默认值. 调用你的函数时, 有默认值的参数可以省略. 要声明默认值, 请在参数类型之后使用赋值操作符 <code class="code" id="-lyoo5r_91">=</code>:</p><pre><code>fun printMessageWithPrefix(message: String, prefix: String = &quot;Info&quot;) {
+    println(&quot;[$prefix] $message&quot;)
+}
+
+fun main() {
+    // 使用两个参数调用函数
+    printMessageWithPrefix(&quot;Hello&quot;, &quot;Log&quot;)
+    // 输出结果为 [Log] Hello
+
+    // 只使用 message 参数调用函数
+    printMessageWithPrefix(&quot;Hello&quot;)
+    // 输出结果为 [Info] Hello
+
+    printMessageWithPrefix(prefix = &quot;Log&quot;, message = &quot;Hello&quot;)
+    // 输出结果为 [Log] Hello
+}</code></pre><aside class="prompt" data-type="note" data-title="" id="-lyoo5r_90"><p id="-lyoo5r_92">你可以跳过某个有默认值的参数, 而不是省略所有参数. 但是, 在第一个跳过的参数之后, 你必须对后续的所有参数指定名称.</p></aside></section><section class="chapter"><h2 id="functions-without-return" data-toc="functions-without-return">没有返回值的函数</h2><p id="-lyoo5r_93">如果你的函数不返回任何有用的值, 那么它的返回值类型为 <code class="code" id="-lyoo5r_95">Unit</code>. <code class="code" id="-lyoo5r_96">Unit</code> 类型只有唯一的一个值 &ndash; <code class="code" id="-lyoo5r_97">Unit</code>. 你不必在你的函数 body 部明确的声明返回值为 <code class="code" id="-lyoo5r_98">Unit</code>. 因此你不必使用 <code class="code" id="-lyoo5r_99">return</code> 关键字, 也不必声明返回值类型:</p><pre><code>fun printMessage(message: String) {
+    println(message)
+    // `return Unit` 或 `return` 都是可选的
+}
+
+fun main() {
+    printMessage(&quot;Hello&quot;)
+    // 输出结果为 Hello
+}</code></pre></section><section class="chapter"><h2 id="single-expression-functions" data-toc="single-expression-functions">单一表达式函数</h2><p id="-lyoo5r_100">为了让代码更加简洁, 你可以使用单一表达式函数. 例如, <code class="code" id="-lyoo5r_106">sum()</code> 函数可以写得更短一些:</p><pre><code>fun sum(x: Int, y: Int): Int {
+    return x + y
+}
+
+fun main() {
+    println(sum(1, 2))
+    // 输出结果为 3
+}</code></pre><p id="-lyoo5r_102">你可以删除大括号 <code class="code" id="-lyoo5r_107">{}</code>, 使用赋值操作符 <code class="code" id="-lyoo5r_108">=</code> 来声明函数的 body 部. 当你使用赋值操作符 <code class="code" id="-lyoo5r_109">=</code> 时, Kotlin 会使用类型推断, 因此你也可以省略返回值类型. 这样, <code class="code" id="-lyoo5r_110">sum()</code> 函数就变成只有 1 行:</p><pre><code>fun sum(x: Int, y: Int) = x + y
+
+fun main() {
+    println(sum(1, 2))
+    // 输出结果为 3
+}</code></pre><p id="-lyoo5r_104">但是, 如果你想让你的代码能够被其他开发者快速理解, 那么即使使用赋值操作符 <code class="code" id="-lyoo5r_111">=</code>, 也还是明确定义返回值类型更好一些.</p><aside class="prompt" data-type="note" data-title="" id="-lyoo5r_105"><p id="-lyoo5r_112">如果你使用大括号 <code class="code" id="-lyoo5r_113">{}</code> 来声明函数的 body 部, 那么必须声明返回类型, 否则返回值类型将是 <code class="code" id="-lyoo5r_114">Unit</code>.</p></aside></section><section class="chapter"><h2 id="early-returns-in-functions" data-toc="early-returns-in-functions">函数中的提前返回 (Early Return)</h2><p id="-lyoo5r_115">如果想要你的函数中的代码在某个点之后不再进行后续处理, 请使用 <code class="code" id="-lyoo5r_117">return</code> 关键字. 这个示例使用 <code class="code" id="-lyoo5r_118">if</code> 判断, 如果条件表达式为真, 就从一个函数中提前返回:</p><pre><code>// 注册的用户名列表
+val registeredUsernames = mutableListOf(&quot;john_doe&quot;, &quot;jane_smith&quot;)
+
+// 注册 EMail 列表
+val registeredEmails = mutableListOf(&quot;john@example.com&quot;, &quot;jane@example.com&quot;)
+
+fun registerUser(username: String, email: String): String {
+    // 如果用户名已被使用, 则提前返回
+    if (username in registeredUsernames) {
+        return &quot;Username already taken. Please choose a different username.&quot;
+    }
+
+    // 如果 EMail 已被注册, 则提前返回
+    if (email in registeredEmails) {
+        return &quot;Email already registered. Please use a different email.&quot;
+    }
+
+    // 如果用户名和 EMail 都没有被使用, 则进行注册处理
+    registeredUsernames.add(username)
+    registeredEmails.add(email)
+
+    return &quot;User registered successfully: $username&quot;
+}
+
+fun main() {
+    println(registerUser(&quot;john_doe&quot;, &quot;newjohn@example.com&quot;))
+    // 输出结果为: Username already taken. Please choose a different username.
+    println(registerUser(&quot;new_user&quot;, &quot;newuser@example.com&quot;))
+    // 输出结果为: User registered successfully: new_user
+}</code></pre></section><section class="chapter"><h2 id="functions-practice" data-toc="functions-practice">函数的实际练习</h2><section class="chapter"><div class="collapse"><div class="collapse__title"><h3 id="functions-exercise-1" data-toc="functions-exercise-1">习题 1</h3></div><div class="collapse__content"><p id="-lyoo5r_122">写一个名为 <code class="code" id="-lyoo5r_129">circleArea</code> 的函数, 接受一个整数参数, 表示圆的半径, 输出圆的面积大小.</p><aside class="prompt" data-type="tip" data-title="" id="-lyoo5r_123"><p id="-lyoo5r_130">在这个习题中, 你会导入一个包, 以便通过 <code class="code" id="-lyoo5r_131">PI</code> 来访问 <mjx-container class="MathJax" jax="SVG"><svg style="vertical-align: -0.025ex;" xmlns="http://www.w3.org/2000/svg" width="1.29ex" height="1ex" role="img" focusable="false" viewBox="0 -431 570 442"><g stroke="currentColor" fill="currentColor" stroke-width="0" transform="scale(1,-1)"><g data-mml-node="math"><g data-mml-node="mi"><path data-c="1D70B" d="M132 -11Q98 -11 98 22V33L111 61Q186 219 220 334L228 358H196Q158 358 142 355T103 336Q92 329 81 318T62 297T53 285Q51 284 38 284Q19 284 19 294Q19 300 38 329T93 391T164 429Q171 431 389 431Q549 431 553 430Q573 423 573 402Q573 371 541 360Q535 358 472 358H408L405 341Q393 269 393 222Q393 170 402 129T421 65T431 37Q431 20 417 5T381 -10Q370 -10 363 -7T347 17T331 77Q330 86 330 121Q330 170 339 226T357 318T367 358H269L268 354Q268 351 249 275T206 114T175 17Q164 -11 132 -11Z"></path></g></g></g></svg></mjx-container> 值. 关于包的导入, 更多详情请参见 <a href="https://kotlinlang.org/docs/packages.html" id="-lyoo5r_133">包与导入</a>.</p></aside><dl id="kotlin-tour-functions-exercise-1-hint" data-style="title-top"><dt id="-lyoo5r_134" data-expandable="true" data-expanded="false">提示</dt><dd><p>圆面积的计算公式是 <mjx-container class="MathJax" jax="SVG"><svg style="vertical-align: -0.025ex;" xmlns="http://www.w3.org/2000/svg" width="3.298ex" height="1.912ex" role="img" focusable="false" viewBox="0 -833.9 1457.6 844.9"><g stroke="currentColor" fill="currentColor" stroke-width="0" transform="scale(1,-1)"><g data-mml-node="math"><g data-mml-node="mi"><path data-c="1D70B" d="M132 -11Q98 -11 98 22V33L111 61Q186 219 220 334L228 358H196Q158 358 142 355T103 336Q92 329 81 318T62 297T53 285Q51 284 38 284Q19 284 19 294Q19 300 38 329T93 391T164 429Q171 431 389 431Q549 431 553 430Q573 423 573 402Q573 371 541 360Q535 358 472 358H408L405 341Q393 269 393 222Q393 170 402 129T421 65T431 37Q431 20 417 5T381 -10Q370 -10 363 -7T347 17T331 77Q330 86 330 121Q330 170 339 226T357 318T367 358H269L268 354Q268 351 249 275T206 114T175 17Q164 -11 132 -11Z"></path></g><g data-mml-node="msup" transform="translate(570,0)"><g data-mml-node="mi"><path data-c="1D45F" d="M21 287Q22 290 23 295T28 317T38 348T53 381T73 411T99 433T132 442Q161 442 183 430T214 408T225 388Q227 382 228 382T236 389Q284 441 347 441H350Q398 441 422 400Q430 381 430 363Q430 333 417 315T391 292T366 288Q346 288 334 299T322 328Q322 376 378 392Q356 405 342 405Q286 405 239 331Q229 315 224 298T190 165Q156 25 151 16Q138 -11 108 -11Q95 -11 87 -5T76 7T74 17Q74 30 114 189T154 366Q154 405 128 405Q107 405 92 377T68 316T57 280Q55 278 41 278H27Q21 284 21 287Z"></path></g><g data-mml-node="mn" transform="translate(484,363) scale(0.707)"><path data-c="32" d="M109 429Q82 429 66 447T50 491Q50 562 103 614T235 666Q326 666 387 610T449 465Q449 422 429 383T381 315T301 241Q265 210 201 149L142 93L218 92Q375 92 385 97Q392 99 409 186V189H449V186Q448 183 436 95T421 3V0H50V19V31Q50 38 56 46T86 81Q115 113 136 137Q145 147 170 174T204 211T233 244T261 278T284 308T305 340T320 369T333 401T340 431T343 464Q343 527 309 573T212 619Q179 619 154 602T119 569T109 550Q109 549 114 549Q132 549 151 535T170 489Q170 464 154 447T109 429Z"></path></g></g></g></g></svg></mjx-container>, 其中 <mjx-container class="MathJax" jax="SVG"><svg style="vertical-align: -0.025ex;" xmlns="http://www.w3.org/2000/svg" width="1.02ex" height="1.025ex" role="img" focusable="false" viewBox="0 -442 451 453"><g stroke="currentColor" fill="currentColor" stroke-width="0" transform="scale(1,-1)"><g data-mml-node="math"><g data-mml-node="mi"><path data-c="1D45F" d="M21 287Q22 290 23 295T28 317T38 348T53 381T73 411T99 433T132 442Q161 442 183 430T214 408T225 388Q227 382 228 382T236 389Q284 441 347 441H350Q398 441 422 400Q430 381 430 363Q430 333 417 315T391 292T366 288Q346 288 334 299T322 328Q322 376 378 392Q356 405 342 405Q286 405 239 331Q229 315 224 298T190 165Q156 25 151 16Q138 -11 108 -11Q95 -11 87 -5T76 7T74 17Q74 30 114 189T154 366Q154 405 128 405Q107 405 92 377T68 316T57 280Q55 278 41 278H27Q21 284 21 287Z"></path></g></g></g></svg></mjx-container> 是半径.</p></dd></dl><pre><code>import kotlin.math.PI
+
+// 在这里编写你的代码
+
+fun main() {
+    println(circleArea(2))
+}</code></pre><details class="solution"><summary>参考答案</summary><pre><code>import kotlin.math.PI
+
+fun circleArea(radius: Int): Double {
+    return PI * radius * radius
+}
+
+fun main() {
+    println(circleArea(2)) // 输出结果为 12.566370614359172
+}</code></pre></details></div></div></section><section class="chapter"><div class="collapse"><div class="collapse__title"><h3 id="functions-exercise-2" data-toc="functions-exercise-2">习题 2</h3></div><div class="collapse__content"><p id="-lyoo5r_137">将前一个习题中的 <code class="code" id="-lyoo5r_142">circleArea</code> 函数重写为单一表达式函数.</p><pre><code>import kotlin.math.PI
+
+// 在这里编写你的代码
+
+fun main() {
+    println(circleArea(2))
+}</code></pre><details class="solution"><summary>参考答案</summary><pre><code>import kotlin.math.PI
+
+fun circleArea(radius: Int): Double = PI * radius * radius
+
+fun main() {
+    println(circleArea(2)) // 输出结果为 12.566370614359172
+}</code></pre></details></div></div></section><section class="chapter"><div class="collapse"><div class="collapse__title"><h3 id="functions-exercise-3" data-toc="functions-exercise-3">习题 3</h3></div><div class="collapse__content"><p id="-lyoo5r_143">你有一个函数, 它接受一个时/分/秒单位给定的时间间隔, 然后翻译为秒单位. 大多数情况下, 你只需要传递 1 个或 2 个参数, 而其它参数为 0. 改进这个函数以及调用它的代码, 使用默认参数值和命名参数, 让代码更加易于阅读.</p><pre><code>fun intervalInSeconds(hours: Int, minutes: Int, seconds: Int) =
+    ((hours * 60) + minutes) * 60 + seconds
+
+fun main() {
+    println(intervalInSeconds(1, 20, 15))
+    println(intervalInSeconds(0, 1, 25))
+    println(intervalInSeconds(2, 0, 0))
+    println(intervalInSeconds(0, 10, 0))
+    println(intervalInSeconds(1, 0, 1))
+}</code></pre><details class="solution"><summary>参考答案</summary><pre><code>fun intervalInSeconds(hours: Int = 0, minutes: Int = 0, seconds: Int = 0) =
+    ((hours * 60) + minutes) * 60 + seconds
+
+fun main() {
+    println(intervalInSeconds(1, 20, 15))
+    println(intervalInSeconds(minutes = 1, seconds = 25))
+    println(intervalInSeconds(hours = 2))
+    println(intervalInSeconds(minutes = 10))
+    println(intervalInSeconds(hours = 1, seconds = 1))
+}</code></pre></details></div></div></section></section><section class="chapter"><h2 id="lambda-expressions" data-toc="lambda-expressions">Lambda 表达式</h2><p id="-lyoo5r_148">Kotlin 允许你使用 Lambda 表达式, 为函数编写更加简洁的代码.</p><p id="-lyoo5r_149">例如, 下面的 <code class="code" id="-lyoo5r_166">uppercaseString()</code> 函数:</p><pre><code>fun uppercaseString(text: String): String {
+    return text.uppercase()
+}
+fun main() {
+    println(uppercaseString(&quot;hello&quot;))
+    // 输出结果为 HELLO
+}</code></pre><p id="-lyoo5r_151">可以写成一个 Lambda 表达式:</p><pre><code>fun main() {
+    val upperCaseString = { text: String -&gt; text.uppercase() }
+    println(upperCaseString(&quot;hello&quot;))
+    // 输出结果为 HELLO
+}</code></pre><p id="-lyoo5r_153">Lambda 表达式初看起来可能难于理解, 所以我们将它分解成各个部分. Lambda 表达式写在大括号 <code class="code" id="-lyoo5r_167">{}</code> 之内.</p><p id="-lyoo5r_154">在 Lambda 表达式之内, 你会写以下内容:</p><ul class="list _bullet" id="-lyoo5r_155"><li class="list__item" id="-lyoo5r_168"><p id="-lyoo5r_170">参数, 在 <code class="code" id="-lyoo5r_171">-&gt;</code> 之前.</p></li><li class="list__item" id="-lyoo5r_169"><p id="-lyoo5r_172">函数 body 部, 在 <code class="code" id="-lyoo5r_173">-&gt;</code> 之后.</p></li></ul><p id="-lyoo5r_156">在上面的示例中:</p><ul class="list _bullet" id="-lyoo5r_157"><li class="list__item" id="-lyoo5r_174"><p id="-lyoo5r_180"><code class="code" id="-lyoo5r_181">text</code> 是函数参数.</p></li><li class="list__item" id="-lyoo5r_175"><p id="-lyoo5r_182"><code class="code" id="-lyoo5r_183">text</code> 类型为 <code class="code" id="-lyoo5r_184">String</code>.</p></li><li class="list__item" id="-lyoo5r_176"><p id="-lyoo5r_185">函数返回对 <code class="code" id="-lyoo5r_186">text</code> 调用 <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.text/uppercase.html" id="-lyoo5r_187" data-external="true" rel="noopener noreferrer"><code class="code" id="-lyoo5r_188">.uppercase()</code></a> 函数的结果.</p></li><li class="list__item" id="-lyoo5r_177"><p id="-lyoo5r_189">整个 Lambda 表达式通过赋值操作符 <code class="code" id="-lyoo5r_190">=</code> 赋值给变量 <code class="code" id="-lyoo5r_191">upperCaseString</code>.</p></li><li class="list__item" id="-lyoo5r_178"><p id="-lyoo5r_192">像函数一样使用 <code class="code" id="-lyoo5r_193">upperCaseString</code> 变量, 字符串 <code class="code" id="-lyoo5r_194">&quot;hello&quot;</code> 作为参数, 就会调用 Lambda 表达式.</p></li><li class="list__item" id="-lyoo5r_179"><p id="-lyoo5r_195"><code class="code" id="-lyoo5r_196">println()</code> 函数打印输出结果.</p></li></ul><aside class="prompt" data-type="note" data-title="" id="-lyoo5r_158"><p id="-lyoo5r_197">如果你声明没有参数的 Lambda 表达式, 那么不必使用 <code class="code" id="-lyoo5r_199">-&gt;</code>. 例如:</p><pre><code>{ println(&quot;Log message&quot;) }</code></pre></aside><p id="-lyoo5r_159">可以用很多方式使用 Lambda 表达式. 你可以:</p><ul class="list _bullet" id="-lyoo5r_160"><li class="list__item" id="-lyoo5r_200"><p id="-lyoo5r_203"><a href="#pass-to-another-function" id="-lyoo5r_204">将 Lambda 表达式用作另一个函数的参数</a></p></li><li class="list__item" id="-lyoo5r_201"><p id="-lyoo5r_205"><a href="#return-from-a-function" id="-lyoo5r_206">从一个函数返回 Lambda 表达式</a></p></li><li class="list__item" id="-lyoo5r_202"><p id="-lyoo5r_207"><a href="#invoke-separately" id="-lyoo5r_208">单独调用一个 Lambda 表达式</a></p></li></ul><section class="chapter"><h3 id="pass-to-another-function" data-toc="pass-to-another-function">传递给另一个函数</h3><p id="-lyoo5r_209">将 Lambda 表达式传递给另一个函数, 这个功能是很有用的, 一个很好的例子是对集合(Collection)使用 <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/filter.html" id="-lyoo5r_220" data-external="true" rel="noopener noreferrer"><code class="code" id="-lyoo5r_221">.filter()</code></a> 函数:</p><pre><code>fun main() {
+    //sampleStart
+    val numbers = listOf(1, -2, 3, -4, 5, -6)
+
+    val positives = numbers.filter ({ x -&gt; x &gt; 0 })
+
+    val isNegative = { x: Int -&gt; x &lt; 0 }
+    val negatives = numbers.filter(isNegative)
+
+    println(positives)
+    // 输出结果为 [1, 3, 5]
+    println(negatives)
+    // 输出结果为 [-2, -4, -6]
+    //sampleEnd
+}</code></pre><p id="-lyoo5r_211"><code class="code" id="-lyoo5r_222">.filter()</code> 函数接受一个 Lambda 表达式作为判定条件, 并将它应用于列表的每个元素. 只有在判定条件返回 <code class="code" id="-lyoo5r_223">true</code> 时, 元素才会保留:</p><ul class="list _bullet" id="-lyoo5r_212"><li class="list__item" id="-lyoo5r_224"><p id="-lyoo5r_226"><code class="code" id="-lyoo5r_227">{ x -&gt; x &gt; 0 }</code>, 如果元素为正数, 则返回 <code class="code" id="-lyoo5r_228">true</code>.</p></li><li class="list__item" id="-lyoo5r_225"><p id="-lyoo5r_229"><code class="code" id="-lyoo5r_230">{ x -&gt; x &lt; 0 }</code>, 如果元素为负数, 则返回 <code class="code" id="-lyoo5r_231">true</code>.</p></li></ul><p id="-lyoo5r_213">这个示例演示了将 Lambda 表达式传递给函数的两种方式:</p><ul class="list _bullet" id="-lyoo5r_214"><li class="list__item" id="-lyoo5r_232"><p id="-lyoo5r_234">对于正数, 示例直接在 <code class="code" id="-lyoo5r_235">.filter()</code> 函数中添加 Lambda 表达式.</p></li><li class="list__item" id="-lyoo5r_233"><p id="-lyoo5r_236">对于负数, 示例将 Lambda 表达式赋值给 <code class="code" id="-lyoo5r_237">isNegative</code> 变量. 然后将 <code class="code" id="-lyoo5r_238">isNegative</code> 变量用作 <code class="code" id="-lyoo5r_239">.filter()</code> 函数的参数. 这种情况下, 你必须在 Lambda 表达式中指定函数参数 (<code class="code" id="-lyoo5r_240">x</code>) 的类型.</p></li></ul><aside class="prompt" data-type="note" data-title="" id="-lyoo5r_215"><p id="-lyoo5r_241">如果一个 Lambda 表达式是函数的唯一参数, 你可以去掉函数的小括号 <code class="code" id="-lyoo5r_244">()</code>:</p><pre><code>val positives = numbers.filter { x -&gt; x &gt; 0 }</code></pre><p id="-lyoo5r_243">这是 <a href="#trailing-lambdas" id="-lyoo5r_245">尾缀 Lambda 表达式(Trailing Lambda)</a> 的一个例子, 我们会在本章末尾详细介绍.</p></aside><p id="-lyoo5r_216">另一个好的例子是, 使用 <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/map.html" id="-lyoo5r_246" data-external="true" rel="noopener noreferrer"><code class="code" id="-lyoo5r_247">.map()</code></a> 函数, 对集合中的元素进行变换:</p><pre><code>fun main() {
+    //sampleStart
+    val numbers = listOf(1, -2, 3, -4, 5, -6)
+    val doubled = numbers.map { x -&gt; x * 2 }
+
+    val isTripled = { x: Int -&gt; x * 3 }
+    val tripled = numbers.map(isTripled)
+
+    println(doubled)
+    // 输出结果为 [2, -4, 6, -8, 10, -12]
+    println(tripled)
+    // 输出结果为 [3, -6, 9, -12, 15, -18]
+    //sampleEnd
+}</code></pre><p id="-lyoo5r_218"><code class="code" id="-lyoo5r_248">.map()</code> 函数接受一个 Lambda 表达式, 作为变换函数:</p><ul class="list _bullet" id="-lyoo5r_219"><li class="list__item" id="-lyoo5r_249"><p id="-lyoo5r_251"><code class="code" id="-lyoo5r_252">{ x -&gt; x * 2 }</code> 接受 List 中的每个元素, 返回这个元素乘以 2 的结果.</p></li><li class="list__item" id="-lyoo5r_250"><p id="-lyoo5r_253"><code class="code" id="-lyoo5r_254">{ x -&gt; x * 3 }</code> 接受 List 中的每个元素, 返回这个元素乘以 3 的结果.</p></li></ul></section><section class="chapter"><h3 id="function-types" data-toc="function-types">函数类型</h3><p id="-lyoo5r_255">在从一个函数返回一个 Lambda 表达式之前, 你首先需要理解 <span class="control" id="-lyoo5r_264">函数类型</span>.</p><p id="-lyoo5r_256">你已经学习了基本类型, 但函数本身也有它的类型. Kotlin 的类型推断功能能够通过参数类型推断一个函数的类型. 但有的时候你需要明确指定函数类型. 编译器需要函数类型, 然后才能知道对这个函数允许什么, 不允许什么.</p><p id="-lyoo5r_257">函数类型的语法包括:</p><ul class="list _bullet" id="-lyoo5r_258"><li class="list__item" id="-lyoo5r_265"><p id="-lyoo5r_267">每个参数的类型, 写在小括号 <code class="code" id="-lyoo5r_268">()</code> 之内, 以逗号 <code class="code" id="-lyoo5r_269">,</code> 分隔.</p></li><li class="list__item" id="-lyoo5r_266"><p id="-lyoo5r_270">返回值类型, 写在 <code class="code" id="-lyoo5r_271">-&gt;</code> 之后.</p></li></ul><p id="-lyoo5r_259">例如: <code class="code" id="-lyoo5r_272">(String) -&gt; String</code>, 或 <code class="code" id="-lyoo5r_273">(Int, Int) -&gt; Int</code>.</p><p id="-lyoo5r_260">如果为 <code class="code" id="-lyoo5r_274">upperCaseString()</code> 定义一个函数类型, 那么 Lambda 表达式如下:</p><pre><code>val upperCaseString: (String) -&gt; String = { text -&gt; text.uppercase() }
+
+fun main() {
+    println(upperCaseString(&quot;hello&quot;))
+    // 输出结果为 HELLO
+}</code></pre><p id="-lyoo5r_262">如果你的 Lambda 表达式没有参数, 那么小括号 <code class="code" id="-lyoo5r_275">()</code> 保留为空. 例如: <code class="code" id="-lyoo5r_276">() -&gt; Unit</code></p><aside class="prompt" data-type="note" data-title="" id="-lyoo5r_263"><p id="-lyoo5r_277">你必须声明参数类型和返回值类型, 要么写在 Lambda 表达式内, 要么声明为函数类型. 否则, 编译器无法知道你的 Lambda 表达式的类型.</p><p id="-lyoo5r_278">例如, 下面的代码无法工作:</p><p id="-lyoo5r_279"><code class="code" id="-lyoo5r_280">val upperCaseString = { str -&gt; str.uppercase() }</code></p></aside></section><section class="chapter"><h3 id="return-from-a-function" data-toc="return-from-a-function">从函数中返回</h3><p id="-lyoo5r_281">可以从函数中返回 Lambda 表达式. 为了让编译器知道返回的 Lambda 表达式 的类型, 你必须声明一个函数类型.</p><p id="-lyoo5r_282">在下面的示例中, <code class="code" id="-lyoo5r_285">toSeconds()</code> 函数返回的函数类型是 <code class="code" id="-lyoo5r_286">(Int) -&gt; Int</code>, 因为它总是返回一个 Lambda 表达式, 这个 Lambda 表达式接受一个 <code class="code" id="-lyoo5r_287">Int</code> 类型的参数, 并返回一个 <code class="code" id="-lyoo5r_288">Int</code> 值.</p><p id="-lyoo5r_283">这个示例使用 <code class="code" id="-lyoo5r_289">when</code> 表达式, 来确定在调用 <code class="code" id="-lyoo5r_290">toSeconds()</code> 时返回哪个 Lambda 表达式:</p><pre><code>fun toSeconds(time: String): (Int) -&gt; Int = when (time) {
+    &quot;hour&quot; -&gt; { value -&gt; value * 60 * 60 }
+    &quot;minute&quot; -&gt; { value -&gt; value * 60 }
+    &quot;second&quot; -&gt; { value -&gt; value }
+    else -&gt; { value -&gt; value }
+}
+
+fun main() {
+    val timesInMinutes = listOf(2, 10, 15, 1)
+    val min2sec = toSeconds(&quot;minute&quot;)
+    val totalTimeInSeconds = timesInMinutes.map(min2sec).sum()
+    println(&quot;Total time is $totalTimeInSeconds secs&quot;)
+    // 输出结果为 Total time is 1680 secs
+}</code></pre></section><section class="chapter"><h3 id="invoke-separately" data-toc="invoke-separately">单独调用</h3><p id="-lyoo5r_291">Lambda 表达式可以单独调用, 方法是在大括号 <code class="code" id="-lyoo5r_293">{}</code> 之后添加小括号 <code class="code" id="-lyoo5r_294">()</code>, 并在小括号中加上参数:</p><pre><code>fun main() {
+    //sampleStart
+    println({ text: String -&gt; text.uppercase() }(&quot;hello&quot;))
+    // 输出结果为 HELLO
+    //sampleEnd
+}</code></pre></section><section class="chapter"><h3 id="trailing-lambdas" data-toc="trailing-lambdas">尾缀 Lambda 表达式(Trailing Lambda)</h3><p id="-lyoo5r_295">你已经看到, 如果一个 Lambda 表达式是函数的唯一参数, 你可以去掉函数的小括号 <code class="code" id="-lyoo5r_300">()</code>. 如果一个 Lambda 表达式是函数的最后一个参数, 那么 Lambda 表达式可以写在函数的小括号 <code class="code" id="-lyoo5r_301">()</code> 之外. 对这两种情况, 这样的语法称为 <span class="control" id="-lyoo5r_302">尾缀 Lambda 表达式(Trailing Lambda)</span>.</p><p id="-lyoo5r_296">例如, <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.sequences/fold.html" id="-lyoo5r_303" data-external="true" rel="noopener noreferrer"><code class="code" id="-lyoo5r_304">.fold()</code></a> 函数接受一个初始值, 以及一个操作:</p><pre><code>fun main() {
+    //sampleStart
+    // 初始值为 0.
+    // 操作是对初始值累加 List 中的每个元素.
+    println(listOf(1, 2, 3).fold(0, { x, item -&gt; x + item })) // 输出结果为 6
+
+    // 或者, 也可以写成 尾缀 Lambda 表达式的形式
+    println(listOf(1, 2, 3).fold(0) { x, item -&gt; x + item })  // 输出结果为 6
+    //sampleEnd
+}</code></pre><p id="-lyoo5r_298">关于 Lambda 表达式, 更多详情请参见 <a href="https://kotlinlang.org/docs/lambdas.html#lambda-expressions-and-anonymous-functions" id="-lyoo5r_305">Lambda 表达式与匿名函数(Anonymous Function)</a>.</p><p id="-lyoo5r_299">本教程的下一章是学习 Kotlin 中的 <a href="../classes/index.html" id="-lyoo5r_306">类</a>.</p></section></section><section class="chapter"><h2 id="lambda-expressions-practice" data-toc="lambda-expressions-practice">Lambda 表达式的实际练习</h2><section class="chapter"><div class="collapse"><div class="collapse__title"><h3 id="lambdas-exercise-1" data-toc="lambdas-exercise-1">习题 1</h3></div><div class="collapse__content"><p id="-lyoo5r_309">你有一个 Web Service 支持的动作列表, 所有请求的一个共通前缀, 某个资源的一个 ID. 要对资源 ID 5 请求 <code class="code" id="-lyoo5r_314">title</code> 动作, 你需要创建下面的 URL: <code class="code" id="-lyoo5r_315">https://example.com/book-info/5/title</code>. 使用一个 Lambda 表达式, 从动作列表创建对应的 URL 列表.</p><pre><code>fun main() {
+    val actions = listOf(&quot;title&quot;, &quot;year&quot;, &quot;author&quot;)
+    val prefix = &quot;https://example.com/book-info&quot;
+    val id = 5
+    val urls = // 在这里编写你的代码
+    println(urls)
+}</code></pre><details class="solution"><summary>参考答案</summary><pre><code>fun main() {
+    val actions = listOf(&quot;title&quot;, &quot;year&quot;, &quot;author&quot;)
+    val prefix = &quot;https://example.com/book-info&quot;
+    val id = 5
+    val urls = actions.map { action -&gt; &quot;$prefix/$id/$action&quot; }
+    println(urls)
+}</code></pre></details></div></div></section><section class="chapter"><div class="collapse"><div class="collapse__title"><h3 id="lambdas-exercise-2" data-toc="lambdas-exercise-2">习题 2</h3></div><div class="collapse__content"><p id="-lyoo5r_316">编写一个函数, 接受一个 <code class="code" id="-lyoo5r_321">Int</code> 值和一个动作 (一个 <code class="code" id="-lyoo5r_322">() -&gt; Unit</code> 类型的函数), 然后重复执行这个动作指定的次数. 然后使用这个函数打印 &ldquo;Hello&rdquo; 5 次.</p><pre><code>fun repeatN(n: Int, action: () -&gt; Unit) {
+    // 在这里编写你的代码
+}
+
+fun main() {
+    // 在这里编写你的代码
+}</code></pre><details class="solution"><summary>参考答案</summary><pre><code>fun repeatN(n: Int, action: () -&gt; Unit) {
+    for (i in 1..n) {
+        action()
+    }
+}
+
+fun main() {
+    repeatN(5) {
+        println(&quot;Hello&quot;)
+    }
+}</code></pre></details></div></div></section></section><section class="chapter"><h2 id="next-step" data-toc="next-step">下一步</h2><p id="-lyoo5r_323"><a href="../classes/index.html" id="-lyoo5r_324">类</a></p></section>
+    </article>
+    <section class="recall" aria-labelledby="recall-title">
+      <span class="note-kind">读完自测</span>
+      <h2 id="recall-title">先不看正文，回答这三个问题</h2>
+      <ol><li>命名参数和默认参数解决什么问题？</li><li>没有有意义返回值的函数返回什么类型？</li><li>lambda 怎样作为参数传给另一个函数？</li></ol>
+      <p class="transfer"><strong>迁移练习：</strong>从你正在读的一段 Kotlin 代码里，找出本章概念的一个真实用法；用一句话解释它为什么这样写。</p>
+    </section>
+    <nav class="chapter-switcher" aria-label="章节导航">
+    <a href="../control-flow/index.html">← 控制流</a>
+    <a class="course-home" href="../index.html">全部章节</a>
+    <a href="../classes/index.html">类 →</a>
+  </nav>
+    <footer class="license-note">
+      <p>这是用于个人学习的非官方中文阅读版。正文依据 <a href="https://kotlinlang.org/docs/kotlin-tour-functions.html">Kotlin 官方文档</a>整理，并参考公开中文译文对照整理；原始内容由 JetBrains 与 Kotlin 贡献者维护，采用 <a href="https://github.com/JetBrains/kotlin-web-site/blob/master/LICENSE">Apache License 2.0</a>。</p>
+    </footer>
+  </main>
+</body>
+</html>

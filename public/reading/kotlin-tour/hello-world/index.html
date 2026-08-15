@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="从程序入口、val 与 var 开始，学会把值放进变量，再用字符串模板把结果表达出来。">
+  <title>Hello world 与变量｜RIN III</title>
+  <link rel="stylesheet" href="../reader.css">
+</head>
+<body>
+  <nav class="site-nav" aria-label="站点导航">
+    <a href="../index.html">← Kotlin Tour 中文学习版</a>
+    <a href="../../../computer-science/kotlin-tour/">RIN III 学习记录</a>
+  </nav>
+  <main class="reader">
+    <header class="chapter-header">
+      <span class="chapter-kicker">初学者 · 第 1 章</span>
+      <h1>Hello world 与变量</h1>
+      <p class="lead">从程序入口、val 与 var 开始，学会把值放进变量，再用字符串模板把结果表达出来。</p>
+      <div class="title-rule"></div>
+      <aside class="learning-note" aria-label="学习主线">
+        <strong>学习主线</strong>
+        <p>程序从 main() 开始；默认优先 val，只有确实需要重新赋值时才使用 var。</p>
+      </aside>
+      <nav class="chapter-switcher" aria-label="章节导航">
+    <span></span>
+    <a class="course-home" href="../index.html">全部章节</a>
+    <a href="../basic-types/index.html">基本类型 →</a>
+  </nav>
+    </header>
+    <article class="translated-article">
+<p id="-cukybv_3">下面是一个简单的程序, 输出 &quot;Hello, world!&quot;:</p><pre><code>fun main() {
+    println(&quot;Hello, world!&quot;)
+    // 输出结果为 Hello, world!
+}</code></pre><p id="-cukybv_5">在 Kotlin 中:</p><ul class="list _bullet" id="-cukybv_6"><li class="list__item" id="-cukybv_33"><p id="-cukybv_37"><code class="code" id="-cukybv_38">fun</code> 用来声明一个函数</p></li><li class="list__item" id="-cukybv_34"><p id="-cukybv_39"><code class="code" id="-cukybv_40">main()</code> 函数是你的程序开始的位置</p></li><li class="list__item" id="-cukybv_35"><p id="-cukybv_41">函数体写在大括号 <code class="code" id="-cukybv_42">{}</code> 之内</p></li><li class="list__item" id="-cukybv_36"><p id="-cukybv_43"><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.io/println.html" id="-cukybv_44" data-external="true" rel="noopener noreferrer"><code class="code" id="-cukybv_46">println()</code></a> 和 <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.io/print.html" id="-cukybv_45" data-external="true" rel="noopener noreferrer"><code class="code" id="-cukybv_47">print()</code></a> 函数将它们的参数打印到标准输出</p></li></ul><p id="-cukybv_7">函数是一组指令, 执行特定的任务. 创建一个函数后, 你就可以在需要执行这个任务时使用这个函数, 而不必反复编写这些指令. 函数会在后面的各章中详细介绍. 在此之前, 所有的示例程序都使用 <code class="code" id="-cukybv_48">main()</code> 函数.</p><section class="chapter"><h2 id="-cukybv_8" data-toc="-cukybv_8">变量</h2><p id="-cukybv_49">所有的程序都需要存储数据, 变量可以帮助你实现这个目的. 在 Kotlin 中, 你可以:</p><ul class="list _bullet" id="-cukybv_50"><li class="list__item" id="-cukybv_58"><p id="-cukybv_60">使用 <code class="code" id="-cukybv_61">val</code>, 声明只读的变量</p></li><li class="list__item" id="-cukybv_59"><p id="-cukybv_62">使用 <code class="code" id="-cukybv_63">var</code>, 声明可变的变量</p></li></ul><aside class="prompt" data-type="note" data-title="" id="-cukybv_51"><p id="-cukybv_64">在为只读变量初次赋值之后, 就不能再修改它的值.</p></aside><p id="-cukybv_52">要为变量赋值, 请使用赋值操作符 <code class="code" id="-cukybv_65">=</code>.</p><p id="-cukybv_53">例如:</p><pre><code>fun main() {
+//sampleStart
+    val popcorn = 5    // 有 5 盒爆米花
+    val hotdog = 7     // 有 7 个热狗
+    var customers = 10 // 队列中有 10 个客户
+
+    // 有些客户离开了队列
+    customers = 8
+    println(customers)
+    // 输出结果为 8
+//sampleEnd
+}</code></pre><aside class="prompt" data-type="tip" data-title="" id="-cukybv_55"><p id="-cukybv_66">变量可以声明在 <code class="code" id="-cukybv_67">main()</code> 函数之外, 在你的程序开始的地方. 使用这种方式声明的变量, 我们称之为声明在 <span class="control" id="-cukybv_68">顶级(top level)</span> 范围中.</p></aside><p id="-cukybv_56">由于 <code class="code" id="-cukybv_69">customers</code> 是可变的变量, 可以在变量声明之后对它重新赋值.</p><aside class="prompt" data-type="note" data-title="" id="-cukybv_57"><p id="-cukybv_70">我们建议默认将所有变量都声明为只读(<code class="code" id="-cukybv_71">val</code> )变量. 只有在真正需要的时候才使用可变的(<code class="code" id="-cukybv_72">var</code> )变量. 通过这种方式, 可以尽量避免意外的修改本来不应该修改的内容.</p></aside></section><section class="chapter"><h2 id="-cukybv_9" data-toc="-cukybv_9">字符串模板</h2><p id="-cukybv_73">确定的知道变量内容如何打印到标准输出将会很有用处. 你可以使用 <span class="control" id="-cukybv_79">字符串模板</span> 做到这一点. 你可以使用模板表达式来访问存储在变量和其它对象中的数据, 并将它们转换为字符串. 字符串值是包含在双引号 <code class="code" id="-cukybv_80">&quot;</code> 中的一串字符. 模板表达式总是以美元符号 <code class="code" id="-cukybv_81">$</code> 作为起始.</p><p id="-cukybv_74">要在模板表达式中计算一段代码的值, 请在美元符号 <code class="code" id="-cukybv_82">$</code> 之后放置一对大括号 <code class="code" id="-cukybv_83">{}</code>, 然后将代码放在大括号之内.</p><p id="-cukybv_75">例如:</p><pre><code>fun main() {
+//sampleStart
+    val customers = 10
+    println(&quot;There are $customers customers&quot;)
+    // 输出结果为 There are 10 customers
+
+    println(&quot;There are ${customers + 1} customers&quot;)
+    // 输出结果为 There are 11 customers
+//sampleEnd
+}</code></pre><p id="-cukybv_77">更多详情请参见 <a href="https://kotlinlang.org/docs/strings.html#string-templates" id="-cukybv_84">字符串模板</a>.</p><p id="-cukybv_78">你会注意到, 上面的示例中没有为变量声明类型. Kotlin 自己会推断它的类型: <code class="code" id="-cukybv_85">Int</code>. 这个教程会在 <a href="../basic-types/index.html" id="-cukybv_86">下一章</a> 中解释 Kotlin 各种不同的基本类型, 以及如何声明这些类型.</p></section><section class="chapter"><h2 id="-cukybv_10" data-toc="-cukybv_10">实际练习</h2><section class="chapter"><div class="collapse"><div class="collapse__title"><h3 id="-cukybv_87" data-toc="-cukybv_87">习题</h3></div><div class="collapse__content"><p id="-cukybv_88">完成以下代码, 让程序打印 <code class="code" id="-cukybv_93">&quot;Mary is 20 years old&quot;</code> 到标准输出:</p><pre><code>fun main() {
+    val name = &quot;Mary&quot;
+    val age = 20
+    // 在这里编写你的代码
+}</code></pre><details class="solution"><summary>参考答案</summary><pre><code>fun main() {
+    val name = &quot;Mary&quot;
+    val age = 20
+    println(&quot;$name is $age years old&quot;)
+}</code></pre></details></div></div></section></section><section class="chapter"><h2 id="-cukybv_11" data-toc="-cukybv_11">下一步</h2><p id="-cukybv_94"><a href="../basic-types/index.html" id="-cukybv_95">基本类型</a></p></section>
+    </article>
+    <section class="recall" aria-labelledby="recall-title">
+      <span class="note-kind">读完自测</span>
+      <h2 id="recall-title">先不看正文，回答这三个问题</h2>
+      <ol><li>val 与 var 的差别是什么？</li><li>为什么字符串模板要用 $ 或 ${…}？</li><li>main() 在 Kotlin 程序里承担什么角色？</li></ol>
+      <p class="transfer"><strong>迁移练习：</strong>从你正在读的一段 Kotlin 代码里，找出本章概念的一个真实用法；用一句话解释它为什么这样写。</p>
+    </section>
+    <nav class="chapter-switcher" aria-label="章节导航">
+    <span></span>
+    <a class="course-home" href="../index.html">全部章节</a>
+    <a href="../basic-types/index.html">基本类型 →</a>
+  </nav>
+    <footer class="license-note">
+      <p>这是用于个人学习的非官方中文阅读版。正文依据 <a href="https://kotlinlang.org/docs/kotlin-tour-hello-world.html">Kotlin 官方文档</a>整理，并参考公开中文译文对照整理；原始内容由 JetBrains 与 Kotlin 贡献者维护，采用 <a href="https://github.com/JetBrains/kotlin-web-site/blob/master/LICENSE">Apache License 2.0</a>。</p>
+    </footer>
+  </main>
+</body>
+</html>

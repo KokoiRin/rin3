@@ -1,0 +1,477 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="理解继承、抽象类、接口实现与类委托，建立可替换的行为边界。">
+  <title>类与接口｜RIN III</title>
+  <link rel="stylesheet" href="../reader.css">
+</head>
+<body>
+  <nav class="site-nav" aria-label="站点导航">
+    <a href="../index.html">← Kotlin Tour 中文学习版</a>
+    <a href="../../../computer-science/kotlin-tour/">RIN III 学习记录</a>
+  </nav>
+  <main class="reader">
+    <header class="chapter-header">
+      <span class="chapter-kicker">中级 · 第 4 章</span>
+      <h1>类与接口</h1>
+      <p class="lead">理解继承、抽象类、接口实现与类委托，建立可替换的行为边界。</p>
+      <div class="title-rule"></div>
+      <aside class="learning-note" aria-label="学习主线">
+        <strong>学习主线</strong>
+        <p>抽象类共享状态与部分实现，接口描述可实现的契约，委托把实现交给另一个对象。</p>
+      </aside>
+      <nav class="chapter-switcher" aria-label="章节导航">
+    <a href="../lambdas-with-receiver/index.html">← 带接收者的 lambda</a>
+    <a class="course-home" href="../index.html">全部章节</a>
+    <a href="../objects/index.html">对象 →</a>
+  </nav>
+    </header>
+    <article class="translated-article">
+<p id="kty2vr_3">在初学者教程中, 你已经学习了如何使用类和数据类来保存数据, 以及维护一组能够在代码中共用的特性. 最终, 你会想要创建一个层级结构, 在你的项目中高效的共用代码. 本章介绍 Kotlin 为共用代码提供了哪些选择, 以及这些方案如何让你的代码更加安全, 更加易于维护.</p><section class="chapter"><h2 id="class-inheritance" data-toc="class-inheritance">类继承</h2><p id="kty2vr_36">在前一章, 我们介绍了如何使用扩展函数来扩展类, 而不必修改原来的源代码. 但如果你在处理一些复杂的任务, 需要在类 <span class="control" id="kty2vr_45">之间</span> 共用代码, 那么应该怎么办? 对于这样的情况, 你可以使用类继承.</p><p id="kty2vr_37">Kotlin 中的类默认不能继承. Kotlin 这样设计是为了防止意外的继承, 让你的类更易于维护.</p><p id="kty2vr_38">Kotlin 类只支持 <span class="control" id="kty2vr_46">单继承</span>, 意思是说 <span class="control" id="kty2vr_47">一次只能从一个类</span> 继承. 被继承的这个类称为 <span class="control" id="kty2vr_48">父类</span>.</p><p id="kty2vr_39">一个类的父类又继承另一个类 (祖类), 构成一个层级结构. Kotlin 的类层级结构的最顶端是共通的父类: <code class="code" id="kty2vr_49">Any</code>. 所有的类都最终继承 <code class="code" id="kty2vr_50">Any</code> 类:</p><figure id="kty2vr_40"><img alt="包含 Any 类型的类层级结构示例" src="../assets/any-type-class.png" title="包含 Any 类型的类层级结构示例" width="200" height="210"></figure><p id="kty2vr_41"><code class="code" id="kty2vr_51">Any</code> 类自动提供了 <code class="code" id="kty2vr_52">toString()</code> 函数, 作为它的成员函数. 因此, 你可以在任何类中使用这个继承得到的函数. 例如:</p><pre><code>class Car(val make: String, val model: String, val numberOfDoors: Int)
+
+fun main() {
+    //sampleStart
+    val car1 = Car(&quot;Toyota&quot;, &quot;Corolla&quot;, 4)
+
+    // 通过字符串模板使用 .toString() 函数, 打印输出类的属性
+    println(&quot;Car1: make=${car1.make}, model=${car1.model}, numberOfDoors=${car1.numberOfDoors}&quot;)
+    // 输出结果为: Car1: make=Toyota, model=Corolla, numberOfDoors=4
+    //sampleEnd
+}</code></pre><p id="kty2vr_43">如果你想要使用继承在类之间共用某些代码, 首先请考虑使用抽象类.</p><section class="chapter"><h3 id="abstract-classes" data-toc="abstract-classes">抽象类</h3><p id="kty2vr_53">抽象类默认可以继承. 抽象类的目的是提供成员, 供其它类继承或实现. 因此, 它们有构造器, 但不能创建抽象类的实例. 在子类中, 使用 <code class="code" id="kty2vr_71">override</code> 关键字来定义父类的属性和函数的行为. 通过这种方式, 可以说子类 &quot;覆盖(override)&quot; 了父类的成员.</p><aside class="prompt" data-type="tip" data-title="" id="kty2vr_54"><p id="kty2vr_72">当你定义继承的函数或属性的行为时, 我们称之为一个 <span class="control" id="kty2vr_73">实现</span>.</p></aside><p id="kty2vr_55">抽象类可以包含 <span class="control" id="kty2vr_74">带有</span> 实现的函数和属性, 也可以包含 <span class="control" id="kty2vr_75">没有</span> 实现的函数和属性, 称为抽象函数和属性.</p><p id="kty2vr_56">要创建一个抽象类, 请使用 <code class="code" id="kty2vr_76">abstract</code> 关键字:</p><pre><code>abstract class Animal</code></pre><p id="kty2vr_58">要声明一个 <span class="control" id="kty2vr_77">没有</span> 实现的函数或属性, 也使用 <code class="code" id="kty2vr_78">abstract</code> 关键字:</p><pre><code>abstract fun makeSound()
+abstract val sound: String</code></pre><p id="kty2vr_60">例如, 假设你想要创建一个抽象类 <code class="code" id="kty2vr_79">Product</code>, 并从它创建子类来定义不同的产品类别:</p><pre><code>abstract class Product(val name: String, var price: Double) {
+    // 抽象属性, 表示产品类别
+    abstract val category: String
+
+    // 一个函数, 可以由所有产品共用
+    fun productInfo(): String {
+        return &quot;Product: $name, Category: $category, Price: $price&quot;
+    }
+}</code></pre><p id="kty2vr_62">在这个抽象类中:</p><ul class="list _bullet" id="kty2vr_63"><li class="list__item" id="kty2vr_80"><p id="kty2vr_83">构造器有 2 个参数, 表示产品的 <code class="code" id="kty2vr_84">name</code> 和 <code class="code" id="kty2vr_85">price</code>.</p></li><li class="list__item" id="kty2vr_81"><p id="kty2vr_86">有一个抽象属性, 包含产品类别, 类型是字符串.</p></li><li class="list__item" id="kty2vr_82"><p id="kty2vr_87">有一个函数, 打印输出关于产品的信息.</p></li></ul><p id="kty2vr_64">我们来为电子产品创建一个子类. 在子类中为 <code class="code" id="kty2vr_88">category</code> 属性定义实现之前, 你必须使用 <code class="code" id="kty2vr_89">override</code> 关键字:</p><pre><code>class Electronic(name: String, price: Double, val warranty: Int) : Product(name, price) {
+    override val category = &quot;Electronic&quot;
+}</code></pre><p id="kty2vr_66"><code class="code" id="kty2vr_90">Electronic</code> 类:</p><ul class="list _bullet" id="kty2vr_67"><li class="list__item" id="kty2vr_91"><p id="kty2vr_94">继承 <code class="code" id="kty2vr_95">Product</code> 抽象类.</p></li><li class="list__item" id="kty2vr_92"><p id="kty2vr_96">构造器有一个额外的参数: <code class="code" id="kty2vr_97">warranty</code>, 这是电子产品独有的.</p></li><li class="list__item" id="kty2vr_93"><p id="kty2vr_98">覆盖了 <code class="code" id="kty2vr_99">category</code> 属性, 包含字符串 <code class="code" id="kty2vr_100">&quot;Electronic&quot;</code>.</p></li></ul><p id="kty2vr_68">现在, 你可以这样使用这些类:</p><pre><code>abstract class Product(val name: String, var price: Double) {
+    // 抽象属性, 表示产品类别
+    abstract val category: String
+
+    // 一个函数, 可以由所有产品共用
+    fun productInfo(): String {
+        return &quot;Product: $name, Category: $category, Price: $price&quot;
+    }
+}
+
+class Electronic(name: String, price: Double, val warranty: Int) : Product(name, price) {
+    override val category = &quot;Electronic&quot;
+}
+
+//sampleStart
+fun main() {
+    // 创建 Electronic 类的一个实例
+    val laptop = Electronic(name = &quot;Laptop&quot;, price = 1000.0, warranty = 2)
+
+    println(laptop.productInfo())
+    // 输出结果为: Product: Laptop, Category: Electronic, Price: 1000.0
+}
+//sampleEnd</code></pre><p id="kty2vr_70">尽管抽象类非常适合以这种方式共用代码, 但它们仍然存在限制, 因为 Kotlin 中的类只支持单继承. 如果你需要从多个来源继承, 请考虑使用接口.</p></section></section><section class="chapter"><h2 id="interfaces" data-toc="interfaces">接口</h2><p id="kty2vr_101">接口与类类似, 但有一些不同:</p><ul class="list _bullet" id="kty2vr_102"><li class="list__item" id="kty2vr_108"><p id="kty2vr_111">你不能创建接口的实例. 接口没有构造器或头部.</p></li><li class="list__item" id="kty2vr_109"><p id="kty2vr_112">接口的函数和属性默认隐式的可以继承. 在 Kotlin 中, 我们称之为 &quot;open&quot;.</p></li><li class="list__item" id="kty2vr_110"><p id="kty2vr_113">如果你不为接口的函数提供实现, 不需要将函数标记为 <code class="code" id="kty2vr_114">abstract</code>.</p></li></ul><p id="kty2vr_103">与抽象类类似, 可以使用接口来定义一组函数和属性, 之后供类继承和实现. 这种方式帮助你专注于由接口描述的抽象功能, 而不是具体的实现细节. 使用接口能够让你的代码:</p><ul class="list _bullet" id="kty2vr_104"><li class="list__item" id="kty2vr_115"><p id="kty2vr_118">更加模块化, 因为它隔离了不同的部分, 允许它们独自演化.</p></li><li class="list__item" id="kty2vr_116"><p id="kty2vr_119">更易于理解, 因为它将相关的函数组合到一个内聚的功能集合中.</p></li><li class="list__item" id="kty2vr_117"><p id="kty2vr_120">更易于测试, 因为你可以在测试中快速的使用 mock 替换真实的实现.</p></li></ul><p id="kty2vr_105">要声明一个接口, 请使用 <code class="code" id="kty2vr_121">interface</code> 关键字:</p><pre><code>interface PaymentMethod</code></pre><section class="chapter"><h3 id="interface-implementation" data-toc="interface-implementation">接口实现</h3><p id="kty2vr_122">接口支持多继承, 因此类可以一次实现多个接口. 首先, 我们来看看类实现 <span class="control" id="kty2vr_136">单个</span> 接口的场景.</p><p id="kty2vr_123">要创建实现单个接口的类, 请在你的类头部之后添加冒号, 之后是想要实现的接口名称. 不要在接口名称之后使用括号 <code class="code" id="kty2vr_137">()</code>, 因为接口没有构造器:</p><pre><code>class CreditCardPayment : PaymentMethod</code></pre><p id="kty2vr_125">例如:</p><pre><code>interface PaymentMethod {
+    // 函数默认可以继承
+    fun initiatePayment(amount: Double): String
+}
+
+class CreditCardPayment(val cardNumber: String, val cardHolderName: String, val expiryDate: String) : PaymentMethod {
+    override fun initiatePayment(amount: Double): String {
+        // 模拟使用信用卡处理支付
+        return &quot;Payment of $$amount initiated using Credit Card ending in ${cardNumber.takeLast(4)}.&quot;
+    }
+}
+
+fun main() {
+    val paymentMethod = CreditCardPayment(&quot;1234 5678 9012 3456&quot;, &quot;John Doe&quot;, &quot;12/25&quot;)
+    println(paymentMethod.initiatePayment(100.0))
+    // 输出结果为: Payment of $100.0 initiated using Credit Card ending in 3456.
+}</code></pre><p id="kty2vr_127">在这个示例中:</p><ul class="list _bullet" id="kty2vr_128"><li class="list__item" id="kty2vr_138"><p id="kty2vr_143"><code class="code" id="kty2vr_144">PaymentMethod</code> 是一个接口, 有一个 <code class="code" id="kty2vr_145">initiatePayment()</code> 函数, 没有实现.</p></li><li class="list__item" id="kty2vr_139"><p id="kty2vr_146"><code class="code" id="kty2vr_147">CreditCardPayment</code> 是一个类, 实现 <code class="code" id="kty2vr_148">PaymentMethod</code> 接口.</p></li><li class="list__item" id="kty2vr_140"><p id="kty2vr_149"><code class="code" id="kty2vr_150">CreditCardPayment</code> 类覆盖继承的 <code class="code" id="kty2vr_151">initiatePayment()</code> 函数.</p></li><li class="list__item" id="kty2vr_141"><p id="kty2vr_152"><code class="code" id="kty2vr_153">paymentMethod</code> 是 <code class="code" id="kty2vr_154">CreditCardPayment</code> 类的一个实例.</p></li><li class="list__item" id="kty2vr_142"><p id="kty2vr_155">在 <code class="code" id="kty2vr_156">paymentMethod</code> 实例上, 调用覆盖的 <code class="code" id="kty2vr_157">initiatePayment()</code> 函数, 使用参数 <code class="code" id="kty2vr_158">100.0</code>.</p></li></ul><p id="kty2vr_129">要创建一个实现 <span class="control" id="kty2vr_159">多个</span> 接口的类, 请在你的类头部之后添加冒号, 之后是想要实现的接口名称, 以逗号分隔:</p><pre><code>class CreditCardPayment : PaymentMethod, PaymentType</code></pre><p id="kty2vr_131">例如:</p><pre><code>interface PaymentMethod {
+    fun initiatePayment(amount: Double): String
+}
+
+interface PaymentType {
+    val paymentType: String
+}
+
+class CreditCardPayment(val cardNumber: String, val cardHolderName: String, val expiryDate: String) : PaymentMethod,
+    PaymentType {
+    override fun initiatePayment(amount: Double): String {
+        // 模拟使用信用卡处理支付
+        return &quot;Payment of $$amount initiated using Credit Card ending in ${cardNumber.takeLast(4)}.&quot;
+    }
+
+    override val paymentType: String = &quot;Credit Card&quot;
+}
+
+fun main() {
+    val paymentMethod = CreditCardPayment(&quot;1234 5678 9012 3456&quot;, &quot;John Doe&quot;, &quot;12/25&quot;)
+    println(paymentMethod.initiatePayment(100.0))
+    // 输出结果为: Payment of $100.0 initiated using Credit Card ending in 3456.
+
+    println(&quot;Payment is by ${paymentMethod.paymentType}&quot;)
+    // 输出结果为: Payment is by Credit Card
+}</code></pre><p id="kty2vr_133">在这个示例中:</p><ul class="list _bullet" id="kty2vr_134"><li class="list__item" id="kty2vr_160"><p id="kty2vr_167"><code class="code" id="kty2vr_168">PaymentMethod</code> 是一个接口, 有一个 <code class="code" id="kty2vr_169">initiatePayment()</code> 函数, 没有实现.</p></li><li class="list__item" id="kty2vr_161"><p id="kty2vr_170"><code class="code" id="kty2vr_171">PaymentType</code> 是一个接口, 有 <code class="code" id="kty2vr_172">paymentType</code> 属性, 没有初始化.</p></li><li class="list__item" id="kty2vr_162"><p id="kty2vr_173"><code class="code" id="kty2vr_174">CreditCardPayment</code> 是一个类, 实现 <code class="code" id="kty2vr_175">PaymentMethod</code> 和 <code class="code" id="kty2vr_176">PaymentType</code> 接口.</p></li><li class="list__item" id="kty2vr_163"><p id="kty2vr_177"><code class="code" id="kty2vr_178">CreditCardPayment</code> 类覆盖继承的 <code class="code" id="kty2vr_179">initiatePayment()</code> 函数和 <code class="code" id="kty2vr_180">paymentType</code> 属性.</p></li><li class="list__item" id="kty2vr_164"><p id="kty2vr_181"><code class="code" id="kty2vr_182">paymentMethod</code> 是 <code class="code" id="kty2vr_183">CreditCardPayment</code> 类的一个实例.</p></li><li class="list__item" id="kty2vr_165"><p id="kty2vr_184">在 <code class="code" id="kty2vr_185">paymentMethod</code> 实例上, 调用覆盖的 <code class="code" id="kty2vr_186">initiatePayment()</code> 函数, 使用参数 <code class="code" id="kty2vr_187">100.0</code>.</p></li><li class="list__item" id="kty2vr_166"><p id="kty2vr_188">在 <code class="code" id="kty2vr_189">paymentMethod</code> 实例上, 访问覆盖的 <code class="code" id="kty2vr_190">paymentType</code> 属性.</p></li></ul><p id="kty2vr_135">关于接口和接口继承, 详情请参见 <a href="https://kotlinlang.org/docs/interfaces.html" id="kty2vr_191">接口</a>.</p></section></section><section class="chapter"><h2 id="delegation" data-toc="delegation">委托</h2><p id="kty2vr_192">接口是很有用的, 但如果你的接口包含很多函数, 它的子类可能会出现大量样板代码. 如果你只想覆盖一个类的一小部分行为时, 你就需要大量的重复代码.</p><aside class="prompt" data-type="tip" data-title="" id="kty2vr_193"><p id="kty2vr_210">样板代码是指一块代码在软件项目的多个部分中重复使用, 只有很少的修改, 或根本没有修改.</p></aside><p id="kty2vr_194">例如, 假设你有一个接口 <code class="code" id="kty2vr_211">DrawingTool</code>, 包含很多函数和一个属性 <code class="code" id="kty2vr_212">color</code>:</p><pre><code>interface DrawingTool {
+    val color: String
+    fun draw(shape: String)
+    fun erase(area: String)
+    fun getToolInfo(): String
+}</code></pre><p id="kty2vr_196">你创建了一个类 <code class="code" id="kty2vr_213">PenTool</code>, 实现 <code class="code" id="kty2vr_214">DrawingTool</code> 接口, 为它的所有成员提供实现:</p><pre><code>class PenTool : DrawingTool {
+    override val color: String = &quot;black&quot;
+
+    override fun draw(shape: String) {
+        println(&quot;Drawing $shape using a pen in $color&quot;)
+    }
+
+    override fun erase(area: String) {
+        println(&quot;Erasing $area with pen tool&quot;)
+    }
+
+    override fun getToolInfo(): String {
+        return &quot;PenTool(color=$color)&quot;
+    }
+}</code></pre><p id="kty2vr_198">你想要创建与 <code class="code" id="kty2vr_215">PenTool</code> 类似的类, 保持相同的行为, 只是 <code class="code" id="kty2vr_216">color</code> 值不同. 一种方案是创建一个新的类, 接受一个实现了 <code class="code" id="kty2vr_217">DrawingTool</code> 接口的对象作为参数, 例如一个 <code class="code" id="kty2vr_218">PenTool</code> 类实例. 然后, 在这个类之内, 你可以覆盖 <code class="code" id="kty2vr_219">color</code> 属性.</p><p id="kty2vr_199">但在这种情况下, 你需要为 <code class="code" id="kty2vr_220">DrawingTool</code> 接口的每个成员添加实现:</p><pre><code>interface DrawingTool {
+    val color: String
+    fun draw(shape: String)
+    fun erase(area: String)
+    fun getToolInfo(): String
+}
+
+class PenTool : DrawingTool {
+    override val color: String = &quot;black&quot;
+
+    override fun draw(shape: String) {
+        println(&quot;Drawing $shape using a pen in $color&quot;)
+    }
+
+    override fun erase(area: String) {
+        println(&quot;Erasing $area with pen tool&quot;)
+    }
+
+    override fun getToolInfo(): String {
+        return &quot;PenTool(color=$color)&quot;
+    }
+}
+//sampleStart
+class CanvasSession(val tool: DrawingTool) : DrawingTool {
+    override val color: String = &quot;blue&quot;
+
+    override fun draw(shape: String) {
+        tool.draw(shape)
+    }
+
+    override fun erase(area: String) {
+        tool.erase(area)
+    }
+
+    override fun getToolInfo(): String {
+        return tool.getToolInfo()
+    }
+}
+//sampleEnd
+fun main() {
+    val pen = PenTool()
+    val session = CanvasSession(pen)
+
+    println(&quot;Pen color: ${pen.color}&quot;)
+    // 输出结果为: Pen color: black
+
+    println(&quot;Session color: ${session.color}&quot;)
+    // 输出结果为: Session color: blue
+
+    session.draw(&quot;circle&quot;)
+    // 输出结果为: Drawing circle with pen in black
+
+    session.erase(&quot;top-left corner&quot;)
+    // 输出结果为: Erasing top-left corner with pen tool
+
+    println(session.getToolInfo())
+    // 输出结果为: PenTool(color=black)
+}</code></pre><p id="kty2vr_201">你会看出, 如果在 <code class="code" id="kty2vr_221">DrawingTool</code> 接口中有大量的成员函数, <code class="code" id="kty2vr_222">CanvasSession</code> 类中的样板代码数量会变得很大. 但是, 还有另一种选择.</p><p id="kty2vr_202">在 Kotlin 中, 可以使用 <code class="code" id="kty2vr_223">by</code> 关键字, 将接口实现委托给一个类的实例. 例如:</p><pre><code>class CanvasSession(val tool: DrawingTool) : DrawingTool by tool</code></pre><p id="kty2vr_204">其中, <code class="code" id="kty2vr_224">tool</code> 是 <code class="code" id="kty2vr_225">PenTool</code> 类的实例名称, 成员函数的实现委托给它.</p><p id="kty2vr_205">现在你不必为 <code class="code" id="kty2vr_226">CanvasSession</code> 类中的成员函数添加实现了. 编译器会自动通过 <code class="code" id="kty2vr_227">PenTool</code> 类为你完成这些. 这样可以为你避免编写大量样板代码的麻烦. 你只需要对子类中想要修改的行为添加代码即可.</p><p id="kty2vr_206">例如, 如果你想要修改 <code class="code" id="kty2vr_228">color</code> 属性的值:</p><pre><code>interface DrawingTool {
+    val color: String
+    fun draw(shape: String)
+    fun erase(area: String)
+    fun getToolInfo(): String
+}
+
+class PenTool : DrawingTool {
+    override val color: String = &quot;black&quot;
+
+    override fun draw(shape: String) {
+        println(&quot;Drawing $shape using a pen in $color&quot;)
+    }
+
+    override fun erase(area: String) {
+        println(&quot;Erasing $area with pen tool&quot;)
+    }
+
+    override fun getToolInfo(): String {
+        return &quot;PenTool(color=$color)&quot;
+    }
+}
+
+//sampleStart
+class CanvasSession(val tool: DrawingTool) : DrawingTool by tool {
+    // 没有样板代码!
+    override val color: String = &quot;blue&quot;
+}
+//sampleEnd
+fun main() {
+    val pen = PenTool()
+    val session = CanvasSession(pen)
+
+    println(&quot;Pen color: ${pen.color}&quot;)
+    // 输出结果为: Pen color: black
+
+    println(&quot;Session color: ${session.color}&quot;)
+    // 输出结果为: Session color: blue
+
+    session.draw(&quot;circle&quot;)
+    // 输出结果为: Drawing circle with pen in black
+
+    session.erase(&quot;top-left corner&quot;)
+    // 输出结果为: Erasing top-left corner with pen tool
+
+    println(session.getToolInfo())
+    // 输出结果为: PenTool(color=black)
+}</code></pre><p id="kty2vr_208">如果你想要, 你也可以在 <code class="code" id="kty2vr_229">CanvasSession</code> 类中覆盖继承的成员函数的行为, 但现在你不必为每个继承的成员函数添加新代码.</p><p id="kty2vr_209">详情请参见 <a href="https://kotlinlang.org/docs/delegation.html" id="kty2vr_230">委托</a>.</p></section><section class="chapter"><h2 id="practice" data-toc="practice">实际练习</h2><section class="chapter"><div class="collapse"><div class="collapse__title"><h3 id="classes-interfaces-exercise-1" data-toc="classes-interfaces-exercise-1">习题 1</h3></div><div class="collapse__content"><p id="kty2vr_235">想象你正在开发一个智能家居系统. 智能家居通常包含不同类型的设备, 它们都具备一些基本功能, 但也有一些独特的行为. 请在下面的示例代码中, 完成 <code class="code" id="kty2vr_242">abstract</code> 类 <code class="code" id="kty2vr_243">SmartDevice</code>, 让子类 <code class="code" id="kty2vr_244">SmartLight</code> 能够成功编译.</p><p id="kty2vr_236">然后, 创建另一个子类 <code class="code" id="kty2vr_245">SmartThermostat</code>, 继承 <code class="code" id="kty2vr_246">SmartDevice</code> 类, 并实现 <code class="code" id="kty2vr_247">turnOn()</code> 和 <code class="code" id="kty2vr_248">turnOff()</code> 函数, 这两个函数包含打印语句, 描述哪个加热器正在加热, 或已经关闭. 最后, 添加另一个函数, 名为 <code class="code" id="kty2vr_249">adjustTemperature()</code>, 接受一个温度值参数, 并打印输出: <code class="code" id="kty2vr_250">$name thermostat set to $temperature&deg;C.</code></p><dl id="kty2vr_237" data-style="title-top"><dt id="kty2vr_251" data-expandable="true" data-expanded="false">提示</dt><dd><p>在 <code class="code" id="kty2vr_252">SmartDevice</code> 类中, 添加 <code class="code" id="kty2vr_253">turnOn()</code> 和 <code class="code" id="kty2vr_254">turnOff()</code> 函数, 然后你可以在 <code class="code" id="kty2vr_255">SmartThermostat</code> 类中覆盖这两个函数的行为.</p></dd></dl><pre><code>abstract class // 请在这里编写你的代码
+
+class SmartLight(name: String) : SmartDevice(name) {
+    override fun turnOn() {
+        println(&quot;$name is now ON.&quot;)
+    }
+
+    override fun turnOff() {
+        println(&quot;$name is now OFF.&quot;)
+    }
+
+   fun adjustBrightness(level: Int) {
+        println(&quot;Adjusting $name brightness to $level%.&quot;)
+    }
+}
+
+class SmartThermostat // 请在这里编写你的代码
+
+fun main() {
+    val livingRoomLight = SmartLight(&quot;Living Room Light&quot;)
+    val bedroomThermostat = SmartThermostat(&quot;Bedroom Thermostat&quot;)
+
+    livingRoomLight.turnOn()
+    // 输出结果为: Living Room Light is now ON.
+    livingRoomLight.adjustBrightness(10)
+    // 输出结果为: Adjusting Living Room Light brightness to 10%.
+    livingRoomLight.turnOff()
+    // 输出结果为: Living Room Light is now OFF.
+
+    bedroomThermostat.turnOn()
+    // 输出结果为: Bedroom Thermostat thermostat is now heating.
+    bedroomThermostat.adjustTemperature(5)
+    // 输出结果为: Bedroom Thermostat thermostat set to 5°C.
+    bedroomThermostat.turnOff()
+    // 输出结果为: Bedroom Thermostat thermostat is now off.
+}</code></pre><details class="solution"><summary>参考答案</summary><pre><code>abstract class SmartDevice(val name: String) {
+    abstract fun turnOn()
+    abstract fun turnOff()
+}
+
+class SmartLight(name: String) : SmartDevice(name) {
+    override fun turnOn() {
+        println(&quot;$name is now ON.&quot;)
+    }
+
+    override fun turnOff() {
+        println(&quot;$name is now OFF.&quot;)
+    }
+
+   fun adjustBrightness(level: Int) {
+        println(&quot;Adjusting $name brightness to $level%.&quot;)
+    }
+}
+
+class SmartThermostat(name: String) : SmartDevice(name) {
+    override fun turnOn() {
+        println(&quot;$name thermostat is now heating.&quot;)
+    }
+
+    override fun turnOff() {
+        println(&quot;$name thermostat is now off.&quot;)
+    }
+
+   fun adjustTemperature(temperature: Int) {
+        println(&quot;$name thermostat set to $temperature°C.&quot;)
+    }
+}
+
+
+fun main() {
+    val livingRoomLight = SmartLight(&quot;Living Room Light&quot;)
+    val bedroomThermostat = SmartThermostat(&quot;Bedroom Thermostat&quot;)
+
+    livingRoomLight.turnOn()
+    // 输出结果为: Living Room Light is now ON.
+    livingRoomLight.adjustBrightness(10)
+    // 输出结果为: Adjusting Living Room Light brightness to 10%.
+    livingRoomLight.turnOff()
+    // 输出结果为: Living Room Light is now OFF.
+
+    bedroomThermostat.turnOn()
+    // 输出结果为: Bedroom Thermostat thermostat is now heating.
+    bedroomThermostat.adjustTemperature(5)
+    // 输出结果为: Bedroom Thermostat thermostat set to 5°C.
+    bedroomThermostat.turnOff()
+    // 输出结果为: Bedroom Thermostat thermostat is now off.
+}</code></pre></details></div></div></section><section class="chapter"><div class="collapse"><div class="collapse__title"><h3 id="classes-interfaces-exercise-2" data-toc="classes-interfaces-exercise-2">习题 2</h3></div><div class="collapse__content"><p id="kty2vr_256">创建一个接口 <code class="code" id="kty2vr_264">Media</code>, 用来实现特定的媒体类, 例如 <code class="code" id="kty2vr_265">Audio</code>, <code class="code" id="kty2vr_266">Video</code>, 或 <code class="code" id="kty2vr_267">Podcast</code>. 你的接口必须包含:</p><ul class="list _bullet" id="kty2vr_257"><li class="list__item" id="kty2vr_268"><p id="kty2vr_270">一个属性 <code class="code" id="kty2vr_271">title</code>, 表示媒体的标题.</p></li><li class="list__item" id="kty2vr_269"><p id="kty2vr_272">一个函数 <code class="code" id="kty2vr_273">play()</code>, 播放媒体.</p></li></ul><p id="kty2vr_258">然后, 创建一个类 <code class="code" id="kty2vr_274">Audio</code>, 实现 <code class="code" id="kty2vr_275">Media</code> 接口. <code class="code" id="kty2vr_276">Audio</code> 类必须在构造器中使用 <code class="code" id="kty2vr_277">title</code> 属性, 而且必须有一个额外的属性 <code class="code" id="kty2vr_278">composer</code>, 类型 为<code class="code" id="kty2vr_279">String</code>. 在这个类中, 实现 <code class="code" id="kty2vr_280">play()</code> 函数, 打印输出: <code class="code" id="kty2vr_281">&quot;Playing audio: $title, composed by $composer&quot;</code>.</p><dl id="kty2vr_259" data-style="title-top"><dt id="kty2vr_282" data-expandable="true" data-expanded="false">提示</dt><dd><p>你可以在类的头部使用 <code class="code" id="kty2vr_283">override</code> 关键字, 在构造器中实现来自接口的属性.</p></dd></dl><pre><code>interface // 请在这里编写你的代码
+
+class // 请在这里编写你的代码
+
+fun main() {
+    val audio = Audio(&quot;Symphony No. 5&quot;, &quot;Beethoven&quot;)
+    audio.play()
+   // 输出结果为: Playing audio: Symphony No. 5, composed by Beethoven
+}</code></pre><details class="solution"><summary>参考答案</summary><pre><code>interface Media {
+    val title: String
+    fun play()
+}
+
+class Audio(override val title: String, val composer: String) : Media {
+    override fun play() {
+        println(&quot;Playing audio: $title, composed by $composer&quot;)
+    }
+}
+
+fun main() {
+    val audio = Audio(&quot;Symphony No. 5&quot;, &quot;Beethoven&quot;)
+    audio.play()
+   // 输出结果为: Playing audio: Symphony No. 5, composed by Beethoven
+}</code></pre></details></div></div></section><section class="chapter"><div class="collapse"><div class="collapse__title"><h3 id="classes-interfaces-exercise-3" data-toc="classes-interfaces-exercise-3">习题 3</h3></div><div class="collapse__content"><p id="kty2vr_284">你正在为一个电子商务应用程序构建支付处理系统. 每一种支付方法需要能够对支付进行授权, 并处理一笔交易. 有些支付还需要能够处理退款.</p><ol class="list _decimal" id="kty2vr_285" type="1"><li class="list__item" id="kty2vr_290"><p id="kty2vr_293">在 <code class="code" id="kty2vr_294">Refundable</code> 接口中, 添加一个 <code class="code" id="kty2vr_295">refund()</code> 函数, 处理退款.</p></li><li class="list__item" id="kty2vr_291"><p id="kty2vr_296">在 <code class="code" id="kty2vr_298">PaymentMethod</code> 抽象类中:</p><ul class="list _bullet" id="kty2vr_297"><li class="list__item" id="kty2vr_299"><p id="kty2vr_301">添加一个 <code class="code" id="kty2vr_302">authorize()</code> 函数, 接受金额参数, 并打印输出一条包含金额的消息.</p></li><li class="list__item" id="kty2vr_300"><p id="kty2vr_303">添加一个 <code class="code" id="kty2vr_304">processPayment()</code> 抽象函数, 也接受金额参数.</p></li></ul></li><li class="list__item" id="kty2vr_292"><p id="kty2vr_305">创建一个 <code class="code" id="kty2vr_307">CreditCard</code> 类, 实现 <code class="code" id="kty2vr_308">Refundable</code> 接口和 <code class="code" id="kty2vr_309">PaymentMethod</code> 抽象类. 在这个类中, 添加 <code class="code" id="kty2vr_310">refund()</code> 和 <code class="code" id="kty2vr_311">processPayment()</code> 函数的实现, 让它们打印以下语句:</p><ul class="list _bullet" id="kty2vr_306"><li class="list__item" id="kty2vr_312"><p id="kty2vr_314"><code class="code" id="kty2vr_315">&quot;Refunding $amount to the credit card.&quot;</code></p></li><li class="list__item" id="kty2vr_313"><p id="kty2vr_316"><code class="code" id="kty2vr_317">&quot;Processing credit card payment of $amount.&quot;</code></p></li></ul></li></ol><pre><code>interface Refundable {
+    // 请在这里编写你的代码
+}
+
+abstract class PaymentMethod(val name: String) {
+    // 请在这里编写你的代码
+}
+
+class CreditCard // 请在这里编写你的代码
+
+fun main() {
+    val visa = CreditCard(&quot;Visa&quot;)
+
+    visa.authorize(100.0)
+    // 输出结果为: Authorizing payment of $100.0.
+    visa.processPayment(100.0)
+    // 输出结果为: Processing credit card payment of $100.0.
+    visa.refund(50.0)
+    // 输出结果为: Refunding $50.0 to the credit card.
+}</code></pre><details class="solution"><summary>参考答案</summary><pre><code>interface Refundable {
+    fun refund(amount: Double)
+}
+
+abstract class PaymentMethod(val name: String) {
+    fun authorize(amount: Double) {
+        println(&quot;Authorizing payment of $$amount.&quot;)
+    }
+
+    abstract fun processPayment(amount: Double)
+}
+
+class CreditCard(name: String) : PaymentMethod(name), Refundable {
+    override fun processPayment(amount: Double) {
+        println(&quot;Processing credit card payment of $$amount.&quot;)
+    }
+
+    override fun refund(amount: Double) {
+        println(&quot;Refunding $$amount to the credit card.&quot;)
+    }
+}
+
+fun main() {
+    val visa = CreditCard(&quot;Visa&quot;)
+
+    visa.authorize(100.0)
+    // 输出结果为: Authorizing payment of $100.0.
+    visa.processPayment(100.0)
+    // 输出结果为: Processing credit card payment of $100.0.
+    visa.refund(50.0)
+    // 输出结果为: Refunding $50.0 to the credit card.
+}</code></pre></details></div></div></section><section class="chapter"><div class="collapse"><div class="collapse__title"><h3 id="classes-interfaces-exercise-4" data-toc="classes-interfaces-exercise-4">习题 4</h3></div><div class="collapse__content"><p id="kty2vr_318">你有一个简单的消息应用程序, 包含一些基本功能, 但你想要添加一些功能来处理 <span class="emphasis" id="kty2vr_326">智能</span> 消息, 但不想大量重复代码.</p><p id="kty2vr_319">在下面的代码中, 定义一个 <code class="code" id="kty2vr_327">SmartMessenger</code> 类, 继承 <code class="code" id="kty2vr_328">Messenger</code> 接口, 但将实现委托给一个 <code class="code" id="kty2vr_329">BasicMessenger</code> 类的实例.</p><p id="kty2vr_320">在 <code class="code" id="kty2vr_330">SmartMessenger</code> 类中, 覆盖 <code class="code" id="kty2vr_331">sendMessage()</code> 函数, 发送智能消息. 这个函数必须接受一个 <code class="code" id="kty2vr_332">message</code> 参数, 并包含一个打印输出语句: <code class="code" id="kty2vr_333">&quot;Sending a smart message: $message&quot;</code>. 此外还要调用来自 <code class="code" id="kty2vr_334">BasicMessenger</code> 类的 <code class="code" id="kty2vr_335">sendMessage()</code> 函数, 并给消息加上 <code class="code" id="kty2vr_336">[smart]</code> 前缀.</p><aside class="prompt" data-type="note" data-title="" id="kty2vr_321"><p id="kty2vr_337">你不需要重写 <code class="code" id="kty2vr_338">SmartMessenger</code> 类中的 <code class="code" id="kty2vr_339">receiveMessage()</code> 函数.</p></aside><pre><code>interface Messenger {
+    fun sendMessage(message: String)
+    fun receiveMessage(): String
+}
+
+class BasicMessenger : Messenger {
+    override fun sendMessage(message: String) {
+        println(&quot;Sending message: $message&quot;)
+    }
+
+    override fun receiveMessage(): String {
+        return &quot;You've got a new message!&quot;
+    }
+}
+
+class SmartMessenger // 请在这里编写你的代码
+
+fun main() {
+    val basicMessenger = BasicMessenger()
+    val smartMessenger = SmartMessenger(basicMessenger)
+
+    basicMessenger.sendMessage(&quot;Hello!&quot;)
+    // 输出结果为: Sending message: Hello!
+    println(smartMessenger.receiveMessage())
+    // 输出结果为: You've got a new message!
+    smartMessenger.sendMessage(&quot;Hello from SmartMessenger!&quot;)
+    // 输出结果为: Sending a smart message: Hello from SmartMessenger!
+    // 输出结果为: Sending message: [smart] Hello from SmartMessenger!
+}</code></pre><details class="solution"><summary>参考答案</summary><pre><code>interface Messenger {
+    fun sendMessage(message: String)
+    fun receiveMessage(): String
+}
+
+class BasicMessenger : Messenger {
+    override fun sendMessage(message: String) {
+        println(&quot;Sending message: $message&quot;)
+    }
+
+    override fun receiveMessage(): String {
+        return &quot;You've got a new message!&quot;
+    }
+}
+
+class SmartMessenger(val basicMessenger: BasicMessenger) : Messenger by basicMessenger {
+    override fun sendMessage(message: String) {
+        println(&quot;Sending a smart message: $message&quot;)
+        basicMessenger.sendMessage(&quot;[smart] $message&quot;)
+    }
+}
+
+fun main() {
+    val basicMessenger = BasicMessenger()
+    val smartMessenger = SmartMessenger(basicMessenger)
+
+    basicMessenger.sendMessage(&quot;Hello!&quot;)
+    // 输出结果为: Sending message: Hello!
+    println(smartMessenger.receiveMessage())
+    // 输出结果为: You've got a new message!
+    smartMessenger.sendMessage(&quot;Hello from SmartMessenger!&quot;)
+    // 输出结果为: Sending a smart message: Hello from SmartMessenger!
+    // 输出结果为: Sending message: [smart] Hello from SmartMessenger!
+}</code></pre></details></div></div></section></section><section class="chapter"><h2 id="next-step" data-toc="next-step">下一步</h2><p id="kty2vr_340"><a href="../objects/index.html" id="kty2vr_341">中级教程: 对象</a></p></section>
+    </article>
+    <section class="recall" aria-labelledby="recall-title">
+      <span class="note-kind">读完自测</span>
+      <h2 id="recall-title">先不看正文，回答这三个问题</h2>
+      <ol><li>抽象类与接口的适用边界有什么不同？</li><li>override 为什么必须显式写出？</li><li>by 委托怎样减少样板转发代码？</li></ol>
+      <p class="transfer"><strong>迁移练习：</strong>从你正在读的一段 Kotlin 代码里，找出本章概念的一个真实用法；用一句话解释它为什么这样写。</p>
+    </section>
+    <nav class="chapter-switcher" aria-label="章节导航">
+    <a href="../lambdas-with-receiver/index.html">← 带接收者的 lambda</a>
+    <a class="course-home" href="../index.html">全部章节</a>
+    <a href="../objects/index.html">对象 →</a>
+  </nav>
+    <footer class="license-note">
+      <p>这是用于个人学习的非官方中文阅读版。正文依据 <a href="https://kotlinlang.org/docs/kotlin-tour-intermediate-classes-interfaces.html">Kotlin 官方文档</a>整理，并参考公开中文译文对照整理；原始内容由 JetBrains 与 Kotlin 贡献者维护，采用 <a href="https://github.com/JetBrains/kotlin-web-site/blob/master/LICENSE">Apache License 2.0</a>。</p>
+    </footer>
+  </main>
+</body>
+</html>

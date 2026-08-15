@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="让 lambda 在某个对象的上下文中执行，为构建器和领域专用语言打下基础。">
+  <title>带接收者的 lambda｜RIN III</title>
+  <link rel="stylesheet" href="../reader.css">
+</head>
+<body>
+  <nav class="site-nav" aria-label="站点导航">
+    <a href="../index.html">← Kotlin Tour 中文学习版</a>
+    <a href="../../../computer-science/kotlin-tour/">RIN III 学习记录</a>
+  </nav>
+  <main class="reader">
+    <header class="chapter-header">
+      <span class="chapter-kicker">中级 · 第 3 章</span>
+      <h1>带接收者的 lambda</h1>
+      <p class="lead">让 lambda 在某个对象的上下文中执行，为构建器和领域专用语言打下基础。</p>
+      <div class="title-rule"></div>
+      <aside class="learning-note" aria-label="学习主线">
+        <strong>学习主线</strong>
+        <p>带接收者的 lambda 把一个对象作为隐式 this，使配置代码更接近声明式语言。</p>
+      </aside>
+      <nav class="chapter-switcher" aria-label="章节导航">
+    <a href="../scope-functions/index.html">← 作用域函数</a>
+    <a class="course-home" href="../index.html">全部章节</a>
+    <a href="../classes-and-interfaces/index.html">类与接口 →</a>
+  </nav>
+    </header>
+    <article class="translated-article">
+<p id="awl9l4_3">在这一章中, 你将学习在另一种函数类型 Lambda 表达式中如何使用接受者, 以及它们如何帮助你创建一个特定领域专用语言(Domain-Specific Language, DSL).</p><section class="chapter"><h2 id="lambda-expressions-with-receiver" data-toc="lambda-expressions-with-receiver">带接受者的 Lambda 表达式</h2><p id="awl9l4_34">在初学者教程中, 你已经学习了如何使用 <a href="../functions/index.html#lambda-expressions" id="awl9l4_54">Lambda 表达式</a>. Lambda 表达式也可以带有接受者. 这种情况下, Lambda 表达式能够访问接受者的任何成员函数或属性, 而不必每次都明确的指明接受者. 没有了这些额外的引用, 你的代码会变得更加易于阅读和维护.</p><aside class="prompt" data-type="tip" data-title="" id="awl9l4_35"><p id="awl9l4_55">带接受者的 Lambda 表达式也叫做带接受者的函数字面值.</p></aside><p id="awl9l4_36">带接受者的 Lambda 表达式的语法与定义函数类型时不同. 首先, 请写下你想要扩展的接受者. 之后, 是一个 <code class="code" id="awl9l4_56">.</code> 号, 之后写下你的函数类型定义的其它部分. 例如:</p><pre><code>MutableList&lt;Int&gt;.() -&gt; Unit</code></pre><p id="awl9l4_38">这个函数类型:</p><ul class="list _bullet" id="awl9l4_39"><li class="list__item" id="awl9l4_57"><p id="awl9l4_60">接受者是 <code class="code" id="awl9l4_61">MutableList&lt;Int&gt;</code>.</p></li><li class="list__item" id="awl9l4_58"><p id="awl9l4_62">括号 <code class="code" id="awl9l4_63">()</code> 之内没有函数参数.</p></li><li class="list__item" id="awl9l4_59"><p id="awl9l4_64">没有返回值: <code class="code" id="awl9l4_65">Unit</code>.</p></li></ul><p id="awl9l4_40">我们来看看下面的实例, 它在画布上绘制图形:</p><pre><code>class Canvas {
+    fun drawCircle() = println(&quot;🟠 Drawing a circle&quot;)
+    fun drawSquare() = println(&quot;🟥 Drawing a square&quot;)
+}
+
+// 带接受者的 Lambda 表达式定义
+fun render(block: Canvas.() -&gt; Unit): Canvas {
+    val canvas = Canvas()
+    // 使用带接受者的 Lambda 表达式
+    canvas.block()
+    return canvas
+}
+
+fun main() {
+    render {
+        drawCircle()
+        // 输出结果为: 🟠 Drawing a circle
+        drawSquare()
+        // 输出结果为: 🟥 Drawing a square
+    }
+}</code></pre><p id="awl9l4_42">在这个示例中:</p><ul class="list _bullet" id="awl9l4_43"><li class="list__item" id="awl9l4_66"><p id="awl9l4_72"><code class="code" id="awl9l4_73">Canvas</code> 类有 2 个函数, 模拟绘制圆形和正方形.</p></li><li class="list__item" id="awl9l4_67"><p id="awl9l4_74"><code class="code" id="awl9l4_75">render()</code> 函数接受一个 <code class="code" id="awl9l4_76">block</code> 参数, 返回一个 <code class="code" id="awl9l4_77">Canvas</code> 类的实例.</p></li><li class="list__item" id="awl9l4_68"><p id="awl9l4_78"><code class="code" id="awl9l4_79">block</code> 参数是一个带接受者的 Lambda 表达式, 其中 <code class="code" id="awl9l4_80">Canvas</code> 类是接受者.</p></li><li class="list__item" id="awl9l4_69"><p id="awl9l4_81"><code class="code" id="awl9l4_82">render()</code> 函数创建一个 <code class="code" id="awl9l4_83">Canvas</code> 类的实例, 并使用它作为接受者, 在 <code class="code" id="awl9l4_84">canvas</code> 实例上调用 <code class="code" id="awl9l4_85">block()</code> Lambda 表达式.</p></li><li class="list__item" id="awl9l4_70"><p id="awl9l4_86"><code class="code" id="awl9l4_87">main()</code> 函数调用 <code class="code" id="awl9l4_88">render()</code> 函数, 使用 Lambda 表达式, 传递给 <code class="code" id="awl9l4_89">block</code> 参数.</p></li><li class="list__item" id="awl9l4_71"><p id="awl9l4_90">在传递给 <code class="code" id="awl9l4_92">render()</code> 函数的 Lambda 表达式内, 程序会在 <code class="code" id="awl9l4_93">Canvas</code> 类的实例上调用 <code class="code" id="awl9l4_94">drawCircle()</code> 和 <code class="code" id="awl9l4_95">drawSquare()</code> 函数.</p><p id="awl9l4_91">由于 <code class="code" id="awl9l4_96">drawCircle()</code> 和 <code class="code" id="awl9l4_97">drawSquare()</code> 函数是在带接受者的 Lambda 表达式之内调用, 因此可以象在 <code class="code" id="awl9l4_98">Canvas</code> 类之内一样调用它们.</p></li></ul><p id="awl9l4_44">如果你想要创建一个特定领域专用语言(Domain-Specific Language, DSL), 带接受者的 Lambda 表达式会非常有用. 因为你可以访问接受者的成员函数和属性, 而不必明确引用接受者, 你的代码会变得更加精简.</p><p id="awl9l4_45">为了演示这一点, 我们来考虑一个配置菜单中项目的示例. 我们从一个 <code class="code" id="awl9l4_99">MenuItem</code> 类和一个 <code class="code" id="awl9l4_100">Menu</code> 类开始, <code class="code" id="awl9l4_101">Menu</code> 类包含一个向菜单中添加项目的函数, 名为 <code class="code" id="awl9l4_102">item()</code>, 以及一个包含所有项目的列表, 名为 <code class="code" id="awl9l4_103">items</code>:</p><pre><code>class MenuItem(val name: String)
+
+class Menu(val name: String) {
+    val items = mutableListOf&lt;MenuItem&gt;()
+
+    fun item(name: String) {
+        items.add(MenuItem(name))
+    }
+}</code></pre><p id="awl9l4_47">我们使用一个带接受者的 Lambda 表达式, 将它作为函数参数 (<code class="code" id="awl9l4_104">init</code>) 传递给 <code class="code" id="awl9l4_105">menu()</code> 函数, 这个函数构建一个菜单, 作为开始点:</p><pre><code>fun menu(name: String, init: Menu.() -&gt; Unit): Menu {
+    // 创建 Menu 类的一个实例
+    val menu = Menu(name)
+    // 在类实例上调用带接受者的 Lambda 表达式 init()
+    menu.init()
+    return menu
+}</code></pre><p id="awl9l4_49">现在你可以使用这个 DSL 来配置一个菜单, 并创建一个 <code class="code" id="awl9l4_106">printMenu()</code> 函数, 将菜单结构打印输出到控制台:</p><pre><code>class MenuItem(val name: String)
+
+class Menu(val name: String) {
+    val items = mutableListOf&lt;MenuItem&gt;()
+
+    fun item(name: String) {
+        items.add(MenuItem(name))
+    }
+}
+
+fun menu(name: String, init: Menu.() -&gt; Unit): Menu {
+    val menu = Menu(name)
+    menu.init()
+    return menu
+}
+
+//sampleStart
+fun printMenu(menu: Menu) {
+    println(&quot;Menu: ${menu.name}&quot;)
+    menu.items.forEach { println(&quot;  Item: ${it.name}&quot;) }
+}
+
+// 使用 DSL
+fun main() {
+    // 创建菜单
+    val mainMenu = menu(&quot;Main Menu&quot;) {
+        // 向菜单添加项目
+        item(&quot;Home&quot;)
+        item(&quot;Settings&quot;)
+        item(&quot;Exit&quot;)
+    }
+
+    // 打印菜单
+    printMenu(mainMenu)
+    // 输出结果为:
+    // Menu: Main Menu
+    //   Item: Home
+    //   Item: Settings
+    //   Item: Exit
+}
+//sampleEnd</code></pre><p id="awl9l4_51">如你所见, 使用带接受者的 Lambda 表达式 大大的简化了创建你的菜单所需要的代码. Lambda 表达式不仅仅可以用于设置和创建, 也可以用于配置. 它们普遍用于构建 API, UI 框架, 以及配置构建器的 DSL, 以生成精简的代码, 让你能够更容易的专注于底层代码结构和逻辑.</p><p id="awl9l4_52">Kotlin 的生态环境中存在这种设计模式的很多例子, 例如标准库中的 <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/build-list.html" id="awl9l4_107" data-external="true" rel="noopener noreferrer"><code class="code" id="awl9l4_109">buildList()</code></a> 和 <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.text/build-string.html" id="awl9l4_108" data-external="true" rel="noopener noreferrer"><code class="code" id="awl9l4_110">buildString()</code></a> 函数.</p><aside class="prompt" data-type="tip" data-title="" id="awl9l4_53"><p id="awl9l4_111">在 Kotlin 中, 带接受者的 Lambda 表达式可以与 <span class="control" id="awl9l4_112">类型安全的构建器</span> 结合, 创建能够在编译期而不是在运行期检测出类型问题的 DSL. 详情请参见 <a href="https://kotlinlang.org/docs/type-safe-builders.html" id="awl9l4_113">类型安全的构建器</a>.</p></aside></section><section class="chapter"><h2 id="practice" data-toc="practice">实际练习</h2><section class="chapter"><div class="collapse"><div class="collapse__title"><h3 id="lambda-receivers-exercise-1" data-toc="lambda-receivers-exercise-1">习题 1</h3></div><div class="collapse__content"><p id="awl9l4_117">你有一个 <code class="code" id="awl9l4_122">fetchData()</code> 函数, 参数是一个带接受者的 Lambda 表达式. 请更新 Lambda 表达式, 使用 <code class="code" id="awl9l4_123">append()</code> 函数, 让你的代码的输出成为: <code class="code" id="awl9l4_124">Data received - Processed</code>.</p><pre><code>fun fetchData(callback: StringBuilder.() -&gt; Unit) {
+    val builder = StringBuilder(&quot;Data received&quot;)
+    builder.callback()
+}
+
+fun main() {
+    fetchData {
+        // 请在这里编写你的代码
+        // 输出结果为: Data received - Processed
+    }
+}</code></pre><details class="solution"><summary>参考答案</summary><pre><code>fun fetchData(callback: StringBuilder.() -&gt; Unit) {
+    val builder = StringBuilder(&quot;Data received&quot;)
+    builder.callback()
+}
+
+fun main() {
+    fetchData {
+        append(&quot; - Processed&quot;)
+        println(this.toString())
+        // 输出结果为: Data received - Processed
+    }
+}</code></pre></details></div></div></section><section class="chapter"><div class="collapse"><div class="collapse__title"><h3 id="lambda-receivers-exercise-2" data-toc="lambda-receivers-exercise-2">习题 2</h3></div><div class="collapse__content"><p id="awl9l4_125">你有一个 <code class="code" id="awl9l4_129">Button</code> 类, 以及 <code class="code" id="awl9l4_130">ButtonEvent</code> 和 <code class="code" id="awl9l4_131">Position</code> 数据. 请编写代码, 触发 <code class="code" id="awl9l4_132">Button</code> 类的 <code class="code" id="awl9l4_133">onEvent()</code> 成员函数, 触发一个 double-click 事件. 你的代码应该打印输出 <code class="code" id="awl9l4_134">&quot;Double click!&quot;</code>.</p><pre><code>class Button {
+    fun onEvent(action: ButtonEvent.() -&gt; Unit) {
+        // 模拟 double-click 事件 (不是 right-click)
+        val event = ButtonEvent(isRightClick = false, amount = 2, position = Position(100, 200))
+        event.action() // 触发事件回调
+    }
+}
+
+data class ButtonEvent(
+    val isRightClick: Boolean,
+    val amount: Int,
+    val position: Position
+)
+
+data class Position(
+    val x: Int,
+    val y: Int
+)
+
+fun main() {
+    val button = Button()
+
+    button.onEvent {
+        // 请在这里编写你的代码
+        // 输出结果为: Double click!
+    }
+}</code></pre><details class="solution"><summary>参考答案</summary><pre><code>class Button {
+    fun onEvent(action: ButtonEvent.() -&gt; Unit) {
+        // 模拟 double-click 事件 (不是 right-click)
+        val event = ButtonEvent(isRightClick = false, amount = 2, position = Position(100, 200))
+        event.action() // 触发事件回调
+    }
+}
+
+data class ButtonEvent(
+    val isRightClick: Boolean,
+    val amount: Int,
+    val position: Position
+)
+
+data class Position(
+    val x: Int,
+    val y: Int
+)
+
+fun main() {
+    val button = Button()
+
+    button.onEvent {
+        if (!isRightClick &amp;&amp; amount == 2) {
+            println(&quot;Double click!&quot;)
+            // 输出结果为: Double click!
+        }
+    }
+}</code></pre></details></div></div></section><section class="chapter"><div class="collapse"><div class="collapse__title"><h3 id="lambda-receivers-exercise-3" data-toc="lambda-receivers-exercise-3">习题 3</h3></div><div class="collapse__content"><p id="awl9l4_135">编写一个函数, 创建一个整数 List 的副本, 其中每个元素增大 1. 请使用已经提供的函数框架, 它使用一个 <code class="code" id="awl9l4_139">incremented</code> 函数扩展了 <code class="code" id="awl9l4_140">List&lt;Int&gt;</code>.</p><pre><code>fun List&lt;Int&gt;.incremented(): List&lt;Int&gt; {
+    val originalList = this
+    return buildList {
+        // 请在这里编写你的代码
+    }
+}
+
+fun main() {
+    val originalList = listOf(1, 2, 3)
+    val newList = originalList.incremented()
+    println(newList)
+    // 输出结果为: [2, 3, 4]
+}</code></pre><details class="solution"><summary>参考答案</summary><pre><code>fun List&lt;Int&gt;.incremented(): List&lt;Int&gt; {
+    val originalList = this
+    return buildList {
+        for (n in originalList) add(n + 1)
+    }
+}
+
+fun main() {
+    val originalList = listOf(1, 2, 3)
+    val newList = originalList.incremented()
+    println(newList)
+    // 输出结果为: [2, 3, 4]
+}</code></pre></details></div></div></section></section><section class="chapter"><h2 id="awl9l4_6" data-toc="awl9l4_6">下一步</h2><p id="awl9l4_141"><a href="../classes-and-interfaces/index.html" id="awl9l4_142">中级教程: 类与接口</a></p></section>
+    </article>
+    <section class="recall" aria-labelledby="recall-title">
+      <span class="note-kind">读完自测</span>
+      <h2 id="recall-title">先不看正文，回答这三个问题</h2>
+      <ol><li>带接收者的函数类型怎样书写？</li><li>lambda 内的隐式 this 从哪里来？</li><li>它为什么适合构建器模式与 DSL？</li></ol>
+      <p class="transfer"><strong>迁移练习：</strong>从你正在读的一段 Kotlin 代码里，找出本章概念的一个真实用法；用一句话解释它为什么这样写。</p>
+    </section>
+    <nav class="chapter-switcher" aria-label="章节导航">
+    <a href="../scope-functions/index.html">← 作用域函数</a>
+    <a class="course-home" href="../index.html">全部章节</a>
+    <a href="../classes-and-interfaces/index.html">类与接口 →</a>
+  </nav>
+    <footer class="license-note">
+      <p>这是用于个人学习的非官方中文阅读版。正文依据 <a href="https://kotlinlang.org/docs/kotlin-tour-intermediate-lambdas-receiver.html">Kotlin 官方文档</a>整理，并参考公开中文译文对照整理；原始内容由 JetBrains 与 Kotlin 贡献者维护，采用 <a href="https://github.com/JetBrains/kotlin-web-site/blob/master/LICENSE">Apache License 2.0</a>。</p>
+    </footer>
+  </main>
+</body>
+</html>

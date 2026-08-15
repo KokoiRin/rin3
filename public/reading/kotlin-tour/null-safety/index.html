@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="把“可能没有值”写进类型，并用空值检查、安全调用和 Elvis 运算符处理它。">
+  <title>空安全｜RIN III</title>
+  <link rel="stylesheet" href="../reader.css">
+</head>
+<body>
+  <nav class="site-nav" aria-label="站点导航">
+    <a href="../index.html">← Kotlin Tour 中文学习版</a>
+    <a href="../../../computer-science/kotlin-tour/">RIN III 学习记录</a>
+  </nav>
+  <main class="reader">
+    <header class="chapter-header">
+      <span class="chapter-kicker">初学者 · 第 7 章</span>
+      <h1>空安全</h1>
+      <p class="lead">把“可能没有值”写进类型，并用空值检查、安全调用和 Elvis 运算符处理它。</p>
+      <div class="title-rule"></div>
+      <aside class="learning-note" aria-label="学习主线">
+        <strong>学习主线</strong>
+        <p>String 与 String? 是不同类型；可空值必须先处理 null，才能当作确定存在的值使用。</p>
+      </aside>
+      <nav class="chapter-switcher" aria-label="章节导航">
+    <a href="../classes/index.html">← 类</a>
+    <a class="course-home" href="../index.html">全部章节</a>
+    <a href="../extension-functions/index.html">扩展函数 →</a>
+  </nav>
+    </header>
+    <article class="translated-article">
+<p id="-km4fvw_3">在 Kotlin 中, 可以使用 <code class="code" id="-km4fvw_35">null</code> 值. Kotlin 使用 <code class="code" id="-km4fvw_36">null</code> 值表示某些值不存在, 或者还未确定的情况. 在 <a href="../collections/index.html#kotlin-tour-map-no-key" id="-km4fvw_37">集合</a> 章节中, 你已经看到了 Kotlin 返回 <code class="code" id="-km4fvw_38">null</code> 值的例子, 那就是当你使用 Map 中不存在的 key 来访问一个键值对(key-value pair) 的情况. 尽管这样的方式使用 <code class="code" id="-km4fvw_39">null</code> 值是很有用的, 但如果你的代码没有准备好处理 <code class="code" id="-km4fvw_40">null</code> 值, 就可能会发生问题.</p><p id="-km4fvw_4">为了帮助在程序中防止 <code class="code" id="-km4fvw_41">null</code> 值相关的问题, Kotlin 提供了 null 值安全性功能. null 值安全性功能会在编译期检测 <code class="code" id="-km4fvw_42">null</code> 值潜在的问题, 而不是在运行期.</p><p id="-km4fvw_5">Null 安全性是多种功能的组合, 使得你能够:</p><ul class="list _bullet" id="-km4fvw_6"><li class="list__item" id="-km4fvw_43"><p id="-km4fvw_47">如果你的程序允许 <code class="code" id="-km4fvw_48">null</code> 值, 可以明确声明.</p></li><li class="list__item" id="-km4fvw_44"><p id="-km4fvw_49">检查 <code class="code" id="-km4fvw_50">null</code> 值.</p></li><li class="list__item" id="-km4fvw_45"><p id="-km4fvw_51">对可能包含 <code class="code" id="-km4fvw_52">null</code> 值的属性或函数, 使用安全调用.</p></li><li class="list__item" id="-km4fvw_46"><p id="-km4fvw_53">如果检测到 <code class="code" id="-km4fvw_54">null</code> 值时, 声明如何处理.</p></li></ul><section class="chapter"><h2 id="nullable-types" data-toc="nullable-types">可为 null 的类型</h2><p id="-km4fvw_55">Kotlin 支持可为 null 的类型, 这样的类型允许存在 <code class="code" id="-km4fvw_59">null</code> 值. 默认情况下, 一个类型 <span class="control" id="-km4fvw_60">不能</span> 接受 <code class="code" id="-km4fvw_61">null</code> 值. 声明可为 null 的类型的方法是, 在类型声明之后明确添加 <code class="code" id="-km4fvw_62">?</code>.</p><p id="-km4fvw_56">例如:</p><pre><code>fun main() {
+    // neverNull 的类型为: String
+    var neverNull: String = &quot;This can't be null&quot;
+
+    // 这里会出现编译器错误
+    neverNull = null
+
+    // nullable 的类型为: 可以为 null 的 String
+    var nullable: String? = &quot;You can keep a null here&quot;
+
+    // 这是可以的
+    nullable = null
+
+    // 默认情况下, 不能接受 null 值
+    var inferredNonNull = &quot;The compiler assumes non-nullable&quot;
+
+    // 这里会出现编译器错误
+    inferredNonNull = null
+
+    // notNull 不能接受 null 值
+    fun strLength(notNull: String): Int {
+        return notNull.length
+    }
+
+    println(strLength(neverNull)) // 输出结果为 18
+    println(strLength(nullable))  // 这里会出现编译器错误
+}</code></pre><aside class="prompt" data-type="tip" data-title="" id="-km4fvw_58"><p id="-km4fvw_63"><code class="code" id="-km4fvw_64">length</code> 是 <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/" id="-km4fvw_65" data-external="true" rel="noopener noreferrer">String</a> 类的属性, 它表示字符串中字符的数量.</p></aside></section><section class="chapter"><h2 id="check-for-null-values" data-toc="check-for-null-values">检查 null 值</h2><p id="-km4fvw_66">你可以在条件表达式中检查 <code class="code" id="-km4fvw_68">null</code> 值. 在下面的示例中, <code class="code" id="-km4fvw_69">describeString()</code> 函数包含一个 <code class="code" id="-km4fvw_70">if</code> 语句, 它检查 <code class="code" id="-km4fvw_71">maybeString</code> 是不是 <span class="control" id="-km4fvw_72">非</span> <code class="code" id="-km4fvw_73">null</code> 值, 并且它的 <code class="code" id="-km4fvw_74">length</code> 是否大于 0:</p><pre><code>fun describeString(maybeString: String?): String {
+    if (maybeString != null &amp;&amp; maybeString.length &gt; 0) {
+        return &quot;String of length ${maybeString.length}&quot;
+    } else {
+        return &quot;Empty or null string&quot;
+    }
+}
+
+fun main() {
+    val nullString: String? = null
+    println(describeString(nullString))
+    // 输出结果为 Empty or null string
+}</code></pre></section><section class="chapter"><h2 id="use-safe-calls" data-toc="use-safe-calls">使用安全调用</h2><p id="-km4fvw_75">对于可能包含 <code class="code" id="-km4fvw_82">null</code> 值的对象, 要安全的访问它的属性, 请使用安全调用操作符 <code class="code" id="-km4fvw_83">?.</code>. 如果对象或对象的属性为 <code class="code" id="-km4fvw_84">null</code>, 安全调用操作符会返回 <code class="code" id="-km4fvw_85">null</code>. 如果你想要在你的代码中避免 <code class="code" id="-km4fvw_86">null</code> 值造成的错误, 这个功能会很有用.</p><p id="-km4fvw_76">在下面的示例中, <code class="code" id="-km4fvw_87">lengthString()</code> 函数使用安全调用, 返回字符串的长度, 或返回 <code class="code" id="-km4fvw_88">null</code> 值:</p><pre><code>fun lengthString(maybeString: String?): Int? = maybeString?.length
+
+fun main() {
+    val nullString: String? = null
+    println(lengthString(nullString))
+    // null
+}</code></pre><aside class="prompt" data-type="tip" data-title="" id="-km4fvw_78"><p id="-km4fvw_89">可以对安全调用使用链式调用, 如果一个对象的任何属性包含 <code class="code" id="-km4fvw_91">null</code> 值, 则会返回 <code class="code" id="-km4fvw_92">null</code>, 而不会抛出错误. 例如:</p><pre><code>person.company?.address?.country</code></pre></aside><p id="-km4fvw_79">安全调用操作符也可以用来对扩展函数或成员函数进行安全调用. 这种情况下, 会在调用函数之前进行 null 值检查. 如果检测到 <code class="code" id="-km4fvw_93">null</code> 值, 那么会跳过函数调用, 返回 <code class="code" id="-km4fvw_94">null</code>.</p><p id="-km4fvw_80">在下面的示例中, <code class="code" id="-km4fvw_95">nullString</code> 是 <code class="code" id="-km4fvw_96">null</code> 值, 因此对 <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.text/uppercase.html" id="-km4fvw_97" data-external="true" rel="noopener noreferrer"><code class="code" id="-km4fvw_99">.uppercase()</code></a> 的调用会被跳过, 并返回 <code class="code" id="-km4fvw_98">null</code>:</p><pre><code>fun main() {
+    val nullString: String? = null
+    println(nullString?.uppercase())
+    // 输出结果为 null
+}</code></pre></section><section class="chapter"><h2 id="use-elvis-operator" data-toc="use-elvis-operator">使用 Elvis 操作符</h2><p id="-km4fvw_100">你可以使用 <span class="control" id="-km4fvw_105">Elvis 操作符</span> <code class="code" id="-km4fvw_106">?:</code>, 指定检测到 <code class="code" id="-km4fvw_107">null</code> 值时的默认返回值.</p><p id="-km4fvw_101">Elvis 操作符的左侧, 是需要检测 <code class="code" id="-km4fvw_108">null</code> 值的表达式. Elvis 操作符的右侧, 是检测到 <code class="code" id="-km4fvw_109">null</code> 值时应该返回的默认值.</p><p id="-km4fvw_102">在下面的示例中, <code class="code" id="-km4fvw_110">nullString</code> 是 <code class="code" id="-km4fvw_111">null</code> 值, 因此访问 <code class="code" id="-km4fvw_112">length</code> 属性的安全调用返回 <code class="code" id="-km4fvw_113">null</code> 值. 因此 Elvis 操作符的结果是, 返回 <code class="code" id="-km4fvw_114">0</code>:</p><pre><code>fun main() {
+    val nullString: String? = null
+    println(nullString?.length ?: 0)
+    // 输出结果为 0
+}</code></pre><p id="-km4fvw_104">关于 Kotlin 中的 Null 值安全性, 更多详情请参见 <a href="https://kotlinlang.org/docs/null-safety.html" id="-km4fvw_115">Null 值安全性</a>.</p></section><section class="chapter"><h2 id="practice" data-toc="practice">实际练习</h2><section class="chapter"><div class="collapse"><div class="collapse__title"><h3 id="-km4fvw_116" data-toc="-km4fvw_116">习题</h3></div><div class="collapse__content"><p id="-km4fvw_117">你有一个 <code class="code" id="-km4fvw_122">employeeById</code> 函数, 可以用来访问一个公司的员工数据库. 但是, 这个函数返回 <code class="code" id="-km4fvw_123">Employee?</code> 类型的值, 因此结果可能为 <code class="code" id="-km4fvw_124">null</code>. 你的目标是编写一个函数, 如果给定了员工 <code class="code" id="-km4fvw_125">id</code>, 则返回员工的工资, 如果在数据库中没有找到这个员工, 则返回 <code class="code" id="-km4fvw_126">0</code>.</p><pre><code>data class Employee (val name: String, var salary: Int)
+
+fun employeeById(id: Int) = when(id) {
+    1 -&gt; Employee(&quot;Mary&quot;, 20)
+    2 -&gt; null
+    3 -&gt; Employee(&quot;John&quot;, 21)
+    4 -&gt; Employee(&quot;Ann&quot;, 23)
+    else -&gt; null
+}
+
+fun salaryById(id: Int) = // 在这里编写你的代码
+
+fun main() {
+    println((1..5).sumOf { id -&gt; salaryById(id) })
+}</code></pre><details class="solution"><summary>参考答案</summary><pre><code>data class Employee (val name: String, var salary: Int)
+
+fun employeeById(id: Int) = when(id) {
+    1 -&gt; Employee(&quot;Mary&quot;, 20)
+    2 -&gt; null
+    3 -&gt; Employee(&quot;John&quot;, 21)
+    4 -&gt; Employee(&quot;Ann&quot;, 23)
+    else -&gt; null
+}
+
+fun salaryById(id: Int) = employeeById(id)?.salary ?: 0
+
+fun main() {
+    println((1..5).sumOf { id -&gt; salaryById(id) })
+}</code></pre></details></div></div></section></section><section class="chapter"><h2 id="what-s-next" data-toc="what-s-next">下一步做什么?</h2><p id="-km4fvw_127">恭喜! 现在你已经完成了我们的 Kotlin 观光之旅的初级教程, 下面请阅读我们的中级教程, 更加深入的理解 Kotlin:</p><p id="-km4fvw_128"><a href="../extension-functions/index.html" id="-km4fvw_129"><figure id="-km4fvw_130"><img alt="开始 Kotlin 中级教程" src="../assets/start-intermediate-tour.svg" title="开始 Kotlin 中级教程" width="700" height="700"></figure></a></p></section>
+    </article>
+    <section class="recall" aria-labelledby="recall-title">
+      <span class="note-kind">读完自测</span>
+      <h2 id="recall-title">先不看正文，回答这三个问题</h2>
+      <ol><li>类型后的 ? 表示什么？</li><li>安全调用 ?. 在左侧为 null 时返回什么？</li><li>Elvis 运算符 ?: 适合表达哪类默认策略？</li></ol>
+      <p class="transfer"><strong>迁移练习：</strong>从你正在读的一段 Kotlin 代码里，找出本章概念的一个真实用法；用一句话解释它为什么这样写。</p>
+    </section>
+    <nav class="chapter-switcher" aria-label="章节导航">
+    <a href="../classes/index.html">← 类</a>
+    <a class="course-home" href="../index.html">全部章节</a>
+    <a href="../extension-functions/index.html">扩展函数 →</a>
+  </nav>
+    <footer class="license-note">
+      <p>这是用于个人学习的非官方中文阅读版。正文依据 <a href="https://kotlinlang.org/docs/kotlin-tour-null-safety.html">Kotlin 官方文档</a>整理，并参考公开中文译文对照整理；原始内容由 JetBrains 与 Kotlin 贡献者维护，采用 <a href="https://github.com/JetBrains/kotlin-web-site/blob/master/LICENSE">Apache License 2.0</a>。</p>
+    </footer>
+  </main>
+</body>
+</html>

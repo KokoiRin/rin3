@@ -1,0 +1,303 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="分清 let、apply、run、also 与 with 如何引用上下文对象、返回什么结果。">
+  <title>作用域函数｜RIN III</title>
+  <link rel="stylesheet" href="../reader.css">
+</head>
+<body>
+  <nav class="site-nav" aria-label="站点导航">
+    <a href="../index.html">← Kotlin Tour 中文学习版</a>
+    <a href="../../../computer-science/kotlin-tour/">RIN III 学习记录</a>
+  </nav>
+  <main class="reader">
+    <header class="chapter-header">
+      <span class="chapter-kicker">中级 · 第 2 章</span>
+      <h1>作用域函数</h1>
+      <p class="lead">分清 let、apply、run、also 与 with 如何引用上下文对象、返回什么结果。</p>
+      <div class="title-rule"></div>
+      <aside class="learning-note" aria-label="学习主线">
+        <strong>学习主线</strong>
+        <p>选择作用域函数时只问两件事：块内通过 this 还是 it 引用对象，整个调用返回对象还是 lambda 结果。</p>
+      </aside>
+      <nav class="chapter-switcher" aria-label="章节导航">
+    <a href="../extension-functions/index.html">← 扩展函数</a>
+    <a class="course-home" href="../index.html">全部章节</a>
+    <a href="../lambdas-with-receiver/index.html">带接收者的 lambda →</a>
+  </nav>
+    </header>
+    <article class="translated-article">
+<p id="-firyvk_3">在这一章中, 你在对扩展函数的理解的基础之上, 学习如何使用作用域函数来编写更加符合 Kotlin 惯用法的代码.</p><section class="chapter"><h2 id="scope-functions" data-toc="scope-functions">作用域函数(Scope Function)</h2><p id="-firyvk_35">在编程中, 作用域(scope) 是指一个能够识别变量或对象的区域. 最常见的作用域是全局作用域和局部作用域:</p><ul class="list _bullet" id="-firyvk_36"><li class="list__item" id="-firyvk_47"><p id="-firyvk_49"><span class="control" id="-firyvk_50">全局作用域(Global Scope)</span> &ndash; 能够从程序任何位置访问的变量或对象.</p></li><li class="list__item" id="-firyvk_48"><p id="-firyvk_51"><span class="control" id="-firyvk_52">局部作用域(Local Scope)</span> &ndash; 只能在定义它的代码块或函数之内访问的变量或对象.</p></li></ul><p id="-firyvk_37">在 Kotlin 中, 还有作用域函数(Scope Function), 能够围绕一个对象创建临时作用域, 并执行一些代码.</p><p id="-firyvk_38">作用域函数能够让你的代码更加简洁, 因为在临时作用域内, 你不必引用你的对象的名称. 根据作用域函数不同, 你可以通过关键字 <code class="code" id="-firyvk_53">this</code> 来引用对象, 或者通过关键字 <code class="code" id="-firyvk_54">it</code>, 将它作为一个参数来访问.</p><p id="-firyvk_39">Kotlin 共有 5 个作用域函数: <code class="code" id="-firyvk_55">let</code>, <code class="code" id="-firyvk_56">apply</code>, <code class="code" id="-firyvk_57">run</code>, <code class="code" id="-firyvk_58">also</code>, 和 <code class="code" id="-firyvk_59">with</code>.</p><p id="-firyvk_40">每个作用域函数接受一个 Lambda 表达式参数, 并返回对象, 或返回 Lambda 表达式的结构. 在这篇教程, 我们会解释每个作用域函数, 以及如何使用.</p><aside class="prompt" data-type="tip" data-title="" id="-firyvk_41"><p id="-firyvk_60">你也可以观看视频 <a href="https://youtu.be/DdvgvSHrN9g?feature=shared&amp;t=1511" id="-firyvk_61" data-external="true" rel="noopener noreferrer">回到标准库: 充分利用 Kotlin 的标准库</a>, 由 Sebastian Aigner(Kotlin 开发者 Advocate)讲解作用域函数.</p></aside><section class="chapter"><h3 id="let" data-toc="let">let</h3><p id="-firyvk_62">当你想要在代码中执行 null 值检查, 然后对返回的对象执行进一步操作, 可以使用 <code class="code" id="-firyvk_76">let</code> 作用域函数.</p><p id="-firyvk_63">看看这个示例:</p><pre><code>fun sendNotification(recipientAddress: String): String {
+    println(&quot;Yo $recipientAddress!&quot;)
+    return &quot;Notification sent!&quot;
+}
+
+fun getNextAddress(): String {
+    return &quot;sebastian@jetbrains.com&quot;
+}
+
+fun main() {
+    val address: String? = getNextAddress()
+    sendNotification(address)
+}</code></pre><p id="-firyvk_65">这个示例有 2 个函数:</p><ul class="list _bullet" id="-firyvk_66"><li class="list__item" id="-firyvk_77"><p id="-firyvk_79"><code class="code" id="-firyvk_80">sendNotification()</code>, 有一个函数参数 <code class="code" id="-firyvk_81">recipientAddress</code>, 返回一个字符串.</p></li><li class="list__item" id="-firyvk_78"><p id="-firyvk_82"><code class="code" id="-firyvk_83">getNextAddress()</code>, 没有函数参数, 返回一个字符串.</p></li></ul><p id="-firyvk_67">这个示例创建一个变量 <code class="code" id="-firyvk_84">address</code>, 类型是可为 null 的 <code class="code" id="-firyvk_85">String</code>. 但当你调用 <code class="code" id="-firyvk_86">sendNotification()</code> 函数时这会成为问题, 因为这个函数要求 <code class="code" id="-firyvk_87">address</code> 不能是 <code class="code" id="-firyvk_88">null</code> 值. 结果是编译器会报告错误:</p><pre><code>Argument type mismatch: actual type is 'String?', but 'String' was expected.</code></pre><p id="-firyvk_69">在初学者教程中, 你已经知道了可以使用 if 条件, 或使用 <a href="../null-safety/index.html#use-elvis-operator" id="-firyvk_89">Elvis 操作符 <code class="code" id="-firyvk_91">?:</code></a>, 执行 null 值检查. 但如果你想要在之后的代码中使用返回的对象, 应该怎么办? 你可以使用 if 条件 <span class="control" id="-firyvk_90">和</span> 一个 else 分支来实现:</p><pre><code>fun sendNotification(recipientAddress: String): String {
+    println(&quot;Yo $recipientAddress!&quot;)
+    return &quot;Notification sent!&quot;
+}
+
+fun getNextAddress(): String {
+    return &quot;sebastian@jetbrains.com&quot;
+}
+
+fun main() {
+    //sampleStart
+    val address: String? = getNextAddress()
+    val confirm = if(address != null) {
+        sendNotification(address)
+    } else { null }
+    //sampleEnd
+}</code></pre><p id="-firyvk_71">但是, 更加简洁的方法是使用 <code class="code" id="-firyvk_92">let</code> 作用域函数:</p><pre><code>fun sendNotification(recipientAddress: String): String {
+    println(&quot;Yo $recipientAddress!&quot;)
+    return &quot;Notification sent!&quot;
+}
+
+fun getNextAddress(): String {
+    return &quot;sebastian@jetbrains.com&quot;
+}
+
+fun main() {
+    //sampleStart
+    val address: String? = getNextAddress()
+    val confirm = address?.let {
+        sendNotification(it)
+    }
+    //sampleEnd
+}</code></pre><p id="-firyvk_73">这个示例中:</p><ul class="list _bullet" id="-firyvk_74"><li class="list__item" id="-firyvk_93"><p id="-firyvk_99">创建名为 <code class="code" id="-firyvk_100">address</code> 和 <code class="code" id="-firyvk_101">confirm</code> 的变量.</p></li><li class="list__item" id="-firyvk_94"><p id="-firyvk_102">在 <code class="code" id="-firyvk_103">address</code> 变量上, 对 <code class="code" id="-firyvk_104">let</code> 作用域函数使用一个安全调用.</p></li><li class="list__item" id="-firyvk_95"><p id="-firyvk_105">在 <code class="code" id="-firyvk_106">let</code> 作用域函数之内, 创建一个临时作用域.</p></li><li class="list__item" id="-firyvk_96"><p id="-firyvk_107">将 <code class="code" id="-firyvk_108">sendNotification()</code> 函数作为一个 Lambda 表达式, 传递给 <code class="code" id="-firyvk_109">let</code> 作用域函数.</p></li><li class="list__item" id="-firyvk_97"><p id="-firyvk_110">使用临时作用域, 通过 <code class="code" id="-firyvk_111">it</code> 引用 <code class="code" id="-firyvk_112">address</code> 变量.</p></li><li class="list__item" id="-firyvk_98"><p id="-firyvk_113">将结果赋值给 <code class="code" id="-firyvk_114">confirm</code> 变量.</p></li></ul><p id="-firyvk_75">通过这种方式, 你的代码能够处理 <code class="code" id="-firyvk_115">address</code> 变量可能为 <code class="code" id="-firyvk_116">null</code> 值的情况, 而且你能够在之后的代码中使用 <code class="code" id="-firyvk_117">confirm</code> 变量.</p></section><section class="chapter"><h3 id="apply" data-toc="apply">apply</h3><p id="-firyvk_118">使用 <code class="code" id="-firyvk_128">apply</code> 作用域函数, 能够在创建时而不是在之后的代码中初始化对象, 例如一个类实例. 这种方法能够让你的代码更加易于阅读和管理.</p><p id="-firyvk_119">看看这个示例:</p><pre><code>class Client() {
+    var token: String? = null
+    fun connect() = println(&quot;connected!&quot;)
+    fun authenticate() = println(&quot;authenticated!&quot;)
+    fun getData() : String {
+        println(&quot;getting data!&quot;)
+        return &quot;Mock data&quot;
+    }
+}
+
+val client = Client()
+
+fun main() {
+    client.token = &quot;asdf&quot;
+    client.connect()
+    // 输出结果为: connected!
+    client.authenticate()
+    // 输出结果为: authenticated!
+    client.getData()
+    // 输出结果为: getting data!
+}</code></pre><p id="-firyvk_121">这个示例有一个 <code class="code" id="-firyvk_129">Client</code> 类, 包含一个属性, 名为 <code class="code" id="-firyvk_130">token</code>, 以及 3 个成员函数: <code class="code" id="-firyvk_131">connect()</code>, <code class="code" id="-firyvk_132">authenticate()</code>, 和 <code class="code" id="-firyvk_133">getData()</code>.</p><p id="-firyvk_122">这个示例创建 <code class="code" id="-firyvk_134">Client</code> 类的实例 <code class="code" id="-firyvk_135">client</code>, 之后在 <code class="code" id="-firyvk_136">main()</code> 函数中初始化它的 <code class="code" id="-firyvk_137">token</code> 属性, 并调用它的成员函数.</p><p id="-firyvk_123">尽管这个示例很小, 但在实际应用中, 在你创建一个类实例之后, 可能要经过一段时间才能配置和使用它(以及它的成员函数). 但是, 如果你使用 <code class="code" id="-firyvk_138">apply</code> 作用域函数, 你就可以在代码的同一处, 创建, 配置, 并对你的类实例使用成员函数:</p><pre><code>class Client() {
+    var token: String? = null
+    fun connect() = println(&quot;connected!&quot;)
+    fun authenticate() = println(&quot;authenticated!&quot;)
+    fun getData() : String {
+        println(&quot;getting data!&quot;)
+        return &quot;Mock data&quot;
+    }
+}
+//sampleStart
+val client = Client().apply {
+    token = &quot;asdf&quot;
+    connect()
+    // 输出结果为: connected!
+    authenticate()
+    // 输出结果为: authenticated!
+}
+
+fun main() {
+    client.getData()
+    // 输出结果为: getting data!
+}
+//sampleEnd</code></pre><p id="-firyvk_125">这个示例中:</p><ul class="list _bullet" id="-firyvk_126"><li class="list__item" id="-firyvk_139"><p id="-firyvk_144">创建 <code class="code" id="-firyvk_145">Client</code> 类的实例 <code class="code" id="-firyvk_146">client</code>.</p></li><li class="list__item" id="-firyvk_140"><p id="-firyvk_147">对 <code class="code" id="-firyvk_148">client</code> 实例使用 <code class="code" id="-firyvk_149">apply</code> 作用域函数.</p></li><li class="list__item" id="-firyvk_141"><p id="-firyvk_150">在 <code class="code" id="-firyvk_151">apply</code> 作用域函数之内创建一个临时作用域, 因此在访问它的属性或函数时, 你不必明确的引用 <code class="code" id="-firyvk_152">client</code> 实例.</p></li><li class="list__item" id="-firyvk_142"><p id="-firyvk_153">向 <code class="code" id="-firyvk_154">apply</code> 作用域函数传递一个 Lambda 表达式, 它更新 <code class="code" id="-firyvk_155">token</code> 属性, 并调用 <code class="code" id="-firyvk_156">connect()</code> 和 <code class="code" id="-firyvk_157">authenticate()</code> 函数.</p></li><li class="list__item" id="-firyvk_143"><p id="-firyvk_158">在 <code class="code" id="-firyvk_159">main()</code> 函数中, 对 <code class="code" id="-firyvk_160">client</code> 实例调用 <code class="code" id="-firyvk_161">getData()</code> 成员函数.</p></li></ul><p id="-firyvk_127">你可以看到, 当你处理大段代码时, 这种方法会很方便.</p></section><section class="chapter"><h3 id="run" data-toc="run">run</h3><p id="-firyvk_162">与 <code class="code" id="-firyvk_171">apply</code> 类似, 你可以使用 <code class="code" id="-firyvk_172">run</code> 作用域函数来初始化一个对象, 但 <code class="code" id="-firyvk_173">run</code> 最好的使用场景是, 在代码的某个特定时刻初始化一个对象, <span class="control" id="-firyvk_174">并且</span> 立即计算一个结果.</p><p id="-firyvk_163">我们继续前面的 <code class="code" id="-firyvk_175">apply</code> 函数示例, 但这一次你想要将 <code class="code" id="-firyvk_176">connect()</code> 和 <code class="code" id="-firyvk_177">authenticate()</code> 函数组合在一起, 使它们对每一个请求都会被调用.</p><p id="-firyvk_164">例如:</p><pre><code>class Client() {
+    var token: String? = null
+    fun connect() = println(&quot;connected!&quot;)
+    fun authenticate() = println(&quot;authenticated!&quot;)
+    fun getData() : String {
+        println(&quot;getting data!&quot;)
+        return &quot;Mock data&quot;
+    }
+}
+
+//sampleStart
+val client: Client = Client().apply {
+    token = &quot;asdf&quot;
+}
+
+fun main() {
+    val result: String = client.run {
+        connect()
+        // 输出结果为: connected!
+        authenticate()
+        // 输出结果为: authenticated!
+        getData()
+        // 输出结果为: getting data!
+    }
+}
+//sampleEnd</code></pre><p id="-firyvk_166">这个示例中:</p><ul class="list _bullet" id="-firyvk_167"><li class="list__item" id="-firyvk_178"><p id="-firyvk_182">创建 <code class="code" id="-firyvk_183">Client</code> 类的实例 <code class="code" id="-firyvk_184">client</code>.</p></li><li class="list__item" id="-firyvk_179"><p id="-firyvk_185">对 <code class="code" id="-firyvk_186">client</code> 实例使用 <code class="code" id="-firyvk_187">apply</code> 作用域函数.</p></li><li class="list__item" id="-firyvk_180"><p id="-firyvk_188">在 <code class="code" id="-firyvk_189">apply</code> 作用域函数之内创建一个临时作用域, 因此在访问它的属性或函数时, 你不必明确的引用 <code class="code" id="-firyvk_190">client</code> 实例.</p></li><li class="list__item" id="-firyvk_181"><p id="-firyvk_191">向 <code class="code" id="-firyvk_192">apply</code> 作用域函数传递一个 Lambda 表达式, 它更新 <code class="code" id="-firyvk_193">token</code> 属性.</p></li></ul><p id="-firyvk_168"><code class="code" id="-firyvk_194">main()</code> 函数中:</p><ul class="list _bullet" id="-firyvk_169"><li class="list__item" id="-firyvk_195"><p id="-firyvk_200">创建一个 <code class="code" id="-firyvk_201">result</code> 变量, 类型为 <code class="code" id="-firyvk_202">String</code>.</p></li><li class="list__item" id="-firyvk_196"><p id="-firyvk_203">对 <code class="code" id="-firyvk_204">client</code> 实例使用 <code class="code" id="-firyvk_205">run</code> 作用域函数.</p></li><li class="list__item" id="-firyvk_197"><p id="-firyvk_206">在 <code class="code" id="-firyvk_207">run</code> 作用域函数之内创建一个临时作用域, 因此在访问它的属性或函数时, 你不必明确的引用 <code class="code" id="-firyvk_208">client</code> 实例.</p></li><li class="list__item" id="-firyvk_198"><p id="-firyvk_209">向 <code class="code" id="-firyvk_210">run</code> 作用域函数传递一个 Lambda 表达式, 它调用 <code class="code" id="-firyvk_211">connect()</code>, <code class="code" id="-firyvk_212">authenticate()</code>, 和 <code class="code" id="-firyvk_213">getData()</code> 函数.</p></li><li class="list__item" id="-firyvk_199"><p id="-firyvk_214">将结果赋值给 <code class="code" id="-firyvk_215">result</code> 变量.</p></li></ul><p id="-firyvk_170">现在你可以在后续代码中使用返回的结果了.</p></section><section class="chapter"><h3 id="also" data-toc="also">also</h3><p id="-firyvk_216">使用 <code class="code" id="-firyvk_226">also</code> 作用域函数, 对一个对象完成一个额外的动作, 然后返回对象在代码中继续使用, 例如输出一个 log.</p><p id="-firyvk_217">看看这个示例:</p><pre><code>fun main() {
+    val medals: List&lt;String&gt; = listOf(&quot;Gold&quot;, &quot;Silver&quot;, &quot;Bronze&quot;)
+    val reversedLongUppercaseMedals: List&lt;String&gt; =
+        medals
+            .map { it.uppercase() }
+            .filter { it.length &gt; 4 }
+            .reversed()
+    println(reversedLongUppercaseMedals)
+    // 输出结果为: [BRONZE, SILVER]
+}</code></pre><p id="-firyvk_219">这个示例中:</p><ul class="list _bullet" id="-firyvk_220"><li class="list__item" id="-firyvk_227"><p id="-firyvk_236">创建 <code class="code" id="-firyvk_237">medals</code> 变量, 包含一个字符串 List.</p></li><li class="list__item" id="-firyvk_228"><p id="-firyvk_238">创建 <code class="code" id="-firyvk_239">reversedLongUpperCaseMedals</code> 变量, 类型为 <code class="code" id="-firyvk_240">List&lt;String&gt;</code>.</p></li><li class="list__item" id="-firyvk_229"><p id="-firyvk_241">对 <code class="code" id="-firyvk_242">medals</code> 变量使用 <code class="code" id="-firyvk_243">.map()</code> 扩展函数.</p></li><li class="list__item" id="-firyvk_230"><p id="-firyvk_244">向 <code class="code" id="-firyvk_245">.map()</code> 函数传递一个 Lambda 表达式, 它通过 <code class="code" id="-firyvk_246">it</code> 关键字引用 <code class="code" id="-firyvk_247">medals</code>, 并对它调用 <code class="code" id="-firyvk_248">.uppercase()</code> 扩展函数.</p></li><li class="list__item" id="-firyvk_231"><p id="-firyvk_249">对 <code class="code" id="-firyvk_250">medals</code> 变量使用 <code class="code" id="-firyvk_251">.filter()</code> 扩展函数.</p></li><li class="list__item" id="-firyvk_232"><p id="-firyvk_252">向 <code class="code" id="-firyvk_253">.filter()</code> 函数传递一个 Lambda 表达式, 作为判定条件, 它通过 <code class="code" id="-firyvk_254">it</code> 关键字引用 <code class="code" id="-firyvk_255">medals</code>, 并检查列表中的元素是否超过 4 个字符.</p></li><li class="list__item" id="-firyvk_233"><p id="-firyvk_256">对 <code class="code" id="-firyvk_257">medals</code> 变量使用 <code class="code" id="-firyvk_258">.reversed()</code> 扩展函数.</p></li><li class="list__item" id="-firyvk_234"><p id="-firyvk_259">将结果赋值给 <code class="code" id="-firyvk_260">reversedLongUpperCaseMedals</code> 变量.</p></li><li class="list__item" id="-firyvk_235"><p id="-firyvk_261">打印输出 <code class="code" id="-firyvk_262">reversedLongUpperCaseMedals</code> 变量中包含的列表.</p></li></ul><p id="-firyvk_221">如果能在函数调用之间添加一些 log 会非常有用, 这样就可以看到 <code class="code" id="-firyvk_263">medals</code> 变量发生了什么变化. <code class="code" id="-firyvk_264">also</code> 函数能够帮助我们实现这一点:</p><pre><code>fun main() {
+    val medals: List&lt;String&gt; = listOf(&quot;Gold&quot;, &quot;Silver&quot;, &quot;Bronze&quot;)
+    val reversedLongUppercaseMedals: List&lt;String&gt; =
+        medals
+            .map { it.uppercase() }
+            .also { println(it) }
+            // 输出结果为: [GOLD, SILVER, BRONZE]
+            .filter { it.length &gt; 4 }
+            .also { println(it) }
+            // 输出结果为: [SILVER, BRONZE]
+            .reversed()
+    println(reversedLongUppercaseMedals)
+    // 输出结果为: [BRONZE, SILVER]
+}</code></pre><p id="-firyvk_223">现在, 在这个示例中:</p><ul class="list _bullet" id="-firyvk_224"><li class="list__item" id="-firyvk_265"><p id="-firyvk_268">对 <code class="code" id="-firyvk_269">medals</code> 变量使用 <code class="code" id="-firyvk_270">also</code> 作用域函数.</p></li><li class="list__item" id="-firyvk_266"><p id="-firyvk_271">在 <code class="code" id="-firyvk_272">also</code> 作用域函数之内创建一个临时作用域, 因此在将它用作函数参数时, 你不必明确的引用 <code class="code" id="-firyvk_273">medals</code> 变量.</p></li><li class="list__item" id="-firyvk_267"><p id="-firyvk_274">向 <code class="code" id="-firyvk_275">also</code> 作用域函数传递一个 Lambda 表达式, 它调用 <code class="code" id="-firyvk_276">println()</code> 函数, 通过 <code class="code" id="-firyvk_277">it</code> 关键字, 使用 <code class="code" id="-firyvk_278">medals</code> 变量作为函数参数.</p></li></ul><p id="-firyvk_225">由于 <code class="code" id="-firyvk_279">also</code> 函数返回对象, 它不仅能够用于 log 输出, 还适合于调试, 链接多个操作, 以及执行其它不影响代码主体流程的副作用操作.</p></section><section class="chapter"><h3 id="with" data-toc="with">with</h3><p id="-firyvk_280">与其它作用域函数不同, <code class="code" id="-firyvk_291">with</code> 不是扩展函数, 因此语法不同. 你需要向 <code class="code" id="-firyvk_292">with</code> 传递接受者对象作为参数.</p><p id="-firyvk_281">当你想要对一个对象调用多个函数时, 可以使用 <code class="code" id="-firyvk_293">with</code> 作用域函数.</p><p id="-firyvk_282">看看这个示例:</p><pre><code>class Canvas {
+    fun rect(x: Int, y: Int, w: Int, h: Int): Unit = println(&quot;$x, $y, $w, $h&quot;)
+    fun circ(x: Int, y: Int, rad: Int): Unit = println(&quot;$x, $y, $rad&quot;)
+    fun text(x: Int, y: Int, str: String): Unit = println(&quot;$x, $y, $str&quot;)
+}
+
+fun main() {
+    val mainMonitorPrimaryBufferBackedCanvas = Canvas()
+
+    mainMonitorPrimaryBufferBackedCanvas.text(10, 10, &quot;Foo&quot;)
+    mainMonitorPrimaryBufferBackedCanvas.rect(20, 30, 100, 50)
+    mainMonitorPrimaryBufferBackedCanvas.circ(40, 60, 25)
+    mainMonitorPrimaryBufferBackedCanvas.text(15, 45, &quot;Hello&quot;)
+    mainMonitorPrimaryBufferBackedCanvas.rect(70, 80, 150, 100)
+    mainMonitorPrimaryBufferBackedCanvas.circ(90, 110, 40)
+    mainMonitorPrimaryBufferBackedCanvas.text(35, 55, &quot;World&quot;)
+    mainMonitorPrimaryBufferBackedCanvas.rect(120, 140, 200, 75)
+    mainMonitorPrimaryBufferBackedCanvas.circ(160, 180, 55)
+    mainMonitorPrimaryBufferBackedCanvas.text(50, 70, &quot;Kotlin&quot;)
+}</code></pre><p id="-firyvk_284">这个示例创建一个 <code class="code" id="-firyvk_294">Canvas</code> 类, 有 3 个成员函数: <code class="code" id="-firyvk_295">rect()</code>, <code class="code" id="-firyvk_296">circ()</code>, 和 <code class="code" id="-firyvk_297">text()</code>. 每个成员函数打印输出由你提供的函数参数构建的一个句子.</p><p id="-firyvk_285">这个示例创建 <code class="code" id="-firyvk_298">Canvas</code> 类的实例 <code class="code" id="-firyvk_299">mainMonitorPrimaryBufferBackedCanvas</code>, 然后对这个实例, 使用不同的函数参数调用一系列的成员函数.</p><p id="-firyvk_286">你可以看到, 这段代码很难阅读. 如果你使用 <code class="code" id="-firyvk_300">with</code> 函数, 代码会变得非常精简:</p><pre><code>class Canvas {
+    fun rect(x: Int, y: Int, w: Int, h: Int): Unit = println(&quot;$x, $y, $w, $h&quot;)
+    fun circ(x: Int, y: Int, rad: Int): Unit = println(&quot;$x, $y, $rad&quot;)
+    fun text(x: Int, y: Int, str: String): Unit = println(&quot;$x, $y, $str&quot;)
+}
+
+fun main() {
+    //sampleStart
+    val mainMonitorSecondaryBufferBackedCanvas = Canvas()
+    with(mainMonitorSecondaryBufferBackedCanvas) {
+        text(10, 10, &quot;Foo&quot;)
+        rect(20, 30, 100, 50)
+        circ(40, 60, 25)
+        text(15, 45, &quot;Hello&quot;)
+        rect(70, 80, 150, 100)
+        circ(90, 110, 40)
+        text(35, 55, &quot;World&quot;)
+        rect(120, 140, 200, 75)
+        circ(160, 180, 55)
+        text(50, 70, &quot;Kotlin&quot;)
+    }
+    //sampleEnd
+}</code></pre><p id="-firyvk_288">这个示例中:</p><ul class="list _bullet" id="-firyvk_289"><li class="list__item" id="-firyvk_301"><p id="-firyvk_304">使用 <code class="code" id="-firyvk_305">with</code> 作用域函数, 将 <code class="code" id="-firyvk_306">mainMonitorSecondaryBufferBackedCanvas</code> 实例作为接受者.</p></li><li class="list__item" id="-firyvk_302"><p id="-firyvk_307">在 <code class="code" id="-firyvk_308">with</code> 作用域函数之内创建一个临时作用域, 因此在调用它的成员函数, 你不必明确的引用 <code class="code" id="-firyvk_309">mainMonitorSecondaryBufferBackedCanvas</code> 实例.</p></li><li class="list__item" id="-firyvk_303"><p id="-firyvk_310">向 <code class="code" id="-firyvk_311">with</code> 作用域函数传递一个 Lambda 表达式, 使用不同的函数参数调用一系列的成员函数.</p></li></ul><p id="-firyvk_290">现在这段代码变得更加容易阅读了, 犯错误的可能性也更低了.</p></section></section><section class="chapter"><h2 id="use-case-overview" data-toc="use-case-overview">使用场景概述</h2><p id="-firyvk_312">本节介绍 Kotlin 中的各种作用域函数, 以及它们的主要使用场景, 目的是让你的代码更加符合 Kotlin 惯用法. 你可以将这个表作为一个快速参考. 需要注意的是, 要在你的代码中使用这些函数, 你并不需要完全理解它们如何工作.</p><div class="table-wrapper"><table class="wide" id="-firyvk_313"><thead><tr class="ijRowHead" id="-firyvk_315"><th id="-firyvk_321"><p>函数</p></th><th id="-firyvk_322"><p>访问 <code class="code" id="-firyvk_325">x</code> 的方式</p></th><th id="-firyvk_323"><p>返回值</p></th><th id="-firyvk_324"><p>使用场景</p></th></tr></thead><tbody><tr id="-firyvk_316"><td id="-firyvk_326"><p><code class="code" id="-firyvk_330">let</code></p></td><td id="-firyvk_327"><p><code class="code" id="-firyvk_331">it</code></p></td><td id="-firyvk_328"><p>Lambda 表达式的结果</p></td><td id="-firyvk_329"><p>在你的代码中执行 null 值检查, 然后对返回的对象执行后续操作.</p></td></tr><tr id="-firyvk_317"><td id="-firyvk_332"><p><code class="code" id="-firyvk_336">apply</code></p></td><td id="-firyvk_333"><p><code class="code" id="-firyvk_337">this</code></p></td><td id="-firyvk_334"><p><code class="code" id="-firyvk_338">x</code></p></td><td id="-firyvk_335"><p>在创建时初始化对象.</p></td></tr><tr id="-firyvk_318"><td id="-firyvk_339"><p><code class="code" id="-firyvk_343">run</code></p></td><td id="-firyvk_340"><p><code class="code" id="-firyvk_344">this</code></p></td><td id="-firyvk_341"><p>Lambda 表达式的结果</p></td><td id="-firyvk_342"><p>在创建时初始化对象, <span class="control" id="-firyvk_345">并</span> 计算一个结果.</p></td></tr><tr id="-firyvk_319"><td id="-firyvk_346"><p><code class="code" id="-firyvk_350">also</code></p></td><td id="-firyvk_347"><p><code class="code" id="-firyvk_351">it</code></p></td><td id="-firyvk_348"><p><code class="code" id="-firyvk_352">x</code></p></td><td id="-firyvk_349"><p>在返回对象之前进行额外的操作 .</p></td></tr><tr id="-firyvk_320"><td id="-firyvk_353"><p><code class="code" id="-firyvk_357">with</code></p></td><td id="-firyvk_354"><p><code class="code" id="-firyvk_358">this</code></p></td><td id="-firyvk_355"><p>Lambda 表达式的结果</p></td><td id="-firyvk_356"><p>在一个对象上调用多个函数 .</p></td></tr></tbody></table></div><p id="-firyvk_314">关于作用域函数, 详情请参见 <a href="https://kotlinlang.org/docs/scope-functions.html" id="-firyvk_359">作用域函数</a>.</p></section><section class="chapter"><h2 id="practice" data-toc="practice">实际练习</h2><section class="chapter"><div class="collapse"><div class="collapse__title"><h3 id="scope-functions-exercise-1" data-toc="scope-functions-exercise-1">习题 1</h3></div><div class="collapse__content"><p id="-firyvk_362">将 <code class="code" id="-firyvk_368">.getPriceInEuros()</code> 函数重写为一个单一表达式函数, 它使用安全调用操作符 <code class="code" id="-firyvk_369">?.</code> 和 <code class="code" id="-firyvk_370">let</code> 作用域函数.</p><dl id="-firyvk_363" data-style="title-top"><dt id="-firyvk_371" data-expandable="true" data-expanded="false">提示</dt><dd><p>使用安全调用操作符 <code class="code" id="-firyvk_372">?.</code> 以便安全的访问 <code class="code" id="-firyvk_373">getProductInfo()</code> 函数的 <code class="code" id="-firyvk_374">priceInDollars</code> 属性. 然后, 使用 <code class="code" id="-firyvk_375">let</code> 作用域函数, 将 <code class="code" id="-firyvk_376">priceInDollars</code> 的值转换为欧元.</p></dd></dl><pre><code>data class ProductInfo(val priceInDollars: Double?)
+
+class Product {
+    fun getProductInfo(): ProductInfo? {
+        return ProductInfo(100.0)
+    }
+}
+
+// 请重写这个函数
+fun Product.getPriceInEuros(): Double? {
+    val info = getProductInfo()
+    if (info == null) return null
+    val price = info.priceInDollars
+    if (price == null) return null
+    return convertToEuros(price)
+}
+
+fun convertToEuros(dollars: Double): Double {
+    return dollars * 0.85
+}
+
+fun main() {
+    val product = Product()
+    val priceInEuros = product.getPriceInEuros()
+
+    if (priceInEuros != null) {
+        println(&quot;Price in Euros: €$priceInEuros&quot;)
+        // 输出结果为: Price in Euros: €85.0
+    } else {
+        println(&quot;Price information is not available.&quot;)
+    }
+}</code></pre><details class="solution"><summary>参考答案</summary><pre><code>data class ProductInfo(val priceInDollars: Double?)
+
+class Product {
+    fun getProductInfo(): ProductInfo? {
+        return ProductInfo(100.0)
+    }
+}
+
+fun Product.getPriceInEuros() = getProductInfo()?.priceInDollars?.let { convertToEuros(it) }
+
+fun convertToEuros(dollars: Double): Double {
+    return dollars * 0.85
+}
+
+fun main() {
+    val product = Product()
+    val priceInEuros = product.getPriceInEuros()
+
+    if (priceInEuros != null) {
+        println(&quot;Price in Euros: €$priceInEuros&quot;)
+        // 输出结果为: Price in Euros: €85.0
+    } else {
+        println(&quot;Price information is not available.&quot;)
+    }
+}</code></pre></details></div></div></section><section class="chapter"><div class="collapse"><div class="collapse__title"><h3 id="scope-functions-exercise-2" data-toc="scope-functions-exercise-2">习题 2</h3></div><div class="collapse__content"><p id="-firyvk_377">你有一个 <code class="code" id="-firyvk_382">updateEmail()</code> 函数, 它更新一个用户的 EMail 地址. 使用 <code class="code" id="-firyvk_383">apply</code> 作用域函数来更新 EMail 地址, 然后使用 <code class="code" id="-firyvk_384">also</code> 作用域函数打印输出一个 log 消息: <code class="code" id="-firyvk_385">Updating email for user with ID: ${it.id}</code>.</p><pre><code>data class User(val id: Int, var email: String)
+
+fun updateEmail(user: User, newEmail: String): User = // 请在这里编写你的代码
+
+fun main() {
+    val user = User(1, &quot;old_email@example.com&quot;)
+    val updatedUser = updateEmail(user, &quot;new_email@example.com&quot;)
+    // 输出结果为: Updating email for user with ID: 1
+
+    println(&quot;Updated User: $updatedUser&quot;)
+    // 输出结果为: Updated User: User(id=1, email=new_email@example.com)
+}</code></pre><details class="solution"><summary>参考答案</summary><pre><code>data class User(val id: Int, var email: String)
+
+fun updateEmail(user: User, newEmail: String): User = user.apply {
+    this.email = newEmail
+}.also { println(&quot;Updating email for user with ID: ${it.id}&quot;) }
+
+fun main() {
+    val user = User(1, &quot;old_email@example.com&quot;)
+    val updatedUser = updateEmail(user, &quot;new_email@example.com&quot;)
+    // 输出结果为: Updating email for user with ID: 1
+
+    println(&quot;Updated User: $updatedUser&quot;)
+    // 输出结果为: Updated User: User(id=1, email=new_email@example.com)
+}</code></pre></details></div></div></section></section><section class="chapter"><h2 id="next-step" data-toc="next-step">下一步</h2><p id="-firyvk_386"><a href="../lambdas-with-receiver/index.html" id="-firyvk_387">中级教程: 带接受者的 Lambda 表达式</a></p></section>
+    </article>
+    <section class="recall" aria-labelledby="recall-title">
+      <span class="note-kind">读完自测</span>
+      <h2 id="recall-title">先不看正文，回答这三个问题</h2>
+      <ol><li>let、run、apply、also、with 的返回值分别是什么？</li><li>哪些函数使用 this，哪些使用 it？</li><li>为什么不宜嵌套过多作用域函数？</li></ol>
+      <p class="transfer"><strong>迁移练习：</strong>从你正在读的一段 Kotlin 代码里，找出本章概念的一个真实用法；用一句话解释它为什么这样写。</p>
+    </section>
+    <nav class="chapter-switcher" aria-label="章节导航">
+    <a href="../extension-functions/index.html">← 扩展函数</a>
+    <a class="course-home" href="../index.html">全部章节</a>
+    <a href="../lambdas-with-receiver/index.html">带接收者的 lambda →</a>
+  </nav>
+    <footer class="license-note">
+      <p>这是用于个人学习的非官方中文阅读版。正文依据 <a href="https://kotlinlang.org/docs/kotlin-tour-intermediate-scope-functions.html">Kotlin 官方文档</a>整理，并参考公开中文译文对照整理；原始内容由 JetBrains 与 Kotlin 贡献者维护，采用 <a href="https://github.com/JetBrains/kotlin-web-site/blob/master/LICENSE">Apache License 2.0</a>。</p>
+    </footer>
+  </main>
+</body>
+</html>

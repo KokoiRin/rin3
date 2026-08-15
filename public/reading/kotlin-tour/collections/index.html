@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="用 List、Set 与 Map 组织一组值，并分清只读视图与可变集合。">
+  <title>集合｜RIN III</title>
+  <link rel="stylesheet" href="../reader.css">
+</head>
+<body>
+  <nav class="site-nav" aria-label="站点导航">
+    <a href="../index.html">← Kotlin Tour 中文学习版</a>
+    <a href="../../../computer-science/kotlin-tour/">RIN III 学习记录</a>
+  </nav>
+  <main class="reader">
+    <header class="chapter-header">
+      <span class="chapter-kicker">初学者 · 第 3 章</span>
+      <h1>集合</h1>
+      <p class="lead">用 List、Set 与 Map 组织一组值，并分清只读视图与可变集合。</p>
+      <div class="title-rule"></div>
+      <aside class="learning-note" aria-label="学习主线">
+        <strong>学习主线</strong>
+        <p>先按访问方式选择 List、Set 或 Map，再决定调用方是否真的需要修改集合。</p>
+      </aside>
+      <nav class="chapter-switcher" aria-label="章节导航">
+    <a href="../basic-types/index.html">← 基本类型</a>
+    <a class="course-home" href="../index.html">全部章节</a>
+    <a href="../control-flow/index.html">控制流 →</a>
+  </nav>
+    </header>
+    <article class="translated-article">
+<p id="-1dozt5_3">在程序开发中, 能够将数据组织到数据结构中以供后续的处理, 这样的能力非常有用. 为了这样的目的, Kotlin 提供了集合.</p><p id="-1dozt5_4">Kotlin 有以下集合来组织数据元素:</p><div class="table-wrapper"><table class="wide" id="-1dozt5_5"><thead><tr class="ijRowHead" id="-1dozt5_33"><th id="-1dozt5_37"><p><span class="control" id="-1dozt5_39">集合类型</span></p></th><th id="-1dozt5_38"><p><span class="control" id="-1dozt5_40">描述</span></p></th></tr></thead><tbody><tr id="-1dozt5_34"><td id="-1dozt5_41"><p>List</p></td><td id="-1dozt5_42"><p>有顺序的元素组成的集合</p></td></tr><tr id="-1dozt5_35"><td id="-1dozt5_43"><p>Set</p></td><td id="-1dozt5_44"><p>唯一的、无顺序的元素组成的集合</p></td></tr><tr id="-1dozt5_36"><td id="-1dozt5_45"><p>Map</p></td><td id="-1dozt5_46"><p>一组键值对(key-value pair), 其中键是唯一, 并且每个键对应到唯一的值</p></td></tr></tbody></table></div><p id="-1dozt5_6">每个集合类型都可以是可变的, 或只读的.</p><section class="chapter"><h2 id="list" data-toc="list">List</h2><p id="-1dozt5_47">列表按照元素添加的顺序保存它们, 而且允许重复的元素.</p><p id="-1dozt5_48">要创建一个只读的 List (<a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/-list/" id="-1dozt5_64" data-external="true" rel="noopener noreferrer"><code class="code" id="-1dozt5_66">List</code></a>), 请使用 <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/list-of.html" id="-1dozt5_65" data-external="true" rel="noopener noreferrer"><code class="code" id="-1dozt5_67">listOf()</code></a> 函数.</p><p id="-1dozt5_49">要创建一个可变的 List (<a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/-mutable-list.html" id="-1dozt5_68" data-external="true" rel="noopener noreferrer"><code class="code" id="-1dozt5_70">MutableList</code></a>), 请使用 <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/mutable-list-of.html" id="-1dozt5_69" data-external="true" rel="noopener noreferrer"><code class="code" id="-1dozt5_71">mutableListOf()</code></a> 函数.</p><p id="-1dozt5_50">创建 List 时, Kotlin 可以推断它存储的元素类型. 如果要明确声明元素类型, 请在 List 的声明之后的尖括号 <code class="code" id="-1dozt5_72">&lt;&gt;</code> 中添加类型:</p><pre><code>fun main() {
+//sampleStart
+    // 只读 List
+    val readOnlyShapes = listOf(&quot;triangle&quot;, &quot;square&quot;, &quot;circle&quot;)
+    println(readOnlyShapes)
+    // 输出结果为 [triangle, square, circle]
+
+    // 可变的 List, 带有明确的类型声明
+    val shapes: MutableList&lt;String&gt; = mutableListOf(&quot;triangle&quot;, &quot;square&quot;, &quot;circle&quot;)
+    println(shapes)
+    // 输出结果为 [triangle, square, circle]
+//sampleEnd
+}</code></pre><aside class="prompt" data-type="tip" data-title="" id="-1dozt5_52"><p id="-1dozt5_73">为了防止无意中修改 List 的内容, 你可以将可变的 List 赋值给一个 <code class="code" id="-1dozt5_76">List</code>, 来创建它的一个只读的视图:</p><pre><code>val shapes: MutableList&lt;String&gt; = mutableListOf(&quot;triangle&quot;, &quot;square&quot;, &quot;circle&quot;)
+    val shapesLocked: List&lt;String&gt; = shapes</code></pre><p id="-1dozt5_75">这种操作也叫做 <span class="control" id="-1dozt5_77">类型变换(casting)</span>.</p></aside><p id="-1dozt5_53">List 是有顺序的, 因此要访问 List 内的元素, 请使用 <a href="https://kotlinlang.org/docs/operator-overloading.html#indexed-access-operator" id="-1dozt5_78">下标访问操作符</a> <code class="code" id="-1dozt5_79">[]</code>:</p><pre><code>fun main() {
+//sampleStart
+    val readOnlyShapes = listOf(&quot;triangle&quot;, &quot;square&quot;, &quot;circle&quot;)
+    println(&quot;The first item in the list is: ${readOnlyShapes[0]}&quot;)
+    // 输出结果为 The first item in the list is: triangle
+//sampleEnd
+}</code></pre><p id="-1dozt5_55">要获取 List 中的第一个或最后一个元素, 请分别使用 <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/first.html" id="-1dozt5_80" data-external="true" rel="noopener noreferrer"><code class="code" id="-1dozt5_82">.first()</code></a> 和 <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/last.html" id="-1dozt5_81" data-external="true" rel="noopener noreferrer"><code class="code" id="-1dozt5_83">.last()</code></a> 函数:</p><pre><code>fun main() {
+//sampleStart
+    val readOnlyShapes = listOf(&quot;triangle&quot;, &quot;square&quot;, &quot;circle&quot;)
+    println(&quot;The first item in the list is: ${readOnlyShapes.first()}&quot;)
+    // 输出结果为 The first item in the list is: triangle
+//sampleEnd
+}</code></pre><aside class="prompt" data-type="note" data-title="" id="-1dozt5_57"><p id="-1dozt5_84"><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/first.html" id="-1dozt5_86" data-external="true" rel="noopener noreferrer"><code class="code" id="-1dozt5_90">.first()</code></a> 和 <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/last.html" id="-1dozt5_87" data-external="true" rel="noopener noreferrer"><code class="code" id="-1dozt5_91">.last()</code></a> 函数是 <span class="control" id="-1dozt5_88">扩展</span> 函数. 要对一个对象调用扩展函数, 请在对象之后加上点号 <code class="code" id="-1dozt5_89">.</code>, 然后把函数名写在后面.</p><p id="-1dozt5_85">关于扩展函数, 详细内容会在 <a href="../extension-functions/index.html#extension-functions" id="-1dozt5_92">中级向导</a> 中介绍. 目前, 你只需要知道如何调用它们就行了</p></aside><p id="-1dozt5_58">要得到 List 中元素的数量, 请使用 <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/count.html" id="-1dozt5_93" data-external="true" rel="noopener noreferrer"><code class="code" id="-1dozt5_94">.count()</code></a> 函数:</p><pre><code>fun main() {
+//sampleStart
+    val readOnlyShapes = listOf(&quot;triangle&quot;, &quot;square&quot;, &quot;circle&quot;)
+    println(&quot;This list has ${readOnlyShapes.count()} items&quot;)
+    // 输出结果为 This list has 3 items
+//sampleEnd
+}</code></pre><p id="-1dozt5_60">要检查一个元素是否存在于 List 中, 请使用 <a href="https://kotlinlang.org/docs/operator-overloading.html#in-operator" id="-1dozt5_95"><code class="code" id="-1dozt5_96">in</code> 操作符</a>:</p><pre><code>fun main() {
+//sampleStart
+    val readOnlyShapes = listOf(&quot;triangle&quot;, &quot;square&quot;, &quot;circle&quot;)
+    println(&quot;circle&quot; in readOnlyShapes)
+    // 输出结果为 true
+//sampleEnd
+}</code></pre><p id="-1dozt5_62">要对可变 List 添加或删除元素, 请分别使用 <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/-mutable-list/add.html" id="-1dozt5_97" data-external="true" rel="noopener noreferrer"><code class="code" id="-1dozt5_99">.add()</code></a> 和 <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/remove.html" id="-1dozt5_98" data-external="true" rel="noopener noreferrer"><code class="code" id="-1dozt5_100">.remove()</code></a> 函数:</p><pre><code>fun main() {
+//sampleStart
+    val shapes: MutableList&lt;String&gt; = mutableListOf(&quot;triangle&quot;, &quot;square&quot;, &quot;circle&quot;)
+    // 向 List 添加 &quot;pentagon&quot;
+    shapes.add(&quot;pentagon&quot;)
+    println(shapes)
+    // 输出结果为 [triangle, square, circle, pentagon]
+
+    // 从 List 中删除第一个 &quot;pentagon&quot;
+    shapes.remove(&quot;pentagon&quot;)
+    println(shapes)
+    // 输出结果为 [triangle, square, circle]
+//sampleEnd
+}</code></pre></section><section class="chapter"><h2 id="set" data-toc="set">Set</h2><p id="-1dozt5_101">List 包含有顺序的元素, 并且允许元素重复, Set 则是 <span class="control" id="-1dozt5_115">无顺序的</span>, 并且只保存 <span class="control" id="-1dozt5_116">唯一的</span> 元素.</p><p id="-1dozt5_102">要创建一个只读的 Set (<a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/-set/" id="-1dozt5_117" data-external="true" rel="noopener noreferrer"><code class="code" id="-1dozt5_119">Set</code></a>), 请使用 <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/set-of.html" id="-1dozt5_118" data-external="true" rel="noopener noreferrer"><code class="code" id="-1dozt5_120">setOf()</code></a> 函数.</p><p id="-1dozt5_103">要创建一个可变的 Set (<a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/-mutable-set/" id="-1dozt5_121" data-external="true" rel="noopener noreferrer"><code class="code" id="-1dozt5_123">MutableSet</code></a>), 请使用 <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/mutable-set-of.html" id="-1dozt5_122" data-external="true" rel="noopener noreferrer"><code class="code" id="-1dozt5_124">mutableSetOf()</code></a> 函数.</p><p id="-1dozt5_104">创建 Set 时, Kotlin 可以推断它存储的元素类型. 如果要明确声明元素类型, 请在 Set 的声明之后的尖括号 <code class="code" id="-1dozt5_125">&lt;&gt;</code> 中添加类型:</p><pre><code>fun main() {
+//sampleStart
+    // 只读的 Set
+    val readOnlyFruit = setOf(&quot;apple&quot;, &quot;banana&quot;, &quot;cherry&quot;, &quot;cherry&quot;)
+    // 可变的 Set, 带有明确的类型声明
+    val fruit: MutableSet&lt;String&gt; = mutableSetOf(&quot;apple&quot;, &quot;banana&quot;, &quot;cherry&quot;, &quot;cherry&quot;)
+
+    println(readOnlyFruit)
+    // 输出结果为 [apple, banana, cherry]
+//sampleEnd
+}</code></pre><p id="-1dozt5_106">在上面的示例中你可以看到, 由于 Set 只包含唯一的元素, 重复的 <code class="code" id="-1dozt5_126">&quot;cherry&quot;</code> 元素被丢弃了.</p><aside class="prompt" data-type="tip" data-title="" id="-1dozt5_107"><p id="-1dozt5_127">为了防止无意中修改 Set 的内容, 你可以将可变的 Set 赋值给一个 <code class="code" id="-1dozt5_129">Set</code>, 来创建它的一个只读的视图:</p><pre><code>val fruit: MutableSet&lt;String&gt; = mutableSetOf(&quot;apple&quot;, &quot;banana&quot;, &quot;cherry&quot;, &quot;cherry&quot;)
+    val fruitLocked: Set&lt;String&gt; = fruit</code></pre></aside><aside class="prompt" data-type="note" data-title="" id="-1dozt5_108"><p id="-1dozt5_130">由于 Set 是 <span class="control" id="-1dozt5_131">无顺序的</span>, 你不能访问位于某个下标的元素.</p></aside><p id="-1dozt5_109">要得到 Set 中元素的数量, 请使用 <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/count.html" id="-1dozt5_132" data-external="true" rel="noopener noreferrer"><code class="code" id="-1dozt5_133">.count()</code></a> 函数:</p><pre><code>fun main() {
+//sampleStart
+    val readOnlyFruit = setOf(&quot;apple&quot;, &quot;banana&quot;, &quot;cherry&quot;, &quot;cherry&quot;)
+    println(&quot;This set has ${readOnlyFruit.count()} items&quot;)
+    // 输出结果为 This set has 3 items
+//sampleEnd
+}</code></pre><p id="-1dozt5_111">要检查一个元素是否存在于 Set 中, 请使用 <a href="https://kotlinlang.org/docs/operator-overloading.html#in-operator" id="-1dozt5_134"><code class="code" id="-1dozt5_135">in</code> 操作符</a>:</p><pre><code>fun main() {
+//sampleStart
+    val readOnlyFruit = setOf(&quot;apple&quot;, &quot;banana&quot;, &quot;cherry&quot;, &quot;cherry&quot;)
+    println(&quot;banana&quot; in readOnlyFruit)
+    // 输出结果为 true
+//sampleEnd
+}</code></pre><p id="-1dozt5_113">要对可变 Set 添加或删除元素, 请分别使用 <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/-mutable-set/add.html" id="-1dozt5_136" data-external="true" rel="noopener noreferrer"><code class="code" id="-1dozt5_138">.add()</code></a> 和 <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/remove.html" id="-1dozt5_137" data-external="true" rel="noopener noreferrer"><code class="code" id="-1dozt5_139">.remove()</code></a> 函数:</p><pre><code>fun main() {
+//sampleStart
+    val fruit: MutableSet&lt;String&gt; = mutableSetOf(&quot;apple&quot;, &quot;banana&quot;, &quot;cherry&quot;, &quot;cherry&quot;)
+    fruit.add(&quot;dragonfruit&quot;)    // 向 Set 添加 &quot;dragonfruit&quot;
+    println(fruit)              // 输出结果为 [apple, banana, cherry, dragonfruit]
+
+    fruit.remove(&quot;dragonfruit&quot;) // 从 Set 中删除 &quot;dragonfruit&quot;
+    println(fruit)              // 输出结果为 [apple, banana, cherry]
+//sampleEnd
+}</code></pre></section><section class="chapter"><h2 id="map" data-toc="map">Map</h2><p id="-1dozt5_140">Map 将元素保存为键值对(key-value pair). 你通过引用键(Key)来访问值(Value). 你可以将 Map 想象为好像一个食品菜单. 你可以通过寻找你想要吃的食物(键)来找到价格(值). 如果你想要查找一个值, 但不像 List 那样使用数字下标, 那么 Map 是很有用的.</p><aside class="prompt" data-type="note" data-title="" id="-1dozt5_141"><ul class="list _bullet" id="-1dozt5_166"><li class="list__item" id="-1dozt5_167"><p id="-1dozt5_169">Map 中的每个键必须是唯一的, 这样 Kotlin 才能懂得你想要得到哪个值.</p></li><li class="list__item" id="-1dozt5_168"><p id="-1dozt5_170">在 Map 中你可以有重复的值.</p></li></ul></aside><p id="-1dozt5_142">要创建一个只读的 Map (<a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/-map/" id="-1dozt5_171" data-external="true" rel="noopener noreferrer"><code class="code" id="-1dozt5_173">Map</code></a>), 请使用 <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/map-of.html" id="-1dozt5_172" data-external="true" rel="noopener noreferrer"><code class="code" id="-1dozt5_174">mapOf()</code></a> 函数.</p><p id="-1dozt5_143">要创建一个可变的 Map (<a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/-mutable-map/" id="-1dozt5_175" data-external="true" rel="noopener noreferrer"><code class="code" id="-1dozt5_177">MutableMap</code></a>), 请使用 <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/mutable-map-of.html" id="-1dozt5_176" data-external="true" rel="noopener noreferrer"><code class="code" id="-1dozt5_178">mutableMapOf()</code></a> 函数.</p><p id="-1dozt5_144">创建 Map 时, Kotlin 可以推断它存储的元素类型. 如果要明确声明元素类型, 请在 Map 的声明之后的尖括号 <code class="code" id="-1dozt5_179">&lt;&gt;</code> 中添加键和值的类型. 例如: <code class="code" id="-1dozt5_180">MutableMap&lt;String, Int&gt;</code>. 键的类型为 <code class="code" id="-1dozt5_181">String</code>, 值的类型为 <code class="code" id="-1dozt5_182">Int</code>.</p><p id="-1dozt5_145">创建 Map 的最简单的办法是在每个键和它对应的值之间使用 <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/to.html" id="-1dozt5_183" data-external="true" rel="noopener noreferrer"><code class="code" id="-1dozt5_184">to</code></a>:</p><pre><code>fun main() {
+//sampleStart
+    // 只读 Map
+    val readOnlyJuiceMenu = mapOf(&quot;apple&quot; to 100, &quot;kiwi&quot; to 190, &quot;orange&quot; to 100)
+    println(readOnlyJuiceMenu)
+    // 输出结果为 {apple=100, kiwi=190, orange=100}
+
+    // 可变的 Map, 带有明确的类型声明
+    val juiceMenu: MutableMap&lt;String, Int&gt; = mutableMapOf(&quot;apple&quot; to 100, &quot;kiwi&quot; to 190, &quot;orange&quot; to 100)
+    println(juiceMenu)
+    // 输出结果为 {apple=100, kiwi=190, orange=100}
+//sampleEnd
+}</code></pre><aside class="prompt" data-type="tip" data-title="" id="-1dozt5_147"><p id="-1dozt5_185">为了防止无意中修改 Map 的内容, 你可以将可变的 Map 赋值给一个 <code class="code" id="-1dozt5_187">Map</code>, 来创建它的一个只读的视图:</p><pre><code>val juiceMenu: MutableMap&lt;String, Int&gt; = mutableMapOf(&quot;apple&quot; to 100, &quot;kiwi&quot; to 190, &quot;orange&quot; to 100)
+    val juiceMenuLocked: Map&lt;String, Int&gt; = juiceMenu</code></pre></aside><p id="-1dozt5_148">要访问 Map 中的值, 请使用 <a href="https://kotlinlang.org/docs/operator-overloading.html#indexed-access-operator" id="-1dozt5_188">下标操作符</a> <code class="code" id="-1dozt5_189">[]</code>, 以它的键为下标:</p><pre><code>fun main() {
+//sampleStart
+    // 只读 Map
+    val readOnlyJuiceMenu = mapOf(&quot;apple&quot; to 100, &quot;kiwi&quot; to 190, &quot;orange&quot; to 100)
+    println(&quot;The value of apple juice is: ${readOnlyJuiceMenu[&quot;apple&quot;]}&quot;)
+    // 输出结果为 The value of apple juice is: 100
+//sampleEnd
+}</code></pre><aside class="prompt" data-type="note" data-title="" id="-1dozt5_150"><p id="-1dozt5_190">如果你使用 Map 中不存在的 key 来访问键值对(key-value pair), 会得到 <code class="code" id="-1dozt5_193">null</code> 值:</p><pre><code>fun main() {
+//sampleStart
+    // 只读 Map
+    val readOnlyJuiceMenu = mapOf(&quot;apple&quot; to 100, &quot;kiwi&quot; to 190, &quot;orange&quot; to 100)
+    println(&quot;The value of pineapple juice is: ${readOnlyJuiceMenu[&quot;pineapple&quot;]}&quot;)
+    // 输出结果为 The value of pineapple juice is: null
+//sampleEnd
+}</code></pre><p id="-1dozt5_192">本教程会在后面的 <a href="../null-safety/index.html" id="-1dozt5_194">Null 值安全性</a> 章节解释 null 值.</p></aside><p id="-1dozt5_151">你也可以使用 <a href="https://kotlinlang.org/docs/operator-overloading.html#indexed-access-operator" id="-1dozt5_195">下标操作符</a> <code class="code" id="-1dozt5_196">[]</code> 来向可变 Map 添加元素:</p><pre><code>fun main() {
+//sampleStart
+    val juiceMenu: MutableMap&lt;String, Int&gt; = mutableMapOf(&quot;apple&quot; to 100, &quot;kiwi&quot; to 190, &quot;orange&quot; to 100)
+    juiceMenu[&quot;coconut&quot;] = 150 // 向 Map 添加键 &quot;coconut&quot; 和值 150
+    println(juiceMenu)
+    // 输出结果为 {apple=100, kiwi=190, orange=100, coconut=150}
+//sampleEnd
+}</code></pre><p id="-1dozt5_153">要从可变 Map 删除元素, 请使用 <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/remove.html" id="-1dozt5_197" data-external="true" rel="noopener noreferrer"><code class="code" id="-1dozt5_198">.remove()</code></a> 函数:</p><pre><code>fun main() {
+//sampleStart
+    val juiceMenu: MutableMap&lt;String, Int&gt; = mutableMapOf(&quot;apple&quot; to 100, &quot;kiwi&quot; to 190, &quot;orange&quot; to 100)
+    juiceMenu.remove(&quot;orange&quot;)    // 从 Map 删除键 &quot;orange&quot;
+    println(juiceMenu)
+    // 输出结果为 {apple=100, kiwi=190}
+//sampleEnd
+}</code></pre><p id="-1dozt5_155">要得到 Map 中元素的数量, 请使用 <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/count.html" id="-1dozt5_199" data-external="true" rel="noopener noreferrer"><code class="code" id="-1dozt5_200">.count()</code></a> 函数:</p><pre><code>fun main() {
+//sampleStart
+    // 只读 Map
+    val readOnlyJuiceMenu = mapOf(&quot;apple&quot; to 100, &quot;kiwi&quot; to 190, &quot;orange&quot; to 100)
+    println(&quot;This map has ${readOnlyJuiceMenu.count()} key-value pairs&quot;)
+    // 输出结果为 This map has 3 key-value pairs
+//sampleEnd
+}</code></pre><p id="-1dozt5_157">要检查一个键是否存在于 Map 中, 请使用 <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/contains-key.html" id="-1dozt5_201" data-external="true" rel="noopener noreferrer"><code class="code" id="-1dozt5_202">.containsKey()</code></a> 函数:</p><pre><code>fun main() {
+//sampleStart
+    val readOnlyJuiceMenu = mapOf(&quot;apple&quot; to 100, &quot;kiwi&quot; to 190, &quot;orange&quot; to 100)
+    println(readOnlyJuiceMenu.containsKey(&quot;kiwi&quot;))
+    // 输出结果为 true
+//sampleEnd
+}</code></pre><p id="-1dozt5_159">要得到 Map 中所有键或所有值的集合, 请分别使用 <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/-map/keys.html" id="-1dozt5_203" data-external="true" rel="noopener noreferrer"><code class="code" id="-1dozt5_205">keys</code></a> 和 <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/-map/values.html" id="-1dozt5_204" data-external="true" rel="noopener noreferrer"><code class="code" id="-1dozt5_206">values</code></a> 属性:</p><pre><code>fun main() {
+//sampleStart
+    val readOnlyJuiceMenu = mapOf(&quot;apple&quot; to 100, &quot;kiwi&quot; to 190, &quot;orange&quot; to 100)
+    println(readOnlyJuiceMenu.keys)
+    // 输出结果为 [apple, kiwi, orange]
+    println(readOnlyJuiceMenu.values)
+    // 输出结果为 [100, 190, 100]
+//sampleEnd
+}</code></pre><aside class="prompt" data-type="note" data-title="" id="-1dozt5_161"><p id="-1dozt5_207"><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/-map/keys.html" id="-1dozt5_209" data-external="true" rel="noopener noreferrer"><code class="code" id="-1dozt5_213">keys</code></a> 和 <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/-map/values.html" id="-1dozt5_210" data-external="true" rel="noopener noreferrer"><code class="code" id="-1dozt5_214">values</code></a> 是对象的 <span class="control" id="-1dozt5_211">属性</span>. 要访问一个对象的属性, 请在对象之后加上点号 <code class="code" id="-1dozt5_212">.</code>, 然后把属性名写在后面.</p><p id="-1dozt5_208">属性会在 <a href="../classes/index.html" id="-1dozt5_215">类</a> 的章节中详细介绍. 目前你只需要知道如何访问它们就行了.</p></aside><p id="-1dozt5_162">要检查一个键或值是否存在于 Map 中, 请使用 <a href="https://kotlinlang.org/docs/operator-overloading.html#in-operator" id="-1dozt5_216"><code class="code" id="-1dozt5_217">in</code> 操作符</a>:</p><pre><code>fun main() {
+//sampleStart
+    val readOnlyJuiceMenu = mapOf(&quot;apple&quot; to 100, &quot;kiwi&quot; to 190, &quot;orange&quot; to 100)
+    println(&quot;orange&quot; in readOnlyJuiceMenu.keys)
+    // 输出结果为 true
+
+    // 或者, 也可以不使用 keys 属性
+    println(&quot;orange&quot; in readOnlyJuiceMenu)
+    // 输出结果为 true
+
+    println(200 in readOnlyJuiceMenu.values)
+    // 输出结果为 false
+//sampleEnd
+}</code></pre><p id="-1dozt5_164">关于集合的其它更多功能, 请参见 <a href="https://kotlinlang.org/docs/collections-overview.html" id="-1dozt5_218">集合</a>.</p><p id="-1dozt5_165">现在你已经知道了基本类型, 以及如何管理集合, 下面我们来看看在你的程序中能够使用的 <a href="../control-flow/index.html" id="-1dozt5_219">控制流</a>.</p></section><section class="chapter"><h2 id="-1dozt5_10" data-toc="-1dozt5_10">实际练习</h2><section class="chapter"><div class="collapse"><div class="collapse__title"><h3 id="1" data-toc="1">习题 1</h3></div><div class="collapse__content"><p id="-1dozt5_223">你有一个 &ldquo;绿色&rdquo; 数字的 List, 和一个 &ldquo;红色&rdquo; 数字的 List. 完成下面的代码, 打印这两个 List 中总共有多少个数字.</p><pre><code>fun main() {
+    val greenNumbers = listOf(1, 4, 23)
+    val redNumbers = listOf(17, 2)
+    // 在这里编写你的代码
+}</code></pre><details class="solution"><summary>参考答案</summary><pre><code>fun main() {
+    val greenNumbers = listOf(1, 4, 23)
+    val redNumbers = listOf(17, 2)
+    val totalCount = greenNumbers.count() + redNumbers.count()
+    println(totalCount)
+}</code></pre></details></div></div></section><section class="chapter"><div class="collapse"><div class="collapse__title"><h3 id="2" data-toc="2">习题 2</h3></div><div class="collapse__content"><p id="-1dozt5_228">你有一个 Set, 其中包含你的服务器支持的协议. 一个用户要求使用某个协议. 完成下面的程序, 检查用户要求使用的协议是否支持 (<code class="code" id="-1dozt5_233">isSupported</code> 必须是 Boolean 值).</p><pre><code>fun main() {
+    val SUPPORTED = setOf(&quot;HTTP&quot;, &quot;HTTPS&quot;, &quot;FTP&quot;)
+    val requested = &quot;smtp&quot;
+    val isSupported = // 在这里编写你的代码
+    println(&quot;Support for $requested: $isSupported&quot;)
+}</code></pre><dl id="kotlin-tour-collections-exercise-2-hint" data-style="title-top"><dt id="-1dozt5_234" data-expandable="true" data-expanded="false">提示</dt><dd><p>请确保使用字符串的大写格式来检查请求的协议. 你可以使用 <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.text/uppercase.html" id="-1dozt5_235" data-external="true" rel="noopener noreferrer"><code class="code" id="-1dozt5_236">.uppercase()</code></a> 函数来帮助你实现这一点.</p></dd></dl><details class="solution"><summary>参考答案</summary><pre><code>fun main() {
+    val SUPPORTED = setOf(&quot;HTTP&quot;, &quot;HTTPS&quot;, &quot;FTP&quot;)
+    val requested = &quot;smtp&quot;
+    val isSupported = requested.uppercase() in SUPPORTED
+    println(&quot;Support for $requested: $isSupported&quot;)
+}</code></pre></details></div></div></section><section class="chapter"><div class="collapse"><div class="collapse__title"><h3 id="3" data-toc="3">习题 3</h3></div><div class="collapse__content"><p id="-1dozt5_237">定义一个 Map, 将 1 到 3 的数字对应到它们的拼写. 使用这个 Map 来拼写指定的数字.</p><pre><code>fun main() {
+    val number2word = // 在这里编写你的代码
+    val n = 2
+    println(&quot;$n is spelled as '${&lt; 在这里编写你的代码 &gt;}'&quot;)
+}</code></pre><details class="solution"><summary>参考答案</summary><pre><code>fun main() {
+    val number2word = mapOf(1 to &quot;one&quot;, 2 to &quot;two&quot;, 3 to &quot;three&quot;)
+    val n = 2
+    println(&quot;$n is spelled as '${number2word[n]}'&quot;)
+}</code></pre></details></div></div></section></section><section class="chapter"><h2 id="-1dozt5_11" data-toc="-1dozt5_11">下一步</h2><p id="-1dozt5_241"><a href="../control-flow/index.html" id="-1dozt5_242">控制流</a></p></section>
+    </article>
+    <section class="recall" aria-labelledby="recall-title">
+      <span class="note-kind">读完自测</span>
+      <h2 id="recall-title">先不看正文，回答这三个问题</h2>
+      <ol><li>List、Set 与 Map 的核心区别是什么？</li><li>只读集合和可变集合如何创建？</li><li>为什么 Map 的 key 必须唯一？</li></ol>
+      <p class="transfer"><strong>迁移练习：</strong>从你正在读的一段 Kotlin 代码里，找出本章概念的一个真实用法；用一句话解释它为什么这样写。</p>
+    </section>
+    <nav class="chapter-switcher" aria-label="章节导航">
+    <a href="../basic-types/index.html">← 基本类型</a>
+    <a class="course-home" href="../index.html">全部章节</a>
+    <a href="../control-flow/index.html">控制流 →</a>
+  </nav>
+    <footer class="license-note">
+      <p>这是用于个人学习的非官方中文阅读版。正文依据 <a href="https://kotlinlang.org/docs/kotlin-tour-collections.html">Kotlin 官方文档</a>整理，并参考公开中文译文对照整理；原始内容由 JetBrains 与 Kotlin 贡献者维护，采用 <a href="https://github.com/JetBrains/kotlin-web-site/blob/master/LICENSE">Apache License 2.0</a>。</p>
+    </footer>
+  </main>
+</body>
+</html>
