@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="使用对象声明、数据对象与伴生对象表达单例和与类型相关的共享能力。">
+  <title>对象｜RIN III</title>
+  <link rel="stylesheet" href="../reader.css">
+</head>
+<body>
+  <nav class="site-nav" aria-label="站点导航">
+    <a href="../index.html">← Kotlin Tour 中文学习版</a>
+    <a href="../../../computer-science/kotlin-tour/">RIN III 学习记录</a>
+  </nav>
+  <main class="reader">
+    <header class="chapter-header">
+      <span class="chapter-kicker">中级 · 第 5 章</span>
+      <h1>对象</h1>
+      <p class="lead">使用对象声明、数据对象与伴生对象表达单例和与类型相关的共享能力。</p>
+      <div class="title-rule"></div>
+      <aside class="learning-note" aria-label="学习主线">
+        <strong>学习主线</strong>
+        <p>object 同时完成声明与实例化；companion object 把共享能力放在类的命名空间中。</p>
+      </aside>
+      <nav class="chapter-switcher" aria-label="章节导航">
+    <a href="../classes-and-interfaces/index.html">← 类与接口</a>
+    <a class="course-home" href="../index.html">全部章节</a>
+    <a href="../open-and-special-classes/index.html">开放类与特殊类 →</a>
+  </nav>
+    </header>
+    <article class="translated-article">
+<p id="-3q6ude_3">在这一章中, 你将探索对象声明, 扩展对类的理解. 这些知识将帮助你高效的管理整个项目的行为.</p><section class="chapter"><h2 id="object-declarations" data-toc="object-declarations">对象声明</h2><p id="-3q6ude_34">在 Kotlin 中, 你可以使用 <span class="control" id="-3q6ude_47">对象 声明</span> 来声明一个只有唯一实例的类. 从某种意义上说, 你在声明类的 <span class="emphasis" id="-3q6ude_48">同时</span> 也就创建了唯一的实例. 当你想要创建一个类, 并以你的程序中的唯一引用点的方式使用它, 或者想要协调它在整个系统中的行为, 对象声明会非常有用.</p><aside class="prompt" data-type="tip" data-title="" id="-3q6ude_35"><p id="-3q6ude_49">只有唯一一个易于访问的实例的类, 称为 <span class="control" id="-3q6ude_50">单例(singleton)</span>.</p></aside><p id="-3q6ude_36">Kotlin 中的对象是 <span class="control" id="-3q6ude_51">延迟加载(lazy)</span> 的, 意思就是说, 它们只在被访问的时候才创建. Kotlin 还会确保所有的对象以线程安全的方式创建, 因此你不必手动检查.</p><p id="-3q6ude_37">要创建一个对象声明, 请使用 <code class="code" id="-3q6ude_52">object</code> 关键字:</p><pre><code>object DoAuth {}</code></pre><p id="-3q6ude_39">之后是你的 <code class="code" id="-3q6ude_53">object</code> 的名称, 并在大括号 <code class="code" id="-3q6ude_54">{}</code> 表示的对象 body 部中添加属性或成员函数.</p><aside class="prompt" data-type="note" data-title="" id="-3q6ude_40"><p id="-3q6ude_55">对象不能拥有构造器, 因此它们没有像类那样的头部.</p></aside><p id="-3q6ude_41">例如, 假设你想要创建一个对象, 名为 <code class="code" id="-3q6ude_56">DoAuth</code>, 负责身份验证:</p><pre><code>object DoAuth {
+    fun takeParams(username: String, password: String) {
+        println(&quot;input Auth parameters = $username:$password&quot;)
+    }
+}
+
+fun main(){
+    // 当 takeParams() 函数被调用时, 对象被创建
+    DoAuth.takeParams(&quot;coding_ninja&quot;, &quot;N1njaC0ding!&quot;)
+    // 输出结果为: input Auth parameters = coding_ninja:N1njaC0ding!
+}</code></pre><p id="-3q6ude_43">这个对象有一个成员函数, 名为 <code class="code" id="-3q6ude_57">takeParams</code>, 参数是 <code class="code" id="-3q6ude_58">username</code> 和 <code class="code" id="-3q6ude_59">password</code> 变量, 并打印一个字符串到控制台. 只有在函数初次被调用时, <code class="code" id="-3q6ude_60">DoAuth</code> 对象才会被创建.</p><aside class="prompt" data-type="note" data-title="" id="-3q6ude_44"><p id="-3q6ude_61">对象可以从类和接口继承. 例如:</p><pre><code>interface Auth {
+    fun takeParams(username: String, password: String)
+}
+
+object DoAuth : Auth {
+    override fun takeParams(username: String, password: String) {
+        println(&quot;input Auth parameters = $username:$password&quot;)
+    }
+}</code></pre></aside><section class="chapter"><h3 id="data-objects" data-toc="data-objects">数据对象(Data Object)</h3><p id="-3q6ude_63">为了更容易的打印输出对象声明的内容, Kotlin 提供了 <span class="control" id="-3q6ude_70">数据(Data)</span> 对象. 与你在初学者教程中学过的数据类类似, 数据对象自动带有额外的成员函数: <code class="code" id="-3q6ude_71">toString()</code> 和 <code class="code" id="-3q6ude_72">equals()</code>.</p><aside class="prompt" data-type="tip" data-title="" id="-3q6ude_64"><p id="-3q6ude_73">与数据类不同, 数据对象没有自动带有 <code class="code" id="-3q6ude_74">copy()</code> 成员函数, 因为它们只有唯一的实例, 不能复制.</p></aside><p id="-3q6ude_65">要创建一个数据对象, 请使用与对象声明相同的语法, 但前面加上 <code class="code" id="-3q6ude_75">data</code> 关键字:</p><pre><code>data object AppConfig {}</code></pre><p id="-3q6ude_67">例如:</p><pre><code>data object AppConfig {
+    var appName: String = &quot;My Application&quot;
+    var version: String = &quot;1.0.0&quot;
+}
+
+fun main() {
+    println(AppConfig)
+    // 输出结果为: AppConfig
+
+    println(AppConfig.appName)
+    // 输出结果为: My Application
+}</code></pre><p id="-3q6ude_69">关于数据对象, 详情请参见 <a href="https://kotlinlang.org/docs/object-declarations.html#data-objects" id="-3q6ude_76">数据对象</a>.</p></section><section class="chapter"><h3 id="companion-objects" data-toc="companion-objects">同伴对象(Companion Object)</h3><p id="-3q6ude_77">在 Kotlin 中, 一个类可以带有一个对象: 一个 <span class="control" id="-3q6ude_87">同伴(Companion)</span> 对象. 对每个类, 你只能有 <span class="control" id="-3q6ude_88">一个</span> 同伴对象. 只有在类初次被引用时, 同伴对象才会被创建.</p><p id="-3q6ude_78">在同伴对象之内声明的任何属性或函数, 都在类的所有实例之间共享.</p><p id="-3q6ude_79">要在一个类之内创建一个同伴对象, 请使用与对象声明相同的语法, 但前面加上 <code class="code" id="-3q6ude_89">companion</code> 关键字:</p><pre><code>companion object Bonger {}</code></pre><aside class="prompt" data-type="note" data-title="" id="-3q6ude_81"><p id="-3q6ude_90">同伴对象不一定需要名称. 如果你没有定义名称, 则默认名称为 <code class="code" id="-3q6ude_91">Companion</code>.</p></aside><p id="-3q6ude_82">要访问同伴对象的任何属性或函数, 请通过类名称来引用它. 例如:</p><pre><code>class BigBen {
+    companion object Bonger {
+        fun getBongs(nTimes: Int) {
+            repeat(nTimes) { print(&quot;BONG &quot;) }
+            }
+        }
+    }
+
+fun main() {
+    // 当类初次被引用时, 同伴对象被创建.
+    BigBen.getBongs(12)
+    // 输出结果为: BONG BONG BONG BONG BONG BONG BONG BONG BONG BONG BONG BONG
+}</code></pre><p id="-3q6ude_84">这个示例创建了一个类, 名为 <code class="code" id="-3q6ude_92">BigBen</code>, 它包含一个同伴对象, 名为 <code class="code" id="-3q6ude_93">Bonger</code>. 同伴对象有一个成员函数, 名为 <code class="code" id="-3q6ude_94">getBongs()</code>, 接受一个整数参数, 并打印 <code class="code" id="-3q6ude_95">&quot;BONG&quot;</code> 到控制台, 打印次数与整数参数相同.</p><p id="-3q6ude_85">在 <code class="code" id="-3q6ude_96">main()</code> 函数 中, 通过类的名称调用了 <code class="code" id="-3q6ude_97">getBongs()</code> 函数. 同伴对象会在这个时候被创建. 调用 <code class="code" id="-3q6ude_98">getBongs()</code> 函数的参数是 <code class="code" id="-3q6ude_99">12</code>.</p><p id="-3q6ude_86">详情请参见 <a href="https://kotlinlang.org/docs/object-declarations.html#companion-objects" id="-3q6ude_100">同伴对象(Companion Object)</a>.</p></section></section><section class="chapter"><h2 id="practice" data-toc="practice">实际练习</h2><section class="chapter"><div class="collapse"><div class="collapse__title"><h3 id="objects-exercise-1" data-toc="objects-exercise-1">习题 1</h3></div><div class="collapse__content"><p id="-3q6ude_104">你运营着一个咖啡店, 并有一个系统来追踪客户订单. 请参考下面的代码, 并完成第 2 个数据对象的声明, 让 <code class="code" id="-3q6ude_109">main()</code> 函数中的以下代码成功运行:</p><pre><code>interface Order {
+    val orderId: String
+    val customerName: String
+    val orderTotal: Double
+}
+
+data object OrderOne: Order {
+    override val orderId = &quot;001&quot;
+    override val customerName = &quot;Alice&quot;
+    override val orderTotal = 15.50
+}
+
+data object // 请在这里编写你的代码
+
+fun main() {
+    // 打印输出每个数据对象的名称
+    println(&quot;Order name: $OrderOne&quot;)
+    // 输出结果为: Order name: OrderOne
+    println(&quot;Order name: $OrderTwo&quot;)
+    // 输出结果为: Order name: OrderTwo
+
+    // 检查订单是否相同
+    println(&quot;Are the two orders identical? ${OrderOne == OrderTwo}&quot;)
+    // 输出结果为: Are the two orders identical? false
+
+    if (OrderOne == OrderTwo) {
+        println(&quot;The orders are identical.&quot;)
+    } else {
+        println(&quot;The orders are unique.&quot;)
+        // 输出结果为: The orders are unique.
+    }
+
+    println(&quot;Do the orders have the same customer name? ${OrderOne.customerName == OrderTwo.customerName}&quot;)
+    // 输出结果为: Do the orders have the same customer name? false
+}</code></pre><details class="solution"><summary>参考答案</summary><pre><code>interface Order {
+    val orderId: String
+    val customerName: String
+    val orderTotal: Double
+}
+
+data object OrderOne: Order {
+    override val orderId = &quot;001&quot;
+    override val customerName = &quot;Alice&quot;
+    override val orderTotal = 15.50
+}
+
+data object OrderTwo: Order {
+    override val orderId = &quot;002&quot;
+    override val customerName = &quot;Bob&quot;
+    override val orderTotal = 12.75
+}
+
+fun main() {
+    // 打印输出每个数据对象的名称
+    println(&quot;Order name: $OrderOne&quot;)
+    // 输出结果为: Order name: OrderOne
+    println(&quot;Order name: $OrderTwo&quot;)
+    // 输出结果为: Order name: OrderTwo
+
+    // 检查订单是否相同
+    println(&quot;Are the two orders identical? ${OrderOne == OrderTwo}&quot;)
+    // 输出结果为: Are the two orders identical? false
+
+    if (OrderOne == OrderTwo) {
+        println(&quot;The orders are identical.&quot;)
+    } else {
+        println(&quot;The orders are unique.&quot;)
+        // 输出结果为: The orders are unique.
+    }
+
+    println(&quot;Do the orders have the same customer name? ${OrderOne.customerName == OrderTwo.customerName}&quot;)
+    // 输出结果为: Do the orders have the same customer name? false
+}</code></pre></details></div></div></section><section class="chapter"><div class="collapse"><div class="collapse__title"><h3 id="objects-exercise-2" data-toc="objects-exercise-2">习题 2</h3></div><div class="collapse__content"><p id="-3q6ude_110">创建一个对象声明, 继承自 <code class="code" id="-3q6ude_115">Vehicle</code> 接口, 以创建一个唯一的车辆类型: <code class="code" id="-3q6ude_116">FlyingSkateboard</code>. 实现你的对象中的 <code class="code" id="-3q6ude_117">name</code> 属性和 <code class="code" id="-3q6ude_118">move()</code> 函数, 让 <code class="code" id="-3q6ude_119">main()</code> 函数中的以下代码成功运行:</p><pre><code>interface Vehicle {
+    val name: String
+    fun move(): String
+}
+
+object // 请在这里编写你的代码
+
+fun main() {
+    println(&quot;${FlyingSkateboard.name}: ${FlyingSkateboard.move()}&quot;)
+    // 输出结果为: Flying Skateboard: Glides through the air with a hover engine
+    println(&quot;${FlyingSkateboard.name}: ${FlyingSkateboard.fly()}&quot;)
+    // 输出结果为: Flying Skateboard: Woooooooo
+}</code></pre><details class="solution"><summary>参考答案</summary><pre><code>interface Vehicle {
+    val name: String
+    fun move(): String
+}
+
+object FlyingSkateboard : Vehicle {
+    override val name = &quot;Flying Skateboard&quot;
+    override fun move() = &quot;Glides through the air with a hover engine&quot;
+
+   fun fly(): String = &quot;Woooooooo&quot;
+}
+
+fun main() {
+    println(&quot;${FlyingSkateboard.name}: ${FlyingSkateboard.move()}&quot;)
+    // 输出结果为: Flying Skateboard: Glides through the air with a hover engine
+    println(&quot;${FlyingSkateboard.name}: ${FlyingSkateboard.fly()}&quot;)
+    // 输出结果为: Flying Skateboard: Woooooooo
+}</code></pre></details></div></div></section><section class="chapter"><div class="collapse"><div class="collapse__title"><h3 id="objects-exercise-3" data-toc="objects-exercise-3">习题 3</h3></div><div class="collapse__content"><p id="-3q6ude_120">你有一个 App, 你想要用它记录温度. 类本身使用摄氏单位保存信息, 但你想要提供一个简单方法, 创建华氏单位的实例. 请完成数据类, 让 <code class="code" id="-3q6ude_126">main()</code> 函数中的以下代码成功运行:</p><dl id="-3q6ude_121" data-style="title-top"><dt id="-3q6ude_127" data-expandable="true" data-expanded="false">提示</dt><dd><p>使用同伴对象.</p></dd></dl><pre><code>data class Temperature(val celsius: Double) {
+    val fahrenheit: Double = celsius * 9 / 5 + 32
+
+    // 请在这里编写你的代码
+}
+
+fun main() {
+    val fahrenheit = 90.0
+    val temp = Temperature.fromFahrenheit(fahrenheit)
+    println(&quot;${temp.celsius}°C is $fahrenheit °F&quot;)
+    // 输出结果为: 32.22222222222222°C is 90.0 °F
+}</code></pre><details class="solution"><summary>参考答案</summary><pre><code>data class Temperature(val celsius: Double) {
+    val fahrenheit: Double = celsius * 9 / 5 + 32
+
+    companion object {
+        fun fromFahrenheit(fahrenheit: Double): Temperature = Temperature((fahrenheit - 32) * 5 / 9)
+    }
+}
+
+fun main() {
+    val fahrenheit = 90.0
+    val temp = Temperature.fromFahrenheit(fahrenheit)
+    println(&quot;${temp.celsius}°C is $fahrenheit °F&quot;)
+    // 输出结果为: 32.22222222222222°C is 90.0 °F
+}</code></pre></details></div></div></section></section><section class="chapter"><h2 id="next-step" data-toc="next-step">下一步</h2><p id="-3q6ude_128"><a href="../open-and-special-classes/index.html" id="-3q6ude_129">中级教程: 开放类与特殊类</a></p></section>
+    </article>
+    <section class="recall" aria-labelledby="recall-title">
+      <span class="note-kind">读完自测</span>
+      <h2 id="recall-title">先不看正文，回答这三个问题</h2>
+      <ol><li>对象声明与普通类实例有什么不同？</li><li>data object 增加了什么语义？</li><li>伴生对象适合放置哪些能力？</li></ol>
+      <p class="transfer"><strong>迁移练习：</strong>从你正在读的一段 Kotlin 代码里，找出本章概念的一个真实用法；用一句话解释它为什么这样写。</p>
+    </section>
+    <nav class="chapter-switcher" aria-label="章节导航">
+    <a href="../classes-and-interfaces/index.html">← 类与接口</a>
+    <a class="course-home" href="../index.html">全部章节</a>
+    <a href="../open-and-special-classes/index.html">开放类与特殊类 →</a>
+  </nav>
+    <footer class="license-note">
+      <p>这是用于个人学习的非官方中文阅读版。正文依据 <a href="https://kotlinlang.org/docs/kotlin-tour-intermediate-objects.html">Kotlin 官方文档</a>整理，并参考公开中文译文对照整理；原始内容由 JetBrains 与 Kotlin 贡献者维护，采用 <a href="https://github.com/JetBrains/kotlin-web-site/blob/master/LICENSE">Apache License 2.0</a>。</p>
+    </footer>
+  </main>
+</body>
+</html>

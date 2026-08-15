@@ -1,0 +1,405 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="结合智能转换、安全类型转换、集合处理与提前返回，缩短可空值的影响范围。">
+  <title>进阶空安全｜RIN III</title>
+  <link rel="stylesheet" href="../reader.css">
+</head>
+<body>
+  <nav class="site-nav" aria-label="站点导航">
+    <a href="../index.html">← Kotlin Tour 中文学习版</a>
+    <a href="../../../computer-science/kotlin-tour/">RIN III 学习记录</a>
+  </nav>
+  <main class="reader">
+    <header class="chapter-header">
+      <span class="chapter-kicker">中级 · 第 8 章</span>
+      <h1>进阶空安全</h1>
+      <p class="lead">结合智能转换、安全类型转换、集合处理与提前返回，缩短可空值的影响范围。</p>
+      <div class="title-rule"></div>
+      <aside class="learning-note" aria-label="学习主线">
+        <strong>学习主线</strong>
+        <p>空安全的目标不是堆叠 ?.，而是尽早缩小不确定性，让后续代码重新面对确定类型。</p>
+      </aside>
+      <nav class="chapter-switcher" aria-label="章节导航">
+    <a href="../properties/index.html">← 属性</a>
+    <a class="course-home" href="../index.html">全部章节</a>
+    <a href="../libraries-and-apis/index.html">库与 API →</a>
+  </nav>
+    </header>
+    <article class="translated-article">
+<p id="j2rncq_3">在初学者教程中, 你已经学习了如何在代码中处理 <code class="code" id="j2rncq_36">null</code> 值. 这一章介绍 Null 值安全性功能的常见使用场景, 以及如何充分利用这些功能.</p><section class="chapter"><h2 id="smart-casts-and-safe-casts" data-toc="smart-casts-and-safe-casts">智能类型转换(Smart Cast) 与安全类型转换(Safe Cast)</h2><p id="j2rncq_37">Kotlin 有些时候能够推断类型, 不需要明确的声明. 如果你告诉 Kotlin 将一个变量或对象当作某个特定的类型处理, 这个过程叫做 <span class="control" id="j2rncq_40">类型转换</span>. 如果类型能够自动转换时, 例如能够推断得到, 称为 <span class="control" id="j2rncq_41">智能类型转换(Smart Cast)</span>.</p><section class="chapter"><h3 id="is-and-is-operators" data-toc="is-and-is-operators">is 和 !is 操作符</h3><p id="j2rncq_42">在探索类型转换的工作原理之前, 我们来看看如何检查一个对象是不是某个类型. 为了实现这样的检查, 你可以使用 <code class="code" id="j2rncq_47">is</code> 和 <code class="code" id="j2rncq_48">!is</code> 操作符, 与 <code class="code" id="j2rncq_49">when</code> 或 <code class="code" id="j2rncq_50">if</code> 条件表达式:</p><ul class="list _bullet" id="j2rncq_43"><li class="list__item" id="j2rncq_51"><p id="j2rncq_53"><code class="code" id="j2rncq_54">is</code> 检查对象是否属于这个类型, 并返回 boolean 值.</p></li><li class="list__item" id="j2rncq_52"><p id="j2rncq_55"><code class="code" id="j2rncq_56">!is</code> 检查对象是否 <span class="control" id="j2rncq_57">不属于</span> 这个类型, 并返回 boolean 值.</p></li></ul><p id="j2rncq_44">例如:</p><pre><code>fun printObjectType(obj: Any) {
+    when (obj) {
+        is Int -&gt; println(&quot;It's an Integer with value $obj&quot;)
+        !is Double -&gt; println(&quot;It's NOT a Double&quot;)
+        else -&gt; println(&quot;Unknown type&quot;)
+    }
+}
+
+fun main() {
+    val myInt = 42
+    val myDouble = 3.14
+    val myList = listOf(1, 2, 3)
+
+    // 类型为 Int
+    printObjectType(myInt)
+    // 输出结果为: It's an Integer with value 42
+
+    // 类型为 List, 因此它不是 Double.
+    printObjectType(myList)
+    // 输出结果为: It's NOT a Double
+
+    // 类型为 Double, 因此会执行 else 分支.
+    printObjectType(myDouble)
+    // 输出结果为: Unknown type
+}</code></pre><aside class="prompt" data-type="tip" data-title="" id="j2rncq_46"><p id="j2rncq_58">在 <a href="../open-and-special-classes/index.html#sealed-classes" id="j2rncq_59">开放类与特殊类</a> 章节中, 你已经看到了如何使用 <code class="code" id="j2rncq_60">when</code> 调节表达式以及 <code class="code" id="j2rncq_61">is</code> 和 <code class="code" id="j2rncq_62">!is</code> 操作符的示例.</p></aside></section><section class="chapter"><h3 id="as-and-as-operators" data-toc="as-and-as-operators">as 和 as? 操作符</h3><p id="j2rncq_63">要明确的将一个对象 <span class="emphasis" id="j2rncq_75">转换</span> 为另一个类型, 请使用 <code class="code" id="j2rncq_76">as</code> 操作符. 包括从可为 Null 的类型转换为不可为 Null 类型的情况. 如果无法转换, 程序会在 <span class="control" id="j2rncq_77">运行期</span> 崩溃. 所以 <code class="code" id="j2rncq_78">as</code> 被称为 <span class="control" id="j2rncq_79">不安全的</span> 类型转换操作符.</p><pre><code>fun main() {
+//sampleStart
+    val a: String? = null
+    val b = a as String
+
+    // 这里会发生运行期错误
+    print(b)
+//sampleEnd
+}</code></pre><p id="j2rncq_65">要明确的将一个对象转换为不可为 Null 的类型, 但在转换失败时返回 <code class="code" id="j2rncq_80">null</code> 而不是抛出异常, 请使用 <code class="code" id="j2rncq_81">as?</code> 操作符. 由于 <code class="code" id="j2rncq_82">as?</code> 操作符在失败时不会发生错误, 因此称为 <span class="control" id="j2rncq_83">安全的</span> 类型转换操作符.</p><pre><code>fun main() {
+//sampleStart
+    val a: String? = null
+    val b = a as? String
+
+    // 返回 null 值
+    print(b)
+    // null
+//sampleEnd
+}</code></pre><p id="j2rncq_67">你可以将 <code class="code" id="j2rncq_84">as?</code> 操作符与 Elvis 操作符 <code class="code" id="j2rncq_85">?:</code> 结合起来, 将多行代码精简为一行. 例如, 下面的 <code class="code" id="j2rncq_86">calculateTotalStringLength()</code> 函数计算一个混合 List 中提供的所有字符串的总长度:</p><pre><code>fun calculateTotalStringLength(items: List&lt;Any&gt;): Int {
+    var totalLength = 0
+
+    for (item in items) {
+        totalLength += if (item is String) {
+            item.length
+        } else {
+            0  // 对于不是字符串的元素, 加 0
+        }
+    }
+
+    return totalLength
+}</code></pre><p id="j2rncq_69">在这个示例中:</p><ul class="list _bullet" id="j2rncq_70"><li class="list__item" id="j2rncq_87"><p id="j2rncq_91">使用 <code class="code" id="j2rncq_92">totalLength</code> 变量作为计数器.</p></li><li class="list__item" id="j2rncq_88"><p id="j2rncq_93">使用 <code class="code" id="j2rncq_94">for</code> 循环, 遍历 List 中的每个元素.</p></li><li class="list__item" id="j2rncq_89"><p id="j2rncq_95">使用 <code class="code" id="j2rncq_97">if</code> 和 <code class="code" id="j2rncq_98">is</code> 操作符, 检查当前元素是不是字符串:</p><ul class="list _bullet" id="j2rncq_96"><li class="list__item" id="j2rncq_99"><p id="j2rncq_101">如果是, 将字符串长度加到计数器.</p></li><li class="list__item" id="j2rncq_100"><p id="j2rncq_102">如果不是, 计数器不会增加.</p></li></ul></li><li class="list__item" id="j2rncq_90"><p id="j2rncq_103">返回 <code class="code" id="j2rncq_104">totalLength</code> 变量最终的值.</p></li></ul><p id="j2rncq_71">这段代码可以精简为:</p><pre><code>fun calculateTotalStringLength(items: List&lt;Any&gt;): Int {
+    return items.sumOf { (it as? String)?.length ?: 0 }
+}</code></pre><p id="j2rncq_73">这个示例使用 <a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.collections/sum-of.html" id="j2rncq_105" data-external="true" rel="noopener noreferrer"><code class="code" id="j2rncq_106">.sumOf()</code></a> 扩展函数, 并对这个函数提供一个 Lambda 表达式:</p><ul class="list _bullet" id="j2rncq_74"><li class="list__item" id="j2rncq_107"><p id="j2rncq_110">对 List 中的每个元素, 使用 <code class="code" id="j2rncq_111">as?</code>, 执行安全的类型转换, 转换为 <code class="code" id="j2rncq_112">String</code>.</p></li><li class="list__item" id="j2rncq_108"><p id="j2rncq_113">使用安全调用 <code class="code" id="j2rncq_114">?.</code>, 如果前面的调用没有返回 <code class="code" id="j2rncq_115">null</code> 值, 则访问 <code class="code" id="j2rncq_116">length</code> 属性.</p></li><li class="list__item" id="j2rncq_109"><p id="j2rncq_117">使用 Elvis 操作符 <code class="code" id="j2rncq_118">?:</code>, 如果安全调用返回 <code class="code" id="j2rncq_119">null</code> 值, 返回 <code class="code" id="j2rncq_120">0</code>.</p></li></ul></section></section><section class="chapter"><h2 id="null-values-and-collections" data-toc="null-values-and-collections">Null 值与集合</h2><p id="j2rncq_121">在 Kotlin 中, 使用集合经常需要处理 <code class="code" id="j2rncq_144">null</code> 值, 并过滤掉不需要的元素. Kotlin 有很多有用的函数, 在处理 List, Set, Map, 和其他类型的集合时, 你可以用它们编写出简洁, 高效, 而且 Null 值安全的代码.</p><p id="j2rncq_122">从一个 List 过滤掉 <code class="code" id="j2rncq_145">null</code> 值, 请使用 <a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.collections/filter-not-null.html" id="j2rncq_146" data-external="true" rel="noopener noreferrer"><code class="code" id="j2rncq_147">filterNotNull()</code></a> 函数:</p><pre><code>fun main() {
+//sampleStart
+    val emails: List&lt;String?&gt; = listOf(&quot;alice@example.com&quot;, null, &quot;bob@example.com&quot;, null, &quot;carol@example.com&quot;)
+
+    val validEmails = emails.filterNotNull()
+
+    println(validEmails)
+    // 输出结果为: [alice@example.com, bob@example.com, carol@example.com]
+//sampleEnd
+}</code></pre><p id="j2rncq_124">如果你想要在创建 List 时直接过滤 <code class="code" id="j2rncq_148">null</code> 值, 请使用 <a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.collections/list-of-not-null.html" id="j2rncq_149" data-external="true" rel="noopener noreferrer"><code class="code" id="j2rncq_150">listOfNotNull()</code></a> 函数:</p><pre><code>fun main() {
+//sampleStart
+    val serverConfig = mapOf(
+        &quot;appConfig.json&quot; to &quot;App Configuration&quot;,
+        &quot;dbConfig.json&quot; to &quot;Database Configuration&quot;
+    )
+
+    val requestedFile = &quot;appConfig.json&quot;
+    val configFiles = listOfNotNull(serverConfig[requestedFile])
+
+    println(configFiles)
+    // 输出结果为: [App Configuration]
+//sampleEnd
+}</code></pre><p id="j2rncq_126">在这两个示例中, 如果所有元素都是 <code class="code" id="j2rncq_151">null</code> 值, 会返回空的 List.</p><p id="j2rncq_127">Kotlin 还提供了一些函数, 可以在集合中查找值. 如果值没有找到, 这些函数会返回 <code class="code" id="j2rncq_152">null</code> 值, 而不是发生错误:</p><ul class="list _bullet" id="j2rncq_128"><li class="list__item" id="j2rncq_153"><p id="j2rncq_155"><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.collections/max-or-null.html" id="j2rncq_156" data-external="true" rel="noopener noreferrer"><code class="code" id="j2rncq_158">maxOrNull()</code></a> 查找最大值. 如果不存在, 返回 <code class="code" id="j2rncq_157">null</code> 值.</p></li><li class="list__item" id="j2rncq_154"><p id="j2rncq_159"><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.collections/min-or-null.html" id="j2rncq_160" data-external="true" rel="noopener noreferrer"><code class="code" id="j2rncq_162">minOrNull()</code></a> 查找最小值. 如果不存在, 返回 <code class="code" id="j2rncq_161">null</code> 值.</p></li></ul><p id="j2rncq_129">例如:</p><pre><code>fun main() {
+//sampleStart
+    // 一周的温度记录
+    val temperatures = listOf(15, 18, 21, 21, 19, 17, 16)
+
+    // 查找一周中的最高温度
+    val maxTemperature = temperatures.maxOrNull()
+    println(&quot;Highest temperature recorded: ${maxTemperature ?: &quot;No data&quot;}&quot;)
+    // 输出结果为: Highest temperature recorded: 21
+
+    // 查找一周中的最低温度
+    val minTemperature = temperatures.minOrNull()
+    println(&quot;Lowest temperature recorded: ${minTemperature ?: &quot;No data&quot;}&quot;)
+    // 输出结果为: Lowest temperature recorded: 15
+//sampleEnd
+}</code></pre><p id="j2rncq_131">这个示例中, 如果函数返回 <code class="code" id="j2rncq_163">null</code> 值, 则使用 Elvis 操作符 <code class="code" id="j2rncq_164">?:</code> 返回打印输出语句.</p><aside class="prompt" data-type="note" data-title="" id="j2rncq_132"><p id="j2rncq_165"><code class="code" id="j2rncq_166">maxOrNull()</code>, 和 <code class="code" id="j2rncq_167">minOrNull()</code> 函数只能用于 <span class="control" id="j2rncq_168">不</span> 包含 <code class="code" id="j2rncq_169">null</code> 值的集合. 否则, 你就无法区分: 函数找不到需要的值? 还是它找到了 <code class="code" id="j2rncq_170">null</code> 值?</p></aside><p id="j2rncq_133">你可以使用 <a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.collections/single-or-null.html" id="j2rncq_171" data-external="true" rel="noopener noreferrer"><code class="code" id="j2rncq_173">singleOrNull()</code></a> 函数, 以 Lambda 表达式作为参数, 来查找匹配条件的单个元素. 如果值不存在, 或者相同的值存在多个元素, 这个函数返回 <code class="code" id="j2rncq_172">null</code> 值.</p><pre><code>fun main() {
+//sampleStart
+    // 一周的温度记录
+    val temperatures = listOf(15, 18, 21, 21, 19, 17, 16)
+
+    // 检查是否恰好有 1 天的温度为 30 度
+    val singleHotDay = temperatures.singleOrNull{ it == 30 }
+    println(&quot;Single hot day with 30 degrees: ${singleHotDay ?: &quot;None&quot;}&quot;)
+    // 输出结果为: Single hot day with 30 degrees: None
+//sampleEnd
+}</code></pre><aside class="prompt" data-type="note" data-title="" id="j2rncq_135"><p id="j2rncq_174"><code class="code" id="j2rncq_175">singleOrNull()</code> 函数只能用于 <span class="control" id="j2rncq_176">不</span> 包含 <code class="code" id="j2rncq_177">null</code> 值的集合.</p></aside><p id="j2rncq_136">有些函数使用 Lambda 表达式来转换集合, 如果无法实现目的, 则返回 <code class="code" id="j2rncq_178">null</code> 值.</p><p id="j2rncq_137">要使用 Lambda 表达式转换集合, 并返回第一个值非 <code class="code" id="j2rncq_179">null</code> 的值, 请使用 <a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.collections/first-not-null-of-or-null.html" id="j2rncq_180" data-external="true" rel="noopener noreferrer"><code class="code" id="j2rncq_182">firstNotNullOfOrNull()</code></a> 函数. 如果不存在这样的值, 函数返回 <code class="code" id="j2rncq_181">null</code> 值:</p><pre><code>fun main() {
+//sampleStart
+    data class User(val name: String?, val age: Int?)
+
+    val users = listOf(
+        User(null, 25),
+        User(&quot;Alice&quot;, null),
+        User(&quot;Bob&quot;, 30)
+    )
+
+    val firstNonNullName = users.firstNotNullOfOrNull { it.name }
+    println(firstNonNullName)
+    // 输出结果为: Alice
+//sampleEnd
+}</code></pre><p id="j2rncq_139">要使用 Lambda 表达式顺序的处理每个集合元素, 并创建一个累计的值 (或者如果集合为空, 返回 <code class="code" id="j2rncq_183">null</code> 值), 请使用 <a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.collections/reduce-or-null.html" id="j2rncq_184" data-external="true" rel="noopener noreferrer"><code class="code" id="j2rncq_185">reduceOrNull()</code></a> 函数:</p><pre><code>fun main() {
+//sampleStart
+    // 购物车中商品的价格
+    val itemPrices = listOf(20, 35, 15, 40, 10)
+
+    // 使用 reduceOrNull() 函数计算总价格
+    val totalPrice = itemPrices.reduceOrNull { runningTotal, price -&gt; runningTotal + price }
+    println(&quot;Total price of items in the cart: ${totalPrice ?: &quot;No items&quot;}&quot;)
+    // 输出结果为: Total price of items in the cart: 120
+
+    val emptyCart = listOf&lt;Int&gt;()
+    val emptyTotalPrice = emptyCart.reduceOrNull { runningTotal, price -&gt; runningTotal + price }
+    println(&quot;Total price of items in the empty cart: ${emptyTotalPrice ?: &quot;No items&quot;}&quot;)
+    // 输出结果为: Total price of items in the empty cart: No items
+//sampleEnd
+}</code></pre><p id="j2rncq_141">这个示例中, 如果函数返回 <code class="code" id="j2rncq_186">null</code> 值, 也使用 Elvis 操作符 <code class="code" id="j2rncq_187">?:</code> 返回打印输出语句.</p><aside class="prompt" data-type="note" data-title="" id="j2rncq_142"><p id="j2rncq_188"><code class="code" id="j2rncq_189">reduceOrNull()</code> 函数只能用于 <span class="control" id="j2rncq_190">不</span> 包含 <code class="code" id="j2rncq_191">null</code> 值的集合.</p></aside><p id="j2rncq_143">请参见 Kotlin 的 <a href="https://kotlinlang.org/api/core/kotlin-stdlib/" id="j2rncq_192" data-external="true" rel="noopener noreferrer">标准库</a>, 其中还有很多函数, 你可以使用它们来提高代码安全性.</p></section><section class="chapter"><h2 id="early-returns-and-the-elvis-operator" data-toc="early-returns-and-the-elvis-operator">提前返回(Early Return) 与 Elvis 操作符</h2><p id="j2rncq_193">在初学者教程中, 你已经学习了如何使用 <a href="../functions/index.html#early-returns-in-functions" id="j2rncq_201">提前返回(Early Return)</a>, 让你的函数在某个阶段之后停止进一步的处理. 你可以使用 Elvis 操作符 <code class="code" id="j2rncq_202">?:</code> 和提前返回, 在函数中检查先决条件. 使用这种方式, 能够很好的保持代码简洁, 因为你不需要使用嵌套的检查. 代码复杂度降低也让它更加易于维护. 例如:</p><pre><code>data class User(
+    val id: Int,
+    val name: String,
+    // 朋友 user 的 ID List
+    val friends: List&lt;Int&gt;
+)
+
+// 得到一个用户的朋友数量的函数
+fun getNumberOfFriends(users: Map&lt;Int, User&gt;, userId: Int): Int {
+    // 获取用户, 如果没有找到, 返回 -1
+    val user = users[userId] ?: return -1
+    // 返回朋友数量
+    return user.friends.size
+}
+
+fun main() {
+    // 创建一些示例用户
+    val user1 = User(1, &quot;Alice&quot;, listOf(2, 3))
+    val user2 = User(2, &quot;Bob&quot;, listOf(1))
+    val user3 = User(3, &quot;Charlie&quot;, listOf(1))
+
+    // 创建用户 Map
+    val users = mapOf(1 to user1, 2 to user2, 3 to user3)
+
+    println(getNumberOfFriends(users, 1))
+    // 输出结果为: 2
+    println(getNumberOfFriends(users, 2))
+    // 输出结果为: 1
+    println(getNumberOfFriends(users, 4))
+    // 输出结果为: -1
+}</code></pre><p id="j2rncq_195">在这个示例中:</p><ul class="list _bullet" id="j2rncq_196"><li class="list__item" id="j2rncq_203"><p id="j2rncq_206">有一个 <code class="code" id="j2rncq_207">User</code> 数据类, 属性表示用户的 <code class="code" id="j2rncq_208">id</code>, <code class="code" id="j2rncq_209">name</code>, 以及朋友列表.</p></li><li class="list__item" id="j2rncq_204"><p id="j2rncq_210"><code class="code" id="j2rncq_212">getNumberOfFriends()</code> 函数:</p><ul class="list _bullet" id="j2rncq_211"><li class="list__item" id="j2rncq_213"><p id="j2rncq_218">它的参数是一个 <code class="code" id="j2rncq_219">User</code> 实例的 Map, 以及一个整数类型的用户 ID.</p></li><li class="list__item" id="j2rncq_214"><p id="j2rncq_220">使用给定的 用户 ID, 找到 <code class="code" id="j2rncq_221">User</code> 实例 Map 的值.</p></li><li class="list__item" id="j2rncq_215"><p id="j2rncq_222">如果 Map 值是 <code class="code" id="j2rncq_223">null</code> 值, 使用 Elvis 操作符提前返回, 返回值为 <code class="code" id="j2rncq_224">-1</code>.</p></li><li class="list__item" id="j2rncq_216"><p id="j2rncq_225">将从 Map 找到的值, 赋值给 <code class="code" id="j2rncq_226">user</code> 变量.</p></li><li class="list__item" id="j2rncq_217"><p id="j2rncq_227">使用 <code class="code" id="j2rncq_228">size</code> 属性, 返回用户的朋友列表中的朋友数量.</p></li></ul></li><li class="list__item" id="j2rncq_205"><p id="j2rncq_229"><code class="code" id="j2rncq_231">main()</code> 函数:</p><ul class="list _bullet" id="j2rncq_230"><li class="list__item" id="j2rncq_232"><p id="j2rncq_236">创建 3 个 <code class="code" id="j2rncq_237">User</code> 实例.</p></li><li class="list__item" id="j2rncq_233"><p id="j2rncq_238">创建这些 <code class="code" id="j2rncq_239">User</code> 实例的 Map, 并赋值给 <code class="code" id="j2rncq_240">users</code> 变量.</p></li><li class="list__item" id="j2rncq_234"><p id="j2rncq_241">对 <code class="code" id="j2rncq_242">users</code> 变量, 使用值 <code class="code" id="j2rncq_243">1</code> 和 <code class="code" id="j2rncq_244">2</code> 调用 <code class="code" id="j2rncq_245">getNumberOfFriends()</code> 函数, 对 <code class="code" id="j2rncq_246">&quot;Alice&quot;</code> 返回 2 个朋友, 对 <code class="code" id="j2rncq_247">&quot;Bob&quot;</code> 返回 1 个朋友.</p></li><li class="list__item" id="j2rncq_235"><p id="j2rncq_248">对 <code class="code" id="j2rncq_249">users</code> 变量, 使用值 <code class="code" id="j2rncq_250">4</code> 调用 <code class="code" id="j2rncq_251">getNumberOfFriends()</code> 函数, 会发生提前返回, 返回值为 <code class="code" id="j2rncq_252">-1</code>.</p></li></ul></li></ul><p id="j2rncq_197">你可能会注意到, 如果没有提前返回, 代码可以更加简洁. 但是, 这种方法需要很多次安全调用, 因为 <code class="code" id="j2rncq_253">users[userId]</code> 可能返回 <code class="code" id="j2rncq_254">null</code> 值, 造成代码变得有点难以阅读:</p><pre><code>fun getNumberOfFriends(users: Map&lt;Int, User&gt;, userId: Int): Int {
+    // 获取用户, 如果没有找到, 返回 -1
+    return users[userId]?.friends?.size ?: -1
+}</code></pre><p id="j2rncq_199">这个示例中, 尽管只使用 Elvis 操作符检查了一个条件, 但你可以添加多个检查来覆盖任何重要的错误路径. 使用 Elvis 操作符提前返回能够防止你的程序执行不必要的工作, 并在检测到 <code class="code" id="j2rncq_255">null</code> 值或不正确的情况时立即停止执行, 让代码更加安全.</p><p id="j2rncq_200">关于如何在代码中使用 <code class="code" id="j2rncq_256">return</code>, 详情请参见 <a href="https://kotlinlang.org/docs/returns.html" id="j2rncq_257">返回与跳转</a>.</p></section><section class="chapter"><h2 id="practice" data-toc="practice">实际练习</h2><section class="chapter"><div class="collapse"><div class="collapse__title"><h3 id="null-safety-exercise-1" data-toc="null-safety-exercise-1">习题 1</h3></div><div class="collapse__content"><p id="j2rncq_262">你在为一个 App 开发通知系统, 使用者能够启用或禁用不同类型的通知. 请完成 <code class="code" id="j2rncq_269">getNotificationPreferences()</code> 函数, 目标是:</p><ol class="list _decimal" id="j2rncq_263" type="1"><li class="list__item" id="j2rncq_270"><p id="j2rncq_274"><code class="code" id="j2rncq_275">validUser</code> 变量使用 <code class="code" id="j2rncq_276">as?</code> 操作符, 检查 <code class="code" id="j2rncq_277">user</code> 是不是 <code class="code" id="j2rncq_278">User</code> 类的实例. 如果不是, 返回空的 List.</p></li><li class="list__item" id="j2rncq_271"><p id="j2rncq_279"><code class="code" id="j2rncq_280">userName</code> 变量使用 Elvis <code class="code" id="j2rncq_281">?:</code> 操作符, 当使用者为 <code class="code" id="j2rncq_282">null</code> 时, 让名字的默认值为 <code class="code" id="j2rncq_283">&quot;Guest&quot;</code>.</p></li><li class="list__item" id="j2rncq_272"><p id="j2rncq_284">最后的返回语句使用 <code class="code" id="j2rncq_285">.takeIf()</code> 函数, 只对 EMail 和 SMS 启用的情况, 包含它们的通知选项.</p></li><li class="list__item" id="j2rncq_273"><p id="j2rncq_286"><code class="code" id="j2rncq_287">main()</code> 函数成功返回, 并打印输出期望的输出结果.</p></li></ol><aside class="prompt" data-type="tip" data-title="" id="j2rncq_264"><p id="j2rncq_288"><a href="https://kotlinlang.org/docs/scope-functions.html#takeif-and-takeunless" id="j2rncq_290"><code class="code" id="j2rncq_292">takeIf()</code> 函数</a> 只有在给定的条件为 true 时返回原来的值, 否则返回 <code class="code" id="j2rncq_291">null</code>. 例如:</p><pre><code>fun main() {
+    // 使用者已经登录
+    val userIsLoggedIn = true
+    // 使用者有一个活跃的会话
+    val hasSession = true
+
+    // 如果使用者已经登录, 并且有活跃的会话, 则允许访问 Dashboard
+    val canAccessDashboard = userIsLoggedIn.takeIf { hasSession }
+
+    println(canAccessDashboard ?: &quot;Access denied&quot;)
+    // 输出结果为: true
+}</code></pre></aside><pre><code>data class User(val name: String?)
+
+fun getNotificationPreferences(user: Any, emailEnabled: Boolean, smsEnabled: Boolean): List&lt;String&gt; {
+    val validUser = // 请在这里编写你的代码
+    val userName = // 请在这里编写你的代码
+
+    return listOfNotNull( /* 请在这里编写你的代码 */)
+}
+
+fun main() {
+    val user1 = User(&quot;Alice&quot;)
+    val user2 = User(null)
+    val invalidUser = &quot;NotAUser&quot;
+
+    println(getNotificationPreferences(user1, emailEnabled = true, smsEnabled = false))
+    // 输出结果为: [Email Notifications enabled for Alice]
+    println(getNotificationPreferences(user2, emailEnabled = false, smsEnabled = true))
+    // 输出结果为: [SMS Notifications enabled for Guest]
+    println(getNotificationPreferences(invalidUser, emailEnabled = true, smsEnabled = true))
+    // 输出结果为: []
+}</code></pre><details class="solution"><summary>参考答案</summary><pre><code>data class User(val name: String?)
+
+fun getNotificationPreferences(user: Any, emailEnabled: Boolean, smsEnabled: Boolean): List&lt;String&gt; {
+    val validUser = user as? User ?: return emptyList()
+    val userName = validUser.name ?: &quot;Guest&quot;
+
+    return listOfNotNull(
+        &quot;Email Notifications enabled for $userName&quot;.takeIf { emailEnabled },
+        &quot;SMS Notifications enabled for $userName&quot;.takeIf { smsEnabled }
+    )
+}
+
+fun main() {
+    val user1 = User(&quot;Alice&quot;)
+    val user2 = User(null)
+    val invalidUser = &quot;NotAUser&quot;
+
+    println(getNotificationPreferences(user1, emailEnabled = true, smsEnabled = false))
+    // 输出结果为: [Email Notifications enabled for Alice]
+    println(getNotificationPreferences(user2, emailEnabled = false, smsEnabled = true))
+    // 输出结果为: [SMS Notifications enabled for Guest]
+    println(getNotificationPreferences(invalidUser, emailEnabled = true, smsEnabled = true))
+    // 输出结果为: []
+}</code></pre></details></div></div></section><section class="chapter"><div class="collapse"><div class="collapse__title"><h3 id="null-safety-exercise-2" data-toc="null-safety-exercise-2">习题 2</h3></div><div class="collapse__content"><p id="j2rncq_293">你在开发一个基于订阅的流媒体服务, 使用者可以拥有多个订阅, 但 <span class="control" id="j2rncq_300">一次只能有一个处于活跃状态</span>. 请完成 <code class="code" id="j2rncq_301">getActiveSubscription()</code> 函数, 使用 <code class="code" id="j2rncq_302">singleOrNull()</code> 函数, 指定的判断条件是, 如果存在多个活跃的订阅则返回 <code class="code" id="j2rncq_303">null</code> 值:</p><pre><code>data class Subscription(val name: String, val isActive: Boolean)
+
+fun getActiveSubscription(subscriptions: List&lt;Subscription&gt;): Subscription? // 请在这里编写你的代码
+
+fun main() {
+    val userWithPremiumPlan = listOf(
+        Subscription(&quot;Basic Plan&quot;, false),
+        Subscription(&quot;Premium Plan&quot;, true)
+    )
+
+    val userWithConflictingPlans = listOf(
+        Subscription(&quot;Basic Plan&quot;, true),
+        Subscription(&quot;Premium Plan&quot;, true)
+    )
+
+    println(getActiveSubscription(userWithPremiumPlan))
+    // 输出结果为: Subscription(name=Premium Plan, isActive=true)
+
+    println(getActiveSubscription(userWithConflictingPlans))
+    // 输出结果为: null
+}</code></pre><details class="solution"><summary>参考答案 1</summary><pre><code>data class Subscription(val name: String, val isActive: Boolean)
+
+fun getActiveSubscription(subscriptions: List&lt;Subscription&gt;): Subscription? {
+    return subscriptions.singleOrNull { subscription -&gt; subscription.isActive }
+}
+
+fun main() {
+    val userWithPremiumPlan = listOf(
+        Subscription(&quot;Basic Plan&quot;, false),
+        Subscription(&quot;Premium Plan&quot;, true)
+    )
+
+    val userWithConflictingPlans = listOf(
+        Subscription(&quot;Basic Plan&quot;, true),
+        Subscription(&quot;Premium Plan&quot;, true)
+    )
+
+    println(getActiveSubscription(userWithPremiumPlan))
+    // 输出结果为: Subscription(name=Premium Plan, isActive=true)
+
+    println(getActiveSubscription(userWithConflictingPlans))
+    // 输出结果为: null
+}</code></pre></details><details class="solution"><summary>参考答案 2</summary><pre><code>data class Subscription(val name: String, val isActive: Boolean)
+
+fun getActiveSubscription(subscriptions: List&lt;Subscription&gt;): Subscription? =
+    subscriptions.singleOrNull { it.isActive }
+
+fun main() {
+    val userWithPremiumPlan = listOf(
+        Subscription(&quot;Basic Plan&quot;, false),
+        Subscription(&quot;Premium Plan&quot;, true)
+    )
+
+    val userWithConflictingPlans = listOf(
+        Subscription(&quot;Basic Plan&quot;, true),
+        Subscription(&quot;Premium Plan&quot;, true)
+    )
+
+    println(getActiveSubscription(userWithPremiumPlan))
+    // 输出结果为: Subscription(name=Premium Plan, isActive=true)
+
+    println(getActiveSubscription(userWithConflictingPlans))
+    // 输出结果为: null
+}</code></pre></details></div></div></section><section class="chapter"><div class="collapse"><div class="collapse__title"><h3 id="null-safety-exercise-3" data-toc="null-safety-exercise-3">习题 3</h3></div><div class="collapse__content"><p id="j2rncq_304">你在开发一个社交媒体平台, 使用者有用户名称和帐号状态. 你想要看到目前活跃的用户名称列表. 请完成 <code class="code" id="j2rncq_313">getActiveUsernames()</code> 函数, 让 <a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.collections/map-not-null.html" id="j2rncq_314" data-external="true" rel="noopener noreferrer"><code class="code" id="j2rncq_316">mapNotNull()</code> 函数</a> 的判断条件在用户状态为活跃时返回用户名称, 否则返回 <code class="code" id="j2rncq_315">null</code> 值:</p><pre><code>data class User(val username: String, val isActive: Boolean)
+
+fun getActiveUsernames(users: List&lt;User&gt;): List&lt;String&gt; {
+    return users.mapNotNull { /* 请在这里编写你的代码 */ }
+}
+
+fun main() {
+    val allUsers = listOf(
+        User(&quot;alice123&quot;, true),
+        User(&quot;bob_the_builder&quot;, false),
+        User(&quot;charlie99&quot;, true)
+    )
+
+    println(getActiveUsernames(allUsers))
+    // 输出结果为: [alice123, charlie99]
+}</code></pre><aside class="prompt" data-type="tip" data-title="" id="j2rncq_308"><p id="j2rncq_317">和习题 1 一样, 检查用户是否活跃时, 可以使用 <a href="https://kotlinlang.org/docs/scope-functions.html#takeif-and-takeunless" id="j2rncq_318"><code class="code" id="j2rncq_319">takeIf()</code> 函数</a>.</p></aside><details class="solution"><summary>参考答案 1</summary><pre><code>data class User(val username: String, val isActive: Boolean)
+
+fun getActiveUsernames(users: List&lt;User&gt;): List&lt;String&gt; {
+    return users.mapNotNull { user -&gt;
+        if (user.isActive) user.username else null
+    }
+}
+
+fun main() {
+    val allUsers = listOf(
+        User(&quot;alice123&quot;, true),
+        User(&quot;bob_the_builder&quot;, false),
+        User(&quot;charlie99&quot;, true)
+    )
+
+    println(getActiveUsernames(allUsers))
+    // 输出结果为: [alice123, charlie99]
+}</code></pre></details><details class="solution"><summary>参考答案 2</summary><pre><code>data class User(val username: String, val isActive: Boolean)
+
+fun getActiveUsernames(users: List&lt;User&gt;): List&lt;String&gt; =
+    users.mapNotNull { user -&gt; user.username.takeIf { user.isActive } }
+
+fun main() {
+    val allUsers = listOf(
+        User(&quot;alice123&quot;, true),
+        User(&quot;bob_the_builder&quot;, false),
+        User(&quot;charlie99&quot;, true)
+    )
+
+    println(getActiveUsernames(allUsers))
+    // 输出结果为: [alice123, charlie99]
+}</code></pre></details></div></div></section><section class="chapter"><div class="collapse"><div class="collapse__title"><h3 id="null-safety-exercise-4" data-toc="null-safety-exercise-4">习题 4</h3></div><div class="collapse__content"><p id="j2rncq_320">你正在为一个电子商务平台开发库存管理系统. 在处理一次销售之前, 你需要根据可用的库存数量检查要求的产品数量是否正确.</p><p id="j2rncq_321">请完成 <code class="code" id="j2rncq_328">validateStock()</code> 函数, 使用提前返回和 Elvis 操作符 (如果可能的话) 进行检查:</p><ul class="list _bullet" id="j2rncq_322"><li class="list__item" id="j2rncq_329"><p id="j2rncq_333"><code class="code" id="j2rncq_334">requested</code> 变量是否为 <code class="code" id="j2rncq_335">null</code>.</p></li><li class="list__item" id="j2rncq_330"><p id="j2rncq_336"><code class="code" id="j2rncq_337">available</code> 变量是否为 <code class="code" id="j2rncq_338">null</code>.</p></li><li class="list__item" id="j2rncq_331"><p id="j2rncq_339"><code class="code" id="j2rncq_340">requested</code> 变量是否为负值.</p></li><li class="list__item" id="j2rncq_332"><p id="j2rncq_341"><code class="code" id="j2rncq_342">requested</code> 变量的值是否高于 <code class="code" id="j2rncq_343">available</code> 变量.</p></li></ul><p id="j2rncq_323">对以上所有情况, 函数必须提前返回 <code class="code" id="j2rncq_344">-1</code>.</p><pre><code>fun validateStock(requested: Int?, available: Int?): Int {
+    // 请在这里编写你的代码
+}
+
+fun main() {
+    println(validateStock(5,10))
+    // 输出结果为: 5
+    println(validateStock(null,10))
+    // 输出结果为: -1
+    println(validateStock(-2,10))
+    // 输出结果为: -1
+}</code></pre><details class="solution"><summary>参考答案</summary><pre><code>fun validateStock(requested: Int?, available: Int?): Int {
+    val validRequested = requested ?: return -1
+    val validAvailable = available ?: return -1
+
+    if (validRequested &lt; 0) return -1
+    if (validRequested &gt; validAvailable) return -1
+
+    return validRequested
+}
+
+fun main() {
+    println(validateStock(5,10))
+    // 输出结果为: 5
+    println(validateStock(null,10))
+    // 输出结果为: -1
+    println(validateStock(-2,10))
+    // 输出结果为: -1
+}</code></pre></details></div></div></section></section><section class="chapter"><h2 id="next-step" data-toc="next-step">下一步</h2><p id="j2rncq_345"><a href="../libraries-and-apis/index.html" id="j2rncq_346">中级教程: 库与 API</a></p></section>
+    </article>
+    <section class="recall" aria-labelledby="recall-title">
+      <span class="note-kind">读完自测</span>
+      <h2 id="recall-title">先不看正文，回答这三个问题</h2>
+      <ol><li>is 检查怎样触发智能转换？</li><li>as 与 as? 失败时有什么不同？</li><li>为什么 Elvis 运算符适合配合 return 提前退出？</li></ol>
+      <p class="transfer"><strong>迁移练习：</strong>从你正在读的一段 Kotlin 代码里，找出本章概念的一个真实用法；用一句话解释它为什么这样写。</p>
+    </section>
+    <nav class="chapter-switcher" aria-label="章节导航">
+    <a href="../properties/index.html">← 属性</a>
+    <a class="course-home" href="../index.html">全部章节</a>
+    <a href="../libraries-and-apis/index.html">库与 API →</a>
+  </nav>
+    <footer class="license-note">
+      <p>这是用于个人学习的非官方中文阅读版。正文依据 <a href="https://kotlinlang.org/docs/kotlin-tour-intermediate-null-safety.html">Kotlin 官方文档</a>整理，并参考公开中文译文对照整理；原始内容由 JetBrains 与 Kotlin 贡献者维护，采用 <a href="https://github.com/JetBrains/kotlin-web-site/blob/master/LICENSE">Apache License 2.0</a>。</p>
+    </footer>
+  </main>
+</body>
+</html>

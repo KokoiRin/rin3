@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="在不修改原类的前提下，为类型补充可以像成员函数一样调用的新能力。">
+  <title>扩展函数｜RIN III</title>
+  <link rel="stylesheet" href="../reader.css">
+</head>
+<body>
+  <nav class="site-nav" aria-label="站点导航">
+    <a href="../index.html">← Kotlin Tour 中文学习版</a>
+    <a href="../../../computer-science/kotlin-tour/">RIN III 学习记录</a>
+  </nav>
+  <main class="reader">
+    <header class="chapter-header">
+      <span class="chapter-kicker">中级 · 第 1 章</span>
+      <h1>扩展函数</h1>
+      <p class="lead">在不修改原类的前提下，为类型补充可以像成员函数一样调用的新能力。</p>
+      <div class="title-rule"></div>
+      <aside class="learning-note" aria-label="学习主线">
+        <strong>学习主线</strong>
+        <p>扩展函数改善调用表达，但不会真正改变或继承接收者类型。</p>
+      </aside>
+      <nav class="chapter-switcher" aria-label="章节导航">
+    <a href="../null-safety/index.html">← 空安全</a>
+    <a class="course-home" href="../index.html">全部章节</a>
+    <a href="../scope-functions/index.html">作用域函数 →</a>
+  </nav>
+    </header>
+    <article class="translated-article">
+<p id="-e1jye3_3">在这一章中, 你将探索一些特殊的 Kotlin 函数, 它们能够让你的代码更加简洁, 更加易读. 学习这些函数能够如何帮助你使用高效的设计模式, 将你的项目提升到更高水平.</p><section class="chapter"><h2 id="extension-functions" data-toc="extension-functions">扩展函数</h2><p id="-e1jye3_35">在软件开发中, 你经常需要修改一个程序的行为, 但又不能修改原来的源代码. 例如, 你可能想要向一个来自第三方库的类添加额外的功能.</p><p id="-e1jye3_36">你可以通过添加 <span class="emphasis" id="-e1jye3_45">扩展函数</span> 来扩展一个类. 调用扩展函数的方式与调用类的成员函数一样, 使用点号 <code class="code" id="-e1jye3_46">.</code>.</p><p id="-e1jye3_37">在介绍扩展函数的完整语法之前, 你需要理解什么是 <span class="control" id="-e1jye3_47">接受者(Receiver)</span>. 接受者(Receiver)是指函数对哪个对象调用. 换句话说, 接受者就是共享信息的来源.</p><figure id="-e1jye3_38"><img alt="发送者和接受者的示例" src="../assets/receiver-highlight.png" title="发送者和接受者的示例" width="500" height="99"></figure><p id="-e1jye3_39">在这个示例中, <code class="code" id="-e1jye3_48">main()</code> 函数调用 <a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.collections/first.html" id="-e1jye3_49" data-external="true" rel="noopener noreferrer"><code class="code" id="-e1jye3_54">.first()</code></a> 函数, 得到列表中的第 1 个元素. <code class="code" id="-e1jye3_50">.first()</code> 函数 <span class="control" id="-e1jye3_51">对</span> <code class="code" id="-e1jye3_52">readOnlyShapes</code> 变量调用, 因此 <code class="code" id="-e1jye3_53">readOnlyShapes</code> 变量就是接受者.</p><p id="-e1jye3_40">要创建扩展函数, 请写下你想要扩展的类名称, 之后是一个 <code class="code" id="-e1jye3_55">.</code> 号, 之后是你的函数名称. 后面是函数声明的其余部分, 包括它的参数和返回类型.</p><p id="-e1jye3_41">例如:</p><pre><code>fun String.bold(): String = &quot;&lt;b&gt;$this&lt;/b&gt;&quot;
+
+fun main() {
+    // &quot;hello&quot; 是接受者
+    println(&quot;hello&quot;.bold())
+    // 输出结果为: &lt;b&gt;hello&lt;/b&gt;
+}</code></pre><p id="-e1jye3_43">在这个示例中:</p><ul class="list _bullet" id="-e1jye3_44"><li class="list__item" id="-e1jye3_56"><p id="-e1jye3_63"><code class="code" id="-e1jye3_64">String</code> 是被扩展的类.</p></li><li class="list__item" id="-e1jye3_57"><p id="-e1jye3_65"><code class="code" id="-e1jye3_66">bold</code> 是扩展函数的名称.</p></li><li class="list__item" id="-e1jye3_58"><p id="-e1jye3_67"><code class="code" id="-e1jye3_68">.bold()</code> 扩展函数的返回类型是 <code class="code" id="-e1jye3_69">String</code>.</p></li><li class="list__item" id="-e1jye3_59"><p id="-e1jye3_70"><code class="code" id="-e1jye3_71">&quot;hello&quot;</code>, 一个 <code class="code" id="-e1jye3_72">String</code> 实例, 是接受者.</p></li><li class="list__item" id="-e1jye3_60"><p id="-e1jye3_73">在函数的 body 部, 访问接受者时使用了 <a href="https://kotlinlang.org/docs/keyword-reference.html" id="-e1jye3_74">关键字</a>: <code class="code" id="-e1jye3_75">this</code>.</p></li><li class="list__item" id="-e1jye3_61"><p id="-e1jye3_76">使用了字符串模板 (<code class="code" id="-e1jye3_77">$</code>) 来访问 <code class="code" id="-e1jye3_78">this</code> 的值.</p></li><li class="list__item" id="-e1jye3_62"><p id="-e1jye3_79"><code class="code" id="-e1jye3_80">.bold()</code> 扩展函数接受一个字符串, 并将它包含在 <code class="code" id="-e1jye3_81">&lt;b&gt;</code> HTML 元素内返回, 用于显示粗体文字.</p></li></ul></section><section class="chapter"><h2 id="extension-oriented-design" data-toc="extension-oriented-design">面向扩展的设计</h2><p id="-e1jye3_82">你可以在任何地方定义扩展函数, 因此可以创建面向扩展的设计. 这样的设计将核心功能与便利但并非必须的功能分离开, 让你的代码易于阅读和维护.</p><p id="-e1jye3_83">一个很好的例子是 Ktor 库的 <a href="https://api.ktor.io/ktor-client-core/io.ktor.client/-http-client/index.html" id="-e1jye3_91" data-external="true" rel="noopener noreferrer"><code class="code" id="-e1jye3_93">HttpClient</code></a> 类, 它帮助你执行网络请求. 它的核心功能是单个函数 <code class="code" id="-e1jye3_92">request()</code>, 它的参数是一个 HTTP 请求需要的所有信息 :</p><pre><code>class HttpClient {
+    fun request(method: String, url: String, headers: Map&lt;String, String&gt;): HttpResponse {
+        // 网络代码
+    }
+}</code></pre><p id="-e1jye3_85">在实际运用中, 最常用的 HTTP 请求是 GET 或 POST 请求. 库为这些常见的使用场景提供更短的名称是很合理的. 但是, 不需要编写新的网络代码, 只需要特定的请求调用. 换句话说, 这些请求很适用定义为单独的 <code class="code" id="-e1jye3_94">.get()</code> 和 <code class="code" id="-e1jye3_95">.post()</code> 扩展函数:</p><pre><code>fun HttpClient.get(url: String): HttpResponse = request(&quot;GET&quot;, url, emptyMap())
+fun HttpClient.post(url: String): HttpResponse = request(&quot;POST&quot;, url, emptyMap())</code></pre><p id="-e1jye3_87">这些 <code class="code" id="-e1jye3_96">.get()</code> 和 <code class="code" id="-e1jye3_97">.post()</code> 函数扩展了 <code class="code" id="-e1jye3_98">HttpClient</code> 类. 由于它们是在 <code class="code" id="-e1jye3_99">HttpClient</code> 类的实例上调用的, 也就是使用 <code class="code" id="-e1jye3_100">HttpClient</code> 类的实例作为接受者, 因此它们可以直接使用来自 <code class="code" id="-e1jye3_101">HttpClient</code> 类的 <code class="code" id="-e1jye3_102">request()</code> 函数. 你可以通过这些扩展函数, 使用适当的 HTTP 方法调用 <code class="code" id="-e1jye3_103">request()</code> 函数, 这样可以简化你的代码, 让代码更加易于理解:</p><pre><code>class HttpClient {
+    fun request(method: String, url: String, headers: Map&lt;String, String&gt;): HttpResponse {
+        println(&quot;Requesting $method to $url with headers: $headers&quot;)
+        return HttpResponse(&quot;Response from $url&quot;)
+    }
+}
+
+fun HttpClient.get(url: String): HttpResponse = request(&quot;GET&quot;, url, emptyMap())
+
+fun main() {
+    val client = HttpClient()
+
+    // 直接使用 request(), 发起 GET 请求
+    val getResponseWithMember = client.request(&quot;GET&quot;, &quot;https://example.com&quot;, emptyMap())
+
+    // 使用 get() 扩展函数, 发起 GET 请求
+    // client 实例是接受者
+    val getResponseWithExtension = client.get(&quot;https://example.com&quot;)
+}</code></pre><p id="-e1jye3_89">在 Kotlin 的 <a href="https://kotlinlang.org/api/latest/jvm/stdlib/" id="-e1jye3_104" data-external="true" rel="noopener noreferrer">标准库</a> 和其他库中, 大量使用了这种面向扩展的方案. 例如, <code class="code" id="-e1jye3_105">String</code> 类有很多 <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/#extension-functions" id="-e1jye3_106" data-external="true" rel="noopener noreferrer">扩展函数</a> 帮助你处理字符串.</p><p id="-e1jye3_90">关于扩展函数, 详情请参见 <a href="https://kotlinlang.org/docs/extensions.html" id="-e1jye3_107">扩展</a>.</p></section><section class="chapter"><h2 id="practice" data-toc="practice">实际练习</h2><section class="chapter"><div class="collapse"><div class="collapse__title"><h3 id="extension-functions-exercise-1" data-toc="extension-functions-exercise-1">习题 1</h3></div><div class="collapse__content"><p id="-e1jye3_110">编写一个扩展函数, 名为 <code class="code" id="-e1jye3_115">isPositive</code>, 接受一个整数参数, 判断它是不是正数.</p><pre><code>fun Int.// 请在这里编写你的代码
+
+fun main() {
+    println(1.isPositive())
+    // 输出结果为: true
+}</code></pre><details class="solution"><summary>参考答案</summary><pre><code>fun Int.isPositive(): Boolean = this &gt; 0
+
+fun main() {
+    println(1.isPositive())
+    // 输出结果为: true
+}</code></pre></details></div></div></section><section class="chapter"><div class="collapse"><div class="collapse__title"><h3 id="extension-functions-exercise-2" data-toc="extension-functions-exercise-2">习题 2</h3></div><div class="collapse__content"><p id="-e1jye3_116">编写一个扩展函数, 名为 <code class="code" id="-e1jye3_122">toLowercaseString</code>, 接受一个字符串参数, 返回它的小写形式.</p><dl id="-e1jye3_117" data-style="title-top"><dt id="-e1jye3_123" data-expandable="true" data-expanded="false">提示</dt><dd><p>使用 <code class="code" id="-e1jye3_124">String</code> 类型的 <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.text/lowercase.html" id="-e1jye3_125" data-external="true" rel="noopener noreferrer"><code class="code" id="-e1jye3_126">.lowercase()</code></a> 函数.</p></dd></dl><pre><code>fun // 请在这里编写你的代码
+
+fun main() {
+    println(&quot;Hello World!&quot;.toLowercaseString())
+    // 输出结果为: hello world!
+}</code></pre><details class="solution"><summary>参考答案</summary><pre><code>fun String.toLowercaseString(): String = this.lowercase()
+
+fun main() {
+    println(&quot;Hello World!&quot;.toLowercaseString())
+    // 输出结果为: hello world!
+}</code></pre></details></div></div></section></section><section class="chapter"><h2 id="next-step" data-toc="next-step">下一步</h2><p id="-e1jye3_127"><a href="../scope-functions/index.html" id="-e1jye3_128">中级教程: 作用域函数</a></p></section>
+    </article>
+    <section class="recall" aria-labelledby="recall-title">
+      <span class="note-kind">读完自测</span>
+      <h2 id="recall-title">先不看正文，回答这三个问题</h2>
+      <ol><li>接收者类型与接收者对象分别是什么？</li><li>扩展函数为什么不等于修改原类？</li><li>面向扩展的设计如何让调用代码更清楚？</li></ol>
+      <p class="transfer"><strong>迁移练习：</strong>从你正在读的一段 Kotlin 代码里，找出本章概念的一个真实用法；用一句话解释它为什么这样写。</p>
+    </section>
+    <nav class="chapter-switcher" aria-label="章节导航">
+    <a href="../null-safety/index.html">← 空安全</a>
+    <a class="course-home" href="../index.html">全部章节</a>
+    <a href="../scope-functions/index.html">作用域函数 →</a>
+  </nav>
+    <footer class="license-note">
+      <p>这是用于个人学习的非官方中文阅读版。正文依据 <a href="https://kotlinlang.org/docs/kotlin-tour-intermediate-extension-functions.html">Kotlin 官方文档</a>整理，并参考公开中文译文对照整理；原始内容由 JetBrains 与 Kotlin 贡献者维护，采用 <a href="https://github.com/JetBrains/kotlin-web-site/blob/master/LICENSE">Apache License 2.0</a>。</p>
+    </footer>
+  </main>
+</body>
+</html>
