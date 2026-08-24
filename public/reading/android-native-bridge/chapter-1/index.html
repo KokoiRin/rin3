@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="理解 APK、AAB、应用沙箱、进程、主线程和 Android 四大组件。">
+  <title>第 1 章｜Android 应用是怎么运行起来的｜RIN III</title>
+  <link rel="stylesheet" href="../reader.css">
+</head>
+<body>
+  <nav class="site-nav"><a href="../index.html">← Android 原生基础桥接课</a><a href="../../../computer-science/android-native-bridge/">RIN III 学习记录</a></nav>
+  <main class="reader">
+    <header>
+      <span class="chapter-kicker">第 1 章 · 应用模型</span>
+      <h1>Android 应用是怎么运行起来的</h1>
+      <p class="lead">先放下“程序从 main() 开始”的习惯：Android 系统会在需要时创建应用进程，并从被请求的组件进入你的代码。</p>
+      <div class="title-rule"></div>
+      <aside class="learning-note"><strong>学习主线</strong><p>安装包提供代码、资源与组件声明；系统根据用户或系统事件找到组件，必要时创建进程，再在主线程调用组件生命周期。</p></aside>
+      <nav class="chapter-switcher"><span></span><a class="course-home" href="../index.html">全部章节</a><a href="../chapter-2/">项目结构 →</a></nav>
+    </header>
+    <article>
+      <h2>先跟一遍用户点击图标</h2>
+      <div class="flow" role="img" aria-label="用户点击图标后系统启动 Activity 的流程">
+        <div class="flow-step"><strong>点击图标</strong><small>Launcher 发出请求</small></div><span class="flow-arrow">→</span>
+        <div class="flow-step"><strong>系统解析入口</strong><small>Manifest 的 MAIN / LAUNCHER</small></div><span class="flow-arrow">→</span>
+        <div class="flow-step"><strong>创建进程</strong><small>若应用尚未运行</small></div><span class="flow-arrow">→</span>
+        <div class="flow-step"><strong>创建 Activity</strong><small>回调 onCreate()</small></div><span class="flow-arrow">→</span>
+        <div class="flow-step"><strong>显示并交互</strong><small>onStart() / onResume()</small></div>
+      </div>
+      <p>这条链里，Launcher 不是直接调用你的 `MainActivity.main()`。它向 Android 系统表达一个启动意图，系统根据安装时掌握的组件声明找到目标类。若进程不存在，系统先创建 Linux 进程和主线程；随后实例化 Activity 并调用生命周期回调。</p>
+
+      <h2>APK、AAB 与正在运行的应用不是一回事</h2>
+      <div class="concept-grid">
+        <section class="concept-card"><h3>APK</h3><p>设备安装并在运行时使用的应用包，包含当前设备需要的代码和资源。</p></section>
+        <section class="concept-card"><h3>AAB</h3><p>发布格式，不能直接安装。应用商店可据此为具体设备生成优化后的 APK。</p></section>
+        <section class="concept-card"><h3>进程</h3><p>组件需要运行时由系统创建；应用离开前台不等于进程立即消失。</p></section>
+        <section class="concept-card"><h3>应用沙箱</h3><p>默认情况下，每个应用拥有独立 Linux 用户 ID、进程和文件权限边界。</p></section>
+      </div>
+      <div class="callout warning"><strong>先纠正一个常见说法</strong>“关闭页面就是退出进程”不准确。Activity 实例、Task、应用进程是三层不同对象；系统可以销毁某个 Activity，也可以保留后台进程，还可以在需要内存时终止整个进程。</div>
+
+      <h2>四类组件是四种系统入口</h2>
+      <table class="decision-table">
+        <thead><tr><th>组件</th><th>它解决的系统问题</th><th>先记住的例子</th></tr></thead>
+        <tbody>
+          <tr><td><code>Activity</code></td><td>承载一次有界面的用户交互</td><td>拍摄页、编辑页、设置页</td></tr>
+          <tr><td><code>Service</code></td><td>执行没有页面的持续或跨进程能力</td><td>用户可感知的后台音乐播放</td></tr>
+          <tr><td><code>BroadcastReceiver</code></td><td>接收系统或应用广播事件，入口应保持轻量</td><td>收到某类系统状态变化后安排后续工作</td></tr>
+          <tr><td><code>ContentProvider</code></td><td>以 URI 和统一接口发布、访问数据</td><td>系统联系人、对外共享一张图片</td></tr>
+        </tbody>
+      </table>
+      <p>它们不是“必须全部用到”的架构清单。关键是理解：Android 允许系统或其他应用从不同组件进入你的应用，因此应用不能假设永远从某个首页按固定顺序启动。</p>
+
+      <h2>最小代码：让系统进入 Activity</h2>
+      <p>下面代码本身没有 `main()`。它依赖 Manifest 声明和系统回调：</p>
+      <pre><code>class MainActivity : ComponentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContent {
+            Text("Android 系统已经进入 MainActivity")
+        }
+    }
+}</code></pre>
+      <p>真正的因果顺序是：组件被声明 → 启动请求命中组件 → 系统创建实例 → 调用 `onCreate()` → 你的代码提供 UI。</p>
+
+      <h2>动手练习</h2>
+      <section class="exercise"><h3>练习 1：排列启动链</h3><p>把以下词语排成因果链：`onCreate()`、用户点击图标、系统创建应用进程、解析入口 Activity、页面显示。</p><details class="solution"><summary>展开参考答案</summary><div><p>用户点击图标 → 系统解析入口 Activity → 若需要则创建应用进程 → 创建 Activity 并调用 `onCreate()` → 页面显示。注意：进程可能已存在，所以“创建进程”是条件步骤。</p></div></details></section>
+      <section class="exercise"><h3>练习 2：选择组件</h3><p>分别为“编辑视频页面”“其他应用读取你授权分享的图片”“系统事件到达后做极少量分发”选择最贴近的组件。</p><details class="solution"><summary>展开参考答案</summary><div><p>依次是 Activity、ContentProvider、BroadcastReceiver。真实产品还会有更多配套类，但题目考的是系统入口的业务定位。</p></div></details></section>
+    </article>
+    <section class="recall"><span class="note-kind">主动回忆</span><h2>合上正文，回答三个问题</h2><ol><li>为什么 Android 应用没有唯一的 `main()` 入口？</li><li>AAB 为什么不能直接等同于设备安装的 APK？</li><li>Activity 实例消失是否意味着应用进程一定退出？为什么？</li></ol><p class="transfer"><strong>项目迁移题：</strong>在抖音拍摄或编辑链路中选一个你熟悉的页面，说明“系统组件入口”和“页面内部业务入口”分别是什么，不要把二者混成同一个函数。</p></section>
+    <section class="completion"><span class="note-kind">完成证据</span><h2>达到这四项再进入下一章</h2><div class="evidence-grid"><div class="evidence-card"><strong>本人回答</strong>不看正文解释 APK、AAB、进程、Activity 的关系。</div><div class="evidence-card"><strong>独立代码</strong>新建最小 Activity，让页面显示一句文字。</div><div class="evidence-card"><strong>项目映射</strong>在真实项目中找到一个 Activity 与它的 Manifest 声明。</div><div class="evidence-card"><strong>两分钟解释</strong>画出“点击图标 → 页面可交互”并说清条件步骤。</div></div></section>
+    <nav class="chapter-switcher"><span></span><a class="course-home" href="../index.html">全部章节</a><a href="../chapter-2/">项目结构 →</a></nav>
+    <footer class="source-note"><p>官方事实源：<a href="https://developer.android.com/guide/components/fundamentals">Application fundamentals</a>、<a href="https://developer.android.com/guide/components/activities/intro-activities">Introduction to activities</a>。最后核对：2026-08-24。本章为中文教学重组，不是逐段翻译。</p></footer>
+  </main>
+</body>
+</html>

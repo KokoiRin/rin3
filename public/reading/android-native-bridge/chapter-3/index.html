@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="用首次进入、切后台返回和旋转重建理解 Activity 生命周期。">
+  <title>第 3 章｜Activity 与生命周期｜RIN III</title>
+  <link rel="stylesheet" href="../reader.css">
+</head>
+<body>
+  <nav class="site-nav"><a href="../index.html">← Android 原生基础桥接课</a><a href="../../../computer-science/android-native-bridge/">RIN III 学习记录</a></nav>
+  <main class="reader">
+    <header>
+      <span class="chapter-kicker">第 3 章 · 页面实例</span>
+      <h1>Activity 与生命周期</h1>
+      <p class="lead">生命周期不是一张要背的回调表，而是系统把“创建、可见、可交互、失去焦点、不可见、销毁”这些状态变化通知给页面实例的协议。</p>
+      <div class="title-rule"></div>
+      <aside class="learning-note"><strong>学习主线</strong><p>先判断用户现在能否看见、能否交互，再判断 Activity 实例是否仍存在；最后才决定资源、播放和状态分别在哪个回调处理。</p></aside>
+      <nav class="chapter-switcher"><a href="../chapter-2/">← 项目结构</a><a class="course-home" href="../index.html">全部章节</a><a href="../chapter-4/">状态恢复 →</a></nav>
+    </header>
+    <article>
+      <h2>一条主链，六个关键回调</h2>
+      <div class="flow" role="img" aria-label="Activity 从创建、可见、交互到暂停、停止和销毁的生命周期">
+        <div class="flow-step"><strong>onCreate</strong><small>创建实例，建立 UI</small></div><span class="flow-arrow">→</span>
+        <div class="flow-step"><strong>onStart</strong><small>页面可见</small></div><span class="flow-arrow">→</span>
+        <div class="flow-step"><strong>onResume</strong><small>前台可交互</small></div><span class="flow-arrow">→</span>
+        <div class="flow-step"><strong>onPause</strong><small>失去前台交互</small></div><span class="flow-arrow">→</span>
+        <div class="flow-step"><strong>onStop</strong><small>页面不可见</small></div><span class="flow-arrow">→</span>
+        <div class="flow-step"><strong>onDestroy</strong><small>实例被销毁</small></div>
+      </div>
+      <p>`onCreate()` 负责这次 Activity 实例生命中的基础初始化；`onStart()` 后页面可见；`onResume()` 表示它位于前台并能与用户交互。离开时大致反向经过 `onPause()`、`onStop()`，实例永久结束或因配置变化重建时会进入 `onDestroy()`。</p>
+      <div class="callout warning"><strong>不要把 onDestroy() 当成可靠的“应用退出通知”</strong>进程可能被系统直接终止，无法保证你的 Activity 总有机会执行 `onDestroy()`。必须持久化的业务数据不能等到这里才保存。</div>
+
+      <h2>三条必须能独立画出的链</h2>
+      <table class="decision-table">
+        <thead><tr><th>场景</th><th>典型回调顺序</th><th>实例是否换了</th></tr></thead>
+        <tbody>
+          <tr><td>首次进入</td><td><code>onCreate → onStart → onResume</code></td><td>新实例</td></tr>
+          <tr><td>按 Home 后返回</td><td><code>onPause → onStop → onRestart → onStart → onResume</code></td><td>通常还是原实例；但后台期间进程可能被杀</td></tr>
+          <tr><td>默认旋转重建</td><td>旧实例暂停、停止、销毁；新实例重新 <code>onCreate → onStart → onResume</code></td><td>换成新实例</td></tr>
+        </tbody>
+      </table>
+      <p>这里故意说“典型”而不是“所有设备所有时刻绝对固定”。多窗口、对话框、系统版本和具体导航都会影响精确顺序。学习时先用可见性与交互状态推导，再用日志验证实际设备。</p>
+
+      <h2>把播放行为放回用户体验</h2>
+      <p>假设贴纸时长编辑页带预览播放：页面进入可交互状态时可以恢复只属于前台的预览；失去焦点或不可见时应暂停消耗资源的能力。但播放进度、用户已编辑的时长和 NLE 业务数据不是同一种状态，不能因为都出现在页面上就一起塞进 Activity 字段。</p>
+      <div class="concept-grid">
+        <section class="concept-card"><h3>实例生命周期</h3><p>这一个 Activity 对象从创建到销毁，旋转可能结束它并创建另一个。</p></section>
+        <section class="concept-card"><h3>可见性</h3><p>Started 通常表示可见；是否完整可见还要结合多窗口和覆盖场景判断。</p></section>
+        <section class="concept-card"><h3>交互性</h3><p>Resumed 表示位于前台、可以与用户交互，适合前台独占能力。</p></section>
+        <section class="concept-card"><h3>进程生命周期</h3><p>由系统按组件重要性和资源需要管理，不等于任何单个 Activity 的生命周期。</p></section>
+      </div>
+
+      <h2>最小代码：用日志验证，不凭感觉背</h2>
+      <pre><code>class MainActivity : ComponentActivity() {
+    private fun log(event: String) = Log.d("LifecycleDemo", event)
+
+    override fun onCreate(state: Bundle?) {
+        super.onCreate(state)
+        log("onCreate instance=${hashCode()}")
+        setContent { Text("旋转屏幕并观察日志") }
+    }
+
+    override fun onStart() { super.onStart(); log("onStart") }
+    override fun onResume() { super.onResume(); log("onResume") }
+    override fun onPause() { log("onPause"); super.onPause() }
+    override fun onStop() { log("onStop"); super.onStop() }
+    override fun onDestroy() { log("onDestroy"); super.onDestroy() }
+}</code></pre>
+      <p>`hashCode()` 只用于这个练习中观察对象是否变化，不是生产环境的页面业务 ID。</p>
+
+      <h2>动手练习</h2>
+      <section class="exercise"><h3>练习 1：先预测，再验证</h3><p>在运行示例前，分别写下首次进入、按 Home 返回、旋转屏幕的回调序列和实例是否变化。然后用日志对照。</p><details class="solution"><summary>展开参考答案</summary><div><p>参考上方三条链。真正答案以设备日志为证据；若与预期不同，先检查多窗口、配置和导航场景，而不是强行修改日志解释。</p></div></details></section>
+      <section class="exercise"><h3>练习 2：选择暂停点</h3><p>预览播放只允许在页面可交互时运行。你会在哪些状态开启和暂停？为什么不能只在 `onDestroy()` 停止？</p><details class="solution"><summary>展开参考答案</summary><div><p>通常在进入 Resumed 时启用、离开 Resumed 时暂停，并结合 lifecycle-aware 组件实现。只等 `onDestroy()` 太晚：页面可能已不可交互甚至不可见，且进程终止时不保证回调它。</p></div></details></section>
+    </article>
+    <section class="recall"><span class="note-kind">主动回忆</span><h2>合上正文，回答三个问题</h2><ol><li>`onStart()` 与 `onResume()` 代表的用户状态有什么差别？</li><li>旋转后为什么“看起来还是同一页”，Activity 对象却可能已经不同？</li><li>为什么不能把生命周期回调当成业务持久化的唯一保证？</li></ol><p class="transfer"><strong>项目迁移题：</strong>把贴纸时长编辑页的预览播放、编辑草稿、当前把手位置分别放到生命周期图上，说出哪些行为跟可见性绑定，哪些必须脱离 Activity 实例保存。</p></section>
+    <section class="completion"><span class="note-kind">完成证据</span><h2>达到这四项再进入下一章</h2><div class="evidence-grid"><div class="evidence-card"><strong>本人回答</strong>独立画出首次、Home、旋转三条链。</div><div class="evidence-card"><strong>独立代码</strong>运行日志示例并记录实例 ID 变化。</div><div class="evidence-card"><strong>项目映射</strong>找到真实页的一处生命周期资源启停逻辑。</div><div class="evidence-card"><strong>两分钟解释</strong>分清 Activity 实例、页面可见、进程存活。</div></div></section>
+    <nav class="chapter-switcher"><a href="../chapter-2/">← 项目结构</a><a class="course-home" href="../index.html">全部章节</a><a href="../chapter-4/">状态恢复 →</a></nav>
+    <footer class="source-note"><p>官方事实源：<a href="https://developer.android.com/guide/components/activities/activity-lifecycle">The activity lifecycle</a>、<a href="https://developer.android.com/guide/components/activities/intro-activities">Introduction to activities</a>。最后核对：2026-08-24。</p></footer>
+  </main>
+</body>
+</html>
