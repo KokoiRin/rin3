@@ -5,6 +5,7 @@
     "components",
     "lib",
     "packages/rin-document/src",
+    "scripts",
     "harness/scripts"
   ],
   "testRoots": [
@@ -197,11 +198,11 @@
     },
     {
       "id": "CONTENT-CONTRACT-001",
-      "version": 1,
+      "version": 2,
       "status": "active",
       "nameZh": "内容源快速契约检查",
       "behaviorZh": "所有 Markdown 在完整构建前必须满足栏目、slug、元数据、RIN 结构和全局 Slides 路由唯一性约束。",
-      "lastReviewedOn": "2026-08-10",
+      "lastReviewedOn": "2026-08-24",
       "code": [
         {
           "file": "lib/content/catalog.ts",
@@ -226,6 +227,29 @@
           "name": "[CONTENT-CONTRACT-001] 全站派生 Slides 路由保持唯一",
           "level": "unit",
           "behaviorZh": "不同分区不能生成相同的全局 Slides 地址。"
+        }
+      ]
+    },
+    {
+      "id": "COURSE-READER-001",
+      "version": 1,
+      "status": "active",
+      "nameZh": "课程阅读器结构契约",
+      "behaviorZh": "Kotlin 与 Android 课程页面统一使用课程级样式，保持完整章节目录和前后导航，并且正文不残留未渲染的 Markdown 格式。",
+      "lastReviewedOn": "2026-08-24",
+      "code": [
+        {
+          "file": "scripts/check-course-readers.mjs",
+          "symbol": "validateCourseReaders",
+          "roleZh": "检查课程页面样式引用、章节目录、导航链接和正文格式"
+        }
+      ],
+      "tests": [
+        {
+          "file": "tests/content-contract.test.mjs",
+          "name": "[COURSE-READER-001] 两套课程页面共享样式并保持完整导航",
+          "level": "unit",
+          "behaviorZh": "两套学习课程在快速检查阶段拒绝内嵌样式、断裂导航、遗漏章节和未渲染的 Markdown 代码格式。"
         }
       ]
     },

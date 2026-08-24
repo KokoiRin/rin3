@@ -40,7 +40,7 @@
       <h2>为什么会掉帧和 ANR</h2>
       <p>主线程若忙于一个长任务，后面的触摸、生命周期和绘制任务只能等待。短暂等待表现为掉帧或触摸延迟；持续阻塞可能让系统判定应用无响应。核心规则只有两条：</p>
       <ol><li>不要阻塞 UI 线程。</li><li>不要从工作线程直接操作 Android UI 工具包。</li></ol>
-      <p>协程没有改变这套底层约束。`Dispatchers.IO` 或其他后台 dispatcher 帮你把阻塞工作移开，回到 `Dispatchers.Main` 更新 UI；理解 Handler/Looper 后，协程代码不再像魔法。</p>
+      <p>协程没有改变这套底层约束。<code>Dispatchers.IO</code> 或其他后台 dispatcher 帮你把阻塞工作移开，回到 <code>Dispatchers.Main</code> 更新 UI；理解 Handler/Looper 后，协程代码不再像魔法。</p>
 
       <h2>最小代码：后台计算，主线程显示</h2>
       <pre><code>class MainActivity : AppCompatActivity() {
@@ -64,13 +64,13 @@
       <p>示例用最原始的 Thread + Handler 展示机制，不代表生产项目应手写线程管理。后续 Unit 5 会用协程、Repository 和可取消作用域组织真实异步工作。</p>
 
       <h2>延时任务不是精准计时器</h2>
-      <p>`postDelayed` 表示“不早于某个时间进入可执行条件”，不是保证那一毫秒准时运行。如果前面有长任务，它仍要排队。因此播放进度和动画不能只靠累加固定延时间隔推断真实时间，应使用合适的时钟或帧回调。</p>
+      <p><code>postDelayed</code> 表示“不早于某个时间进入可执行条件”，不是保证那一毫秒准时运行。如果前面有长任务，它仍要排队。因此播放进度和动画不能只靠累加固定延时间隔推断真实时间，应使用合适的时钟或帧回调。</p>
 
       <h2>动手练习</h2>
-      <section class="exercise"><h3>练习 1：判断运行线程</h3><p>上面示例中的 `decodePreview()`、`mainHandler.post {}` 的 lambda、`TextView.text = ...` 分别在哪个线程执行？</p><details class="solution"><summary>展开参考答案</summary><div><p>`decodePreview()` 在新建工作线程；post 只是从工作线程投递；其 lambda 随后由主 Looper 在主线程执行，因此 UI 更新也发生在主线程。</p></div></details></section>
+      <section class="exercise"><h3>练习 1：判断运行线程</h3><p>上面示例中的 <code>decodePreview()</code>、<code>mainHandler.post {}</code> 的 lambda、<code>TextView.text = ...</code> 分别在哪个线程执行？</p><details class="solution"><summary>展开参考答案</summary><div><p><code>decodePreview()</code> 在新建工作线程；post 只是从工作线程投递；其 lambda 随后由主 Looper 在主线程执行，因此 UI 更新也发生在主线程。</p></div></details></section>
       <section class="exercise"><h3>练习 2：找到卡顿因果链</h3><p>点击事件里直接解析 200 MB 文件，随后 Handler post 一个 Toast。为什么 Toast 也迟迟不显示？</p><details class="solution"><summary>展开参考答案</summary><div><p>点击回调和文件解析占住主线程；Toast 的任务即使进入主队列，也必须等当前长任务返回。Handler 不会抢占正在执行的代码。</p></div></details></section>
     </article>
-    <section class="recall"><span class="note-kind">主动回忆</span><h2>合上正文，回答三个问题</h2><ol><li>Handler、Looper、MessageQueue 和线程是什么关系？</li><li>为什么“post 到主线程”既能安全更新 UI，又可能造成卡顿？</li><li>`postDelayed(16)` 为什么不保证 16 ms 后准时执行？</li></ol><p class="transfer"><strong>项目迁移题：</strong>选择贴纸预览的一次解码或时长计算，画出工作发生在哪个线程、结果怎样回到 UI、页面销毁后任务是否还应继续。暂不使用“异步就好了”这种模糊词。</p></section>
+    <section class="recall"><span class="note-kind">主动回忆</span><h2>合上正文，回答三个问题</h2><ol><li>Handler、Looper、MessageQueue 和线程是什么关系？</li><li>为什么“post 到主线程”既能安全更新 UI，又可能造成卡顿？</li><li><code>postDelayed(16)</code> 为什么不保证 16 ms 后准时执行？</li></ol><p class="transfer"><strong>项目迁移题：</strong>选择贴纸预览的一次解码或时长计算，画出工作发生在哪个线程、结果怎样回到 UI、页面销毁后任务是否还应继续。暂不使用“异步就好了”这种模糊词。</p></section>
     <section class="completion"><span class="note-kind">完成证据</span><h2>达到这四项再进入下一章</h2><div class="evidence-grid"><div class="evidence-card"><strong>本人回答</strong>画出 Handler 投递到 Looper 线程的完整链。</div><div class="evidence-card"><strong>独立代码</strong>运行后台计算并回主线程更新文字。</div><div class="evidence-card"><strong>项目映射</strong>找到真实项目的一次线程切换和取消边界。</div><div class="evidence-card"><strong>两分钟解释</strong>从长任务讲到队列积压、掉帧与 ANR。</div></div></section>
     <nav class="chapter-switcher"><a href="../chapter-5/">← Intent 与返回栈</a><a class="course-home" href="../index.html">全部章节</a><a href="../chapter-7/">View 系统 →</a></nav>
     <footer class="source-note"><p>官方事实源：<a href="https://developer.android.com/guide/components/processes-and-threads">Processes and threads overview</a>、<a href="https://developer.android.com/reference/android/os/Handler">Handler API reference</a>。最后核对：2026-08-24。</p></footer>
