@@ -50,7 +50,7 @@ startActivity(intent)</code></pre>
           <tr><td>点击应用图标</td><td>把已有 Task 带到前台，或创建新 Task 并打开根 Activity</td><td>进入该应用的主任务</td></tr>
         </tbody>
       </table>
-      <p>Manifest 中带 `MAIN` action 与 `LAUNCHER` category 的 Activity 是启动器图标入口。它定义“从桌面进入时谁是根”，不意味着应用只能从这里启动；深链、分享或其他应用也可能进入别的 Activity。</p>
+      <p>Manifest 中带 <code>MAIN</code> action 与 <code>LAUNCHER</code> category 的 Activity 是启动器图标入口。它定义“从桌面进入时谁是根”，不意味着应用只能从这里启动；深链、分享或其他应用也可能进入别的 Activity。</p>
       <div class="callout warning"><strong>启动模式与 flags 先学问题模型</strong>它们本质上在回答：要不要新建实例？放进哪个 Task？已有实例上方的页面要不要清掉？本阶段先画目标栈和期望 Back 行为，再查最小配置；不要背一张脱离场景的组合表。</div>
 
       <h2>最小代码：A → B → C，并观察实例</h2>
@@ -73,7 +73,7 @@ startActivity(intent)</code></pre>
       <p>这个练习为了观察“同一 Activity 类也能产生多个实例”。页面类相同，不代表返回栈里只有一个对象。</p>
 
       <h2>动手练习</h2>
-      <section class="exercise"><h3>练习 1：画栈，不猜页面</h3><p>A 打开 B，B 打开 C。分别写出此时按一次 Back、按 Home 后点图标返回、连续按三次 Back 后的栈变化。</p><details class="solution"><summary>展开参考答案</summary><div><p>一次 Back：`[A,B,C] → [A,B]`；Home 后点图标通常是已有 `[A,B,C]` Task 回前台；连续 Back 会依次移除 C、B、A，Task 结束或回到之前的任务。具体自定义导航仍需以实现为准。</p></div></details></section>
+      <section class="exercise"><h3>练习 1：画栈，不猜页面</h3><p>A 打开 B，B 打开 C。分别写出此时按一次 Back、按 Home 后点图标返回、连续按三次 Back 后的栈变化。</p><details class="solution"><summary>展开参考答案</summary><div><p>一次 Back：<code>[A,B,C] → [A,B]</code>；Home 后点图标通常是已有 <code>[A,B,C]</code> Task 回前台；连续 Back 会依次移除 C、B、A，Task 结束或回到之前的任务。具体自定义导航仍需以实现为准。</p></div></details></section>
       <section class="exercise"><h3>练习 2：选择 Intent</h3><p>“应用内部打开已知编辑页”“让任意浏览器打开帮助网页”“把一张图片分享给其他应用”分别适合显式还是隐式 Intent？</p><details class="solution"><summary>展开参考答案</summary><div><p>已知编辑页用显式 Intent；打开网页和跨应用分享通常用隐式 Intent，分别描述 VIEW 或 SEND 能力，并提供正确的 URI、MIME type 与必要授权。</p></div></details></section>
     </article>
     <section class="recall"><span class="note-kind">主动回忆</span><h2>合上正文，回答三个问题</h2><ol><li>显式与隐式 Intent 的目标描述有什么差别？</li><li>按 Home 为什么不等同于连续按 Back？</li><li>同一个 Activity 类为什么可能在栈中有多个实例？</li></ol><p class="transfer"><strong>项目迁移题：</strong>画出“拍摄页 → 文字编辑页 → 预览页”的理想返回栈，再对照真实项目找出其中哪些是 Activity、Fragment、Compose destination 或自定义容器。只比较同一层级的导航对象。</p></section>

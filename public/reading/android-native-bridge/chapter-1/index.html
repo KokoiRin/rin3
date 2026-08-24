@@ -26,7 +26,7 @@
         <div class="flow-step"><strong>创建 Activity</strong><small>回调 onCreate()</small></div><span class="flow-arrow">→</span>
         <div class="flow-step"><strong>显示并交互</strong><small>onStart() / onResume()</small></div>
       </div>
-      <p>这条链里，Launcher 不是直接调用你的 `MainActivity.main()`。它向 Android 系统表达一个启动意图，系统根据安装时掌握的组件声明找到目标类。若进程不存在，系统先创建 Linux 进程和主线程；随后实例化 Activity 并调用生命周期回调。</p>
+      <p>这条链里，Launcher 不是直接调用你的 <code>MainActivity.main()</code>。它向 Android 系统表达一个启动意图，系统根据安装时掌握的组件声明找到目标类。若进程不存在，系统先创建 Linux 进程和主线程；随后实例化 Activity 并调用生命周期回调。</p>
 
       <h2>APK、AAB 与正在运行的应用不是一回事</h2>
       <div class="concept-grid">
@@ -50,7 +50,7 @@
       <p>它们不是“必须全部用到”的架构清单。关键是理解：Android 允许系统或其他应用从不同组件进入你的应用，因此应用不能假设永远从某个首页按固定顺序启动。</p>
 
       <h2>最小代码：让系统进入 Activity</h2>
-      <p>下面代码本身没有 `main()`。它依赖 Manifest 声明和系统回调：</p>
+      <p>下面代码本身没有 <code>main()</code>。它依赖 Manifest 声明和系统回调：</p>
       <pre><code>class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -59,13 +59,13 @@
         }
     }
 }</code></pre>
-      <p>真正的因果顺序是：组件被声明 → 启动请求命中组件 → 系统创建实例 → 调用 `onCreate()` → 你的代码提供 UI。</p>
+      <p>真正的因果顺序是：组件被声明 → 启动请求命中组件 → 系统创建实例 → 调用 <code>onCreate()</code> → 你的代码提供 UI。</p>
 
       <h2>动手练习</h2>
-      <section class="exercise"><h3>练习 1：排列启动链</h3><p>把以下词语排成因果链：`onCreate()`、用户点击图标、系统创建应用进程、解析入口 Activity、页面显示。</p><details class="solution"><summary>展开参考答案</summary><div><p>用户点击图标 → 系统解析入口 Activity → 若需要则创建应用进程 → 创建 Activity 并调用 `onCreate()` → 页面显示。注意：进程可能已存在，所以“创建进程”是条件步骤。</p></div></details></section>
+      <section class="exercise"><h3>练习 1：排列启动链</h3><p>把以下词语排成因果链：<code>onCreate()</code>、用户点击图标、系统创建应用进程、解析入口 Activity、页面显示。</p><details class="solution"><summary>展开参考答案</summary><div><p>用户点击图标 → 系统解析入口 Activity → 若需要则创建应用进程 → 创建 Activity 并调用 <code>onCreate()</code> → 页面显示。注意：进程可能已存在，所以“创建进程”是条件步骤。</p></div></details></section>
       <section class="exercise"><h3>练习 2：选择组件</h3><p>分别为“编辑视频页面”“其他应用读取你授权分享的图片”“系统事件到达后做极少量分发”选择最贴近的组件。</p><details class="solution"><summary>展开参考答案</summary><div><p>依次是 Activity、ContentProvider、BroadcastReceiver。真实产品还会有更多配套类，但题目考的是系统入口的业务定位。</p></div></details></section>
     </article>
-    <section class="recall"><span class="note-kind">主动回忆</span><h2>合上正文，回答三个问题</h2><ol><li>为什么 Android 应用没有唯一的 `main()` 入口？</li><li>AAB 为什么不能直接等同于设备安装的 APK？</li><li>Activity 实例消失是否意味着应用进程一定退出？为什么？</li></ol><p class="transfer"><strong>项目迁移题：</strong>在抖音拍摄或编辑链路中选一个你熟悉的页面，说明“系统组件入口”和“页面内部业务入口”分别是什么，不要把二者混成同一个函数。</p></section>
+    <section class="recall"><span class="note-kind">主动回忆</span><h2>合上正文，回答三个问题</h2><ol><li>为什么 Android 应用没有唯一的 <code>main()</code> 入口？</li><li>AAB 为什么不能直接等同于设备安装的 APK？</li><li>Activity 实例消失是否意味着应用进程一定退出？为什么？</li></ol><p class="transfer"><strong>项目迁移题：</strong>在抖音拍摄或编辑链路中选一个你熟悉的页面，说明“系统组件入口”和“页面内部业务入口”分别是什么，不要把二者混成同一个函数。</p></section>
     <section class="completion"><span class="note-kind">完成证据</span><h2>达到这四项再进入下一章</h2><div class="evidence-grid"><div class="evidence-card"><strong>本人回答</strong>不看正文解释 APK、AAB、进程、Activity 的关系。</div><div class="evidence-card"><strong>独立代码</strong>新建最小 Activity，让页面显示一句文字。</div><div class="evidence-card"><strong>项目映射</strong>在真实项目中找到一个 Activity 与它的 Manifest 声明。</div><div class="evidence-card"><strong>两分钟解释</strong>画出“点击图标 → 页面可交互”并说清条件步骤。</div></div></section>
     <nav class="chapter-switcher"><span></span><a class="course-home" href="../index.html">全部章节</a><a href="../chapter-2/">项目结构 →</a></nav>
     <footer class="source-note"><p>官方事实源：<a href="https://developer.android.com/guide/components/fundamentals">Application fundamentals</a>、<a href="https://developer.android.com/guide/components/activities/intro-activities">Introduction to activities</a>。最后核对：2026-08-24。本章为中文教学重组，不是逐段翻译。</p></footer>

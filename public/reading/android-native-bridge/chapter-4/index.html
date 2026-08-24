@@ -42,7 +42,7 @@
       <div class="callout warning"><strong>ViewModel 不是进程级保险箱</strong>它能让新 Activity 在配置变化后取得同一个 ViewModel 实例，但进程死亡会清掉内存。需要跨进程恢复的事实必须进入 saved state 或持久存储。</div>
 
       <h2>先问“恢复事实是什么”</h2>
-      <p>不要保存一张 Bitmap 只为了恢复“用户选中了第 7 张贴纸”。保存 `selectedStickerId = 7`，再从 Repository 或磁盘重新加载图片。前者是恢复事实，后者是可重建产物。</p>
+      <p>不要保存一张 Bitmap 只为了恢复“用户选中了第 7 张贴纸”。保存 <code>selectedStickerId = 7</code>，再从 Repository 或磁盘重新加载图片。前者是恢复事实，后者是可重建产物。</p>
       <div class="concept-grid">
         <section class="concept-card"><h3>事实</h3><p>用户选择、输入、业务提交等无法从别处可靠推导的信息。</p></section>
         <section class="concept-card"><h3>派生值</h3><p>可由事实重新计算，例如格式化文字、缩略图、总时长显示。</p></section>
@@ -71,7 +71,7 @@ class EditorViewModel(
         )
     }
 }</code></pre>
-      <p>示例刻意只保存小型恢复事实。若 `durationMs` 已经提交为业务草稿，它的权威来源应该是 Repository / 本地存储；`SavedStateHandle` 只帮助快速恢复屏幕，不应制造第二套业务真相。</p>
+      <p>示例刻意只保存小型恢复事实。若 <code>durationMs</code> 已经提交为业务草稿，它的权威来源应该是 Repository / 本地存储；<code>SavedStateHandle</code> 只帮助快速恢复屏幕，不应制造第二套业务真相。</p>
 
       <h2>动手练习</h2>
       <section class="exercise"><h3>练习 1：给状态找家</h3><p>为“按钮按下波纹”“当前选中贴纸 ID”“尚未提交但需进程死亡后恢复的输入文字”“已保存草稿”“预览 Bitmap”选择容器，并解释理由。</p><details class="solution"><summary>展开参考答案</summary><div><p>波纹属于 UI 内存；选中 ID 可在 ViewModel，并按恢复需要进入 saved state；未提交文字若用户期望恢复，可进入 saved state 或自动草稿；已保存草稿进持久存储；Bitmap 通常重建或缓存，不放 saved state。</p></div></details></section>
