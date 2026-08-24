@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="承接 Kotlin Tour Intermediate 的 8 章 Android 原生基础中文桥接课。">
+  <title>Android 原生基础桥接课｜RIN III</title>
+  <link rel="stylesheet" href="./reader.css">
+</head>
+<body>
+  <nav class="site-nav" aria-label="站点导航">
+    <a href="../../computer-science/android-native-bridge/">← 返回 RIN III 学习记录</a>
+    <a href="../kotlin-tour/index.html">复习 Kotlin Tour</a>
+  </nav>
+  <main class="course-shell">
+    <header class="course-hero">
+      <span class="chapter-kicker">ANDROID NATIVE BRIDGE · 8 章</span>
+      <h1>从会写 Kotlin，走到看懂 Android 怎样运行它</h1>
+      <p class="lead">这不是 Android API 百科。它先把系统入口、页面实例、状态、返回路径、线程、View 与状态所有权连成一条可以解释、可以画出、可以落到真实项目的链路。</p>
+      <div class="course-stats"><span><strong>8</strong> 章</span><span><strong>16</strong> 独立练习</span><span><strong>32</strong> 完成证据</span></div>
+    </header>
+    <section class="how-to-study">
+      <h2>建议每章 45～70 分钟</h2>
+      <ol>
+        <li>先看“用户可观察链路”，把系统行为和用户动作连起来。</li>
+        <li>正文只读一节就停一次，自己画图或预测下一步回调。</li>
+        <li>代码必须独立敲，练习答案先折叠；最后用真实项目做迁移。</li>
+        <li>四类完成证据都留下后再进入下一章，不用追求一次记牢全部 API。</li>
+      </ol>
+    </section>
+    <section class="route-map">
+      <span class="note-kind">学习地图</span>
+      <h2>先建立应用模型，再进入架构与数据</h2>
+      <div class="flow" role="img" aria-label="Kotlin Tour 到 Android 桥接课，再到 Compose、View、网络和存储的学习路线">
+        <div class="flow-step"><strong>Kotlin Tour</strong><small>语言表达</small></div><span class="flow-arrow">→</span>
+        <div class="flow-step"><strong>本桥接课</strong><small>Android 应用模型</small></div><span class="flow-arrow">→</span>
+        <div class="flow-step"><strong>Unit 4</strong><small>生命周期与架构</small></div><span class="flow-arrow">→</span>
+        <div class="flow-step"><strong>Unit 8</strong><small>View / Fragment</small></div><span class="flow-arrow">→</span>
+        <div class="flow-step"><strong>Unit 5 / 6</strong><small>网络与存储</small></div>
+      </div>
+    </section>
+    <section>
+      <div class="chapter-grid">
+        <a class="chapter-card" href="./chapter-1/"><span class="chapter-number">01</span><span><strong>Android 应用是怎么运行起来的</strong><small>没有唯一 main() 时，系统怎样通过组件进入你的进程和页面。</small></span></a>
+        <a class="chapter-card" href="./chapter-2/"><span class="chapter-number">02</span><span><strong>项目结构、Manifest 与资源</strong><small>一份源码如何被组织、声明、打包，并匹配到设备资源。</small></span></a>
+        <a class="chapter-card" href="./chapter-3/"><span class="chapter-number">03</span><span><strong>Activity 与生命周期</strong><small>首次进入、切后台、返回与旋转分别怎样改变页面实例。</small></span></a>
+        <a class="chapter-card" href="./chapter-4/"><span class="chapter-number">04</span><span><strong>配置变化、进程死亡与状态恢复</strong><small>把 UI 临时状态、恢复事实和持久业务数据放到正确位置。</small></span></a>
+        <a class="chapter-card" href="./chapter-5/"><span class="chapter-number">05</span><span><strong>Intent、Task 与返回栈</strong><small>解释 A → B → C、Back、Home 与应用图标背后的实例变化。</small></span></a>
+        <a class="chapter-card" href="./chapter-6/"><span class="chapter-number">06</span><span><strong>主线程、Looper、MessageQueue 与 Handler</strong><small>弄清任务怎样排队、执行，为什么长任务会卡住所有 UI。</small></span></a>
+        <a class="chapter-card" href="./chapter-7/"><span class="chapter-number">07</span><span><strong>View 树、事件分发与绘制</strong><small>一根手指和一个布局请求怎样穿过父子树，得到最终画面。</small></span></a>
+        <a class="chapter-card" href="./chapter-8/"><span class="chapter-number">08</span><span><strong>ViewModel、UI State 与状态所有权</strong><small>建立状态向下、事件向上的闭环，并分清 ViewModel 的边界。</small></span></a>
+      </div>
+    </section>
+    <section class="next-route">
+      <h2>这套课刻意没有讲什么</h2>
+      <p>不会在这里展开 Compose 编译原理、完整启动模式组合、协程结构化并发、网络、Repository、Room、性能专项或 Framework native poll。它们都有后续课程；本阶段的目标是先获得不会塌的 Android 应用模型。</p>
+    </section>
+    <footer class="source-note">
+      <p>课程依据 Android Developers 官方文档重新组织，最后核对：2026-08-24。它是个人学习用的非官方中文桥接课，不声称逐段翻译；遇到版本差异时，以各章链接的官方原文为准。</p>
+    </footer>
+  </main>
+</body>
+</html>

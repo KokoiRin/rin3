@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="理解 View 树、XML inflate、触摸事件分发以及 measure、layout、draw。">
+  <title>第 7 章｜View 树、事件分发与绘制｜RIN III</title>
+  <link rel="stylesheet" href="../reader.css">
+</head>
+<body>
+  <nav class="site-nav"><a href="../index.html">← Android 原生基础桥接课</a><a href="../../../computer-science/android-native-bridge/">RIN III 学习记录</a></nav>
+  <main class="reader">
+    <header>
+      <span class="chapter-kicker">第 7 章 · View 系统</span>
+      <h1>View 树、事件分发与绘制</h1>
+      <p class="lead">View 页面不是一张静态 XML 图。运行时它是一棵对象树：父节点约束孩子的大小和位置，也参与决定一串触摸事件最终交给谁。</p>
+      <div class="title-rule"></div>
+      <aside class="learning-note"><strong>学习主线</strong><p>先找到页面宿主和根 View，再沿树追踪两条链：输入事件向目标分发，布局与绘制由父子协作完成。</p></aside>
+      <nav class="chapter-switcher"><a href="../chapter-6/">← 主线程</a><a class="course-home" href="../index.html">全部章节</a><a href="../chapter-8/">ViewModel →</a></nav>
+    </header>
+    <article>
+      <h2>XML 怎样变成屏幕上的对象树</h2>
+      <div class="flow" role="img" aria-label="XML 布局被 inflate 为 View 树并交给 Activity 宿主显示的流程">
+        <div class="flow-step"><strong>R.layout.editor</strong><small>XML 资源 ID</small></div><span class="flow-arrow">→</span>
+        <div class="flow-step"><strong>LayoutInflater</strong><small>读取 XML</small></div><span class="flow-arrow">→</span>
+        <div class="flow-step"><strong>View 对象树</strong><small>ViewGroup + View</small></div><span class="flow-arrow">→</span>
+        <div class="flow-step"><strong>Activity / Fragment</strong><small>提供页面宿主</small></div><span class="flow-arrow">→</span>
+        <div class="flow-step"><strong>Window</strong><small>参与显示与输入</small></div>
+      </div>
+      <p>`View` 通常绘制可见内容并接收交互；`ViewGroup` 是容纳 View 或其他 ViewGroup 的容器，定义布局结构。XML 是声明这棵树的一种方式，inflate 才会创建运行时对象。</p>
+      <pre><code>&lt;FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/editor_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"&gt;
+
+    &lt;TextView
+        android:id="@+id/duration_label"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="3.0 秒" /&gt;
+&lt;/FrameLayout&gt;</code></pre>
+      <pre><code>class EditorActivity : AppCompatActivity() {
+    override fun onCreate(state: Bundle?) {
+        super.onCreate(state)
+        setContentView(R.layout.editor)
+        findViewById&lt;TextView&gt;(R.id.duration_label).text = "5.0 秒"
+    }
+}</code></pre>
+
+      <h2>一串触摸事件怎样找到消费者</h2>
+      <div class="flow" role="img" aria-label="触摸事件从父容器分发、拦截到目标 View 处理的基础链路">
+        <div class="flow-step"><strong>dispatchTouchEvent</strong><small>分发当前 MotionEvent</small></div><span class="flow-arrow">→</span>
+        <div class="flow-step"><strong>父容器判断</strong><small>onInterceptTouchEvent</small></div><span class="flow-arrow">→</span>
+        <div class="flow-step"><strong>目标子 View</strong><small>继续接收事件序列</small></div><span class="flow-arrow">→</span>
+        <div class="flow-step"><strong>onTouchEvent</strong><small>消费 DOWN / MOVE / UP</small></div>
+      </div>
+      <p>父 ViewGroup 的 `onInterceptTouchEvent()` 返回 `true` 时，事件不再交给子 View，而由父容器自己的 `onTouchEvent()` 处理。若父容器在事件序列中途开始拦截，先前的子目标通常会收到 `ACTION_CANCEL`，让它终止按压或拖动状态。</p>
+      <div class="callout warning"><strong>不要逐个 MotionEvent 孤立思考</strong>一次手势通常从 `ACTION_DOWN` 开始，经过多个 `ACTION_MOVE`，以 `ACTION_UP` 或 `ACTION_CANCEL` 结束。消费者必须维护整段序列的一致状态。</div>
+      <pre><code>class TimelineLayout(context: Context, attrs: AttributeSet?) :
+    FrameLayout(context, attrs) {
+
+    private var startX = 0f
+
+    override fun onInterceptTouchEvent(event: MotionEvent): Boolean {
+        when (event.actionMasked) {
+            MotionEvent.ACTION_DOWN -&gt; startX = event.x
+            MotionEvent.ACTION_MOVE -&gt; {
+                val horizontalDrag = kotlin.math.abs(event.x - startX) &gt; 24f
+                if (horizontalDrag) return true
+            }
+        }
+        return false
+    }
+
+    override fun onTouchEvent(event: MotionEvent): Boolean {
+        // 示例：父容器接管横向时间轴拖动
+        return true
+    }
+}</code></pre>
+      <p>示例只展示拦截模型。真实代码应使用像素密度与 touch slop，处理多指、取消、父子冲突和可访问性，不应把 `24f` 当成通用阈值。</p>
+
+      <h2>measure、layout、draw 分别回答什么</h2>
+      <table class="decision-table">
+        <thead><tr><th>阶段</th><th>核心问题</th><th>父子关系</th></tr></thead>
+        <tbody><tr><td><code>measure</code></td><td>每个 View 应该多大？</td><td>父级向下给约束，子级记录测量尺寸</td></tr><tr><td><code>layout</code></td><td>每个 View 放在哪里？</td><td>父级根据已测尺寸定位每个孩子</td></tr><tr><td><code>draw</code></td><td>最终画什么？</td><td>遍历树绘制背景、内容与子节点</td></tr></tbody>
+      </table>
+      <p>Android 的布局过程先 measure、再 layout；绘制随后遍历树渲染。`invalidate()` 请求重绘，`requestLayout()` 请求重新测量/布局，它们的成本和语义不同。一个只改颜色的操作通常不需要重新测量整棵树。</p>
+
+      <h2>View 与 Compose 放在同一张地图上</h2>
+      <p>Compose 不使用 XML 构造传统 View 层级，但仍由 Android 的 Activity / Fragment / Window 等宿主接入系统，也仍受生命周期和主线程约束。Unit 8 会进一步学习 View Binding、Fragment 与 View/Compose 互操作；本章先保证你能读懂遗留和混合页面的真实边界。</p>
+
+      <h2>动手练习</h2>
+      <section class="exercise"><h3>练习 1：分清三阶段</h3><p>“文字变长后决定 TextView 新宽度”“父容器把它放到右侧”“TextView 把字形画到 Canvas”分别属于哪个阶段？</p><details class="solution"><summary>展开参考答案</summary><div><p>依次是 measure、layout、draw。真实系统可能因属性变化触发一整轮流程，但三个阶段回答的问题仍不同。</p></div></details></section>
+      <section class="exercise"><h3>练习 2：父子手势冲突</h3><p>父容器负责横向滑动时间轴，子 View 负责点击贴纸。用户 DOWN 在子 View，之后明显横向 MOVE。父容器若接管，应发生什么？</p><details class="solution"><summary>展开参考答案</summary><div><p>父容器先观察序列，超过合适阈值后在 `onInterceptTouchEvent()` 返回 true；子 View 收取消信号并清理点击/按压状态；后续事件由父容器处理。阈值和方向锁定要避免轻微抖动误拦截。</p></div></details></section>
+    </article>
+    <section class="recall"><span class="note-kind">主动回忆</span><h2>合上正文，回答三个问题</h2><ol><li>XML、inflate、View 对象树和 Activity 宿主是什么关系？</li><li>父 ViewGroup 中途拦截手势时，为什么子 View 需要 `ACTION_CANCEL`？</li><li>measure、layout、draw 分别回答哪一个问题？</li></ol><p class="transfer"><strong>项目迁移题：</strong>用贴纸时长的父容器滑动与子把手拖动，画出 DOWN/MOVE/UP 或 CANCEL 的消费者变化；再指出一次时长变化需要 requestLayout 还是只需 invalidate，并说明理由。</p></section>
+    <section class="completion"><span class="note-kind">完成证据</span><h2>达到这四项再进入下一章</h2><div class="evidence-grid"><div class="evidence-card"><strong>本人回答</strong>从 XML 说到运行时对象树与页面宿主。</div><div class="evidence-card"><strong>独立代码</strong>写一个最小 XML 页面和可观察的触摸 ViewGroup。</div><div class="evidence-card"><strong>项目映射</strong>找到真实页的根 View、事件拦截点和绘制节点。</div><div class="evidence-card"><strong>两分钟解释</strong>同时讲清输入链与 measure/layout/draw 链。</div></div></section>
+    <nav class="chapter-switcher"><a href="../chapter-6/">← 主线程</a><a class="course-home" href="../index.html">全部章节</a><a href="../chapter-8/">ViewModel →</a></nav>
+    <footer class="source-note"><p>官方事实源：<a href="https://developer.android.com/develop/ui/views/layout/declaring-layout">Layouts in views</a>、<a href="https://developer.android.com/develop/ui/views/touch-and-input/gestures/viewgroup">Manage touch events in a ViewGroup</a>、<a href="https://developer.android.com/guide/topics/ui/how-android-draws">How Android draws views</a>。最后核对：2026-08-24。</p></footer>
+  </main>
+</body>
+</html>

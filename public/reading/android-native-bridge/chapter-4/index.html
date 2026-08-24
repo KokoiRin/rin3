@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="区分配置变化、进程死亡，并选择 ViewModel、saved state 与持久存储。">
+  <title>第 4 章｜配置变化、进程死亡与状态恢复｜RIN III</title>
+  <link rel="stylesheet" href="../reader.css">
+</head>
+<body>
+  <nav class="site-nav"><a href="../index.html">← Android 原生基础桥接课</a><a href="../../../computer-science/android-native-bridge/">RIN III 学习记录</a></nav>
+  <main class="reader">
+    <header>
+      <span class="chapter-kicker">第 4 章 · 恢复模型</span>
+      <h1>配置变化、进程死亡与状态恢复</h1>
+      <p class="lead">恢复不是“把整个旧页面对象保存下来”。正确做法是保留足以重建用户体验的最小事实，并从权威数据源重新派生其余内容。</p>
+      <div class="title-rule"></div>
+      <aside class="learning-note"><strong>学习主线</strong><p>先判断状态要跨越哪种破坏：重组、配置重建、进程死亡还是应用重启；再选择 UI 内存、ViewModel、saved state 或持久存储。</p></aside>
+      <nav class="chapter-switcher"><a href="../chapter-3/">← 生命周期</a><a class="course-home" href="../index.html">全部章节</a><a href="../chapter-5/">Intent 与返回栈 →</a></nav>
+    </header>
+    <article>
+      <h2>用户看到“同一页”，系统可能已换了对象</h2>
+      <div class="flow" role="img" aria-label="配置变化时旧 Activity 销毁并创建新 Activity，再恢复状态的流程">
+        <div class="flow-step"><strong>旧 Activity</strong><small>用户正在编辑</small></div><span class="flow-arrow">→</span>
+        <div class="flow-step"><strong>配置变化</strong><small>例如旋转</small></div><span class="flow-arrow">→</span>
+        <div class="flow-step"><strong>旧实例销毁</strong><small>对象字段失效</small></div><span class="flow-arrow">→</span>
+        <div class="flow-step"><strong>新实例创建</strong><small>重新建立 UI</small></div><span class="flow-arrow">→</span>
+        <div class="flow-step"><strong>恢复状态</strong><small>用户继续任务</small></div>
+      </div>
+      <p>配置变化通常会重建 Activity，以便重新加载适合新配置的资源。用户没有“退出编辑页”，但旧实例确实结束了。仅保存在 Activity 字段里的值会随对象一起消失。</p>
+
+      <h2>四种状态容器不是竞争关系</h2>
+      <table class="decision-table">
+        <thead><tr><th>容器</th><th>能跨过什么</th><th>适合保存</th><th>不适合保存</th></tr></thead>
+        <tbody>
+          <tr><td>UI / View 内存状态</td><td>当前对象存活期间</td><td>动画瞬时值、当前按压态</td><td>需要恢复的用户进度</td></tr>
+          <tr><td><code>ViewModel</code></td><td>配置变化</td><td>屏幕级 UI state、派生逻辑</td><td>跨进程死亡的唯一副本</td></tr>
+          <tr><td>saved state / <code>SavedStateHandle</code></td><td>系统重建宿主或进程后的恢复</td><td>小型、可序列化、重建页面必需的事实</td><td>Bitmap、大列表、完整业务对象</td></tr>
+          <tr><td>本地持久存储</td><td>进程死亡和应用重启</td><td>草稿、数据库记录、业务事实</td><td>每帧变化的短暂视觉状态</td></tr>
+        </tbody>
+      </table>
+      <p>一个页面通常组合使用它们：数据库保存草稿事实，saved state 保存当前选中的草稿 ID 和游标位置，ViewModel 根据两者构造 UI state，UI 再保存只与本次绘制相关的瞬时值。</p>
+      <div class="callout warning"><strong>ViewModel 不是进程级保险箱</strong>它能让新 Activity 在配置变化后取得同一个 ViewModel 实例，但进程死亡会清掉内存。需要跨进程恢复的事实必须进入 saved state 或持久存储。</div>
+
+      <h2>先问“恢复事实是什么”</h2>
+      <p>不要保存一张 Bitmap 只为了恢复“用户选中了第 7 张贴纸”。保存 `selectedStickerId = 7`，再从 Repository 或磁盘重新加载图片。前者是恢复事实，后者是可重建产物。</p>
+      <div class="concept-grid">
+        <section class="concept-card"><h3>事实</h3><p>用户选择、输入、业务提交等无法从别处可靠推导的信息。</p></section>
+        <section class="concept-card"><h3>派生值</h3><p>可由事实重新计算，例如格式化文字、缩略图、总时长显示。</p></section>
+        <section class="concept-card"><h3>缓存</h3><p>为了速度保存的副本，丢失后能回源，不应冒充权威数据。</p></section>
+        <section class="concept-card"><h3>资源对象</h3><p>View、Context、Bitmap 等通常有生命周期或体积约束，不应直接塞入 saved state。</p></section>
+      </div>
+
+      <h2>最小代码：SavedStateHandle 保存恢复事实</h2>
+      <pre><code>data class EditorUiState(
+    val selectedStickerId: String?,
+    val durationMs: Long,
+)
+
+class EditorViewModel(
+    private val savedStateHandle: SavedStateHandle,
+) : ViewModel() {
+    val uiState: StateFlow&lt;EditorUiState&gt; =
+        savedStateHandle.getStateFlow(
+            "editor_state",
+            EditorUiState(selectedStickerId = null, durationMs = 3_000L),
+        )
+
+    fun selectSticker(id: String) {
+        savedStateHandle["editor_state"] = uiState.value.copy(
+            selectedStickerId = id,
+        )
+    }
+}</code></pre>
+      <p>示例刻意只保存小型恢复事实。若 `durationMs` 已经提交为业务草稿，它的权威来源应该是 Repository / 本地存储；`SavedStateHandle` 只帮助快速恢复屏幕，不应制造第二套业务真相。</p>
+
+      <h2>动手练习</h2>
+      <section class="exercise"><h3>练习 1：给状态找家</h3><p>为“按钮按下波纹”“当前选中贴纸 ID”“尚未提交但需进程死亡后恢复的输入文字”“已保存草稿”“预览 Bitmap”选择容器，并解释理由。</p><details class="solution"><summary>展开参考答案</summary><div><p>波纹属于 UI 内存；选中 ID 可在 ViewModel，并按恢复需要进入 saved state；未提交文字若用户期望恢复，可进入 saved state 或自动草稿；已保存草稿进持久存储；Bitmap 通常重建或缓存，不放 saved state。</p></div></details></section>
+      <section class="exercise"><h3>练习 2：设计恢复最小集</h3><p>一个编辑页包含草稿 ID、20 张缩略图、当前选中下标、播放头毫秒值和一个 NLE 对象。写出进程死亡后恢复页面需要保存的最小事实。</p><details class="solution"><summary>展开参考答案</summary><div><p>通常保存草稿 ID、选中项的稳定 ID（优于易漂移下标）和用户需要继续的播放头位置；缩略图和 NLE 对象从草稿或数据源重建。具体还要看播放头是否属于用户可感知且应恢复的编辑进度。</p></div></details></section>
+    </article>
+    <section class="recall"><span class="note-kind">主动回忆</span><h2>合上正文，回答三个问题</h2><ol><li>配置变化为什么不等于用户退出页面？</li><li>ViewModel 与 SavedStateHandle 的生存边界分别是什么？</li><li>为什么保存 ID 往往比保存 Bitmap 或完整对象更可靠？</li></ol><p class="transfer"><strong>项目迁移题：</strong>把贴纸时长页的把手位置、播放头、选中贴纸、NLE 时长和已提交草稿列成表，标出权威来源、恢复事实、派生值和缓存。</p></section>
+    <section class="completion"><span class="note-kind">完成证据</span><h2>达到这四项再进入下一章</h2><div class="evidence-grid"><div class="evidence-card"><strong>本人回答</strong>给五类状态选择容器并说出生存边界。</div><div class="evidence-card"><strong>独立代码</strong>用 ViewModel + SavedStateHandle 恢复一个输入值。</div><div class="evidence-card"><strong>项目映射</strong>找到真实页的一项权威数据和一项派生 UI。</div><div class="evidence-card"><strong>两分钟解释</strong>从进程死亡讲到最小事实重建，而非对象保存。</div></div></section>
+    <nav class="chapter-switcher"><a href="../chapter-3/">← 生命周期</a><a class="course-home" href="../index.html">全部章节</a><a href="../chapter-5/">Intent 与返回栈 →</a></nav>
+    <footer class="source-note"><p>官方事实源：<a href="https://developer.android.com/topic/libraries/architecture/saving-states">Save UI states</a>、<a href="https://developer.android.com/topic/libraries/architecture/views/viewmodel">ViewModel overview</a>。最后核对：2026-08-24。</p></footer>
+  </main>
+</body>
+</html>

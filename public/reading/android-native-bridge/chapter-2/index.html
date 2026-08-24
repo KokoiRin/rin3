@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="理解 Android Gradle 项目、module、Manifest、source set 与资源匹配。">
+  <title>第 2 章｜项目结构、Manifest 与资源｜RIN III</title>
+  <link rel="stylesheet" href="../reader.css">
+</head>
+<body>
+  <nav class="site-nav"><a href="../index.html">← Android 原生基础桥接课</a><a href="../../../computer-science/android-native-bridge/">RIN III 学习记录</a></nav>
+  <main class="reader">
+    <header>
+      <span class="chapter-kicker">第 2 章 · 构建输入</span>
+      <h1>项目结构、Manifest 与资源</h1>
+      <p class="lead">项目目录不是文件收纳习惯，而是构建系统、Android 系统和资源匹配器共同读取的一份契约。</p>
+      <div class="title-rule"></div>
+      <aside class="learning-note"><strong>学习主线</strong><p>Gradle 决定“怎样构建”，source set 决定“哪些输入参与”，Manifest 告诉系统“应用提供什么”，资源目录让同一个逻辑适配不同设备配置。</p></aside>
+      <nav class="chapter-switcher"><a href="../chapter-1/">← 应用模型</a><a class="course-home" href="../index.html">全部章节</a><a href="../chapter-3/">生命周期 →</a></nav>
+    </header>
+    <article>
+      <h2>从源码到安装包</h2>
+      <div class="flow" role="img" aria-label="Android 项目文件进入构建并生成安装包的流程">
+        <div class="flow-step"><strong>settings.gradle.kts</strong><small>包含哪些 module</small></div><span class="flow-arrow">→</span>
+        <div class="flow-step"><strong>module build.gradle.kts</strong><small>插件、SDK、依赖</small></div><span class="flow-arrow">→</span>
+        <div class="flow-step"><strong>main source set</strong><small>代码、资源、Manifest</small></div><span class="flow-arrow">→</span>
+        <div class="flow-step"><strong>构建工具</strong><small>编译、合并、打包</small></div><span class="flow-arrow">→</span>
+        <div class="flow-step"><strong>APK / AAB</strong><small>安装或发布</small></div>
+      </div>
+
+      <h2>先读懂最小项目树</h2>
+      <pre><code>MyApp/
+├── settings.gradle.kts          // 项目包含哪些 module
+├── build.gradle.kts             // 项目级插件或公共配置
+└── app/
+    ├── build.gradle.kts         // Android module 的构建配置
+    └── src/
+        ├── main/
+        │   ├── AndroidManifest.xml
+        │   ├── kotlin/.../MainActivity.kt
+        │   └── res/
+        │       ├── layout/activity_main.xml
+        │       ├── drawable/...
+        │       └── values/strings.xml
+        ├── test/                // 本机 JVM 测试
+        └── androidTest/         // 设备或模拟器测试</code></pre>
+      <p>`test` 运行快，但真实 Android 系统调用需要 fake、stub 或模拟；`androidTest` 能访问设备环境，速度更慢。选择测试位置时先问“这个行为是否必须由真实 Android 环境提供”，而不是按文件名习惯摆放。</p>
+
+      <h2>Manifest 是系统侧目录，不是业务配置大全</h2>
+      <p>Manifest 声明组件、权限、设备能力和系统需要知道的应用元数据。一个 Activity 类即使写进源码，如果系统需要启动它却没有对应声明，系统也无法从这个入口创建它。</p>
+      <pre><code>&lt;manifest xmlns:android="http://schemas.android.com/apk/res/android"&gt;
+    &lt;application android:label="@string/app_name"&gt;
+        &lt;activity
+            android:name=".MainActivity"
+            android:exported="true"&gt;
+            &lt;intent-filter&gt;
+                &lt;action android:name="android.intent.action.MAIN" /&gt;
+                &lt;category android:name="android.intent.category.LAUNCHER" /&gt;
+            &lt;/intent-filter&gt;
+        &lt;/activity&gt;
+    &lt;/application&gt;
+&lt;/manifest&gt;</code></pre>
+      <div class="callout warning"><strong>不要把所有版本信息都塞进 Manifest</strong>`minSdk`、`targetSdk` 等通常由 Gradle 构建配置提供，构建时参与 Manifest 合并。看到最终 Manifest 与源码文件不同并不奇怪，应检查合并后的结果和来源。</div>
+
+      <h2>资源 ID 把代码与设备配置隔开</h2>
+      <p>构建工具为资源生成 ID，例如 `R.string.app_name`、`R.drawable.logo`、`R.layout.activity_main`。代码引用的是稳定的逻辑名称，运行时资源系统再根据语言、方向、屏幕等配置选择最匹配的具体文件。</p>
+      <table class="decision-table">
+        <thead><tr><th>位置</th><th>保存什么</th><th>为什么不直接写死在 Kotlin</th></tr></thead>
+        <tbody><tr><td><code>values/strings.xml</code></td><td>文字资源</td><td>支持翻译与配置匹配</td></tr><tr><td><code>drawable/</code></td><td>图片或 drawable XML</td><td>支持密度和状态变体</td></tr><tr><td><code>layout/</code></td><td>View 层级 XML</td><td>把 View 结构与 Activity 代码分开</td></tr><tr><td><code>layout-land/</code></td><td>横屏布局变体</td><td>系统自动选择，不靠业务代码到处 if</td></tr></tbody>
+      </table>
+      <p>Compose 应用不一定使用 XML 布局，但仍会使用 `res` 下的字符串、图标等资源。因此“Compose 不用资源系统”也是误解。</p>
+
+      <h2>最小代码：从资源到 View</h2>
+      <pre><code>// res/values/strings.xml
+&lt;resources&gt;
+    &lt;string name="screen_title"&gt;贴纸时长&lt;/string&gt;
+&lt;/resources&gt;
+
+// Activity 中使用资源
+class MainActivity : AppCompatActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_main)
+        findViewById&lt;TextView&gt;(R.id.title).setText(R.string.screen_title)
+    }
+}</code></pre>
+
+      <h2>动手练习</h2>
+      <section class="exercise"><h3>练习 1：为文件找位置</h3><p>把“纯 Kotlin 业务单测”“入口 Activity 声明”“横屏 XML 布局”“设备上的 UI 测试”分别放进最合适的位置。</p><details class="solution"><summary>展开参考答案</summary><div><p>依次是 `src/test`、`src/main/AndroidManifest.xml`、`src/main/res/layout-land`、`src/androidTest`。</p></div></details></section>
+      <section class="exercise"><h3>练习 2：补齐入口</h3><p>新建一个 Activity 并让它成为桌面图标入口。你至少需要在哪两个文件中做什么？</p><details class="solution"><summary>展开参考答案</summary><div><p>在 Kotlin 源码中创建 Activity 子类；在 Manifest 的 `<application>` 下声明它，并用 `MAIN` action 与 `LAUNCHER` category 标记启动器入口。若使用 Android 12 及以上目标版本且组件含 intent filter，还要明确 `android:exported`。</p></div></details></section>
+    </article>
+    <section class="recall"><span class="note-kind">主动回忆</span><h2>合上正文，回答三个问题</h2><ol><li>`settings.gradle.kts` 与 module 的 `build.gradle.kts` 各决定什么？</li><li>`test` 与 `androidTest` 的证据能力有什么差别？</li><li>为什么同一个 `R.string.title` 能在不同语言设备上显示不同文字？</li></ol><p class="transfer"><strong>项目迁移题：</strong>在真实 Android 工程中找到贴纸时长或文字模式所属 module，沿着 `settings` → module 构建文件 → Manifest / source set 说出它怎样进入最终应用。</p></section>
+    <section class="completion"><span class="note-kind">完成证据</span><h2>达到这四项再进入下一章</h2><div class="evidence-grid"><div class="evidence-card"><strong>本人回答</strong>口述项目树中 8 个关键位置的职责。</div><div class="evidence-card"><strong>独立代码</strong>添加一个字符串资源并在 View 或 Compose 中读取。</div><div class="evidence-card"><strong>项目映射</strong>找到一个真实 Activity 的源码、Manifest 和 module。</div><div class="evidence-card"><strong>两分钟解释</strong>从源码一路说到 APK/AAB，中间不跳过构建输入。</div></div></section>
+    <nav class="chapter-switcher"><a href="../chapter-1/">← 应用模型</a><a class="course-home" href="../index.html">全部章节</a><a href="../chapter-3/">生命周期 →</a></nav>
+    <footer class="source-note"><p>官方事实源：<a href="https://developer.android.com/build/android-build-structure">Android build structure</a>、<a href="https://developer.android.com/guide/topics/manifest/manifest-intro">App manifest overview</a>、<a href="https://developer.android.com/guide/components/fundamentals#Resources">Application fundamentals: resources</a>。最后核对：2026-08-24。</p></footer>
+  </main>
+</body>
+</html>
