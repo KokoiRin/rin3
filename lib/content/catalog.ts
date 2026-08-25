@@ -18,6 +18,7 @@ export type ArticleSummary = {
   section: SectionSlug;
   slug: string;
   slides?: string;
+  tldr?: string;
   lang: "en" | "zh-CN";
   title: string;
   summary: string;
@@ -40,6 +41,11 @@ function readString(data: Record<string, unknown>, key: string, file: string) {
   return value;
 }
 
+function readOptionalString(data: Record<string, unknown>, key: string, file: string) {
+  if (data[key] === undefined) return undefined;
+  return readString(data, key, file);
+}
+
 function readArticleSource(section: SectionSlug, fileName: string) {
   const filePath = path.join(contentRoot, section, fileName);
   const source = fs.readFileSync(filePath, "utf8");
@@ -58,6 +64,7 @@ function readArticleSource(section: SectionSlug, fileName: string) {
         ...rinDocument.summary,
         section,
         slides: `/slides/${slug}`,
+        tldr: readOptionalString(data, "tldr", filePath),
       } satisfies ArticleSummary,
       rinDocument,
     };
@@ -94,6 +101,7 @@ function readArticleSource(section: SectionSlug, fileName: string) {
       section,
       slug,
       slides: slides as string | undefined,
+      tldr: readOptionalString(data, "tldr", filePath),
       lang,
       title: readString(data, "title", filePath),
       summary: readString(data, "summary", filePath),
