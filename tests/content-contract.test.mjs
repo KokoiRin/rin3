@@ -70,6 +70,9 @@ test("[CONTENT-CONTRACT-001] 每个内容源在完整构建前通过快速契约
 
     requireString(data, "title", filePath);
     requireString(data, "summary", filePath);
+    if (data.tldr !== undefined) {
+      requireString(data, "tldr", filePath);
+    }
     requireString(data, "topic", filePath);
     requireValidDate(data, filePath);
     assert.ok(["en", "zh-CN"].includes(data.lang), `${filePath}: lang must be "en" or "zh-CN"`);

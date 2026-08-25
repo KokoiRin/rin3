@@ -76,7 +76,14 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
           <div className="article-header-inner">
             <p className="article-section-name">{section.flower}</p>
             <h1>{article.title}</h1>
-            <p className="article-deck">{article.summary}</p>
+            {article.tldr ? (
+              <div className="article-tldr">
+                <p className="article-tldr-label">TL;DR</p>
+                <p className="article-deck">{article.tldr}</p>
+              </div>
+            ) : (
+              <p className="article-deck">{article.summary}</p>
+            )}
             <div className="article-meta">
               <time dateTime={article.date}>{formatArticleDate(article.date, article.lang)}</time>
               <span>{article.topic}</span>
