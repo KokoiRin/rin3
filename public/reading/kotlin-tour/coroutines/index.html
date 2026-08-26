@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="suspend 说明函数可以挂起；CoroutineScope 则决定任务归谁所有、何时取消、失败怎样传播。">
+  <title>协程与结构化并发｜Kotlin 项目实战篇｜RIN III</title>
+  <link rel="stylesheet" href="../reader.css">
+</head>
+<body>
+  <nav class="site-nav" aria-label="站点导航"><a href="../index.html">← Kotlin 中文学习版</a><a href="../../../computer-science/kotlin-tour/">RIN III 学习记录</a></nav>
+  <main class="reader project-reader">
+    <header class="chapter-header">
+      <span class="chapter-kicker">项目实战篇 · 第 4 章</span>
+      <h1>协程与结构化并发</h1>
+      <p class="lead">suspend 说明函数可以挂起；CoroutineScope 则决定任务归谁所有、何时取消、失败怎样传播。</p>
+      <div class="title-rule"></div>
+      <aside class="compression-note"><strong>阅读约定</strong><p>本章是基于 Kotlin 官方资料整理翻译的结构化精读，不是逐段完整翻译。保留项目阅读所需的核心概念、关键边界和代表性代码，暂缓与当前学习目标关系较弱的高级细节。</p></aside>
+      <aside class="learning-note"><strong>本章主线</strong><p>读协程代码时，不只追踪“在哪个线程执行”，更要追踪 Job 的父子关系、作用域的生命周期和取消路径。</p></aside>
+      <nav class="chapter-switcher" aria-label="章节导航"><a href="../generics-and-variance/index.html">← 泛型与型变</a><a class="course-home" href="../index.html">全部章节</a><a href="../flow-and-state/index.html">Flow 与状态 →</a></nav>
+    </header>
+    <article class="translated-article">
+      <h2>1. suspend 不等于后台线程</h2>
+      <pre><code>suspend fun loadProfile(id: UserId): Profile {
+    delay(100) // 挂起当前协程，不阻塞承载它的线程
+    return repository.get(id)
+}</code></pre>
+      <p><code>suspend</code> 表示函数可以暂停并在之后恢复，只能从另一个挂起函数或协程中调用。它本身既不创建协程，也不自动把工作切到后台线程。</p>
+      <h2>2. Scope 是任务所有权</h2>
+      <pre><code>class Presenter(private val scope: CoroutineScope) {
+    fun refresh() = scope.launch {
+        val profile = loadProfile(currentUserId)
+        render(profile)
+    }
+}</code></pre>
+      <p>这里最重要的问题是：谁创建 <code>scope</code>，谁在 Presenter 不再需要时取消它？结构化并发让子协程属于某个父作用域，父任务会等待子任务，取消和失败也沿结构传播。</p>
+      <div class="table-wrapper"><table><thead><tr><th>工具</th><th>含义</th><th>典型读取方式</th></tr></thead><tbody>
+      <tr><td><code>launch</code></td><td>启动任务，返回 Job</td><td>关心完成/取消，不直接返回业务值</td></tr>
+      <tr><td><code>async</code></td><td>并发计算，返回 Deferred</td><td>稍后用 <code>await()</code> 取得结果</td></tr>
+      <tr><td><code>withContext</code></td><td>在指定上下文完成一段工作并返回结果</td><td>用于明确切换 dispatcher</td></tr>
+      <tr><td><code>coroutineScope</code></td><td>建立子任务作用域</td><td>离开前等待所有子任务完成</td></tr>
+      </tbody></table></div>
+      <h2>3. 并发要有明确收益</h2>
+      <pre><code>suspend fun loadDashboard(): Dashboard = coroutineScope {
+    val user = async { loadUser() }
+    val cards = async { loadCards() }
+    Dashboard(user.await(), cards.await())
+}</code></pre>
+      <p>只有两个操作彼此独立时，并发才成立。如果 loadCards 需要 user 的结果，就应顺序表达依赖。<code>async</code> 不是让代码“更协程化”的装饰。</p>
+      <h2>4. Dispatcher 决定执行资源</h2>
+      <p><code>Dispatchers.Default</code> 面向 CPU 计算，<code>Dispatchers.IO</code> 面向 JVM 上的阻塞 I/O，主线程 dispatcher 用于 UI。许多挂起式网络或数据库 API 已经自己管理执行环境，不要在外面机械包一层 <code>withContext(IO)</code>。</p>
+      <h2>5. 取消必须能到达任务</h2>
+      <p>挂起函数通常会配合取消；长时间纯计算循环需要主动检查取消。清理资源放在 <code>finally</code> 中。捕获异常时不要误吞 <code>CancellationException</code>，否则生命周期已经结束的任务仍可能继续工作。</p>
+      <aside class="boundary-note warning"><strong>容易误用</strong><ul><li>使用 <code>GlobalScope</code> 或自己创建永不取消的 Scope，任务失去所有者。</li><li>把 <code>launch</code> 当作“发出去就不管”，异常只能在远处爆炸。</li><li>在协程中调用阻塞 API，却误以为只要写了 <code>suspend</code> 就不会阻塞线程。</li></ul></aside>
+      <section class="project-lab">
+        <span class="note-kind">下周项目对照</span>
+        <h2>不要另写玩具代码，直接在项目里取证</h2>
+        <p><strong>先搜索：</strong><code>suspend</code>、<code>CoroutineScope</code>、<code>launch</code>、<code>async</code>、<code>withContext</code>、<code>Job</code></p>
+        <ol><li>选一个真实文件，用一句话写出它在业务流程中的职责。</li><li>圈出本章概念的一个真实用法，写清输入、输出与所有者。</li><li>沿调用方向再追一层，确认它的生命周期或依赖边界。</li><li>找一条对应测试；如果没有，写下最值得补的可观察行为。</li></ol>
+      </section>
+    </article>
+    <section class="recall" aria-labelledby="recall-title">
+      <span class="note-kind">读完自测</span>
+      <h2 id="recall-title">合上正文，回答这三个问题</h2>
+      <ol><li>本章最重要的边界是什么？</li><li>项目里哪个类型或文件最能体现这个边界？</li><li>如果把这个边界拿掉，最可能出现什么错误？</li></ol>
+    </section>
+    <nav class="chapter-switcher" aria-label="章节导航"><a href="../generics-and-variance/index.html">← 泛型与型变</a><a class="course-home" href="../index.html">全部章节</a><a href="../flow-and-state/index.html">Flow 与状态 →</a></nav>
+    <footer class="license-note"><p>本章是项目导向的结构化精读，不是官方文档的逐段完整翻译。主要依据：<a href="https://kotlinlang.org/docs/coroutines-basics.html">协程基础</a>、<a href="https://kotlinlang.org/docs/coroutines-guide.html">协程指南</a>。原始内容由 JetBrains 与 Kotlin 贡献者维护，采用 <a href="https://github.com/JetBrains/kotlin-web-site/blob/master/LICENSE">Apache License 2.0</a>；版本差异以官方原文为准。</p></footer>
+  </main>
+</body>
+</html>
