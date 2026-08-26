@@ -423,6 +423,16 @@ th { background: var(--accent-soft); }
   .recall { padding: 20px 18px; }
 }
 
+@media (max-width: 600px) {
+  .reader {
+    width: 100%;
+    padding-inline: 20px;
+    box-sizing: border-box;
+    font-size: 19px;
+    line-height: 1.75;
+  }
+}
+
 @media print {
   html,
   body { background: white; }
