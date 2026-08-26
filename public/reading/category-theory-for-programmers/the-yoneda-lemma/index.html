@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>第 15 章：Yoneda 引理｜程序员的范畴论｜RIN III</title><meta name="description" content="《程序员的范畴论》第 15 章完整中文翻译：Yoneda 引理、Haskell 表示、CPS 与 co-Yoneda"><link rel="stylesheet" href="../reader.css"></head>
+<body><nav class="site-nav"><a href="../../../mathematics/category-theory-for-programmers/">← 返回整本书学习记录</a><a href="../../../">RIN III</a></nav><main class="reader"><header><span class="chapter-kicker">第二部分 · 第 15 章 · 完整中文译文</span><h1>Yoneda 引理</h1><p class="byline">Bartosz Milewski</p><div class="title-rule"></div><p class="lead">Yoneda 引理（Yoneda lemma）说明：从 Hom 函子到任意 Set 值函子的整个自然变换，只由它在一支恒等态射上的一个取值决定。</p><div class="translation-scope"><span class="scope-label">译文范围</span><p>完整翻译本章正文，保留全部 11 个原文代码块、5 幅插图、公式、3 道习题及参考文献；习题附可展开答案。</p></div><nav><ul class="chapter-nav"><li><a href="#lemma">Yoneda 引理</a></li><li><a href="#intuition">直觉</a></li><li><a href="#haskell">Haskell 中的 Yoneda</a></li><li><a href="#co-yoneda">Co-Yoneda</a></li><li><a href="#challenges">习题</a></li></ul></nav></header><article>
+
+<section id="lemma"><p class="source-paragraph" data-source-paragraph="1">范畴论中的大多数构造，都是其他更具体数学领域中已有结果的推广。积、余积、幺半群、指数等，早在范畴论出现之前便已为人所知，只是在不同数学分支中可能使用不同名称。集合论中的笛卡尔积、序理论中的交、逻辑中的合取，都是范畴积这一抽象思想的具体例子。</p>
+<p class="source-paragraph" data-source-paragraph="2">Yoneda 引理在这方面十分突出：它是一个关于一般范畴的广泛断言，在其他数学分支中几乎没有先例。有人说它最接近的类比是群论中的 Cayley 定理（每个群都同构于某个集合上的置换群）。</p>
+<p class="source-paragraph" data-source-paragraph="3">Yoneda 引理的背景是任意范畴 C，以及从 C 到 Set 的函子 <em>F</em>。上一章看到，一些 Set 值函子（Set-valued functor）是可表的，也就是与 Hom 函子同构。Yoneda 引理告诉我们：所有 Set 值函子都可以通过自然变换从 Hom 函子得到，而且它明确枚举了所有这样的变换。</p>
+<p class="source-paragraph" data-source-paragraph="4">讨论自然变换时，我提过自然性条件可能相当严格。当你在一个对象处定义自然变换的一个分量时，自然性可能强到足以沿着连接它与另一对象的态射，把这个分量“输送”到那个对象。源范畴与目标范畴中对象之间的箭头越多，输送自然变换分量所受的约束也越多。Set 恰好是一个箭头极其丰富的范畴。</p>
+<p class="source-paragraph" data-source-paragraph="5">Yoneda 引理告诉我们：Hom 函子与任意另一个函子 <em>F</em> 之间的自然变换，只需指定它在一个点上的一个分量值，就完全确定了！自然变换的其余部分都由自然性条件推出。</p>
+<p class="source-paragraph" data-source-paragraph="6">先复习 Yoneda 引理中两个函子之间的自然性条件。第一个是 Hom 函子。对 C 中固定对象 <em>a</em>，它把 C 中任意对象 <em>x</em> 映射到态射集合 C(a,x)。我们也已经看到，它把任意态射 <em>f:x→y</em> 映射到 C(a,f)。</p>
+<p class="source-paragraph" data-source-paragraph="7">第二个函子是任意 Set 值函子 <em>F</em>。</p>
+<p class="source-paragraph" data-source-paragraph="8">把两个函子之间的自然变换称为 α。因为在 Set 中操作，自然变换的分量，如 α<sub>x</sub> 或 α<sub>y</sub>，只是集合之间的普通函数：</p><div class="math-display">α<sub>x</sub> : C(a,x) → F x<br>α<sub>y</sub> : C(a,y) → F y</div>
+<figure><div class="figure-frame"><img src="yoneda1.png" alt="Hom 函子与 F 之间自然变换的自然性方块"></div></figure>
+<p class="source-paragraph" data-source-paragraph="9">因为它们只是函数，所以可以观察它们在具体点上的值。但集合 C(a,x) 中的点是什么？关键观察在这里：C(a,x) 中的每个点，也是一支从 <em>a</em> 到 <em>x</em> 的态射 <em>h</em>。</p>
+<p class="source-paragraph" data-source-paragraph="10">因此 α 的自然性方块：</p><div class="math-display">α<sub>y</sub> ∘ C(a,f) = F f ∘ α<sub>x</sub></div>
+<p class="source-paragraph" data-source-paragraph="11">逐点作用于 <em>h</em> 后变成：</p><div class="math-display">α<sub>y</sub>(C(a,f) h) = (F f)(α<sub>x</sub> h)</div>
+<p class="source-paragraph" data-source-paragraph="12">你可能记得，上一章把 Hom 函子 C(a,-) 对态射 <em>f</em> 的作用定义为前复合：</p><div class="math-display">C(a,f) h = f ∘ h</div>
+<p class="source-paragraph" data-source-paragraph="13">于是得到：</p><div class="math-display">α<sub>y</sub>(f ∘ h) = (F f)(α<sub>x</sub> h)</div>
+<p class="source-paragraph" data-source-paragraph="14">把它特化到 <em>x=a</em> 的情形，就能看出这个条件有多强。</p>
+<figure><div class="figure-frame"><img src="yoneda2.png" alt="把自然性方块特化到 x 等于 a"></div></figure>
+<p class="source-paragraph" data-source-paragraph="15">此时 <em>h</em> 变成从 <em>a</em> 到 <em>a</em> 的态射。已知至少存在一支这样的态射，即 <em>h=id<sub>a</sub></em>。把它代入：</p><div class="math-display">α<sub>y</sub> f = (F f)(α<sub>a</sub> id<sub>a</sub>)</div>
+<p class="source-paragraph" data-source-paragraph="16">注意刚才发生了什么：左边是 α<sub>y</sub> 对 C(a,y) 中任意元素 <em>f</em> 的作用，而它完全由 α<sub>a</sub> 在 id<sub>a</sub> 处的一个值决定。可以任意选择这样的值，它都会生成一个自然变换。因为 α<sub>a</sub> 的值属于集合 F a，所以 F a 中任意一点都定义某个 α。</p>
+<p class="source-paragraph" data-source-paragraph="17">反过来，给定从 C(a,-) 到 <em>F</em> 的任意自然变换 α，可以在 id<sub>a</sub> 处求值，从而得到 F a 中的一点。</p>
+<p class="source-paragraph" data-source-paragraph="18">我们刚刚证明了 Yoneda 引理：</p><blockquote><p>从 C(a,-) 到 <em>F</em> 的自然变换，与 F a 的元素之间存在一一对应。</p></blockquote>
+<p class="source-paragraph" data-source-paragraph="19">换句话说：</p><div class="math-display">Nat(C(a,-),F) ≅ F a</div>
+<p class="source-paragraph" data-source-paragraph="20">或者，用 [C,Set] 表示 C 与 Set 之间的函子范畴；自然变换集合就是该范畴中的 hom 集，于是可以写成：</p><div class="math-display">[C,Set](C(a,-),F) ≅ F a</div>
+<p class="source-paragraph" data-source-paragraph="21">稍后会解释，这个对应实际上怎样构成自然同构。</p></section>
+
+<section id="intuition"><h2>直觉</h2>
+<p class="source-paragraph" data-source-paragraph="22">现在试着为这个结果建立一些直觉。最惊人的地方是：整个自然变换从唯一一个成核点凝结出来——也就是我们在 id<sub>a</sub> 处赋给它的值。它沿着自然性条件从这个点扩散，淹没 C 在 Set 中的像。先考察 C 在 C(a,-) 下的像。</p>
+<p class="source-paragraph" data-source-paragraph="23">从 <em>a</em> 自身的像开始。在 Hom 函子 C(a,-) 下，<em>a</em> 映射到集合 C(a,a)；而在函子 <em>F</em> 下，它映射到集合 F a。自然变换的分量 α<sub>a</sub> 是从 C(a,a) 到 F a 的某个函数。只关注 C(a,a) 中一点，即对应态射 id<sub>a</sub> 的点。为强调它只是集合中的一个点，把它称为 <em>p</em>。分量 α<sub>a</sub> 应把 <em>p</em> 映射到 F a 中某一点 <em>q</em>。下面会说明，任意选择 <em>q</em> 都会导出唯一自然变换。</p>
+<figure><div class="figure-frame"><img src="yoneda3.png" alt="alpha_a 把恒等态射对应的点 p 映射到 q"></div></figure>
+<p class="source-paragraph" data-source-paragraph="24">第一个断言是：选择一点 <em>q</em> 会唯一决定函数 α<sub>a</sub> 的其余部分。事实上，任取 C(a,a) 中另一个点 <em>p′</em>，它对应从 <em>a</em> 到 <em>a</em> 的某支态射 <em>g</em>。Yoneda 引理的魔法就在这里：<em>g</em> 可以看作集合 C(a,a) 中的点 <em>p′</em>；与此同时，它又选出了集合之间的两个<em>函数</em>。在 Hom 函子下，态射 <em>g</em> 映射为函数 C(a,g)；在 <em>F</em> 下，它映射为 F g。</p>
+<figure><div class="figure-frame"><img src="yoneda4.png" alt="态射 g 同时作为 hom 集中的点与两个函子下的函数"></div></figure>
+<p class="source-paragraph" data-source-paragraph="25">现在考察 C(a,g) 对原先的 <em>p</em> 的作用；记住，<em>p</em> 对应 id<sub>a</sub>。按定义它是前复合 <em>g∘id<sub>a</sub></em>，等于 <em>g</em>，也就对应点 <em>p′</em>。所以态射 <em>g</em> 被映射成一个函数，这个函数作用于 <em>p</em> 后生成 <em>p′</em>，也就是 <em>g</em>。我们绕了一圈又回到原点！</p>
+<p class="source-paragraph" data-source-paragraph="26">再看 F g 对 <em>q</em> 的作用。它得到 F a 中某一点 <em>q′</em>。为了让自然性方块交换，α<sub>a</sub> 必须把 <em>p′</em> 映射到 <em>q′</em>。我们任取了 <em>p′</em>（即任意 <em>g</em>），并推导出它在 α<sub>a</sub> 下的映射。因此函数 α<sub>a</sub> 已完全确定。</p>
+<p class="source-paragraph" data-source-paragraph="27">第二个断言是：对于 C 中任何与 <em>a</em> 相连的对象 <em>x</em>，α<sub>x</sub> 都被唯一确定。推理类似，只是多了两个集合 C(a,x) 与 F x；从 <em>a</em> 到 <em>x</em> 的态射 <em>g</em> 在 Hom 函子下映射为：</p><div class="math-display">C(a,g) : C(a,a) → C(a,x)</div>
+<p class="source-paragraph" data-source-paragraph="28">在 <em>F</em> 下映射为：</p><div class="math-display">F g : F a → F x</div>
+<p class="source-paragraph" data-source-paragraph="29">C(a,g) 作用于 <em>p</em> 仍由前复合给出：<em>g∘id<sub>a</sub></em>，对应 C(a,x) 中一点 <em>p′</em>。自然性决定 α<sub>x</sub> 作用于 <em>p′</em> 的值为：</p><div class="math-display">q′ = (F g) q</div>
+<p class="source-paragraph" data-source-paragraph="30">因为 <em>p′</em> 是任意的，所以整个函数 α<sub>x</sub> 由此确定。</p>
+<figure><div class="figure-frame"><img src="yoneda5.png" alt="由 q 和态射 g 唯一确定 alpha_x 在 p' 处的值"></div></figure>
+<p class="source-paragraph" data-source-paragraph="31">如果 C 中有些对象与 <em>a</em> 毫无连接呢？它们在 C(a,-) 下全都映射到同一个集合——空集。回忆空集是集合范畴的始对象，也就是说，从它到任意其他集合都有唯一函数。我们称这个函数为 <code>absurd</code>。所以这里同样没有选择：自然变换的分量只能是 <code>absurd</code>。</p>
+<p class="source-paragraph" data-source-paragraph="32">理解 Yoneda 引理的一种方式是认识到：Set 值函子之间的自然变换只是一族函数，而函数通常有损。函数可能压缩信息，也可能只覆盖陪域的一部分。只有可逆函数——同构——不会损失信息。于是，最好的结构保持 Set 值函子就是可表函子：它们要么是 Hom 函子，要么与 Hom 函子自然同构。任何其他函子 <em>F</em> 都通过某种有损变换从 Hom 函子得到。这种变换不仅可能丢失信息，还可能只覆盖 <em>F</em> 在 Set 中之像的一小部分。</p></section>
+
+<section id="haskell"><h2>Haskell 中的 Yoneda</h2>
+<p class="source-paragraph" data-source-paragraph="33">我们已经在 Haskell 中以 Reader 函子的面貌遇到 Hom 函子：</p><pre><code class="language-haskell">type Reader a x = a -&gt; x</code></pre>
+<p class="source-paragraph" data-source-paragraph="34">Reader 通过前复合映射态射（这里是函数）：</p><pre><code class="language-haskell">instance Functor (Reader a) where
+    fmap f h = f . h</code></pre>
+<p class="source-paragraph" data-source-paragraph="35">Yoneda 引理告诉我们，Reader 函子可以自然地映射到任何其他函子。</p>
+<p class="source-paragraph" data-source-paragraph="36">自然变换是多态函数。所以给定函子 <code>F</code>，存在从 Reader 函子到它的映射：</p><pre><code class="language-haskell">alpha :: forall x . (a -&gt; x) -&gt; F x</code></pre>
+<p class="source-paragraph" data-source-paragraph="37">一如既往，<code>forall</code> 可省略，但我喜欢显式写出它，以强调自然变换的参数多态性。</p>
+<p class="source-paragraph" data-source-paragraph="38">Yoneda 引理告诉我们，这些自然变换与 <code>F a</code> 的元素一一对应：</p><pre><code class="language-haskell">forall x . (a -&gt; x) -&gt; F x ≅ F a</code></pre>
+<p class="source-paragraph" data-source-paragraph="39">这个恒等式的右边，就是我们通常所说的数据结构。还记得把函子解释为广义容器吗？<code>F a</code> 是装有 <code>a</code> 的容器。但左边是一个以函数为参数的多态函数。Yoneda 引理告诉我们，两种表示等价——它们包含相同信息。</p>
+<p class="source-paragraph" data-source-paragraph="40">换一种说法：给我一个下面类型的多态函数：</p><pre><code class="language-haskell">alpha :: forall x . (a -&gt; x) -&gt; F x</code></pre>
+<p class="source-paragraph" data-source-paragraph="41">我就能生成一个装有 <code>a</code> 的容器。技巧正是证明 Yoneda 引理时用过的：用 <code>id</code> 调用这个函数，得到 <code>F a</code> 的元素：</p><pre><code class="language-haskell">alpha id :: F a</code></pre>
+<p class="source-paragraph" data-source-paragraph="42">反过来也成立。给定 <code>F a</code> 类型的值：</p><pre><code class="language-haskell">fa :: F a</code></pre>
+<p class="source-paragraph" data-source-paragraph="43">可以定义多态函数：</p><pre><code class="language-haskell">alpha h = fmap h fa</code></pre>
+<p class="source-paragraph" data-source-paragraph="44">它具有正确类型。你可以轻易地在两种表示之间来回转换。</p>
+<p class="source-paragraph" data-source-paragraph="45">多种表示的优势在于：其中一种可能比另一种更容易组合，也可能在某些应用中更高效。</p>
+<p class="source-paragraph" data-source-paragraph="46">这个原则最简单的例子，是编译器构造中经常使用的代码变换：续延传递风格（continuation-passing style, CPS）。它是把 Yoneda 引理应用于恒等函子的最简单情形。用恒等函子替换 <code>F</code>，得到：</p><pre><code class="language-haskell">forall r . (a -&gt; r) -&gt; r ≅ a</code></pre>
+<p class="source-paragraph" data-source-paragraph="47">这个公式表示：任何类型 <code>a</code> 都可以替换成一个接受 <code>a</code> 的“处理器”的函数。处理器是接受 <code>a</code> 并执行其余计算——即续延（continuation）——的函数。（类型 <code>r</code> 通常封装某种状态码。）</p>
+<p class="source-paragraph" data-source-paragraph="48">这种编程风格在 UI、异步系统与并发编程中十分常见。CPS 的缺点是会带来控制反转。代码被拆分到生产者与消费者（处理器）之间，不容易组合。做过一定量非平凡 Web 编程的人，都熟悉相互作用的有状态处理器造成的意大利面式代码噩梦。以后会看到，谨慎使用函子与 Monad，可以恢复 CPS 的一些组合性质。</p></section>
+
+<section id="co-yoneda"><h2>Co-Yoneda</h2>
+<p class="source-paragraph" data-source-paragraph="49">照例，反转箭头方向会免费得到另一个构造。把 Yoneda 引理应用于对偶范畴 C<sup>op</sup>，便得到逆变函子之间的映射。</p>
+<p class="source-paragraph" data-source-paragraph="50">等价地，可以固定 Hom 函子的目标对象而不是源对象，从而推导出<em>余 Yoneda 引理（co-Yoneda lemma）</em>。我们得到从 C 到 Set 的逆变 Hom 函子 C(-,a)。Yoneda 引理的逆变版本，在从这个函子到任意其他逆变函子 <em>F</em> 的自然变换，与集合 F a 的元素之间建立一一对应：</p><div class="math-display">Nat(C(-,a),F) ≅ F a</div>
+<p class="source-paragraph" data-source-paragraph="51">下面是 co-Yoneda 引理的 Haskell 版本：</p><pre><code class="language-haskell">forall x . (x -&gt; a) -&gt; F x ≅ F a</code></pre>
+<p class="source-paragraph" data-source-paragraph="52">注意，在一些文献中，逆变版本才被称为 Yoneda 引理。</p></section>
+
+<section id="challenges"><h2>习题</h2><ol class="challenges">
+<li>证明构成 Haskell 中 Yoneda 同构的两个函数 <code>phi</code> 与 <code>psi</code> 互为逆：<pre><code class="language-haskell">phi :: (forall x . (a -&gt; x) -&gt; F x) -&gt; F a
+phi alpha = alpha id
+
+psi :: F a -&gt; (forall x . (a -&gt; x) -&gt; F x)
+psi fa h = fmap h fa</code></pre><details class="exercise-answer"><summary>点击展开参考答案</summary><p>一个方向：<code>phi (psi fa)=psi fa id=fmap id fa=fa</code>，使用函子恒等律。另一个方向，对任意 <code>h</code>，<code>psi (phi alpha) h=fmap h (alpha id)=alpha (h . id)=alpha h</code>；中间等式正是 <code>alpha</code> 的自然性。因此两边逐点相等。</p></details></li>
+<li>离散范畴（discrete category）有对象，但除恒等态射外没有其他态射。对于从这种范畴出发的函子，Yoneda 引理怎样工作？<details class="exercise-answer"><summary>点击展开参考答案</summary><p>固定对象 <code>a</code> 后，<code>C(a,a)</code> 是只含 <code>id_a</code> 的单元素集合；若 <code>x≠a</code>，<code>C(a,x)</code> 为空。自然变换在 <code>a</code> 处只需把 <code>id_a</code> 选到 <code>F a</code> 的某个元素；在其他对象处，从空集出发的函数唯一。没有非恒等态射带来额外自然性约束，因此自然变换仍恰与 <code>F a</code> 的元素一一对应。</p></details></li>
+<li>单元列表 <code>[()]</code> 除长度外不含其他信息，所以作为数据类型可视为整数编码：空列表编码零，单元素值 <code>[()]</code> 编码一，以此类推。使用列表函子的 Yoneda 引理构造这种数据类型的另一种表示。<details class="exercise-answer"><summary>点击展开参考答案</summary><p>Yoneda 表示为 <code>forall x. (()→x)→[x]</code>。因为函数 <code>()→x</code> 等价于选择一个 <code>x</code>，可简写成 <code>forall x. x→[x]</code>。编码数字 <code>n</code> 的值对任意 <code>x</code> 都返回 <code>replicate n x</code>；用 <code>()</code> 实例化并传入 <code>()</code>，便恢复长度为 <code>n</code> 的单元列表。</p></details></li>
+</ol></section>
+
+<section id="bibliography"><h2>参考文献</h2><ol><li><a href="https://www.youtube.com/watch?v=TLMxHB19khE">Catsters 视频</a>。</li></ol></section>
+<nav class="chapter-switcher"><a href="../representable-functors/">← 第 14 章：可表函子</a><a href="../yoneda-embedding/">第 16 章：Yoneda 嵌入 →</a></nav>
+</article><footer class="source-note"><p><strong>原文：</strong><a href="https://bartoszmilewski.com/2015/09/01/the-yoneda-lemma/">The Yoneda Lemma</a></p><p><strong>核对底稿：</strong>作者博客正文与开源英文 Markdown；正文 10 个原文代码块、习题 1 个原文代码块、5 幅插图、公式、3 道习题和参考文献均已收录；参考答案属于本阅读器。</p><p><strong>许可：</strong>原作及本非官方中文译文依 <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> 署名—相同方式共享。</p></footer></main></body></html>

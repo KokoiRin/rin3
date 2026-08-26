@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>第 1 章：范畴——复合的本质｜程序员的范畴论｜RIN III</title>
+  <meta name="description" content="Bartosz Milewski《程序员的范畴论》第 1 章完整中文翻译，保留全部代码、公式、插图与习题">
+  <link rel="stylesheet" href="../reader.css">
+</head>
+<body>
+  <nav class="site-nav" aria-label="站点导航">
+    <a href="../../../mathematics/category-theory-for-programmers/">← 返回整本书学习记录</a>
+    <a href="../../../">RIN III</a>
+  </nav>
+
+  <main class="reader">
+    <header>
+      <span class="chapter-kicker">第一部分 · 第 1 章 · 完整中文译文</span>
+      <h1>范畴：复合的本质</h1>
+      <p class="byline">Bartosz Milewski · 2014 年 11 月 4 日</p>
+      <div class="title-rule"></div>
+      <p class="lead">范畴（category）的定义极其简单：对象（object）、对象之间的箭头，以及满足结合律（associativity）并拥有恒等箭头的复合（composition）。真正重要的不是这些名词，而是“先分解、再复合”为何构成编程的核心。</p>
+
+      <div class="translation-scope">
+        <span class="scope-label">译文范围</span>
+        <p>完整翻译本章正文，保留 1 张原图、全部 C/C++ 与 Haskell 代码、数学公式、脚注链接以及 6 道习题。标题导航和范围说明属于阅读器编辑层。</p>
+      </div>
+
+      <nav aria-label="本页导航">
+        <ul class="chapter-nav">
+          <li><a href="#arrows-as-functions">把箭头看作函数</a></li>
+          <li><a href="#properties">复合的性质</a></li>
+          <li><a href="#programming">复合是编程的本质</a></li>
+          <li><a href="#challenges">习题</a></li>
+          <li><a href="#source">来源与许可</a></li>
+        </ul>
+      </nav>
+    </header>
+
+    <article>
+      <p class="source-paragraph" data-source-paragraph="1">范畴是一个简单得令人难为情的概念。一个范畴由若干<em>对象</em>以及连接这些对象的<em>箭头</em>构成。因此，范畴很容易用图形表示：对象可以画成圆圈或点，而箭头……就是箭头。（为了有些变化，我偶尔也会把对象画成小猪，把箭头画成烟花。）但范畴的本质在于<em>复合</em>。或者如果你愿意，也可以说：复合的本质就是范畴。箭头能够复合，因此，如果有一支箭头从对象 <em>A</em> 指向对象 <em>B</em>，另有一支箭头从对象 <em>B</em> 指向对象 <em>C</em>，那么就必须存在一支从 <em>A</em> 指向 <em>C</em> 的箭头——前两支箭头的复合。</p>
+
+      <figure>
+        <div class="figure-frame">
+          <img class="wide" src="img_1330.jpg" alt="A 到 B、B 到 C，以及由二者复合而成的 A 到 C 箭头">
+        </div>
+        <figcaption>在范畴中，只要存在从 A 到 B 的箭头和从 B 到 C 的箭头，就必须存在由二者复合而成、从 A 直接到 C 的箭头。此图还不是一个完整范畴，因为尚未画出恒等态射。</figcaption>
+      </figure>
+
+      <section id="arrows-as-functions">
+        <h2>把箭头看作函数</h2>
+
+        <p class="source-paragraph" data-source-paragraph="2">这已经抽象得让人受不了了吗？别绝望，我们来谈些具体的东西。把箭头——它们也称为<em>态射（morphism）</em>——看作函数。你有一个函数 <em>f</em>，它接受类型 <em>A</em> 的参数，返回类型 <em>B</em> 的结果；还有一个函数 <em>g</em>，它接受 <em>B</em>，返回 <em>C</em>。把 <em>f</em> 的结果传给 <em>g</em>，就能将二者复合。这样，你刚刚定义了一个接受 <em>A</em> 并返回 <em>C</em> 的新函数。</p>
+
+        <p class="source-paragraph" data-source-paragraph="3">数学中，函数复合写成夹在函数之间的小圆圈：<em>g</em> ∘ <em>f</em>。请注意，复合的顺序是从右到左，这会让一些人感到困惑。你也许更熟悉 Unix 中从左到右的管道写法：</p>
+
+        <pre><code class="language-bash">lsof | grep Chrome</code></pre>
+
+        <p class="source-paragraph" data-source-paragraph="4">或者 F# 中同样从左到右的尖括号 <code>&gt;&gt;</code>。但在数学和 Haskell 中，函数都从右向左复合。把 <em>g</em> ∘ <em>f</em> 读作“先 <em>f</em>，后 <em>g</em>”（<em>g after f</em>），会更容易理解。</p>
+
+        <p class="source-paragraph" data-source-paragraph="5">让我们写一些 C 代码，把这件事说得更明确。首先有函数 <code>f</code>，它接受类型 <code>A</code> 的参数，返回类型 <code>B</code> 的值：</p>
+
+        <pre><code class="language-cpp">B f(A a);</code></pre>
+
+        <p class="source-paragraph" data-source-paragraph="6">以及另一个函数：</p>
+
+        <pre><code class="language-cpp">C g(B b);</code></pre>
+
+        <p class="source-paragraph" data-source-paragraph="7">它们的复合是：</p>
+
+        <pre><code class="language-cpp">C g_after_f(A a)
+{
+    return g(f(a));
+}</code></pre>
+
+        <p class="source-paragraph" data-source-paragraph="8">这里再次出现了从右到左的复合：<code>g(f(a))</code>；只不过这一次是在 C 中。</p>
+
+        <p class="source-paragraph" data-source-paragraph="9">我很想告诉你，C++ 标准库中有一个模板能够接受两个函数并返回它们的复合，但实际上并没有。因此我们换换口味，试一下 Haskell。下面是一个从 A 到 B 的函数声明：</p>
+
+        <pre><code class="language-haskell">f :: A -&gt; B</code></pre>
+
+        <p class="source-paragraph" data-source-paragraph="10">类似地：</p>
+
+        <pre><code class="language-haskell">g :: B -&gt; C</code></pre>
+
+        <p class="source-paragraph" data-source-paragraph="11">它们的复合是：</p>
+
+        <pre><code class="language-haskell">g . f</code></pre>
+
+        <p class="source-paragraph" data-source-paragraph="12">一旦看到 Haskell 里的事情如此简单，C++ 无法表达这些直截了当的函数式概念，就多少有点令人尴尬。事实上，Haskell 允许你使用 Unicode 字符，因此复合也可以写成：</p>
+
+        <pre><code class="language-haskell">g ∘ f</code></pre>
+
+        <p class="source-paragraph" data-source-paragraph="13">你甚至可以使用 Unicode 双冒号和箭头：</p>
+
+        <pre><code class="language-haskell">f ∷ A → B</code></pre>
+
+        <p class="source-paragraph" data-source-paragraph="14">于是，这是我们的第一堂 Haskell 课：双冒号表示“具有……类型”。在两个类型之间插入箭头，就构造出一个函数类型；在两个函数之间插入句点（或者 Unicode 小圆圈），就将它们复合起来。</p>
+      </section>
+
+      <section id="properties">
+        <h2>复合的性质</h2>
+
+        <p class="source-paragraph" data-source-paragraph="15">任何范畴中的复合都必须满足两个极其重要的性质。</p>
+
+        <ol>
+          <li>
+            <p class="source-paragraph" data-source-paragraph="16"><strong>复合满足结合律。</strong>如果有三个可以复合的态射 <em>f</em>、<em>g</em> 和 <em>h</em>（也就是说，它们首尾相接处的对象相符），那么复合它们时不需要括号。数学记法是：</p>
+            <div class="math-display"><em>h</em> ∘ (<em>g</em> ∘ <em>f</em>) = (<em>h</em> ∘ <em>g</em>) ∘ <em>f</em> = <em>h</em> ∘ <em>g</em> ∘ <em>f</em></div>
+            <p class="source-paragraph" data-source-paragraph="17">用（伪）Haskell 表示：</p>
+            <pre><code class="language-haskell">f :: A -&gt; B
+g :: B -&gt; C
+h :: C -&gt; D
+h . (g . f) == (h . g) . f == h . g . f</code></pre>
+            <p class="source-paragraph" data-source-paragraph="18">我说它是“伪”Haskell，是因为函数之间并没有定义相等性。处理函数时，结合律相当直观；但在其他范畴里，它未必同样显而易见。</p>
+          </li>
+          <li>
+            <p class="source-paragraph" data-source-paragraph="19"><strong>每个对象 <em>A</em> 都有一支作为复合单位元的箭头。</strong>这支箭头从该对象出发又回到它自身。所谓复合的单位元，是指它分别与任何从 <em>A</em> 出发或以 <em>A</em> 为终点的箭头复合时，结果仍是原来的那支箭头。对象 A 的单位箭头称为 <em>id<sub>A</sub></em>，即 A 上的<em>恒等</em>。在数学记法中，如果 <em>f</em> 从 A 指向 B，那么：</p>
+            <div class="math-display"><em>f</em> ∘ id<sub>A</sub> = <em>f</em></div>
+            <p class="source-paragraph" data-source-paragraph="20">并且：</p>
+            <div class="math-display">id<sub>B</sub> ∘ <em>f</em> = <em>f</em></div>
+          </li>
+        </ol>
+
+        <p class="source-paragraph" data-source-paragraph="21">当箭头是函数时，恒等箭头实现为恒等函数：它只把自己的参数原样返回。对每一种类型，这个实现都相同，因此该函数是全称多态的。在 C++ 中，可以把它定义为模板：</p>
+
+        <pre><code class="language-cpp">template&lt;typename T&gt; T id(T x) { return x; }</code></pre>
+
+        <p class="source-paragraph" data-source-paragraph="22">当然，在 C++ 里事情从来不会这么简单，因为你不仅要考虑传入了什么，还要考虑怎样传入——按值、按引用、按常量引用、按移动语义，等等。</p>
+
+        <p class="source-paragraph" data-source-paragraph="23">在 Haskell 中，恒等函数属于标准库（称为 Prelude）。它的声明和定义如下：</p>
+
+        <pre><code class="language-haskell">id :: a -&gt; a
+id x = x</code></pre>
+
+        <p class="source-paragraph" data-source-paragraph="24">如你所见，在 Haskell 中写多态函数易如反掌。声明时，只需把具体类型换成类型变量。诀窍在这里：具体类型的名称总是以大写字母开头，类型变量的名称则以小写字母开头。因此，此处的 <code>a</code> 代表所有类型。</p>
+
+        <p class="source-paragraph" data-source-paragraph="25">Haskell 的函数定义由函数名和紧随其后的形式参数组成——这里仅有一个参数 <code>x</code>。等号之后是函数体。这种简洁常常令初学者吃惊，但你很快就会发现它完全合乎情理。函数定义和函数调用是函数式编程的日常基本操作，因此它们的语法被压缩到了最低限度：参数列表外没有括号，参数之间也没有逗号（等我们定义多参数函数时，你会看到这一点）。</p>
+
+        <p class="source-paragraph" data-source-paragraph="26">函数体永远是一个表达式——函数中没有语句。函数的结果就是这个表达式；在这里，结果仅仅是 <code>x</code>。</p>
+
+        <p class="source-paragraph" data-source-paragraph="27">我们的第二堂 Haskell 课到此结束。</p>
+
+        <p class="source-paragraph" data-source-paragraph="28">恒等条件可以写成（同样是伪 Haskell）：</p>
+
+        <pre><code class="language-haskell">f . id == f
+id . f == f</code></pre>
+
+        <p class="source-paragraph" data-source-paragraph="29">你也许会问：为什么有人要费心研究恒等函数——一个什么也不做的函数？不过换个角度，我们为什么要费心研究数字零呢？零是“什么都没有”的符号。古罗马人的数字系统没有零，但他们仍然修建了优秀的道路和渡槽，其中一些甚至留存至今。</p>
+
+        <p class="source-paragraph" data-source-paragraph="30">当我们处理符号变量时，零或 <em>id</em> 这样的单位值极其有用。正因为如此，罗马人不擅长代数，而熟悉零这个概念的阿拉伯人与波斯人却擅长。因此，当恒等函数作为高阶函数的参数或返回值时，它会变得非常方便。高阶函数使函数的符号操作成为可能；它们构成了函数的代数。</p>
+
+        <p class="source-paragraph" data-source-paragraph="31">总结一下：范畴由对象和箭头（态射）构成。箭头能够复合，而且复合满足结合律。每个对象都有一支恒等箭头，在复合中充当单位元。</p>
+      </section>
+
+      <section id="programming">
+        <h2>复合是编程的本质</h2>
+
+        <p class="source-paragraph" data-source-paragraph="32">函数式程序员处理问题的方式颇为独特。他们一开始会提出一些很有禅意的问题。比如，设计交互式程序时，他们会问：“什么是交互？”实现康威生命游戏时，他们大概会思考生命的意义。本着这种精神，我要问：“什么是编程？”在最基础的层面上，编程就是告诉计算机该做什么：“取出内存地址 x 中的内容，把它加到 EAX 寄存器的内容上。”但即便我们用汇编语言编程，交给计算机的指令仍然表达着某种更有意义的东西。我们是在解决一个并不平凡的问题——如果它很平凡，也就不需要计算机帮忙了。那么，我们怎样解决问题？我们把大问题分解成小问题。如果小问题仍然太大，就继续分解，如此反复。最后，我们写出解决所有小问题的代码。接下来便来到编程的本质：把这些代码片段复合起来，形成更大问题的解。如果无法把碎片重新拼回去，分解也就毫无意义。</p>
+
+        <p class="source-paragraph" data-source-paragraph="33">这种层层分解、再层层复合的过程并非计算机强加给我们的，而是人类心智局限的反映。我们的大脑一次只能处理少量概念。心理学中被引用最多的论文之一<a href="https://en.wikipedia.org/wiki/The_Magical_Number_Seven,_Plus_or_Minus_Two">《神奇的数字 7±2》</a>提出，我们的头脑一次只能保留 7±2 个信息“组块”。我们对人类短期记忆的具体认识或许还在变化，但可以确定的是，它很有限。归根到底，我们无法处理对象的混汤，也无法处理代码的意大利面。我们需要结构，并不是因为结构良好的程序看上去赏心悦目，而是因为缺少结构时，大脑无法高效处理它们。我们常说某段代码优雅或美丽，但真正的意思是：有限的人类心智能够轻松处理它。优雅的代码创造出大小恰当、数量也恰当的组块，让我们的心智消化系统能够吸收。</p>
+
+        <p class="source-paragraph" data-source-paragraph="34">那么，用于复合程序的合适组块是什么？它们的表面积增长必须慢于体积增长。（我喜欢这个比喻，因为在直觉上，几何物体的表面积随尺寸的平方增长，而体积随尺寸的立方增长，因此前者更慢。）表面积是复合组块时需要知道的信息；体积则是实现组块时需要知道的信息。核心思想是：一个组块实现之后，我们就可以忘掉实现细节，转而关注它怎样与其他组块交互。在面向对象编程中，表面是对象的类声明或抽象接口；在函数式编程中，表面是函数声明。（这里稍作了简化，但要点如此。）</p>
+
+        <p class="source-paragraph" data-source-paragraph="35">范畴论在这一点上走到了极端：它主动劝阻我们窥视对象内部。范畴论中的对象是抽象而模糊的实体。关于一个对象，你所能知道的只有它怎样关联其他对象——它怎样通过箭头与它们相连。这正是互联网搜索引擎分析入站和出站链接、据此排列网站名次的方式（当然，它们偶尔也会作弊）。在面向对象编程中，理想化的对象只能通过抽象接口被看见——只有表面，没有体积——而方法扮演箭头的角色。一旦你必须钻进对象的实现，才能理解怎样把它与其他对象组合起来，你就已经失去了这种编程范式的优势。</p>
+      </section>
+
+      <section id="challenges">
+        <h2>习题</h2>
+        <ol class="challenges">
+          <li>在你最喜欢的语言中，尽你所能实现恒等函数。（如果你最喜欢的语言恰好是 Haskell，就用第二喜欢的语言。）
+            <details class="exercise-answer"><summary>点击展开参考答案</summary><pre><code class="language-kotlin">fun &lt;A&gt; identity(value: A): A = value</code></pre><p>类型参数 <code>A</code> 保证输入、输出类型相同；函数不观察也不改变值。</p></details>
+          </li>
+          <li>在你最喜欢的语言中实现复合函数。它接受两个函数作为参数，并返回由二者复合而成的函数。
+            <details class="exercise-answer"><summary>点击展开参考答案</summary><pre><code class="language-kotlin">fun &lt;A, B, C&gt; compose(
+    g: (B) -&gt; C,
+    f: (A) -&gt; B
+): (A) -&gt; C = { x -&gt; g(f(x)) }</code></pre><p>参数顺序对应数学记号 <code>g ∘ f</code>：先执行 <code>f</code>，再执行 <code>g</code>。</p></details>
+          </li>
+          <li>编写一个程序，尝试检验你的复合函数是否遵守恒等律。
+            <details class="exercise-answer"><summary>点击展开参考答案</summary><pre><code class="language-kotlin">val f: (Int) -&gt; String = { it.toString() }
+check(compose(::identity, f)(42) == f(42))
+check(compose(f, ::identity)(42) == f(42))</code></pre><p>这分别检验左恒等律 <code>id ∘ f = f</code> 与右恒等律 <code>f ∘ id = f</code>。有限测试不能证明定律，但能检查实现。</p></details>
+          </li>
+          <li>万维网在某种意义上是范畴吗？链接是态射吗？
+            <details class="exercise-answer"><summary>点击展开参考答案</summary><p>可以，但不能只把“单个链接”当作全部态射。把网页作为对象，把有限链接路径作为态射；空路径是恒等态射，路径拼接是复合，并且满足结合律。若只保留单个链接，两条链接复合后未必还是单个链接，因而通常不成范畴。</p></details>
+          </li>
+          <li>如果把人看作对象，把友谊看作态射，Facebook 是范畴吗？
+            <details class="exercise-answer"><summary>点击展开参考答案</summary><p>通常不是。友谊关系虽然可看作双向，并且每个人可视为与自己有关联，但它不具传递性：A 是 B 的朋友、B 是 C 的朋友，并不意味着存在 A 到 C 的“友谊态射”。若把态射改为朋友链，才可以构成自由范畴。</p></details>
+          </li>
+          <li>有向图在什么情况下构成范畴？
+            <details class="exercise-answer"><summary>点击展开参考答案</summary><p>当每个节点都有恒等环，并且任意首尾相接的边都有定义好的复合边，同时复合满足结合律与左右恒等律时，它就是范畴。任意有向图都能通过加入所有有限路径（包括空路径）生成自由范畴。</p></details>
+          </li>
+        </ol>
+      </section>
+
+      <nav class="chapter-switcher" aria-label="章节切换">
+        <a href="../preface/">← 序言</a>
+        <a href="../types-and-functions/">第 2 章：类型与函数 →</a>
+      </nav>
+    </article>
+
+    <footer class="source-note" id="source">
+      <p><strong>原文：</strong><a href="https://bartoszmilewski.com/2014/11/04/category-the-essence-of-composition/">Category: The Essence of Composition</a></p>
+      <p><strong>核对底稿：</strong>作者博客正文与开源英文 Markdown 版本；正文、代码、公式、插图、图注、链接和习题均已收录。</p>
+      <p><strong>许可：</strong>原作及本非官方中文译文依 <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> 署名—相同方式共享。概念或措辞有疑问时，以作者英文原文为准。</p>
+    </footer>
+  </main>
+</body>
+</html>

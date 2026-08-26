@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>第 11 章：声明式编程｜程序员的范畴论｜RIN III</title><meta name="description" content="《程序员的范畴论》第二部分第 1 章完整中文翻译：声明式与命令式、物理学中的局部与全局描述、FRP 与泛构造"><link rel="stylesheet" href="../reader.css"></head>
+<body><nav class="site-nav"><a href="../../../mathematics/category-theory-for-programmers/">← 返回整本书学习记录</a><a href="../../../">RIN III</a></nav><main class="reader"><header><span class="chapter-kicker">第二部分 · 第 11 章 · 完整中文译文</span><h1>声明式编程</h1><p class="byline">Bartosz Milewski</p><div class="title-rule"></div><p class="lead">命令式描述告诉计算机“怎样做”，声明式描述则陈述“什么成立”。范畴论没有内建的距离、邻域或时间，更自然地站在全局视角，通过泛性质描述结果。</p><div class="translation-scope"><span class="scope-label">译文范围</span><p>完整翻译本章正文，保留 2 个代码块、5 张插图、全部公式和原文链接；本章没有习题。</p></div></header><article>
+<section><p class="source-paragraph" data-source-paragraph="1">本书第一部分中，我主张范畴论与编程都关乎可组合性。编程时，你不断分解问题，直到抵达自己能处理的细节层级，依次解决各个子问题，再自底向上重新组合答案。粗略说，有两种做法：告诉计算机要做什么，或者告诉它怎样做。前者称为<em>声明式（declarative）</em>，后者称为<em>命令式（imperative）</em>。</p>
+<p class="source-paragraph" data-source-paragraph="2">即使在最基础的层面也能看到差别。复合本身可以声明式定义：<code>h</code> 是 <code>f</code> 后接 <code>g</code> 的复合：</p><pre><code class="language-haskell">h = g . f</code></pre>
+<p class="source-paragraph" data-source-paragraph="3">也可以命令式定义：先调用 <code>f</code>，记住结果，再以结果调用 <code>g</code>：</p><pre><code class="language-haskell">h x = let y = f x
+      in g y</code></pre>
+<p class="source-paragraph" data-source-paragraph="4">程序的命令式版本通常描述为按时间排序的一系列动作。尤其是，<code>g</code> 必须等 <code>f</code> 执行完成后才能调用。至少概念图景如此；在采用<em>按需调用（call-by-need）</em>传参的惰性语言中，实际执行可能不同。</p>
+<p class="source-paragraph" data-source-paragraph="5">事实上，根据编译器的聪明程度，声明式与命令式代码的执行方式可能几乎没有区别。但两种方法在解决问题的思路，以及结果代码的可维护性、可测试性方面，可能存在巨大差异。</p>
+<p class="source-paragraph" data-source-paragraph="6">主要问题是：面对一个问题，我们是否总能在声明式与命令式解法之间选择？若有声明式解法，它是否总能翻译成计算机代码？答案远非显然；若能找到答案，很可能会彻底改变我们对宇宙的理解。</p>
+<p class="source-paragraph" data-source-paragraph="7">下面详细说明。物理学中也存在类似二元性，它要么指向某项深层原理，要么揭示我们的思维方式。Richard Feynman 曾说，这种二元性启发了他的量子电动力学工作。</p>
+<p class="source-paragraph" data-source-paragraph="8">多数物理定律有两种表达形式。一种采用局部或无穷小视角：观察系统在一个很小邻域内的状态，预测它在下一瞬间怎样演化。这通常用微分方程表达，再对一段时间积分或求和。</p>
+<p class="source-paragraph" data-source-paragraph="9">这种方式与命令式思维很像：沿一系列小步骤得到最终解，每一步依赖上一步结果。物理系统的计算机模拟通常把微分方程改成差分方程再迭代。Asteroids 游戏中的飞船动画就是这样实现的：每个时间步，把速度乘以时间增量，算出位置的小增量；速度又增加一个与加速度成比例的小量，而加速度等于力除以质量。</p>
+<figure><div class="figure-frame"><img src="asteroids.png" alt="Asteroids 游戏中的飞船"></div></figure>
+<p class="source-paragraph" data-source-paragraph="10">这些是牛顿运动定律对应微分方程的直接编码：</p><div class="math-display">F = m · dv/dt<br>v = dx/dt</div>
+<p class="source-paragraph" data-source-paragraph="11">类似方法可用于更复杂的问题，例如用 Maxwell 方程模拟电磁场传播，乃至用格点 QCD（量子色动力学）模拟质子内部夸克与胶子的行为。</p>
+<p class="source-paragraph" data-source-paragraph="12">数字计算机鼓励局部思维以及空间、时间离散化；其极端体现，是 Stephen Wolfram 英勇地尝试把整个宇宙的复杂性还原成元胞自动机系统。</p>
+<p class="source-paragraph" data-source-paragraph="13">另一种方法是全局的。观察系统初态与终态，通过最小化某个泛函，计算连接二者的轨迹。最简单的例子是 Fermat 最短时间原理：光线沿飞行时间最短的路径传播。没有反射或折射物体时，从 A 到 B 的光线走最短路径，即直线。但光在水或玻璃等致密透明材料中传播较慢。若起点在空气中、终点在水下，光在空气中多走一些、在水中抄近路更有利。最短时间路径使光线在空气与水的边界折射，得到 Snell 折射定律：</p><div class="math-display">sin θ₁ / sin θ₂ = v₁ / v₂</div>
+<p class="source-paragraph" data-source-paragraph="14">其中 <em>v₁</em> 是光在空气中的速度，<em>v₂</em> 是光在水中的速度。</p><figure><div class="figure-frame"><img src="snell.jpg" alt="光线在空气与水界面折射"></div></figure>
+<p class="source-paragraph" data-source-paragraph="15">全部经典力学都能从最小作用量原理推导。任意轨迹的作用量可通过拉格朗日量积分计算；拉格朗日量是动能与势能之差（注意是差，不是和；和才是总能量）。发射迫击炮命中给定目标时，炮弹先上升到重力势能较高处，并在那里停留一段时间，为作用量积累负贡献。它在抛物线顶端附近还会减速，以减小动能；随后加速，迅速穿过低势能区域。</p><figure><div class="figure-frame"><img src="mortar.jpg" alt="迫击炮弹连接起点与目标的抛物线轨迹"></div></figure>
+<p class="source-paragraph" data-source-paragraph="16">Feynman 最伟大的贡献，是认识到最小作用量原理可推广到量子力学。问题同样以初态、终态表述，再用二者之间的 Feynman 路径积分计算跃迁概率。</p><figure><div class="figure-frame"><img src="feynman.jpg" alt="初态与终态之间的多条 Feynman 路径"></div></figure>
+<p class="source-paragraph" data-source-paragraph="17">要点是：物理定律的描述方式存在一种奇特而尚未解释的二元性。可以采用局部图景，让事情按顺序、以小增量发生；也可以采用全局图景，只声明初始与最终条件，中间的一切自然随之确定。</p>
+<p class="source-paragraph" data-source-paragraph="18">全局方法也用于编程，例如实现光线追踪。我们声明眼睛与光源的位置，再找出连接它们的光线路径。虽然不显式最小化每条光线的飞行时间，却用 Snell 定律与反射几何达成同样效果。</p>
+<p class="source-paragraph" data-source-paragraph="19">局部与全局方法最大的差别，在于怎样处理空间，尤其是时间。局部方法拥抱此时此地的即时满足；全局方法采取长期、静态的视角，仿佛未来早已注定，而我们只是分析某个永恒宇宙的性质。</p>
+<p class="source-paragraph" data-source-paragraph="20">没有什么比函数式响应式编程（Functional Reactive Programming，FRP）处理用户交互的方式更能说明这一点。FRP 不为每种用户动作编写可访问共享可变状态的独立处理器，而把外部事件视为无限列表，再对其应用一系列变换。概念上，我们未来全部动作的列表已经存在，可作为程序输入。对程序而言，π 的数字列表、伪随机数列表和来自硬件的鼠标位置列表没有差别。无论哪一种，要取得第 <em>n</em> 项，都必须先经过前 <em>n−1</em> 项。用于时间事件时，这项性质称为<em>因果性（causality）</em>。</p>
+<p class="source-paragraph" data-source-paragraph="21">这与范畴论有什么关系？我将主张：范畴论鼓励全局方法，因此支持声明式编程。首先，与微积分不同，它没有内建的距离、邻域或时间概念；只有抽象对象与抽象连接。若能通过一系列步骤从 A 到 B，也能一步抵达。更重要的是，范畴论的主要工具泛构造，正是全局方法的典范。我们已经在范畴积的定义中见过：通过声明性质来定义它，这是非常声明式的方式。它是带有两个投影的对象，并且是其中最好的对象——它优化某项性质：对其他同类对象的投影进行因子分解。</p><figure><div class="figure-frame"><img src="productranking.jpg" alt="积对象通过泛性质在候选中排名最佳"></div></figure>
+<p class="source-paragraph" data-source-paragraph="22">把它与 Fermat 最短时间原理或最小作用量原理比较。</p>
+<p class="source-paragraph" data-source-paragraph="23">反过来，再与更命令式的传统笛卡尔积定义比较：从一个集合选一个元素，从另一个集合选一个元素，据此说明怎样创建积的元素。这是创建 pair 的配方，另外还有拆解 pair 的配方。</p>
+<p class="source-paragraph" data-source-paragraph="24">几乎所有编程语言——包括 Haskell 这样的函数式语言——都把积类型、余积类型、函数类型内建起来，而非通过泛构造定义；不过确实有人尝试创建范畴式编程语言，例如 <a href="http://web.sfc.keio.ac.jp/~hagino/thesis.pdf">Tatsuya Hagino 的论文</a>。</p>
+<p class="source-paragraph" data-source-paragraph="25">无论是否直接使用，范畴定义都会为已有编程构造提供正当性，也会产生新的构造。最重要的是，范畴论提供了一种元语言，让我们在声明式层面推理计算机程序；它还鼓励先推理问题规格，再把规格落实成代码。</p></section>
+<nav class="chapter-switcher"><a href="../natural-transformations/">← 第 10 章：自然变换</a><a href="../limits-and-colimits/">第 12 章：极限与余极限 →</a></nav>
+</article><footer class="source-note"><p><strong>原文：</strong><a href="https://bartoszmilewski.com/2015/04/15/declarative-programming/">Declarative Programming</a></p><p><strong>核对底稿：</strong>作者博客正文与开源英文 Markdown；正文、2 个代码块、公式、5 张插图和链接均已收录。原章没有习题。</p><p><strong>许可：</strong>原作及本非官方中文译文依 <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> 署名—相同方式共享。</p></footer></main></body></html>

@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>第 3 章：大大小小的范畴｜程序员的范畴论｜RIN III</title>
+  <meta name="description" content="Bartosz Milewski《程序员的范畴论》第 3 章完整中文翻译：自由范畴、序、幺半群及单对象范畴">
+  <link rel="stylesheet" href="../reader.css">
+</head>
+<body>
+  <nav class="site-nav" aria-label="站点导航">
+    <a href="../../../mathematics/category-theory-for-programmers/">← 返回整本书学习记录</a>
+    <a href="../../../">RIN III</a>
+  </nav>
+
+  <main class="reader">
+    <header>
+      <span class="chapter-kicker">第一部分 · 第 3 章 · 完整中文译文</span>
+      <h1>大大小小的范畴</h1>
+      <p class="byline">Bartosz Milewski · 2014 年 12 月 5 日</p>
+      <div class="title-rule"></div>
+      <p class="lead">从空范畴、自由范畴和序关系，到作为集合与作为单对象范畴的幺半群：这些例子展示了“对象与箭头”如何出现在看似完全不同的结构里。</p>
+
+      <div class="translation-scope">
+        <span class="scope-label">译文范围</span>
+        <p>完整翻译本章正文，保留 2 张原图、全部 Haskell 与 C++ 代码、公式、术语解释以及 5 道习题和子题。</p>
+      </div>
+
+      <nav aria-label="本页导航">
+        <ul class="chapter-nav">
+          <li><a href="#no-objects">没有对象</a></li>
+          <li><a href="#simple-graphs">简单图</a></li>
+          <li><a href="#orders">序</a></li>
+          <li><a href="#monoid-as-set">作为集合的幺半群</a></li>
+          <li><a href="#monoid-as-category">作为范畴的幺半群</a></li>
+          <li><a href="#challenges">习题</a></li>
+        </ul>
+      </nav>
+    </header>
+
+    <article>
+      <p class="source-paragraph" data-source-paragraph="1">研究各种各样的例子，才能真正体会范畴的意味。范畴有各种形态和大小，经常在意想不到的地方冒出来。我们先从非常简单的东西开始。</p>
+
+      <section id="no-objects">
+        <h2>没有对象</h2>
+        <p class="source-paragraph" data-source-paragraph="2">最平凡的范畴拥有零个对象，因此也拥有零个态射。孤零零地看，它是一个非常悲伤的范畴；但放进其他范畴的语境，它也许很重要——例如在所有范畴组成的范畴中（没错，确实有这样一个范畴）。既然你觉得空集有意义，为什么空范畴就不能有意义？</p>
+      </section>
+
+      <section id="simple-graphs">
+        <h2>简单图</h2>
+        <p class="source-paragraph" data-source-paragraph="3">只要用箭头连接对象，就能构造范畴。你可以想象从任意有向图出发，只需继续添加箭头，就把它变成一个范畴。首先，在每个节点上添加恒等箭头。然后，对任意两支首尾相接的箭头——换句话说，任意一对<em>可复合</em>箭头——添加一支新箭头作为它们的复合。每次添加新箭头时，还必须继续考虑它与其他箭头（恒等箭头除外）以及它自身的复合。最后通常会得到无限多支箭头，不过这没有问题。</p>
+
+        <p class="source-paragraph" data-source-paragraph="4">换个角度看，这个过程创建了一个范畴：图中的每个节点对应一个对象，而图中所有可能的可复合边<em>链</em>对应态射。（甚至可以把恒等态射看作长度为零的特殊链。）</p>
+
+        <p class="source-paragraph" data-source-paragraph="5">这样的范畴称为由给定图生成的<em>自由范畴</em>。这是自由构造的一个例子：只添加满足结构定律所需的最少元素，将给定结构补充完整——这里需要满足的是范畴定律。以后还会看到更多例子。</p>
+      </section>
+
+      <section id="orders">
+        <h2>序</h2>
+        <p class="source-paragraph" data-source-paragraph="6">现在来看一种完全不同的东西！在这个范畴中，态射是对象之间的关系：小于或等于。我们检查一下它是否真的是范畴。有恒等态射吗？每个对象都小于或等于自身：通过！有复合吗？如果 <em>a</em> ≤ <em>b</em> 且 <em>b</em> ≤ <em>c</em>，那么 <em>a</em> ≤ <em>c</em>：通过！复合满足结合律吗？通过！带有这种关系的集合称为预序，因此<em>预序</em>的确是一个范畴。</p>
+
+        <p class="source-paragraph" data-source-paragraph="7">还可以采用更强的关系，它额外满足一项条件：如果 <em>a</em> ≤ <em>b</em> 且 <em>b</em> ≤ <em>a</em>，那么 <em>a</em> 必须与 <em>b</em> 相同。这称为<em>偏序</em>。</p>
+
+        <p class="source-paragraph" data-source-paragraph="8">最后，还可以要求任意两个对象之间总存在某一方向的关系；由此得到<em>线序</em>或<em>全序</em>。</p>
+
+        <p class="source-paragraph" data-source-paragraph="9">让我们把这些有序集合刻画为范畴。预序是一种范畴，其中从任意对象 <em>a</em> 到任意对象 <em>b</em> 至多存在一个态射。这类范畴还有一个名称：“薄范畴”。预序就是薄范畴。</p>
+
+        <p class="source-paragraph" data-source-paragraph="10">在范畴 C 中，从对象 <em>a</em> 到对象 <em>b</em> 的态射集合称为 <em>hom 集</em>，写作 C(<em>a</em>, <em>b</em>)（有时也写作 Hom<sub>C</sub>(<em>a</em>, <em>b</em>)）。因此，预序中的每个 hom 集要么为空，要么是单元素集合。这也包括 hom 集 C(<em>a</em>, <em>a</em>)——从 <em>a</em> 到自身的态射集合；在任何预序中，它都必须是只包含恒等态射的单元素集合。不过，预序中可能存在环；偏序则不允许环存在。</p>
+
+        <p class="source-paragraph" data-source-paragraph="11">识别预序、偏序和全序非常重要，因为排序与它们有关。快速排序、冒泡排序、归并排序等排序算法，只能在全序上正确工作。偏序则可以使用拓扑排序。</p>
+      </section>
+
+      <section id="monoid-as-set">
+        <h2>作为集合的幺半群</h2>
+        <p class="source-paragraph" data-source-paragraph="12">幺半群是一个简单得令人难为情、却又强大得惊人的概念。它位于基本算术背后：加法和乘法都构成幺半群。幺半群在编程中无处不在，它们以字符串、列表、可折叠数据结构、并发编程中的 future、函数响应式编程中的事件等形式出现。</p>
+
+        <p class="source-paragraph" data-source-paragraph="13">传统上，幺半群定义为带有一个二元运算的集合。这个运算只需满足结合律，并且集合中存在一个特殊元素，在该运算下充当单位元。</p>
+
+        <p class="source-paragraph" data-source-paragraph="14">例如，包含零的自然数在加法下构成幺半群。结合律意味着：</p>
+        <div class="math-display">(<em>a</em> + <em>b</em>) + <em>c</em> = <em>a</em> + (<em>b</em> + <em>c</em>)</div>
+        <p class="source-paragraph" data-source-paragraph="15">换句话说，数字相加时可以省略括号。</p>
+
+        <p class="source-paragraph" data-source-paragraph="16">中性元素是零，因为：</p>
+        <div class="math-display">0 + <em>a</em> = <em>a</em></div>
+        <p class="source-paragraph" data-source-paragraph="17">并且：</p>
+        <div class="math-display"><em>a</em> + 0 = <em>a</em></div>
+        <p class="source-paragraph" data-source-paragraph="18">第二条等式其实是多余的，因为加法满足交换律（<em>a</em> + <em>b</em> = <em>b</em> + <em>a</em>）；但交换律并不是幺半群定义的一部分。例如，字符串连接不满足交换律，却仍然构成幺半群。顺便说一句，字符串连接的中性元素是空字符串：把它连接到字符串的任意一侧，都不会改变原字符串。</p>
+
+        <p class="source-paragraph" data-source-paragraph="19">在 Haskell 中，我们可以为幺半群定义一个类型类：它描述一种拥有称为 <code>mempty</code> 的中性元素和称为 <code>mappend</code> 的二元运算的类型：</p>
+        <pre><code class="language-haskell">class Monoid m where
+    mempty  :: m
+    mappend :: m -&gt; m -&gt; m</code></pre>
+
+        <p class="source-paragraph" data-source-paragraph="20">双参数函数的类型签名 <code>m -&gt; m -&gt; m</code> 起初也许有些奇怪，但讨论柯里化之后，它就会完全合理。包含多个箭头的签名有两种基本解释：可以把它看作多参数函数，最右边的类型是返回类型；也可以看作接受一个参数（最左边的参数）并返回一个函数的函数。后一种解释可以通过添加括号来强调：<code>m -&gt; (m -&gt; m)</code>。因为箭头是右结合的，这些括号本来可以省略。我们很快会回到这种解释。</p>
+
+        <p class="source-paragraph" data-source-paragraph="21">请注意，Haskell 无法表达 <code>mempty</code> 和 <code>mappend</code> 应满足的幺半群性质——也就是 <code>mempty</code> 是中性元素、<code>mappend</code> 满足结合律。确保这些性质成立，是程序员的责任。</p>
+
+        <p class="source-paragraph" data-source-paragraph="22">Haskell 的类不像 C++ 类那样具有侵入性。定义新类型时，不必预先指定它属于哪个类。你完全可以拖延到很久以后，再声明某个类型是某个类的实例。例如，我们通过提供 <code>mempty</code> 与 <code>mappend</code> 的实现，把 <code>String</code> 声明为幺半群（事实上，标准 Prelude 已经替你完成了这件事）：</p>
+        <pre><code class="language-haskell">instance Monoid String where
+    mempty = ""
+    mappend = (++)</code></pre>
+
+        <p class="source-paragraph" data-source-paragraph="23">这里复用了列表连接运算符 <code>(++)</code>，因为 <code>String</code> 只不过是字符列表。</p>
+
+        <p class="source-paragraph" data-source-paragraph="24">补充一点 Haskell 语法：任何中缀运算符只要用括号包围，就能变成双参数函数。给定两个字符串，可以把 <code>++</code> 插在它们之间来连接：</p>
+        <pre><code class="language-haskell">"Hello " ++ "world!"</code></pre>
+
+        <p class="source-paragraph" data-source-paragraph="25">也可以把它们作为两个参数传给加了括号的 <code>(++)</code>：</p>
+        <pre><code class="language-haskell">(++) "Hello " "world!"</code></pre>
+
+        <p class="source-paragraph" data-source-paragraph="26">请注意，函数参数不用逗号分隔，外面也没有括号。（这大概是学习 Haskell 时最难适应的事情。）</p>
+
+        <p class="source-paragraph" data-source-paragraph="27">值得强调的是，Haskell 允许你表达函数之间的相等，例如：</p>
+        <pre><code class="language-haskell">mappend = (++)</code></pre>
+
+        <p class="source-paragraph" data-source-paragraph="28">从概念上说，这不同于表达函数产生的值相等，例如：</p>
+        <pre><code class="language-haskell">mappend s1 s2 = (++) s1 s2</code></pre>
+
+        <p class="source-paragraph" data-source-paragraph="29">前一种写法对应 Hask 范畴中的态射相等（如果忽略底——也就是永不结束的计算——也可视作 Set 中的态射相等）。这类等式不仅更简洁，而且往往可以推广到其他范畴。后一种称为<em>外延相等</em>：它断言，对任意两个输入字符串，<code>mappend</code> 与 <code>(++)</code> 的输出相同。由于参数值有时也称为<em>点</em>（例如“函数 <em>f</em> 在点 <em>x</em> 处的值”），所以这又称为逐点相等。不指定参数的函数相等则称为<em>无点</em>表达。（顺带一提，无点等式往往包含函数复合，而复合恰好用一个点表示；这可能让初学者有点困惑。）</p>
+
+        <p class="source-paragraph" data-source-paragraph="30">在 C++ 中，最接近幺半群声明的做法，是使用 C++20 标准的 concept 特性：</p>
+        <pre><code class="language-cpp">template&lt;typename T&gt;
+struct mempty;
+
+template&lt;typename T&gt;
+T mappend(T, T) = delete;
+
+template&lt;typename M&gt;
+concept Monoid = requires (M m) {
+    { mempty&lt;M&gt;::value() } -&gt; std::same_as&lt;M&gt;;
+    { mappend(m, m) } -&gt; std::same_as&lt;M&gt;;
+};</code></pre>
+
+        <p class="source-paragraph" data-source-paragraph="31">第一个定义是一个结构体，用来为每个特化保存中性元素。</p>
+
+        <p class="source-paragraph" data-source-paragraph="32">关键字 <code>delete</code> 表示没有定义默认值：必须逐个情况指定。类似地，<code>mappend</code> 也没有默认实现。</p>
+
+        <p class="source-paragraph" data-source-paragraph="33">concept <code>Monoid</code> 检查：对于给定类型 <code>M</code>，是否存在合适的 <code>mempty</code> 与 <code>mappend</code> 定义。</p>
+
+        <p class="source-paragraph" data-source-paragraph="34">要让某个类型实例化 <code>Monoid</code> concept，可以提供相应的特化与重载：</p>
+        <pre><code class="language-cpp">template&lt;&gt;
+struct mempty&lt;std::string&gt; {
+    static std::string value() { return ""; }
+};
+
+template&lt;&gt;
+std::string mappend(std::string s1, std::string s2) {
+    return s1 + s2;
+}</code></pre>
+      </section>
+
+      <section id="monoid-as-category">
+        <h2>作为范畴的幺半群</h2>
+        <p class="source-paragraph" data-source-paragraph="35">上面是我们“熟悉的”定义：用集合元素来定义幺半群。但你已经知道，范畴论试图摆脱集合及其元素，转而讨论对象与态射。因此稍微改变视角，把二元运算的应用看作在集合中“移动”或“平移”事物。</p>
+
+        <p class="source-paragraph" data-source-paragraph="36">例如，有一种运算会给每个自然数加 5。它把 0 映射到 5，把 1 映射到 6，把 2 映射到 7，如此继续。这是定义在自然数集合上的一个函数。很好：我们有一个函数和一个集合。一般而言，对任意数字 <em>n</em>，都有一个“加 <em>n</em>”的函数——<em>n</em> 的加法器。</p>
+
+        <p class="source-paragraph" data-source-paragraph="37">加法器怎样复合？“加 5”函数与“加 7”函数复合，得到“加 12”函数。因此，加法器的复合可以等同于加法规则。这也很好：我们能够用函数复合替代加法。</p>
+
+        <p class="source-paragraph" data-source-paragraph="38">但还不止这些：中性元素零也有对应的加法器。加零不会移动任何东西，所以它就是自然数集合上的恒等函数。</p>
+
+        <p class="source-paragraph" data-source-paragraph="39">我完全可以不给你传统的加法规则，只给出加法器的复合规则，而且不会损失任何信息。注意，加法器的复合满足结合律，因为函数复合满足结合律；同时，还有与恒等函数对应的零加法器。</p>
+
+        <p class="source-paragraph" data-source-paragraph="40">敏锐的读者也许已经注意到，从整数到加法器的映射来自对 <code>mappend</code> 类型签名 <code>m -&gt; (m -&gt; m)</code> 的第二种解释。它告诉我们，<code>mappend</code> 把幺半群集合中的一个元素映射为作用于该集合的函数。</p>
+
+        <p class="source-paragraph" data-source-paragraph="41">现在，我希望你忘掉自己正在处理自然数集合，只把它想成一个单独的对象——一团带有许多态射（加法器）的东西。幺半群是一个单对象范畴。事实上，monoid 这个名称来自希腊语 <em>mono</em>，意思是“单一”。每个幺半群都可以描述成单对象范畴，其中的一组态射遵守适当的复合规则。</p>
+
+        <figure>
+          <div class="figure-frame"><img class="portrait" src="monoid.jpg" alt="一个对象以及从该对象回到自身的多支态射"></div>
+          <figcaption>作为单对象范畴的幺半群：所有态射都从唯一对象回到该对象。</figcaption>
+        </figure>
+
+        <p class="source-paragraph" data-source-paragraph="42">字符串连接是一个有趣的例子，因为我们可以选择定义右追加器，也可以定义左追加器（如果你愿意，也可称为前置器）。两种模型的复合表互为镜像。你很容易验证：先追加 “foo”、再追加 “bar”，对应于先前置 “bar”、再前置 “foo”。</p>
+
+        <p class="source-paragraph" data-source-paragraph="43">你也许会问：每一个范畴式幺半群——也就是单对象范畴——是否都会定义一个唯一的“集合加二元运算”式幺半群？事实证明，我们始终可以从单对象范畴中抽取一个集合。这个集合就是态射的集合——在前面的例子中，就是加法器。换句话说，在范畴 M 中，唯一对象 <em>m</em> 有一个 hom 集 M(<em>m</em>, <em>m</em>)。我们很容易在这个集合上定义二元运算：两个集合元素的幺半群乘积，就是与相应态射复合对应的那个元素。如果给我 M(<em>m</em>, <em>m</em>) 中分别对应 <em>f</em> 和 <em>g</em> 的两个元素，它们的乘积就对应复合 <em>f</em> ∘ <em>g</em>。由于这些态射的源与目标都是同一个对象，复合永远存在；根据范畴定律，它还满足结合律。恒等态射就是这一乘积的中性元素。因此，我们总能从范畴式幺半群恢复出集合式幺半群。就所有实际目的而言，它们是同一个东西。</p>
+
+        <figure>
+          <div class="figure-frame"><img class="portrait" src="monoidhomset.jpg" alt="幺半群 hom 集既被看作态射，也被看作集合中的点"></div>
+          <figcaption>把幺半群 hom 集同时看作态射，以及集合中的点。</figcaption>
+        </figure>
+
+        <p class="source-paragraph" data-source-paragraph="44">这里仅有一个可供数学家挑剔的小问题：态射不一定组成集合。在范畴的世界里，存在比集合更大的东西。如果一个范畴中任意两个对象之间的态射都组成集合，就称该范畴为<em>局部小范畴</em>。正如承诺的那样，我基本会忽略这些微妙之处，不过觉得还是应该在记录中提上一句。</p>
+
+        <p class="source-paragraph" data-source-paragraph="45">范畴论中许多有趣现象都源于这一事实：hom 集的元素既可以被看作遵守复合规则的态射，也可以被看作集合中的点。在这里，范畴 M 中的态射复合，转化成集合 M(<em>m</em>, <em>m</em>) 上的幺半群乘积。</p>
+      </section>
+
+      <section id="challenges">
+        <h2>习题</h2>
+        <ol class="challenges">
+          <li>分别从下列图生成自由范畴：
+            <ol type="a">
+              <li>一个节点、没有边的图；</li>
+              <li>一个节点、一条有向边的图（提示：这条边可以与自身复合）；</li>
+              <li>两个节点、其间只有一支箭头的图；</li>
+              <li>一个节点、26 支分别标有字母 a、b、c……z 的箭头的图。</li>
+            </ol>
+            <details class="exercise-answer"><summary>点击展开参考答案</summary><ol type="a"><li>一个对象，只有自动加入的恒等态射。</li><li>一个对象与态射 <em>a</em>，还必须包含 <em>id, a, a², a³, …</em>；复合就是指数相加。</li><li>两个对象、各自的恒等态射，以及题给的那支箭头；没有其他非平凡复合。</li><li>一个对象；态射是由 26 个字母组成的所有有限字符串，空串为恒等，复合为字符串连接。</li></ol></details>
+          </li>
+          <li>下面各是什么类型的序？
+            <ol type="a">
+              <li>以包含关系为序的一组集合：如果 A 的每个元素也是 B 的元素，就说 A 包含于 B；</li>
+              <li>带有如下子类型关系的 C++ 类型：如果指向 <code>T1</code> 的指针可以传给期待 <code>T2</code> 指针的函数而不触发编译错误，则 <code>T1</code> 是 <code>T2</code> 的子类型。</li>
+            </ol>
+            <details class="exercise-answer"><summary>点击展开参考答案</summary><ol type="a"><li>包含关系是偏序：自反、传递、反对称，但通常不是全序，因为两个集合可能互不包含。</li><li>把彼此可隐式转换的别名类型视为同一对象后是偏序；若保留不同但相互可转换的类型，严格说只是预序，因为反对称性可能失败。</li></ol></details>
+          </li>
+          <li>考虑到 <code>Bool</code> 是由 <code>True</code> 与 <code>False</code> 构成的二元素集合，证明它分别关于运算符 <code>&amp;&amp;</code>（与）和 <code>||</code>（或）构成两个集合论意义上的幺半群。
+            <details class="exercise-answer"><summary>点击展开参考答案</summary><p><code>&amp;&amp;</code> 和 <code>||</code> 都对布尔值封闭并满足结合律。<code>&amp;&amp;</code> 的单位元是 <code>True</code>，因为 <code>True &amp;&amp; x = x = x &amp;&amp; True</code>；<code>||</code> 的单位元是 <code>False</code>。因此两者各自构成幺半群。</p></details>
+          </li>
+          <li>把带有“与”运算的 <code>Bool</code> 幺半群表示为范畴：列出态射及其复合规则。
+            <details class="exercise-answer"><summary>点击展开参考答案</summary><p>范畴只有一个对象。态射为 <code>True</code> 与 <code>False</code>；复合定义为布尔与：<code>T∘T=T</code>，其余三种组合均为 <code>F</code>。恒等态射是 <code>True</code>。</p></details>
+          </li>
+          <li>把模 3 加法表示为幺半群范畴。
+            <details class="exercise-answer"><summary>点击展开参考答案</summary><p>取一个对象，态射为 <code>0、1、2</code>。复合是模 3 加法：<code>m ∘ n = (m+n) mod 3</code>，恒等态射为 <code>0</code>。结合律继承自整数加法。</p></details>
+          </li>
+        </ol>
+      </section>
+
+      <nav class="chapter-switcher" aria-label="章节切换">
+        <a href="../types-and-functions/">← 第 2 章：类型与函数</a>
+        <a href="../kleisli-categories/">第 4 章：Kleisli 范畴 →</a>
+      </nav>
+    </article>
+
+    <footer class="source-note" id="source">
+      <p><strong>原文：</strong><a href="https://bartoszmilewski.com/2014/12/05/categories-great-and-small/">Categories Great and Small</a></p>
+      <p><strong>核对底稿：</strong>作者博客正文与开源英文 Markdown 版本；正文、代码、公式、插图、图注、术语和习题均已收录。</p>
+      <p><strong>许可：</strong>原作及本非官方中文译文依 <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> 署名—相同方式共享。</p>
+    </footer>
+  </main>
+</body>
+</html>

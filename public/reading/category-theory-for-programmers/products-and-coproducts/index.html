@@ -1,0 +1,295 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>第 5 章：积与余积｜程序员的范畴论｜RIN III</title>
+  <meta name="description" content="Bartosz Milewski《程序员的范畴论》第 5 章完整中文翻译：泛构造、始对象与终对象、积、余积和对偶性">
+  <link rel="stylesheet" href="../reader.css">
+</head>
+<body>
+  <nav class="site-nav" aria-label="站点导航">
+    <a href="../../../mathematics/category-theory-for-programmers/">← 返回整本书学习记录</a>
+    <a href="../../../">RIN III</a>
+  </nav>
+
+  <main class="reader">
+    <header>
+      <span class="chapter-kicker">第一部分 · 第 5 章 · 完整中文译文</span>
+      <h1>积与余积</h1>
+      <p class="byline">Bartosz Milewski</p>
+      <div class="title-rule"></div>
+      <p class="lead">范畴论不靠拆开对象观察其内部，而是借助对象与其他对象之间的箭头来刻画它。始对象、终对象、积与余积，都是这种“由关系定义对象”的泛构造。</p>
+
+      <div class="translation-scope">
+        <span class="scope-label">译文范围</span>
+        <p>完整翻译本章正文，保留 9 张原图、全部公式与代码、8 道习题及参考资料。</p>
+      </div>
+
+      <nav aria-label="本页导航">
+        <ul class="chapter-nav">
+          <li><a href="#initial">始对象</a></li>
+          <li><a href="#terminal">终对象</a></li>
+          <li><a href="#duality">对偶性</a></li>
+          <li><a href="#isomorphisms">同构</a></li>
+          <li><a href="#products">积</a></li>
+          <li><a href="#coproduct">余积</a></li>
+          <li><a href="#asymmetry">不对称性</a></li>
+          <li><a href="#challenges">习题</a></li>
+        </ul>
+      </nav>
+    </header>
+
+    <article>
+      <section>
+        <p class="source-paragraph" data-source-paragraph="1">古希腊剧作家欧里庇得斯曾说：“一个人就像他惯于结交的伙伴。”关系定义了我们。在范畴论中，这一点体现得再明显不过。若想从一个范畴里挑出某个特定对象，我们只能描述它同其他对象（以及它自己）的关系模式。这些关系由态射定义。</p>
+        <p class="source-paragraph" data-source-paragraph="2">范畴论中有一种常见做法，叫作<em>泛构造（universal construction）</em>：用对象之间的关系来定义对象。方法之一是先选定一种模式——由对象和态射构成的特定形状——再寻找它在范畴中的所有实例。若模式足够常见而范畴又很大，匹配结果很可能非常多。诀窍是为这些匹配建立某种排名，并挑出可视为最佳匹配的那一个。</p>
+        <p class="source-paragraph" data-source-paragraph="3">这个过程很像网络搜索。查询就是一种模式。过于宽泛的查询会带来很高的<em>召回率</em>：结果很多，其中有些相关，有些无关。为了排除无关结果，你会细化查询，从而提高<em>准确率</em>。最后，搜索引擎为结果排序，而你感兴趣的那项最好位于榜首。</p>
+      </section>
+
+      <section id="initial">
+        <h2>始对象</h2>
+        <p class="source-paragraph" data-source-paragraph="4">最简单的形状只有一个对象。显然，一个范畴有多少对象，这个形状就有多少实例；候选实在太多。我们需要建立某种排名，尝试找到层级顶端的对象。手头唯一的手段是态射。若把态射看成箭头，整个范畴中的箭头可能总体上从一端流向另一端。在有序范畴中便是如此，例如偏序。我们可以推广对象先后关系的概念：若有一支箭头（一个态射）从对象 <em>a</em> 指向对象 <em>b</em>，便称 <em>a</em> 比 <em>b</em>“更靠前”。于是可以把始对象定义为向所有其他对象都发出箭头的对象。当然，这种对象不一定存在，这没有问题。更大的问题在于，这样的对象也许太多：召回率不错，准确率却不够。解决办法是借鉴有序范畴——任意两对象间最多只有一支箭头，也就是一个对象“小于等于”另一个对象的方式只有一种。于是得到始对象的定义：</p>
+        <blockquote><p><strong>始对象（initial object）</strong>是这样一个对象：从它到范畴中任意对象都恰好存在一个态射。</p></blockquote>
+        <figure><div class="figure-frame"><img src="initial.jpg" alt="始对象向范畴中所有对象各发出唯一箭头"></div></figure>
+        <p class="source-paragraph" data-source-paragraph="5">即便如此，也不能保证始对象（若存在）本身唯一。不过，它保证了退而求其次的最好结果：始对象在<em>同构意义下唯一</em>。同构在范畴论中极其重要，稍后就会讲。现在只需接受：同构意义下的唯一性，足以证明定义中使用“这个”始对象是合理的。</p>
+        <p class="source-paragraph" data-source-paragraph="6">来看一些例子。偏序集（常简称 <em>poset</em>）中的始对象是它的最小元素。有些偏序集没有始对象，例如以小于等于关系作为态射、同时包含正数和负数的全体整数集合。</p>
+        <p class="source-paragraph" data-source-paragraph="7">在集合与函数的范畴中，始对象是空集。还记得，空集对应 Haskell 类型 <code>Void</code>（C++ 中没有相应类型），从 <code>Void</code> 到任意其他类型的唯一多态函数称为 <code>absurd</code>：</p>
+        <pre><code class="language-haskell">absurd :: Void -&gt; a</code></pre>
+        <p class="source-paragraph" data-source-paragraph="8">正是这一族态射使 <code>Void</code> 成为类型范畴中的始对象。</p>
+      </section>
+
+      <section id="terminal">
+        <h2>终对象</h2>
+        <p class="source-paragraph" data-source-paragraph="9">我们继续使用单对象模式，但改变对象的排名方式。若存在从 <em>b</em> 指向 <em>a</em> 的态射，就说对象 <em>a</em> 比对象 <em>b</em>“更靠近终点”（注意方向反转了）。我们寻找一个比范畴中所有其他对象都更靠近终点的对象，并再次要求唯一性：</p>
+        <blockquote><p><strong>终对象（terminal object）</strong>是这样一个对象：从范畴中任意对象到它都恰好存在一个态射。</p></blockquote>
+        <figure><div class="figure-frame"><img src="final.jpg" alt="范畴中所有对象各用唯一箭头指向终对象"></div></figure>
+        <p class="source-paragraph" data-source-paragraph="10">同样，终对象在同构意义下唯一，稍后会证明。先看例子。在偏序集中，终对象若存在，就是最大对象。在集合范畴中，终对象是单元素集合。我们已经谈过单元素集合：它对应 C++ 的 <code>void</code> 类型和 Haskell 的单位类型 <code>()</code>。这种类型只有一个值——在 C++ 中是隐式的，在 Haskell 中显式写作 <code>()</code>。我们也已经确定，从任意类型到单位类型都恰好有一个纯函数：</p>
+        <pre><code class="language-haskell">unit :: a -&gt; ()
+unit _ = ()</code></pre>
+        <p class="source-paragraph" data-source-paragraph="11">因此，终对象的全部条件都得到了满足。</p>
+        <p class="source-paragraph" data-source-paragraph="12">注意，在这个例子中唯一性条件至关重要，因为还有别的集合——其实除空集外的所有集合——都能从每个集合接收到态射。例如，对每种类型都可以定义一个返回布尔值的函数（谓词）：</p>
+        <pre><code class="language-haskell">yes :: a -&gt; Bool
+yes _ = True</code></pre>
+        <p class="source-paragraph" data-source-paragraph="13">但 <code>Bool</code> 不是终对象。从每种类型到 <code>Bool</code> 至少还有另一个函数（<code>Void</code> 除外；对 <code>Void</code> 而言，两者都等于 <code>absurd</code>）：</p>
+        <pre><code class="language-haskell">no :: a -&gt; Bool
+no _ = False</code></pre>
+        <p class="source-paragraph" data-source-paragraph="14">坚持唯一性，恰好给了我们足够的准确率，把终对象的定义缩小到唯一一种类型。</p>
+      </section>
+
+      <section id="duality">
+        <h2>对偶性</h2>
+        <p class="source-paragraph" data-source-paragraph="15">你一定会注意到始对象与终对象定义之间的对称性。两者唯一的区别只是态射方向。事实证明，对任意范畴 C，我们都能通过反转全部箭头来定义它的<em>对偶范畴</em> C<sup>op</sup>。只要同时重新定义复合，对偶范畴便自动满足范畴的全部要求。若原态射 <em>f: a → b</em> 与 <em>g: b → c</em> 复合成 <em>h: a → c</em>，且 <em>h = g ∘ f</em>，那么反向态射 <em>f<sup>op</sup>: b → a</em> 与 <em>g<sup>op</sup>: c → b</em> 将复合成 <em>h<sup>op</sup>: c → a</em>，且 <em>h<sup>op</sup> = f<sup>op</sup> ∘ g<sup>op</sup></em>。反转恒等箭头则什么也没改变——这里确实有意玩了个双关。</p>
+        <p class="source-paragraph" data-source-paragraph="16">对偶性是范畴的一项重要性质，因为它让每位范畴论数学家的生产力翻倍。每想出一种构造，就得到它的对偶；每证明一个定理，就免费得到另一个。对偶范畴里的构造常以“co”作前缀，于是有 product 与 coproduct、monad 与 comonad、cone 与 cocone、limit 与 colimit，等等。不过没有 cocomonad，因为反转两次箭头又回到了原状。</p>
+        <p class="source-paragraph" data-source-paragraph="17">由此可见，一个范畴的终对象，就是其对偶范畴中的始对象。</p>
+      </section>
+
+      <section id="isomorphisms">
+        <h2>同构</h2>
+        <p class="source-paragraph" data-source-paragraph="18">程序员很清楚，定义相等并非易事。两个对象相等究竟意味着什么？它们必须位于内存中的同一位置（指针相等）吗？还是只要全部分量的值相等就够了？一个用实部与虚部表示、另一个用模与角表示的复数是否相等？你或许以为数学家已经弄清了相等的意义，但并没有。他们同样面对多种彼此竞争的定义：命题相等、内涵相等、外延相等，以及同伦类型论中把相等视为路径。除此之外，还有较弱的同构概念，乃至更弱的等价概念。</p>
+        <p class="source-paragraph" data-source-paragraph="19">直觉上，同构（isomorphism）对象看起来一样——它们拥有相同的形状。这意味着一个对象的每个部分，都通过一一对应映射到另一个对象的某个部分。就我们的观测工具而言，两者是彼此的完美副本。数学上，这意味着存在从对象 <em>a</em> 到对象 <em>b</em> 的映射，也存在从 <em>b</em> 回到 <em>a</em> 的映射，而且二者互为逆映射。在范畴论中，我们以态射取代映射。同构就是可逆态射，也可以说是一对互逆态射。</p>
+        <p class="source-paragraph" data-source-paragraph="20">我们用复合与恒等来理解逆：若态射 <em>g</em> 与态射 <em>f</em> 的复合是恒等态射，那么 <em>g</em> 就是 <em>f</em> 的逆。实际上有两个方程，因为两个态射有两种复合顺序：</p>
+        <pre><code class="language-haskell">f . g = id
+g . f = id</code></pre>
+        <p class="source-paragraph" data-source-paragraph="21">我说始对象（或终对象）在同构意义下唯一，意思是任意两个始对象（或终对象）彼此同构。这很容易看出。假设有两个始对象 i<sub>1</sub> 与 i<sub>2</sub>。因为 i<sub>1</sub> 是始对象，所以存在唯一态射 <em>f</em> 从 i<sub>1</sub> 指向 i<sub>2</sub>。同理，因为 i<sub>2</sub> 是始对象，所以存在唯一态射 <em>g</em> 从 i<sub>2</sub> 指向 i<sub>1</sub>。这两个态射的复合是什么？</p>
+        <figure><div class="figure-frame"><img src="uniqueness.jpg" alt="两个始对象之间的唯一态射及各自恒等态射"></div><figcaption>图中的所有态射都是唯一的。</figcaption></figure>
+        <p class="source-paragraph" data-source-paragraph="22">复合 <em>g ∘ f</em> 必须是从 i<sub>1</sub> 到 i<sub>1</sub> 的态射。但 i<sub>1</sub> 是始对象，从 i<sub>1</sub> 到 i<sub>1</sub> 只能有一个态射。既然我们身处一个范畴，就知道从 i<sub>1</sub> 到自身存在恒等态射；而这里只有一个位置，所以 <em>g ∘ f</em> 必定就是它。因此 <em>g ∘ f</em> 等于恒等。类似地，<em>f ∘ g</em> 也必定等于恒等，因为从 i<sub>2</sub> 回到 i<sub>2</sub> 只能有一个态射。这证明 <em>f</em> 与 <em>g</em> 必然互逆，因而任意两个始对象同构。</p>
+        <p class="source-paragraph" data-source-paragraph="23">注意，这个证明使用了从始对象到自身的态射的唯一性。没有它，我们便无法证明“在同构意义下”这一部分。但为什么还需要 <em>f</em> 与 <em>g</em> 唯一？因为始对象不仅在同构意义下唯一，而且在<em>唯一同构</em>意义下唯一。原则上，两个对象间可以存在多个同构，但这里不会。“在唯一同构意义下唯一”，是所有泛构造的重要性质。</p>
+      </section>
+
+      <section id="products">
+        <h2>积</h2>
+        <p class="source-paragraph" data-source-paragraph="24">下一个泛构造是积。我们知道两个集合的笛卡尔积是什么：它是由数对组成的集合。但积集合与其组成集合之间通过什么模式相连？只要找出这种模式，我们便能把它推广到其他范畴。</p>
+        <p class="source-paragraph" data-source-paragraph="25">我们所能说的，是存在两个从积指向各组成部分的函数，称为投影。在 Haskell 中，这两个函数叫作 <code>fst</code> 与 <code>snd</code>，分别取出 pair 的第一项和第二项：</p>
+        <pre><code class="language-haskell">fst :: (a, b) -&gt; a
+fst (x, y) = x</code></pre>
+        <pre><code class="language-haskell">snd :: (a, b) -&gt; b
+snd (x, y) = y</code></pre>
+        <p class="source-paragraph" data-source-paragraph="26">这里的函数通过模式匹配来定义参数：能匹配任意 pair 的模式是 <code>(x, y)</code>，它把两个分量提取到变量 <code>x</code> 与 <code>y</code> 中。</p>
+        <p class="source-paragraph" data-source-paragraph="27">还可以用通配符进一步简化定义：</p>
+        <pre><code class="language-haskell">fst (x, _) = x
+snd (_, y) = y</code></pre>
+        <p class="source-paragraph" data-source-paragraph="28">在 C++ 中，我们会使用模板函数，例如：</p>
+        <pre><code class="language-cpp">template&lt;typename A, typename B&gt;
+A fst(pair&lt;A, B&gt; const &amp; p) {
+    return p.first;
+}</code></pre>
+        <p class="source-paragraph" data-source-paragraph="29">仅凭这些看似极其有限的知识，我们来尝试定义集合范畴中的对象与态射模式，使它导出两个集合 <em>a</em> 与 <em>b</em> 的积。该模式由一个对象 <em>c</em> 以及两个态射 <em>p</em>、<em>q</em> 组成，二者分别把它连接到 <em>a</em> 与 <em>b</em>：</p>
+        <pre><code class="language-haskell">p :: c -&gt; a
+q :: c -&gt; b</code></pre>
+        <figure><div class="figure-frame"><img src="productpattern.jpg" alt="积的候选对象及其两个投影"></div></figure>
+        <p class="source-paragraph" data-source-paragraph="30">所有符合这个模式的 <em>c</em> 都会成为积的候选者，候选可能非常多。</p>
+        <figure><div class="figure-frame"><img src="productcandidates.jpg" alt="同一对对象的多个积候选"></div></figure>
+        <p class="source-paragraph" data-source-paragraph="31">例如，选择 Haskell 类型 <code>Int</code> 与 <code>Bool</code> 作为两个组成对象，并抽样看看它们的积有哪些候选者。</p>
+        <p class="source-paragraph" data-source-paragraph="32">第一个候选是 <code>Int</code>。<code>Int</code> 能算 <code>Int</code> 与 <code>Bool</code> 的积候选吗？可以——下面就是它的投影：</p>
+        <pre><code class="language-haskell">p :: Int -&gt; Int
+p x = x
+
+q :: Int -&gt; Bool
+q _ = True</code></pre>
+        <p class="source-paragraph" data-source-paragraph="33">这很勉强，但确实符合条件。</p>
+        <p class="source-paragraph" data-source-paragraph="34">另一个候选是 <code>(Int, Int, Bool)</code>，即三元素元组。下面两个态射让它成为合法候选（这里使用三元组的模式匹配）：</p>
+        <pre><code class="language-haskell">p :: (Int, Int, Bool) -&gt; Int
+p (x, _, _) = x
+
+q :: (Int, Int, Bool) -&gt; Bool
+q (_, _, b) = b</code></pre>
+        <p class="source-paragraph" data-source-paragraph="35">你或许已经发现，第一个候选太小，只覆盖了积的 <code>Int</code> 维度；第二个候选又太大，无端重复了 <code>Int</code> 维度。</p>
+        <p class="source-paragraph" data-source-paragraph="36">但我们还没有探索泛构造的另一部分：排名。我们希望能比较模式的两个实例。一个候选对象 <em>c</em> 及其投影 <em>p</em>、<em>q</em>，怎样与另一个候选对象 <em>c′</em> 及其投影 <em>p′</em>、<em>q′</em> 比较？若存在从 <em>c′</em> 到 <em>c</em> 的态射 <em>m</em>，我们想说 <em>c</em> 比 <em>c′</em>“更好”——但这还太弱。它的投影也必须比 <em>c′</em> 的投影“更好”或“更具普适性”。其含义是，可以借助 <em>m</em> 从 <em>p</em> 与 <em>q</em> 重建 <em>p′</em> 与 <em>q′</em>：</p>
+        <pre><code class="language-haskell">p' = p . m
+q' = q . m</code></pre>
+        <figure><div class="figure-frame"><img src="productranking.jpg" alt="积候选之间通过因子态射进行排名"></div></figure>
+        <p class="source-paragraph" data-source-paragraph="37">也可以说，<em>m</em> 对 <em>p′</em> 与 <em>q′</em> 进行了<em>因子分解</em>。不妨假装这些方程里的对象是自然数、点号是乘法，那么 <em>m</em> 就是 <em>p′</em> 与 <em>q′</em> 共享的公因子。</p>
+        <p class="source-paragraph" data-source-paragraph="38">为了建立直觉，我来说明：pair <code>(Int, Bool)</code> 配上两个标准投影 <code>fst</code> 与 <code>snd</code>，确实比刚才的两个候选更好。</p>
+        <figure><div class="figure-frame"><img src="not-a-product.jpg" alt="标准积与两个较差候选的比较"></div></figure>
+        <p class="source-paragraph" data-source-paragraph="39">对于第一个候选，映射 <code>m</code> 是：</p>
+        <pre><code class="language-haskell">m :: Int -&gt; (Int, Bool)
+m x = (x, True)</code></pre>
+        <p class="source-paragraph" data-source-paragraph="40">两个投影 <code>p</code> 与 <code>q</code> 的确可以重建为：</p>
+        <pre><code class="language-haskell">p x = fst (m x) = x
+q x = snd (m x) = True</code></pre>
+        <p class="source-paragraph" data-source-paragraph="41">第二个例子的 <code>m</code> 同样被唯一确定：</p>
+        <pre><code class="language-haskell">m (x, _, b) = (x, b)</code></pre>
+        <p class="source-paragraph" data-source-paragraph="42">我们已经说明 <code>(Int, Bool)</code> 比这两个候选都好。再看看反过来为何不成立。能否找到某个 <code>m'</code>，帮助我们从 <code>p</code> 与 <code>q</code> 重建 <code>fst</code> 与 <code>snd</code>？</p>
+        <pre><code class="language-haskell">fst = p . m'
+snd = q . m'</code></pre>
+        <p class="source-paragraph" data-source-paragraph="43">第一个例子里的 <code>q</code> 总是返回 <code>True</code>，而我们知道有些 pair 的第二项是 <code>False</code>，所以无法从 <code>q</code> 重建 <code>snd</code>。</p>
+        <p class="source-paragraph" data-source-paragraph="44">第二个例子有所不同：运行 <code>p</code> 或 <code>q</code> 后仍保留了足够的信息，但对 <code>fst</code> 与 <code>snd</code> 做因子分解的方式不止一种。因为 <code>p</code> 与 <code>q</code> 都忽略三元组的第二项，我们的 <code>m'</code> 可以在那里放任何东西。例如：</p>
+        <pre><code class="language-haskell">m' (x, b) = (x, x, b)</code></pre>
+        <p class="source-paragraph" data-source-paragraph="45">或者：</p>
+        <pre><code class="language-haskell">m' (x, b) = (x, 42, b)</code></pre>
+        <p class="source-paragraph" data-source-paragraph="46">还可以有更多。</p>
+        <p class="source-paragraph" data-source-paragraph="47">综上，对于任何带有两个投影 <code>p</code> 与 <code>q</code> 的类型 <code>c</code>，都存在唯一的 <code>m</code> 从 <code>c</code> 指向笛卡尔积 <code>(a, b)</code>，并对二者进行因子分解。实际上，它只是把 <code>p</code> 与 <code>q</code> 合成一个 pair：</p>
+        <pre><code class="language-haskell">m :: c -&gt; (a, b)
+m x = (p x, q x)</code></pre>
+        <p class="source-paragraph" data-source-paragraph="48">这使笛卡尔积 <code>(a, b)</code> 成为最佳匹配，也就是说，该泛构造在集合范畴中确实有效：它会选出任意两个集合的积。</p>
+        <p class="source-paragraph" data-source-paragraph="49">现在忘掉集合，使用同一个泛构造在任意范畴中定义两个对象的积。这种积不一定存在；但只要存在，就在唯一同构意义下唯一。</p>
+        <blockquote><p>对象 <em>a</em> 与 <em>b</em> 的<strong>积（product）</strong>，是一个配有两个投影（projection）的对象 <em>c</em>；对于任何同样配有两个投影的对象 <em>c′</em>，都存在唯一态射 <em>m</em> 从 <em>c′</em> 指向 <em>c</em>，并对那两个投影进行因子分解。</p></blockquote>
+        <p class="source-paragraph" data-source-paragraph="50">从两个候选投影产生因子分解函数 <code>m</code> 的（高阶）函数，有时称为<em>因子分解器</em>。这里它是：</p>
+        <pre><code class="language-haskell">factorizer :: (c -&gt; a) -&gt; (c -&gt; b) -&gt; (c -&gt; (a, b))
+factorizer p q = \x -&gt; (p x, q x)</code></pre>
+      </section>
+
+      <section id="coproduct">
+        <h2>余积</h2>
+        <p class="source-paragraph" data-source-paragraph="51">和范畴论里的每种构造一样，积也有一个对偶，称为余积。反转积模式中的箭头后，得到一个对象 <em>c</em>，以及两支<em>注入</em> <code>i</code> 与 <code>j</code>：它们是从 <em>a</em>、<em>b</em> 指向 <em>c</em> 的态射。</p>
+        <pre><code class="language-haskell">i :: a -&gt; c
+j :: b -&gt; c</code></pre>
+        <figure><div class="figure-frame"><img src="coproductpattern.jpg" alt="余积候选及其两支注入"></div></figure>
+        <p class="source-paragraph" data-source-paragraph="52">排名也随之反转：若对象 <em>c′</em> 配有注入 <em>i′</em> 与 <em>j′</em>，而且存在从 <em>c</em> 到 <em>c′</em> 的态射 <em>m</em> 对这些注入进行因子分解，那么对象 <em>c</em> 就比 <em>c′</em>“更好”：</p>
+        <pre><code class="language-haskell">i' = m . i
+j' = m . j</code></pre>
+        <figure><div class="figure-frame"><img src="coproductranking.jpg" alt="余积候选之间的排名"></div></figure>
+        <p class="source-paragraph" data-source-paragraph="53">这样的对象中，“最好”的那一个——也就是以唯一态射连接到每个其他模式的对象——称为余积。只要它存在，就在唯一同构意义下唯一。</p>
+        <blockquote><p>对象 <em>a</em> 与 <em>b</em> 的<strong>余积（coproduct）</strong>，是一个配有两支注入（injection）的对象 <em>c</em>；对于任何同样配有两支注入的对象 <em>c′</em>，都存在唯一态射 <em>m</em> 从 <em>c</em> 指向 <em>c′</em>，并对那两支注入进行因子分解。</p></blockquote>
+        <p class="source-paragraph" data-source-paragraph="54">在集合范畴中，余积是两个集合的<em>不交并</em>。<em>a</em> 与 <em>b</em> 的不交并中的元素，要么是 <em>a</em> 的元素，要么是 <em>b</em> 的元素。若两个集合有重叠，不交并会包含公共部分的两份副本。可以把不交并中的元素看成附带了一个标记，用来说明它来自哪里。</p>
+        <p class="source-paragraph" data-source-paragraph="55">对程序员来说，用类型理解余积更容易：它是两种类型的带标签联合。C++ 支持联合，但联合不带标签，这意味着程序必须自行追踪联合中的哪个成员当前有效。要构造带标签联合，需要定义一个标签——枚举——再与联合组合。例如，<code>int</code> 和 <code>char const *</code> 的带标签联合可以这样实现：</p>
+        <pre><code class="language-cpp">struct Contact {
+    enum { isPhone, isEmail } tag;
+    union { int phoneNum; char const * emailAddr; };
+};</code></pre>
+        <p class="source-paragraph" data-source-paragraph="56">两支注入既可实现为构造函数，也可实现为普通函数。比如第一支注入可以写成函数 <code>PhoneNum</code>：</p>
+        <pre><code class="language-cpp">Contact PhoneNum(int n) {
+    Contact c;
+    c.tag = isPhone;
+    c.phoneNum = n;
+    return c;
+}</code></pre>
+        <p class="source-paragraph" data-source-paragraph="57">它把一个整数注入 <code>Contact</code>。</p>
+        <p class="source-paragraph" data-source-paragraph="58">带标签联合也叫作<em>变体</em>（variant）；C++17 标准提供了非常通用的变体实现 <code>std::variant</code>。</p>
+        <p class="source-paragraph" data-source-paragraph="59">在 Haskell 中，用竖线分隔数据构造器，就可以把任意数据类型组合成带标签联合。<code>Contact</code> 的例子可翻译成：</p>
+        <pre><code class="language-haskell">data Contact = PhoneNum Int | EmailAddr String</code></pre>
+        <p class="source-paragraph" data-source-paragraph="60">这里，<code>PhoneNum</code> 与 <code>EmailAddr</code> 既充当构造器（注入），也充当模式匹配的标签（稍后详述）。例如，可用电话号码构造一条联系人记录：</p>
+        <pre><code class="language-haskell">helpdesk :: Contact
+helpdesk = PhoneNum 2222222</code></pre>
+        <p class="source-paragraph" data-source-paragraph="61">积的标准实现以内建原始 pair 的形式存在于 Haskell 中；余积的标准实现则是名为 <code>Either</code> 的数据类型，在标准 Prelude 中定义为：</p>
+        <pre><code class="language-haskell">data Either a b = Left a | Right b</code></pre>
+        <p class="source-paragraph" data-source-paragraph="62">它由类型 <code>a</code> 与 <code>b</code> 参数化，并有两个构造器：<code>Left</code> 接受类型 <code>a</code> 的值，<code>Right</code> 接受类型 <code>b</code> 的值。</p>
+        <p class="source-paragraph" data-source-paragraph="63">就像为积定义因子分解器一样，我们也能为余积定义一个。给定候选类型 <code>c</code> 和两支候选注入 <code>i</code>、<code>j</code>，<code>Either</code> 的因子分解器会产生那个进行分解的函数：</p>
+        <pre><code class="language-haskell">factorizer :: (a -&gt; c) -&gt; (b -&gt; c) -&gt; Either a b -&gt; c
+factorizer i j (Left a)  = i a
+factorizer i j (Right b) = j b</code></pre>
+      </section>
+
+      <section id="asymmetry">
+        <h2>不对称性</h2>
+        <p class="source-paragraph" data-source-paragraph="64">我们已经看到两组对偶定义：反转箭头方向，就能从始对象定义得到终对象定义；同样，也能从积定义得到余积定义。然而在集合范畴中，始对象与终对象非常不同，余积与积也非常不同。以后会看到，积的行为像乘法，终对象扮演一；余积则更像加法，始对象扮演零。尤其对有限集合而言，积的大小等于各集合大小之积，而余积的大小等于各集合大小之和。</p>
+        <p class="source-paragraph" data-source-paragraph="65">这表明，集合范畴对于箭头反转并不对称。</p>
+        <p class="source-paragraph" data-source-paragraph="66">注意，空集到任意集合都有唯一态射（<code>absurd</code> 函数），却没有态射返回空集。单元素集合从任意集合接收唯一态射，但它<em>也</em>向每个集合发出态射（空集除外）。如前所见，从终对象发出的这些态射扮演着非常重要的角色：它们选出其他集合中的元素（空集没有元素，因此无从选择）。</p>
+        <p class="source-paragraph" data-source-paragraph="67">单元素集合与积的关系，使它和余积分出了差别。考虑把以单位类型 <code>()</code> 表示的单元素集合作为积模式的又一个——极差的——候选。给它配上两个投影 <code>p</code> 与 <code>q</code>，也就是从单元素集合分别到两个组成集合的函数。每个函数都从相应集合中选出一个具体元素。因为积具有泛性质，还存在从候选单元素集合到积的唯一态射 <code>m</code>。这个态射从积集合里选出一个元素，也就是一个具体的 pair，并对两个投影进行因子分解：</p>
+        <pre><code class="language-haskell">p = fst . m
+q = snd . m</code></pre>
+        <p class="source-paragraph" data-source-paragraph="68">把这两个方程作用于单元素集合的唯一元素 <code>()</code>，得到：</p>
+        <pre><code class="language-haskell">p () = fst (m ())
+q () = snd (m ())</code></pre>
+        <p class="source-paragraph" data-source-paragraph="69">由于 <code>m ()</code> 是 <code>m</code> 从积中选出的元素，这些方程告诉我们：<code>p</code> 从第一个集合选出的元素 <code>p ()</code>，就是 <code>m</code> 选出的 pair 的第一项；同理，<code>q ()</code> 等于第二项。这与我们的理解完全一致：积的元素就是各组成集合元素构成的 pair。</p>
+        <p class="source-paragraph" data-source-paragraph="70">余积不存在这样简单的解释。为了从余积提取元素，我们可以尝试把单元素集合作为余积候选；但此时会有两支注入指向它，而不是两个投影从它发出。这些注入不会告诉我们任何关于源的信息（事实上，我们已经看到它们会忽略输入参数）。从余积到这个单元素集合的唯一态射也同样无济于事。从始对象方向观察集合范畴，和从终对象一端观察它，看起来就是大不一样。</p>
+        <p class="source-paragraph" data-source-paragraph="71">这并非集合的内在性质，而是我们在 Set 中用作态射的函数的性质。函数通常是不对称的。下面解释原因。</p>
+        <p class="source-paragraph" data-source-paragraph="72">函数必须为定义域集合中的每个元素都有定义（编程中称为<em>全函数</em>），但不必覆盖整个陪域。我们见过一些极端情况：从单元素集合出发的函数只会在陪域中选出一个元素。（其实，从空集出发的函数才是真正的极端。）当定义域远小于陪域时，我们常把这样的函数看成把定义域嵌入陪域。例如，可把从单元素集合出发的函数视为把唯一元素嵌入陪域。我称它们为<em>嵌入</em>函数；数学家更愿意给相反情形命名：严密填满陪域的函数称为<em>满射</em>（surjective 或 onto）。</p>
+        <p class="source-paragraph" data-source-paragraph="73">另一种不对称来源是：函数允许把定义域中的多个元素映射到陪域中的同一个元素，也就是把它们折叠起来。极端情形是把整个集合映射到单元素集合的函数，你已经见过这样的多态 <code>unit</code> 函数。复合只会加剧折叠：两个折叠函数的复合比任何一个单独的函数折叠得更厉害。数学家也为不折叠的函数起了名字：<em>单射</em>（injective 或 one-to-one）。</p>
+        <p class="source-paragraph" data-source-paragraph="74">当然，还有些函数既不遗漏也不折叠，它们称为<em>双射</em>，而且真正对称，因为它们可逆。在集合范畴中，同构与双射是一回事。</p>
+      </section>
+
+      <section id="challenges">
+        <h2>习题</h2>
+        <ol class="challenges">
+          <li>证明终对象在唯一同构意义下唯一。
+            <details class="exercise-answer"><summary>点击展开参考答案</summary><p>设 <em>t₁</em>、<em>t₂</em> 都是终对象。终对象性质给出唯一态射 <em>f: t₁→t₂</em> 与 <em>g: t₂→t₁</em>。<em>g∘f</em> 是 <em>t₁→t₁</em> 的态射，而该态射唯一，故等于 <em>idₜ₁</em>；同理 <em>f∘g=idₜ₂</em>。所以二者同构。由于 <em>f</em>、<em>g</em> 本身由终对象性质唯一确定，同构也唯一。</p></details>
+          </li>
+          <li>偏序集中两个对象的积是什么？提示：使用泛构造。
+            <details class="exercise-answer"><summary>点击展开参考答案</summary><p>是二者的最大下界（meet）。对象 <em>c</em> 到 <em>a</em>、<em>b</em> 都有箭头，表示 <em>c≤a</em> 且 <em>c≤b</em>；泛性质要求任何其他共同下界 <em>c′</em> 都满足 <em>c′≤c</em>。</p></details>
+          </li>
+          <li>偏序集中两个对象的余积是什么？
+            <details class="exercise-answer"><summary>点击展开参考答案</summary><p>是二者的最小上界（join）。它同时不小于 <em>a</em>、<em>b</em>，并且不大于任何其他共同上界。</p></details>
+          </li>
+          <li>用你喜爱的语言（Haskell 除外）把 Haskell 的 <code>Either</code> 实现为泛型类型。
+            <details class="exercise-answer"><summary>点击展开参考答案</summary><pre><code class="language-kotlin">sealed interface Either&lt;out A, out B&gt; {
+    data class Left&lt;A&gt;(val value: A) : Either&lt;A, Nothing&gt;
+    data class Right&lt;B&gt;(val value: B) : Either&lt;Nothing, B&gt;
+}</code></pre><p>密封接口保证值只能来自两个互斥分支，并通过类型参数保留来源。</p></details>
+          </li>
+          <li>证明 <code>Either</code> 比配有以下两支注入的 <code>int</code> 是“更好”的余积：
+            <pre><code class="language-cpp">int i(int n) { return n; }
+int j(bool b) { return b? 0: 1; }</code></pre>
+            提示：定义一个对 <code>i</code> 与 <code>j</code> 进行因子分解的函数：
+            <pre><code class="language-cpp">int m(Either const &amp; e);</code></pre>
+            <details class="exercise-answer"><summary>点击展开参考答案</summary><pre><code class="language-cpp">int m(Either const &amp; e) {
+    return e.isLeft() ? e.left() : (e.right() ? 0 : 1);
+}</code></pre><p>对 <code>Left n</code>，<code>m</code> 返回 <code>n</code>，所以 <code>m∘Left=i</code>；对 <code>Right b</code>，返回值与 <code>j(b)</code> 相同，所以 <code>m∘Right=j</code>。两种构造器覆盖所有 <code>Either</code> 值，因此 <code>m</code> 唯一。</p></details>
+          </li>
+          <li>继续上一题：怎样论证配有注入 <code>i</code> 与 <code>j</code> 的 <code>int</code> 不可能比 <code>Either</code>“更好”？
+            <details class="exercise-answer"><summary>点击展开参考答案</summary><p>若 <code>int</code> 更好，就应存在从 <code>int</code> 到 <code>Either</code> 的唯一因子态射。但整数 <code>0</code> 同时是 <code>i(0)</code> 与 <code>j(true)</code>，它既必须映射为 <code>Left 0</code>，又必须映射为 <code>Right true</code>，矛盾。因此连这样的函数都不存在。</p></details>
+          </li>
+          <li>仍然继续：若换成下面两支注入呢？
+            <pre><code class="language-cpp">int i(int n) {
+    if (n &lt; 0) return n;
+    return n + 2;
+}
+int j(bool b) { return b? 0: 1; }</code></pre>
+            <details class="exercise-answer"><summary>点击展开参考答案</summary><p>这次两支注入的像不相交：<code>j</code> 占用 0、1，<code>i</code> 占用所有负数及从 2 开始的整数，因此可以构造到 <code>Either</code> 的函数。但在这些像之外没有剩余整数，所以该函数也唯一；事实上两支注入共同给出 <code>Either int bool</code> 与 <code>int</code> 之间的双射，因此这个候选与 <code>Either</code> 同构，同样好。</p></details>
+          </li>
+          <li>为 <code>int</code> 与 <code>bool</code> 的余积提出一个较差候选：因为存在多个从它到 <code>Either</code> 的可接受态射，所以它不可能比 <code>Either</code> 更好。
+            <details class="exercise-answer"><summary>点击展开参考答案</summary><p>可取 <code>(Either int bool, bool)</code>，注入时把第二项固定为 <code>false</code>。任何到 <code>Either int bool</code> 的因子态射，在第二项为 <code>false</code> 的值上必须丢掉第二项；但对第二项为 <code>true</code> 的值可以任意选择结果。因此满足注入方程的态射不唯一，这个候选不具泛性质。</p></details>
+          </li>
+        </ol>
+      </section>
+
+      <section id="bibliography">
+        <h2>参考资料</h2>
+        <ol><li>The Catsters，<a href="https://www.youtube.com/watch?v=upCSDIO9pjc">Products and Coproducts</a> 视频。</li></ol>
+      </section>
+
+      <nav class="chapter-switcher" aria-label="章节切换">
+        <a href="../kleisli-categories/">← 第 4 章：Kleisli 范畴</a>
+        <a href="../simple-algebraic-data-types/">第 6 章：简单代数数据类型 →</a>
+      </nav>
+    </article>
+
+    <footer class="source-note" id="source">
+      <p><strong>原文：</strong><a href="https://bartoszmilewski.com/2015/01/07/products-and-coproducts/">Products and Coproducts</a></p>
+      <p><strong>核对底稿：</strong>作者博客正文与开源英文 Markdown 版本；正文、代码、公式、插图、习题和参考资料均已收录。</p>
+      <p><strong>许可：</strong>原作及本非官方中文译文依 <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> 署名—相同方式共享。</p>
+    </footer>
+  </main>
+</body>
+</html>

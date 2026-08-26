@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>第 18 章：伴随｜程序员的范畴论｜RIN III</title><meta name="description" content="《程序员的范畴论》第 18 章完整中文翻译：伴随、单位与余单位、Hom 集同构、积与指数"><link rel="stylesheet" href="../reader.css"></head>
+<body><nav class="site-nav"><a href="../../../mathematics/category-theory-for-programmers/">← 返回整本书学习记录</a><a href="../../../">RIN III</a></nav><main class="reader"><header><span class="chapter-kicker">第三部分 · 第 18 章 · 完整中文译文</span><h1>伴随</h1><p class="byline">Bartosz Milewski</p><div class="title-rule"></div><p class="lead">伴随（adjunction）以两个范畴之间的 Hom 集自然同构，统一了积、指数、自由构造等大量泛构造。</p><div class="translation-scope"><span class="scope-label">译文范围</span><p>完整翻译本章正文，保留全部 10 个原文代码块、7 幅插图、三角恒等式、公式和 6 道习题；习题附可展开答案。</p></div><nav><ul class="chapter-nav"><li><a href="#unit-counit">伴随与单位/余单位</a></li><li><a href="#hom-sets">伴随与 Hom 集</a></li><li><a href="#product">由伴随定义积</a></li><li><a href="#exponential">由伴随定义指数</a></li><li><a href="#challenges">习题</a></li></ul></nav></header><article>
+
+<p class="source-paragraph" data-source-paragraph="1">数学中有多种方式表达一个事物与另一个相像。最严格的是<em>相等（equality）</em>。两个事物相等，意味着没有任何办法把它们区分开；在所有可以想象的语境中，一个都能替换另一个。例如，你是否注意到，每次讨论交换图时，我们都使用态射的相等？这是因为态射组成集合（Hom 集），而集合元素可以比较是否相等。</p>
+<p class="source-paragraph" data-source-paragraph="2">但相等往往过强。许多事物实际上并不相等，却在所有实际意义上都相同。例如，二元组类型 <code>(Bool, Char)</code> 并不严格等于 <code>(Char, Bool)</code>，但我们知道它们包含相同信息。两个类型之间的<em>同构</em>最适合刻画这个概念——它是一支可逆态射。因为它是态射，所以保持结构；而“iso”表示它属于一次往返过程，无论从哪一边出发，最终都会回到同一点。对二元组，这个同构叫 <code>swap</code>：</p><pre><code class="language-haskell">swap :: (a,b) -&gt; (b,a)
+swap (a,b) = (b,a)</code></pre>
+<p class="source-paragraph" data-source-paragraph="3"><code>swap</code> 恰好是自身的逆。</p>
+
+<section id="unit-counit"><h2>伴随与单位/余单位对</h2>
+<p class="source-paragraph" data-source-paragraph="4">谈论范畴同构时，我们用范畴之间的映射，也就是函子来表达。若存在从 C 到 D 的可逆函子 <em>R</em>（“右”），就希望能说 C、D 同构。换句话说，存在另一个从 D 回到 C 的函子 <em>L</em>（“左”），它与 <em>R</em> 复合后等于恒等函子 <em>I</em>。有两种复合 <em>R∘L</em>、<em>L∘R</em>，也有两个恒等函子：一个在 C 中，一个在 D 中。</p>
+<figure><div class="figure-frame"><img src="adj-1.jpg" alt="函子 L 与 R 在两个范畴间往返"></div></figure>
+<p class="source-paragraph" data-source-paragraph="5">棘手之处是：两个函子<em>相等</em>是什么意思？下面两个等式是什么意思？</p><div class="math-display">R∘L = I<sub>D</sub><br>L∘R = I<sub>C</sub></div>
+<p class="source-paragraph" data-source-paragraph="6">用对象相等来定义函子相等似乎合理：两个函子作用于相等对象时应产生相等对象。但在任意范畴中，我们通常没有对象相等的概念；它不属于范畴定义的一部分。（若继续钻进“相等究竟是什么”的兔子洞，最终会抵达同伦类型论。）</p>
+<p class="source-paragraph" data-source-paragraph="7">你可能争辩说，函子是范畴之范畴中的态射，所以应该可以比较相等。的确，只要讨论小范畴，其中对象构成集合，就能借助集合元素的相等来比较对象。</p>
+<p class="source-paragraph" data-source-paragraph="8">但要记住，Cat 实际上是一个 2-范畴。2-范畴中的 Hom 集具有额外结构——1-态射之间还有 2-态射。在 Cat 中，1-态射是函子，2-态射是自然变换。因此，在谈论函子时，用自然同构代替相等更“自然”（这个双关躲不掉）。</p>
+<p class="source-paragraph" data-source-paragraph="9">所以，与其讨论范畴同构，不如考虑更一般的<em>范畴等价（equivalence of categories）</em>。如果能找到两个往返函子，使其两个方向的复合都与恒等函子<em>自然同构（naturally isomorphic）</em>，范畴 C、D 就等价。换句话说，<em>R∘L</em> 与 I<sub>D</sub> 之间存在双向自然变换，<em>L∘R</em> 与 I<sub>C</sub> 之间也存在一个。</p>
+<p class="source-paragraph" data-source-paragraph="10"><em>伴随（adjunction）</em>甚至比等价更弱，因为它不要求两个函子的复合与恒等函子同构。它只要求存在从 I<sub>D</sub> 到 <em>R∘L</em> 的<em>单向</em>自然变换，以及从 <em>L∘R</em> 到 I<sub>C</sub> 的另一个自然变换：</p><div class="math-display">η : I<sub>D</sub> → R∘L<br>ε : L∘R → I<sub>C</sub></div>
+<p class="source-paragraph" data-source-paragraph="11">η 称为伴随的<em>单位（unit）</em>，ε 称为<em>余单位（counit）</em>。</p>
+<p class="source-paragraph" data-source-paragraph="12">注意这两个定义的不对称性。通常并没有另外两个映射：</p><div class="math-display">R∘L → I<sub>D</sub>　（不一定存在）<br>I<sub>C</sub> → L∘R　（不一定存在）</div>
+<p class="source-paragraph" data-source-paragraph="13">由于这种不对称，函子 <em>L</em> 称为 <em>R</em> 的<em>左伴随（left adjoint）</em>，函子 <em>R</em> 称为 <em>L</em> 的<em>右伴随（right adjoint）</em>。（当然，只有按特定方式画图时，“左”“右”才有意义。）</p>
+<p class="source-paragraph" data-source-paragraph="14">伴随的紧凑记法是：</p><div class="math-display">L ⊣ R</div><p class="source-paragraph" data-source-paragraph="15">为更好理解伴随，下面仔细分析单位与余单位。</p>
+<figure><div class="figure-frame"><img src="adj-unit.jpg" alt="单位 eta 从对象 d 指向往返后的对象 RLd"></div></figure>
+<p class="source-paragraph" data-source-paragraph="16">先看单位。它是自然变换，因此是一族态射。给定 D 中对象 <em>d</em>，η 的分量是从 <em>Id=d</em> 到 <em>(R∘L)d</em> 的态射；图中后者称为 <em>d′</em>：</p><div class="math-display">η<sub>d</sub> : d → (R∘L)d</div>
+<p class="source-paragraph" data-source-paragraph="17">注意，复合 <em>R∘L</em> 是 D 中的自函子。</p>
+<p class="source-paragraph" data-source-paragraph="18">这个等式告诉我们，可以任取 D 中对象 <em>d</em> 作为起点，用往返函子 <em>R∘L</em> 选定目标对象 <em>d′</em>，再向目标射出一支箭头——态射 η<sub>d</sub>。</p>
+<figure><div class="figure-frame"><img src="adj-counit.jpg" alt="余单位 epsilon 从往返后的对象 LRc 指向 c"></div></figure>
+<p class="source-paragraph" data-source-paragraph="19">同理，余单位 ε 的分量可以写成：</p><div class="math-display">ε<sub>c</sub> : (L∘R)c → c</div>
+<p class="source-paragraph" data-source-paragraph="20">它告诉我们，可以任取 C 中对象 <em>c</em> 作为目标，用往返函子 <em>L∘R</em> 选取源 <em>c′=(L∘R)c</em>，再从源向目标射出态射 ε<sub>c</sub>。</p>
+<p class="source-paragraph" data-source-paragraph="21">另一种看法是：单位允许在任何本可插入 D 上恒等函子的地方<em>引入</em>复合 <em>R∘L</em>；余单位则允许<em>消去</em>复合 <em>L∘R</em>，以 C 上恒等函子替代它。由此产生一些“显然”的一致性条件，确保先引入再消去不会改变任何东西：</p><div class="math-display">L=L∘I<sub>D</sub> → L∘R∘L → I<sub>C</sub>∘L=L<br>R=I<sub>D</sub>∘R → R∘L∘R → R∘I<sub>C</sub>=R</div>
+<p class="source-paragraph" data-source-paragraph="22">它们称为<em>三角恒等式（triangular identities）</em>，因为会使下面两个三角形交换：</p><div class="math-display">L ─<sup>L∘η</sup>→ L∘R∘L ─<sup>ε∘L</sup>→ L　= id<sub>L</sub><br>R ─<sup>η∘R</sup>→ R∘L∘R ─<sup>R∘ε</sup>→ R　= id<sub>R</sub></div>
+<p class="source-paragraph" data-source-paragraph="23">这些是函子范畴中的图：箭头是自然变换，它们的复合是自然变换的水平复合。写成分量，恒等式变为：</p><div class="math-display">ε<sub>Ld</sub> ∘ Lη<sub>d</sub> = id<sub>Ld</sub><br>Rε<sub>c</sub> ∘ η<sub>Rc</sub> = id<sub>Rc</sub></div>
+<p class="source-paragraph" data-source-paragraph="24">在 Haskell 中，单位与余单位常以其他名字出现。单位叫 <code>return</code>（在 <code>Applicative</code> 定义中叫 <code>pure</code>）：</p><pre><code class="language-haskell">return :: d -&gt; m d</code></pre>
+<p class="source-paragraph" data-source-paragraph="25">余单位叫 <code>extract</code>：</p><pre><code class="language-haskell">extract :: w c -&gt; c</code></pre>
+<p class="source-paragraph" data-source-paragraph="26">这里 <code>m</code> 是对应 <em>R∘L</em> 的（自）函子，<code>w</code> 是对应 <em>L∘R</em> 的（自）函子。以后会看到，它们分别是 Monad 与 Comonad 定义的一部分。</p>
+<p class="source-paragraph" data-source-paragraph="27">若把自函子想成容器，单位（或 <code>return</code>）是一个多态函数，为任意类型的值套上默认盒子；余单位（或 <code>extract</code>）做相反的事，从容器中取出或生成一个值。</p>
+<p class="source-paragraph" data-source-paragraph="28">以后会看到，每对伴随函子都会定义一个 Monad 与一个 Comonad。反过来，每个 Monad 或 Comonad 都可以因子分解成一对伴随函子——不过这种分解并不唯一。</p>
+<p class="source-paragraph" data-source-paragraph="29">Haskell 中经常使用 Monad，却很少把它们分解为伴随函子对，主要因为这些函子通常会把我们带出 Hask。</p>
+<p class="source-paragraph" data-source-paragraph="30">不过，可以在 Haskell 中定义<em>自函子之间的伴随</em>。下面是 <code>Data.Functor.Adjunction</code> 中定义的一部分：</p><pre><code class="language-haskell">class (Functor f, Representable u) =&gt;
+      Adjunction f u | f -&gt; u, u -&gt; f where
+    unit :: a -&gt; u (f a)
+    counit :: f (u a) -&gt; a</code></pre>
+<p class="source-paragraph" data-source-paragraph="31">这个定义需要解释。首先，它描述了一个多参数类型类，两个参数是 <code>f</code>、<code>u</code>；它在这两个类型构造器之间建立名为 <code>Adjunction</code> 的关系。</p>
+<p class="source-paragraph" data-source-paragraph="32">竖线后的附加条件指定<em>函数依赖（functional dependency）</em>。例如 <code>f -&gt; u</code> 表示 <code>u</code> 由 <code>f</code> 决定（<code>f</code>、<code>u</code> 之间的关系是一个函数，这里作用于类型构造器）。反过来，<code>u -&gt; f</code> 表示知道 <code>u</code> 后，<code>f</code> 也唯一确定。</p>
+<p class="source-paragraph" data-source-paragraph="33">稍后会解释，为什么在 Haskell 中可以要求右伴随 <code>u</code> 是可表函子。</p></section>
+
+<section id="hom-sets"><h2>伴随与 Hom 集</h2>
+<p class="source-paragraph" data-source-paragraph="34">伴随还有一个等价定义，使用 Hom 集的自然同构。它与此前研究的泛构造衔接得很好。每当听到“存在唯一态射，能因子分解某个构造”，都应把它理解为某个集合到 Hom 集的映射；这就是“选出唯一态射”的含义。</p>
+<p class="source-paragraph" data-source-paragraph="35">而且，因子分解往往能用自然变换描述。因子分解涉及交换图——某支态射等于两支态射（因子）的复合。自然变换把态射映射成交换图。所以在泛构造中，我们从态射走到交换图，再走到唯一态射，最终得到态射到态射、或一个 Hom 集到另一个 Hom 集（通常位于不同范畴）的映射。若这个映射可逆，并且能自然地扩展到所有 Hom 集，就得到了伴随。</p>
+<p class="source-paragraph" data-source-paragraph="36">泛构造与伴随的主要差别是：伴随后者是全局定义的——覆盖所有 Hom 集。例如，即使某个范畴中其他对象对都不存在积，也可用泛构造定义所选两个对象的积。很快会看到，如果范畴中<em>任意一对</em>对象的积都存在，就也能用伴随定义它。</p>
+<figure><div class="figure-frame"><img src="adj-homsets.jpg" alt="伴随把 C 中 Hom 集与 D 中 Hom 集自然同构"></div></figure>
+<p class="source-paragraph" data-source-paragraph="37">下面是使用 Hom 集的伴随定义。仍有两个函子 <em>L:D→C</em> 与 <em>R:C→D</em>。任取两个对象：D 中源对象 <em>d</em>，C 中目标对象 <em>c</em>。用 <em>L</em> 把 <em>d</em> 映射到 C；于是 C 中有对象 <em>Ld</em>、<em>c</em>，定义 Hom 集：</p><div class="math-display">C(Ld,c)</div>
+<p class="source-paragraph" data-source-paragraph="38">类似地，用 <em>R</em> 映射目标对象 <em>c</em>；D 中对象 <em>d</em>、<em>Rc</em> 定义 Hom 集：</p><div class="math-display">D(d,Rc)</div>
+<p class="source-paragraph" data-source-paragraph="39">当且仅当存在 Hom 集同构：</p><div class="math-display">C(Ld,c) ≅ D(d,Rc)</div><p class="source-paragraph" data-source-paragraph="40">而且该同构在 <em>d</em>、<em>c</em> 上都自然时，称 <em>L</em> 左伴随于 <em>R</em>。</p>
+<p class="source-paragraph" data-source-paragraph="41">自然性表示源 <em>d</em> 可平滑地在 D 中变化，目标 <em>c</em> 可在 C 中变化。更准确地说，自然变换 φ 位于下面两个从 C 到 Set 的（协变）函子之间；它们对对象的作用为：</p><div class="math-display">c ↦ C(Ld,c)<br>c ↦ D(d,Rc)</div>
+<p class="source-paragraph" data-source-paragraph="42">另一个自然变换 ψ 位于下面两个（逆变）函子之间：</p><div class="math-display">d ↦ C(Ld,c)<br>d ↦ D(d,Rc)</div><p class="source-paragraph" data-source-paragraph="43">两个自然变换都必须可逆。</p>
+<p class="source-paragraph" data-source-paragraph="44">很容易证明伴随的两个定义等价。例如，从 Hom 集同构出发推导单位：</p><div class="math-display">C(Ld,c) ≅ D(d,Rc)</div><p class="source-paragraph" data-source-paragraph="45">因为同构对任意 <em>c</em> 成立，也对 <em>c=Ld</em> 成立：</p><div class="math-display">C(Ld,Ld) ≅ D(d,(R∘L)d)</div>
+<p class="source-paragraph" data-source-paragraph="46">左边至少包含一支态射——恒等态射。自然变换把它映射到 D(d,(R∘L)d) 的元素；插入恒等函子 <em>I</em>，它就是：</p><div class="math-display">D(Id,(R∘L)d)</div>
+<p class="source-paragraph" data-source-paragraph="47">于是得到由 <em>d</em> 参数化的一族态射。它们组成恒等函子 <em>I</em> 与函子 <em>R∘L</em> 之间的自然变换（自然性很容易验证）。这正是单位 η。</p>
+<p class="source-paragraph" data-source-paragraph="48">反过来，从单位与余单位出发，可以定义 Hom 集之间的变换。例如，任取 Hom 集 C(Ld,c) 中态射 <em>f</em>，要定义 φ，使其作用于 <em>f</em> 后产生 D(d,Rc) 中态射。</p>
+<p class="source-paragraph" data-source-paragraph="49">几乎没有别的选择。先尝试用 <em>R</em> 提升 <em>f</em>，得到从 <em>R(Ld)</em> 到 <em>Rc</em> 的态射 <em>Rf</em>，即 D((R∘L)d,Rc) 的元素。</p>
+<p class="source-paragraph" data-source-paragraph="50">但 φ 的一个分量需要从 <em>d</em> 到 <em>Rc</em> 的态射。没问题，可以用 η<sub>d</sub> 的分量从 <em>d</em> 到 <em>(R∘L)d</em>，得到：</p><div class="math-display">φ(f) = Rf ∘ η<sub>d</sub></div>
+<p class="source-paragraph" data-source-paragraph="51">反方向类似，ψ 的推导也一样。</p>
+<p class="source-paragraph" data-source-paragraph="52">回到 Haskell 的 <code>Adjunction</code> 定义，自然变换 φ、ψ 分别由在 <code>a</code>、<code>b</code> 上多态的函数 <code>leftAdjunct</code>、<code>rightAdjunct</code> 代替。函子 <em>L</em>、<em>R</em> 称为 <code>f</code>、<code>u</code>：</p><pre><code class="language-haskell">class (Functor f, Representable u) =&gt;
+  Adjunction f u | f -&gt; u, u -&gt; f where
+    leftAdjunct  :: (f a -&gt; b) -&gt; (a -&gt; u b)
+    rightAdjunct :: (a -&gt; u b) -&gt; (f a -&gt; b)</code></pre>
+<p class="source-paragraph" data-source-paragraph="53"><code>unit</code>/<code>counit</code> 表述与 <code>leftAdjunct</code>/<code>rightAdjunct</code> 表述之间的等价，由以下映射见证：</p><pre><code class="language-haskell">unit           = leftAdjunct id
+counit         = rightAdjunct id
+leftAdjunct f  = fmap f . unit
+rightAdjunct f = counit . fmap f</code></pre>
+<p class="source-paragraph" data-source-paragraph="54">沿着从伴随的范畴描述到 Haskell 代码的翻译逐步推导，非常有教育意义。我强烈建议把它当作练习。</p>
+<p class="source-paragraph" data-source-paragraph="55">现在可以解释为什么 Haskell 中右伴随自动是<a href="../representable-functors/">可表函子</a>。原因是，作为第一近似，可以把 Haskell 类型范畴当作集合范畴。</p>
+<p class="source-paragraph" data-source-paragraph="56">当右侧范畴 D 是 Set 时，右伴随 <em>R</em> 是从 C 到 Set 的函子。如果能在 C 中找到对象 <em>rep</em>，使 Hom 函子 C(rep,-) 与 <em>R</em> 自然同构，这个函子就可表。事实证明，若 <em>R</em> 是某个从 Set 到 C 的函子 <em>L</em> 的右伴随，这样的对象总存在——它是单元素集合 <code>()</code> 在 <em>L</em> 下的像：</p><div class="math-display">rep = L()</div>
+<p class="source-paragraph" data-source-paragraph="57">确实，伴随告诉我们以下两个 Hom 集自然同构：</p><div class="math-display">C(L(),c) ≅ Set((),Rc)</div>
+<p class="source-paragraph" data-source-paragraph="58">对给定 <em>c</em>，右边是从单元素集合 <code>()</code> 到 <em>Rc</em> 的函数集合。此前看到，每个这样的函数都会从集合 <em>Rc</em> 中选出一个元素，因此这些函数的集合与集合 <em>Rc</em> 同构。于是：</p><div class="math-display">C(L(),-) ≅ R</div><p class="source-paragraph" data-source-paragraph="59">这说明 <em>R</em> 确实可表。</p></section>
+
+<section id="product"><h2>由伴随定义积</h2>
+<p class="source-paragraph" data-source-paragraph="60">之前用泛构造引入了多个概念。其中许多概念若作全局定义，使用伴随表达更容易。最简单的非平凡例子是积。<a href="../products-and-coproducts/">积的泛构造</a>要义，是任何类似积的候选都能通过泛积因子分解。</p>
+<p class="source-paragraph" data-source-paragraph="61">更准确地说，两个对象 <em>a</em>、<em>b</em> 的积是对象 <em>a×b</em>（Haskell 中写作 <code>(a,b)</code>），连同两支态射 <em>fst</em>、<em>snd</em>；对于任何其他候选 <em>c</em> 以及态射 <em>p:c→a</em>、<em>q:c→b</em>，都存在唯一态射 <em>m:c→(a,b)</em>，使 <em>p</em>、<em>q</em> 分别通过 <em>fst</em>、<em>snd</em> 因子分解。</p>
+<p class="source-paragraph" data-source-paragraph="62"><a href="../products-and-coproducts/">如前所见</a>，Haskell 中可实现一个由两个投影生成该态射的 <code>factorizer</code>：</p><pre><code class="language-haskell">factorizer :: (c -&gt; a) -&gt; (c -&gt; b) -&gt; (c -&gt; (a, b))
+factorizer p q = \x -&gt; (p x, q x)</code></pre>
+<p class="source-paragraph" data-source-paragraph="63">很容易验证因子分解条件：</p><pre><code class="language-haskell">fst . factorizer p q = p
+snd . factorizer p q = q</code></pre>
+<p class="source-paragraph" data-source-paragraph="64">这里有一个映射，接受一对态射 <code>p</code>、<code>q</code>，产生另一支态射 <code>m=factorizer p q</code>。</p>
+<p class="source-paragraph" data-source-paragraph="65">怎样把它翻译成定义伴随所需的两个 Hom 集之间的映射？技巧是走出 Hask，把一对态射看成积范畴中的单支态射。</p>
+<p class="source-paragraph" data-source-paragraph="66">复习积范畴（product category）：取任意两个范畴 C、D，积范畴 C×D 的对象是对象对——一个来自 C，一个来自 D；态射是态射对——一支来自 C，一支来自 D。</p>
+<p class="source-paragraph" data-source-paragraph="67">要在某个范畴 C 中定义积，应从积范畴 C×C 开始。C 中的态射对，就是 C×C 中的单支态射。</p>
+<figure><div class="figure-frame"><img src="adj-productcat.jpg" alt="积范畴中的对象对与态射对"></div></figure>
+<p class="source-paragraph" data-source-paragraph="68">一开始，用积范畴定义积可能有些混乱，但这是两种非常不同的积。定义积范畴不需要泛构造，只需对象对与态射对的概念。</p>
+<p class="source-paragraph" data-source-paragraph="69">然而，C 中对象对并<em>不是</em> C 中对象，而是另一个范畴 C×C 中的对象。可正式写作 ⟨a,b⟩，其中 <em>a</em>、<em>b</em> 是 C 的对象。另一方面，要定义同一范畴 C 中的对象 <em>a×b</em>（Haskell 中的 <code>(a,b)</code>），就必须使用泛构造。该对象应以泛构造指定的方式表示对象对 ⟨a,b⟩。它并非总存在；即使对某些对象对存在，对 C 中其他对象对也可能不存在。</p>
+<p class="source-paragraph" data-source-paragraph="70">现在把 <code>factorizer</code> 看成 Hom 集映射。第一个 Hom 集位于积范畴 C×C，第二个位于 C。C×C 中一般态射是态射对 ⟨f,g⟩：</p><div class="math-display">f:c′→a<br>g:c″→b</div><p class="source-paragraph" data-source-paragraph="71">其中 <em>c″</em> 可能不同于 <em>c′</em>。但定义积时，关注的是 C×C 中一支特殊态射：共享同一源对象 <em>c</em> 的 <em>p</em>、<em>q</em>。这没问题：伴随定义中左侧 Hom 集的源不是任意对象，而是左函子 <em>L</em> 作用于右侧范畴某对象的结果。符合要求的函子很容易猜到——从 C 到 C×C 的<em>对角函子（diagonal functor）</em> Δ，它对对象的作用是：</p><div class="math-display">Δc = ⟨c,c⟩</div>
+<p class="source-paragraph" data-source-paragraph="72">伴随左侧 Hom 集因此应为：</p><div class="math-display">(C×C)(Δc,⟨a,b⟩)</div><p class="source-paragraph" data-source-paragraph="73">它是积范畴中的 Hom 集，其元素是我们认作 <code>factorizer</code> 参数的态射对：</p><div class="math-display">(c→a) × (c→b) …</div>
+<p class="source-paragraph" data-source-paragraph="74">右侧 Hom 集位于 C，源对象是 <em>c</em>，目标是某个函子 <em>R</em> 作用于 C×C 中目标对象的结果。这个函子把对象对 ⟨a,b⟩ 映射到积对象 <em>a×b</em>。该 Hom 集元素正是 <code>factorizer</code> 的<em>结果</em>：</p><div class="math-display">… → (c→(a,b))</div>
+<figure><div class="figure-frame"><img src="adj-product.jpg" alt="对角函子与积函子之间的伴随"></div></figure>
+<p class="source-paragraph" data-source-paragraph="75">仍未得到完整伴随。首先，<code>factorizer</code> 必须可逆——我们要构造 Hom 集之间的<em>同构</em>。逆因子分解器从态射 <em>m:c→a×b</em> 开始，也就是 C(c,a×b) 的元素，再把 <em>m</em> 映射为 C×C 中从 ⟨c,c⟩ 到 ⟨a,b⟩ 的态射 ⟨p,q⟩，即 (C×C)(Δc,⟨a,b⟩) 的元素。</p>
+<p class="source-paragraph" data-source-paragraph="76">若该映射存在，就可断定对角函子的右伴随存在，而这个函子定义积。</p>
+<p class="source-paragraph" data-source-paragraph="77">Haskell 中总能通过分别把 <em>m</em> 与 <em>fst</em>、<em>snd</em> 复合，构造 <code>factorizer</code> 的逆：</p><pre><code class="language-haskell">p = fst . m
+q = snd . m</code></pre>
+<p class="source-paragraph" data-source-paragraph="78">要完成两种积定义等价的证明，还需说明 Hom 集之间的映射在 <em>a</em>、<em>b</em>、<em>c</em> 上自然。我把它留给勤奋的读者练习。</p>
+<p class="source-paragraph" data-source-paragraph="79">总结：范畴积可以全局定义为对角函子的<em>右伴随</em>：</p><div class="math-display">(C×C)(Δc,⟨a,b⟩) ≅ C(c,a×b)</div>
+<p class="source-paragraph" data-source-paragraph="80">这里 <em>a×b</em> 是右伴随函子 Product 作用于对象对 ⟨a,b⟩ 的结果。注意，从 C×C 出发的任何函子都是双函子，因此 Product 是双函子。Haskell 中 Product 双函子直接写作 <code>(,)</code>。把它应用于两个类型，就得到积类型，例如：</p><pre><code class="language-haskell">(,) Int Bool ~ (Int, Bool)</code></pre></section>
+
+<section id="exponential"><h2>由伴随定义指数</h2>
+<p class="source-paragraph" data-source-paragraph="81">指数 <em>b<sup>a</sup></em>，即函数对象 <em>a⇒b</em>，可以用<a href="../function-types/">泛构造</a>定义。若这个构造对所有对象对都存在，就能看成伴随。同样，技巧是聚焦下面的陈述：</p><blockquote><p>对任意其他对象 <em>z</em> 及态射 <em>g:z×a→b</em>，都存在唯一态射 <em>h:z→(a⇒b)</em>。</p></blockquote>
+<p class="source-paragraph" data-source-paragraph="82">这个陈述建立了 Hom 集之间的映射。</p>
+<p class="source-paragraph" data-source-paragraph="83">这里处理的是同一范畴中的对象，因此两个伴随函子都是自函子。左（自）函子 <em>L</em> 作用于对象 <em>z</em> 时产生 <em>z×a</em>，即“与固定对象 <em>a</em> 取积”的函子。</p>
+<p class="source-paragraph" data-source-paragraph="84">右（自）函子 <em>R</em> 作用于 <em>b</em> 时产生函数对象 <em>a⇒b</em>（即 <em>b<sup>a</sup></em>）。这里 <em>a</em> 仍固定。两个函子的伴随常写作：</p><div class="math-display">-×a ⊣ (-)<sup>a</sup></div>
+<p class="source-paragraph" data-source-paragraph="85">支撑这个伴随的 Hom 集映射，重画泛构造所用之图后最容易看出。</p>
+<figure><div class="figure-frame"><img src="adj-expo.jpg" alt="积函子与指数函子的伴随及 eval 余单位"></div></figure>
+<p class="source-paragraph" data-source-paragraph="86">注意，<em>eval</em> 态射（参见<a href="../function-types/">函数类型的泛构造</a>）正是这个伴随的余单位：</p><div class="math-display">(a⇒b)×a → b</div><p class="source-paragraph" data-source-paragraph="87">其中：</p><div class="math-display">(a⇒b)×a = (L∘R)b</div>
+<p class="source-paragraph" data-source-paragraph="88">之前提过，泛构造定义的对象在同构意义下唯一，所以才会说“这个”积、“这个”指数。这个性质也迁移到伴随：若函子拥有伴随，其伴随在同构意义下唯一。</p></section>
+
+<section id="challenges"><h2>习题</h2><ol class="challenges">
+<li>推导 ψ 的自然性方块。ψ 是下面两个逆变函子之间的变换：<div class="math-display">a↦C(La,b)<br>a↦D(a,Rb)</div><details class="exercise-answer"><summary>点击展开参考答案</summary><p>取 D 中态射 <code>k:a′→a</code>。第一个逆变函子用 <code>Lk</code> 前复合，第二个用 <code>k</code> 前复合。因此方块条件为：对任意 <code>g:La→b</code>，<code>ψ_a′(g∘Lk)=ψ_a(g)∘k</code>。若 <code>ψ_a(g)=Rg∘η_a</code>，两边相等正是单位 η 的自然性。</p></details></li>
+<li>从伴随第二种定义的 Hom 集同构出发，推导余单位 ε。<details class="exercise-answer"><summary>点击展开参考答案</summary><p>在同构 <code>C(Ld,c)≅D(d,Rc)</code> 中令 <code>d=Rc</code>。右边含恒等态射 <code>id_Rc</code>；用同构的逆把它映到 <code>C(LRc,c)</code>，得到 <code>ε_c:LRc→c</code>。随 <code>c</code> 的自然性使这些分量组成余单位。</p></details></li>
+<li>完成伴随两个定义等价的证明。<details class="exercise-answer"><summary>点击展开参考答案</summary><p>由 Hom 同构，分别把 <code>id_Ld</code> 与 <code>id_Rc</code> 映射得到单位和余单位；同构与逆同构互逆，会给出两条三角恒等式。反向从 η、ε 定义 <code>φ(f)=Rf∘η_d</code>，以及 <code>φ⁻¹(g)=ε_c∘Lg</code>。使用 η、ε 的自然性和两条三角恒等式，可化简得 <code>φ⁻¹(φ(f))=f</code>、<code>φ(φ⁻¹(g))=g</code>；两式也分别在 <code>d</code>、<code>c</code> 上自然。</p></details></li>
+<li>证明余积可由伴随定义。从余积的因子分解器定义开始。<details class="exercise-answer"><summary>点击展开参考答案</summary><p>余积的因子分解器把 <code>f:a→c</code>、<code>g:b→c</code> 合成唯一 <code>[f,g]:a+b→c</code>，满足与两个注入复合后分别得到 <code>f</code>、<code>g</code>。逆映射把 <code>h:a+b→c</code> 送到 <code>(h∘Left,h∘Right)</code>。于是 <code>C(a+b,c)≅C(a,c)×C(b,c)</code>，且该同构自然。</p></details></li>
+<li>证明余积是对角函子的左伴随。<details class="exercise-answer"><summary>点击展开参考答案</summary><p>把上一题右边识别为积范畴中的 Hom 集：<code>C(a,c)×C(b,c)=(C×C)(⟨a,b⟩,Δc)</code>。因此 <code>C(Coproduct⟨a,b⟩,c)≅(C×C)(⟨a,b⟩,Δc)</code>，也就是 <code>Coproduct ⊣ Δ</code>。</p></details></li>
+<li>在 Haskell 中定义积与函数对象之间的伴随。<details class="exercise-answer"><summary>点击展开参考答案</summary><p>固定类型 <code>a</code>，左函子是 <code>((,) a)</code>（按参数顺序也可用 <code>(,a)</code>），右函子是 Reader <code>((-&gt;) a)</code>。Hom 同构就是 <code>curry</code>/<code>uncurry</code>：</p><pre><code class="language-haskell">leftAdjunct  = curry
+rightAdjunct = uncurry
+unit z       = \a -&gt; (z, a)
+counit (f,a) = f a</code></pre><p>因此 <code>(-×a) ⊣ (a→-)</code>。</p></details></li>
+</ol></section>
+<nav class="chapter-switcher"><a href="../its-all-about-morphisms/">← 第 17 章：一切皆态射</a><a href="../free-forgetful-adjunctions/">第 19 章：自由/遗忘伴随 →</a></nav>
+</article><footer class="source-note"><p><strong>原文：</strong><a href="https://bartoszmilewski.com/2016/04/18/adjunctions/">Adjunctions</a></p><p><strong>核对底稿：</strong>作者博客正文与开源英文 Markdown；正文 10 个原文代码块、7 幅插图、三角恒等式、公式和 6 道习题均已收录；参考答案中的代码属于本阅读器。</p><p><strong>许可：</strong>原作及本非官方中文译文依 <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> 署名—相同方式共享。</p></footer></main></body></html>

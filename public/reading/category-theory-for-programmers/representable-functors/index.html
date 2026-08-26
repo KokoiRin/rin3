@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>第 14 章：可表函子｜程序员的范畴论｜RIN III</title><meta name="description" content="《程序员的范畴论》第 14 章完整中文翻译：Hom 函子、表示、可表函子与记忆化"><link rel="stylesheet" href="../reader.css"></head>
+<body><nav class="site-nav"><a href="../../../mathematics/category-theory-for-programmers/">← 返回整本书学习记录</a><a href="../../../">RIN III</a></nav><main class="reader"><header><span class="chapter-kicker">第二部分 · 第 14 章 · 完整中文译文</span><h1>可表函子</h1><p class="byline">Bartosz Milewski</p><div class="title-rule"></div><p class="lead">可表函子（representable functor）揭示了一种重要等价：同一份信息既可以表现为函数，也可以表现为可索引的数据结构。</p><div class="translation-scope"><span class="scope-label">译文范围</span><p>完整翻译本章正文，保留全部 17 个原文代码块、2 幅插图、公式、6 道习题及参考文献；习题附可展开答案。</p></div><nav><ul class="chapter-nav"><li><a href="#sets">先谈集合</a></li><li><a href="#hom">Hom 函子</a></li><li><a href="#representable">可表函子</a></li><li><a href="#challenges">习题</a></li><li><a href="#bibliography">参考文献</a></li></ul></nav></header><article>
+
+<section id="sets"><p class="source-paragraph" data-source-paragraph="1">是时候稍微谈谈集合了。数学家对集合论爱恨交加。它是数学的汇编语言——至少曾经是。范畴论在某种程度上试图远离集合论。例如，众所周知，所有集合组成的集合并不存在，但所有集合组成的范畴 Set 却存在。这很好。另一方面，我们假设一个范畴中任意两个对象之间的态射构成集合，甚至把它称为 hom 集（hom-set）。公平地说，范畴论有一个分支，其中态射不构成集合，而是另一个范畴中的对象。使用 hom 对象而非 hom 集的范畴称为<em>富范畴（enriched category）</em>。不过接下来仍坚持使用传统而可靠的 hom 集范畴。</p>
+<p class="source-paragraph" data-source-paragraph="2">在范畴对象之外，集合大概是最接近“没有特征的团块”的东西。集合有元素，但很难对这些元素说些什么。有限集合可以数出元素个数；无限集合也可以借助基数（cardinal number）以某种方式计数。例如，自然数集合比实数集合小，尽管两者都是无限的。但也许令人惊讶的是，有理数集合与自然数集合一样大。</p>
+<p class="source-paragraph" data-source-paragraph="3">除此之外，集合的全部信息都可以编码在集合之间的函数中——尤其是称为同构的可逆函数。就所有实际用途而言，同构的集合是相同的。在引来基础数学家的怒火之前，我要说明：相等与同构的区别具有根本重要性。事实上，它是数学最新分支之一——同伦类型论（Homotopy Type Theory, HoTT）——主要关心的问题之一。我提到 HoTT，是因为它是一种从计算中汲取灵感的纯数学理论；它的主要倡导者之一 Vladimir Voevodsky 在研究 Rocq 定理证明器时获得过一次重大的顿悟。数学与编程之间的影响是双向的。</p>
+<p class="source-paragraph" data-source-paragraph="4">关于集合的重要经验是：比较元素类型不同的集合没有问题。例如，可以说某个自然变换集合与某个态射集合同构，因为集合就是集合。这里的同构只表示：一个集合中的每个自然变换，都与另一个集合中的唯一态射相对应，反之亦然；它们可以一一配对。若苹果和橙子是不同范畴中的对象，就不能直接比较苹果与橙子；但可以比较苹果集合与橙子集合。把范畴问题转化成集合论问题，常常能给我们必要的洞见，甚至让我们证明有价值的定理。</p></section>
+
+<section id="hom"><h2>Hom 函子</h2>
+<p class="source-paragraph" data-source-paragraph="5">每个范畴都自带一族到 Set 的规范映射。这些映射其实是函子，因此保持范畴的结构。下面构造其中一个。</p>
+<p class="source-paragraph" data-source-paragraph="6">固定 C 中一个对象 <em>a</em>，再取 C 中另一个对象 <em>x</em>。Hom 集 C(a,x) 是一个集合，也就是 Set 中的对象。当保持 <em>a</em> 固定而改变 <em>x</em> 时，C(a,x) 也会在 Set 中变化。因此我们得到了从 <em>x</em> 到 Set 的映射。</p>
+<figure><div class="figure-frame"><img src="hom-set.jpg" alt="固定源对象 a 后，hom 集随目标对象 x 变化"></div></figure>
+<p class="source-paragraph" data-source-paragraph="7">若想强调把 hom 集看作第二个参数上的映射，就使用记号 C(a,-)，其中横线是参数占位符。</p>
+<p class="source-paragraph" data-source-paragraph="8">这个对象映射很容易扩展为态射映射。取 C 中任意对象 <em>x</em>、<em>y</em> 之间的态射 <em>f</em>。在刚定义的映射下，<em>x</em> 映射到集合 C(a,x)，<em>y</em> 映射到 C(a,y)。若这个映射要成为函子，<em>f</em> 必须映射成两个集合之间的函数：</p><div class="math-display">C(a,x) → C(a,y)</div>
+<p class="source-paragraph" data-source-paragraph="9">逐点定义这个函数，也就是分别定义它对每个参数的作用。参数应取 C(a,x) 的任意元素，称为 <em>h</em>。只要首尾相接，态射就能复合。恰好 <em>h</em> 的目标与 <em>f</em> 的源匹配，所以它们的复合：</p><div class="math-display">f ∘ h : a → y</div>
+<p class="source-paragraph" data-source-paragraph="10">是从 <em>a</em> 到 <em>y</em> 的态射，因此属于 C(a,y)。</p>
+<figure><div class="figure-frame"><img src="hom-functor.jpg" alt="Hom 函子把态射 f 映射为 hom 集之间的函数"></div><figcaption>Hom 函子。</figcaption></figure>
+<p class="source-paragraph" data-source-paragraph="11">我们找到了从 C(a,x) 到 C(a,y) 的函数，它可以作为 <em>f</em> 的像。若不会混淆，把这个提升后的函数写成 C(a,f)，它对态射 <em>h</em> 的作用为：</p><div class="math-display">C(a,f) h = f ∘ h</div>
+<p class="source-paragraph" data-source-paragraph="12">因为这个构造适用于任何范畴，它也必须适用于 Haskell 类型范畴。在 Haskell 中，hom 函子更常被称为 <code>Reader</code> 函子：</p><pre><code class="language-haskell">type Reader a x = a -&gt; x</code></pre><pre><code class="language-haskell">instance Functor (Reader a) where
+    fmap f h = f . h</code></pre>
+<p class="source-paragraph" data-source-paragraph="13">现在考虑：若不是固定 hom 集的源，而是固定目标，会发生什么？换句话说，映射 C(-,a) 也是函子吗？是，但它不是协变函子，而是逆变函子。这是因为同样的首尾匹配会产生与 <em>f</em> 的后复合，而不是 C(a,-) 情况下的前复合。</p>
+<p class="source-paragraph" data-source-paragraph="14">我们已经在 Haskell 中见过这个逆变函子，并称它为 <code>Op</code>：</p><pre><code class="language-haskell">type Op a x = x -&gt; a</code></pre><pre><code class="language-haskell">instance Contravariant (Op a) where
+    contramap f h = h . f</code></pre>
+<p class="source-paragraph" data-source-paragraph="15">最后，如果让两个对象都变化，就得到 Profunctor C(-,=)：它在第一个参数上逆变，在第二个参数上协变（为强调两个参数可以独立变化，用双横线中的第二种横线作另一个占位符）。讨论函子性时已经见过这个 Profunctor：</p><pre><code class="language-haskell">instance Profunctor (-&gt;) where
+  dimap ab cd bc = cd . bc . ab
+  lmap = flip (.)
+  rmap = (.)</code></pre>
+<p class="source-paragraph" data-source-paragraph="16">重要经验是：这个观察在任何范畴中都成立——从对象到 hom 集的映射具有函子性。因为逆变等价于从对偶范畴出发的映射，可以把这个事实简洁地写成：</p><div class="math-display">C(-,=) : C<sup>op</sup> × C → Set</div></section>
+
+<section id="representable"><h2>可表函子</h2>
+<p class="source-paragraph" data-source-paragraph="17">我们已经看到，对于 C 中对象 <em>a</em> 的每种选择，都会得到从 C 到 Set 的一个函子。这种到 Set 的结构保持映射常称为<em>表示（representation）</em>：我们把 C 的对象与态射表示成 Set 中的集合与函数。</p>
+<p class="source-paragraph" data-source-paragraph="18">函子 C(a,-) 本身有时就称为可表的。更一般地，若某个函子 <em>F</em> 对某个 <em>a</em> 与 hom 函子自然同构，就称 <em>F</em> 为<em>可表函子（representable functor）</em>。这样的函子必然取值于 Set，因为 C(a,-) 正是如此。</p>
+<p class="source-paragraph" data-source-paragraph="19">之前说过，我们常把同构集合看成相同的。更一般地，也把一个范畴中的同构<em>对象</em>看成相同的，因为对象除了通过态射与其他对象（以及自身）建立的关系外，不再有别的结构。</p>
+<p class="source-paragraph" data-source-paragraph="20">例如，之前讨论过幺半群范畴 Mon，它最初以集合为模型。但我们小心地只选取保持集合上幺半群结构的函数作为态射。因此，如果 Mon 中两个对象同构，也就是它们之间存在可逆态射，那么它们拥有完全相同的结构。若查看它们所基于的集合与函数，就会发现一个幺半群的单位元映射到另一个的单位元，两个元素的积映射到各自像的积。</p>
+<p class="source-paragraph" data-source-paragraph="21">同样的推理可用于函子。两个范畴之间的函子构成一个范畴，其中自然变换扮演态射。因此，若两个函子之间存在可逆自然变换，它们就同构，也可以被视为相同。</p>
+<p class="source-paragraph" data-source-paragraph="22">从这个视角分析可表函子的定义。要让 <em>F</em> 可表，需要：C 中存在一个对象 <em>a</em>；存在从 C(a,-) 到 <em>F</em> 的自然变换 α；存在反方向的自然变换 β；并且它们的复合是恒等自然变换。</p>
+<p class="source-paragraph" data-source-paragraph="23">考察 α 在某对象 <em>x</em> 处的分量。它是 Set 中的函数：</p><div class="math-display">α<sub>x</sub> : C(a,x) → F x</div>
+<p class="source-paragraph" data-source-paragraph="24">该变换的自然性条件告诉我们，对任意从 <em>x</em> 到 <em>y</em> 的态射 <em>f</em>，下图交换：</p><div class="math-display">F f ∘ α<sub>x</sub> = α<sub>y</sub> ∘ C(a,f)</div>
+<p class="source-paragraph" data-source-paragraph="25">在 Haskell 中，用多态函数代替自然变换：</p><pre><code class="language-haskell">alpha :: forall x. (a -&gt; x) -&gt; F x</code></pre>
+<p class="source-paragraph" data-source-paragraph="26">这里 <code>forall</code> 量词可省略。自然性条件：</p><pre><code class="language-haskell">fmap f . alpha = alpha . fmap f</code></pre>
+<p class="source-paragraph" data-source-paragraph="27">因参数性（parametricity）而自动满足（这是前面提过的那些免费定理之一）；要理解为左边的 <code>fmap</code> 由函子 <em>F</em> 定义，右边的 <code>fmap</code> 由 Reader 函子定义。Reader 的 <code>fmap</code> 只是函数前复合，因此可以更明确。让等式作用于 C(a,x) 的元素 <em>h</em>，自然性条件简化为：</p><pre><code class="language-haskell">fmap f (alpha h) = alpha (f . h)</code></pre>
+<p class="source-paragraph" data-source-paragraph="28">另一个变换 <code>beta</code> 方向相反：</p><pre><code class="language-haskell">beta :: forall x. F x -&gt; (a -&gt; x)</code></pre>
+<p class="source-paragraph" data-source-paragraph="29">它必须满足自然性条件，并且是 <code>alpha</code> 的逆：</p><pre><code class="language-haskell">alpha . beta = id = beta . alpha</code></pre>
+<p class="source-paragraph" data-source-paragraph="30">以后会看到，只要 <em>F a</em> 非空，从 C(a,-) 到任意 Set 值函子的自然变换总是存在（Yoneda 引理），但它未必可逆。</p>
+<p class="source-paragraph" data-source-paragraph="31">以列表函子以及作为 <em>a</em> 的 <code>Int</code> 为例。下面的自然变换可以完成工作：</p><pre><code class="language-haskell">alpha :: forall x. (Int -&gt; x) -&gt; [x]
+alpha h = map h [12]</code></pre>
+<p class="source-paragraph" data-source-paragraph="32">这里任意选了数字 12，并创建只含它的列表。然后可把函数 <code>h</code> <code>fmap</code> 到列表上，得到一个元素类型为 <code>h</code> 返回类型的列表。（事实上，有多少个整数列表，就有多少个这样的变换。）</p>
+<p class="source-paragraph" data-source-paragraph="33">自然性条件等价于 <code>map</code>（列表版 <code>fmap</code>）的可组合性：</p><pre><code class="language-haskell">map f (map h [12]) = map (f . h) [12]</code></pre>
+<p class="source-paragraph" data-source-paragraph="34">但若尝试寻找逆变换，就必须从任意类型 <code>x</code> 的列表得到返回 <code>x</code> 的函数：</p><pre><code class="language-haskell">beta :: forall x. [x] -&gt; (Int -&gt; x)</code></pre>
+<p class="source-paragraph" data-source-paragraph="35">你可能想到用 <code>head</code> 从列表中取出一个 <code>x</code>，但它无法处理空列表。注意，无论用什么类型 <code>a</code> 替代 <code>Int</code>，这里都行不通。所以列表函子不可表。</p>
+<p class="source-paragraph" data-source-paragraph="36">还记得我们曾把 Haskell（自）函子想成某种容器吗？同样，可以把可表函子想成存储函数调用记忆化结果的容器（Haskell 中 hom 集的成员就是函数）。表示对象——C(a,-) 中的类型 <em>a</em>——可视为键类型，用它访问函数的制表值。称为 <code>alpha</code> 的变换叫作<em>制表（tabulate）</em>，它的逆 <code>beta</code> 叫作<em>索引（index）</em>。下面是稍作简化的 <code>Representable</code> 类型类定义：</p><pre><code class="language-haskell">class Representable f where
+   type Rep f :: *
+   tabulate :: (Rep f -&gt; x) -&gt; f x
+   index    :: f x -&gt; Rep f -&gt; x</code></pre>
+<p class="source-paragraph" data-source-paragraph="37">注意，表示类型——也就是我们的 <em>a</em>，这里称为 <code>Rep f</code>——是 <code>Representable</code> 定义的一部分。星号只表示 <code>Rep f</code> 是一个类型（而非类型构造器或其他更奇特的 kind）。</p>
+<p class="source-paragraph" data-source-paragraph="38">不能变为空的无限列表，也就是流（stream），是可表的：</p><pre><code class="language-haskell">data Stream x = Cons x (Stream x)</code></pre>
+<p class="source-paragraph" data-source-paragraph="39">可以把它们看作以 <code>Integer</code> 为参数的函数所产生的记忆化值。（严格说应使用非负自然数，但我不想让代码变复杂。）</p>
+<p class="source-paragraph" data-source-paragraph="40">要对这样的函数执行 <code>tabulate</code>，就创建一个无限值流。当然，这只有依靠 Haskell 的惰性求值才可能；各个值会按需计算。使用 <code>index</code> 访问记忆化值：</p><pre><code class="language-haskell">instance Representable Stream where
+    type Rep Stream = Integer
+    tabulate f = Cons (f 0) (tabulate (f . (+1)))
+    index (Cons b bs) n =
+        if n == 0 then b else index bs (n - 1)</code></pre>
+<p class="source-paragraph" data-source-paragraph="41">有趣的是，可以用一种记忆化方案覆盖返回类型任意的整个函数族。</p>
+<p class="source-paragraph" data-source-paragraph="42">逆变函子的可表性定义类似，只是固定 C(-,a) 的第二个参数。等价地，也可以考虑从 C<sup>op</sup> 到 Set 的函子，因为 C<sup>op</sup>(a,-) 与 C(-,a) 相同。</p>
+<p class="source-paragraph" data-source-paragraph="43">可表性还有一个有趣转折。记住，在笛卡尔闭范畴中，hom 集可以在内部当作指数对象处理。Hom 集 C(a,x) 等价于 x<sup>a</sup>；对于可表函子 <em>F</em>，可以写作：-<sup>a</sup> = F。</p>
+<p class="source-paragraph" data-source-paragraph="44">纯粹为了好玩，对等式两边取对数：</p><div class="math-display">a = log F</div>
+<p class="source-paragraph" data-source-paragraph="45">当然，这只是形式变换；但若了解对数的一些性质，它会很有帮助。特别是，以积类型为基础的函子可以用和类型表示，而和类型函子一般不可表（例如列表函子）。</p>
+<p class="source-paragraph" data-source-paragraph="46">最后请注意，可表函子给出了同一事物的两种不同实现：一种是函数，一种是数据结构。它们拥有完全相同的内容——使用相同的键会取回相同的值。这就是我所说的“相同”。就内容而言，两个自然同构的函子完全相同。另一方面，两种表示往往实现不同，也可能有不同的性能特征。记忆化（memoization）用来改善性能，可能大幅缩短运行时间。能够为同一个底层计算生成不同表示，在实践中很有价值。因此令人惊讶的是，尽管范畴论完全不关心性能，它仍提供了大量探索具有实用价值之替代实现的机会。</p></section>
+
+<section id="challenges"><h2>习题</h2><ol class="challenges">
+<li>证明 hom 函子把 C 中的恒等态射映射成 Set 中相应的恒等函数。<details class="exercise-answer"><summary>点击展开参考答案</summary><p>对协变 Hom 函子 C(a,-)，恒等态射 <code>id_x</code> 的提升把任意 <code>h:a→x</code> 映射为 <code>id_x∘h=h</code>，所以它就是 C(a,x) 上的恒等函数。逆变情形同理：<code>h∘id_x=h</code>。</p></details></li>
+<li>证明 <code>Maybe</code> 不可表。<details class="exercise-answer"><summary>点击展开参考答案</summary><p>若 <code>Maybe x ≅ (a→x)</code> 对所有 <code>x</code> 自然成立，取空类型 <code>Void</code>。<code>Maybe Void</code> 只有 <code>Nothing</code> 一个值，因此函数集 <code>a→Void</code> 也必须只有一个值，这迫使 <code>a</code> 为空。再取单元类型 <code>()</code>：<code>Void→()</code> 只有一个函数，而 <code>Maybe ()</code> 有 <code>Nothing</code> 与 <code>Just ()</code> 两个值，矛盾。（忽略 Haskell 的底值。）</p></details></li>
+<li><code>Reader</code> 函子可表吗？<details class="exercise-answer"><summary>点击展开参考答案</summary><p>可表。<code>Reader a x = a→x</code> 本身就是 Hom 函子 C(a,-)，表示类型为 <code>a</code>；<code>tabulate</code> 与 <code>index</code> 都可取恒等函数。</p></details></li>
+<li>使用 <code>Stream</code> 表示，对一个“求参数平方”的函数做记忆化。<details class="exercise-answer"><summary>点击展开参考答案</summary><pre><code class="language-haskell">squares :: Stream Integer
+squares = tabulate (\n -&gt; n * n)</code></pre><p>随后 <code>index squares n</code> 会按需计算并访问 <code>n²</code>。</p></details></li>
+<li>证明 <code>Stream</code> 的 <code>tabulate</code> 与 <code>index</code> 确实互为逆。（提示：使用归纳法。）<details class="exercise-answer"><summary>点击展开参考答案</summary><p>对非负整数 <code>n</code> 归纳。基例：<code>index (tabulate f) 0=f 0</code>。归纳步把流尾看作 <code>tabulate (f . (+1))</code>，于是 <code>index (tabulate f) (n+1)=f(n+1)</code>。反方向，对流按观察等价证明：<code>tabulate (index s)</code> 的头与 <code>s</code> 相同；其尾的每个索引也由同一归纳论证与 <code>s</code> 的尾相同，故两条无限流相等。</p></details></li>
+<li>函子：<pre><code class="language-haskell">Pair a = Pair a a</code></pre>是可表的。你能猜出表示它的类型吗？实现 <code>tabulate</code> 与 <code>index</code>。<details class="exercise-answer"><summary>点击展开参考答案</summary><p>表示类型是 <code>Bool</code>，因为 <code>Bool→a</code> 恰好保存两个 <code>a</code>：</p><pre><code class="language-haskell">instance Representable Pair where
+    type Rep Pair = Bool
+    tabulate f = Pair (f False) (f True)
+    index (Pair x y) b = if b then y else x</code></pre></details></li>
+</ol></section>
+
+<section id="bibliography"><h2>参考文献</h2><ol><li>Catsters 关于<a href="https://www.youtube.com/watch?v=4QgjKUzyrhM">可表函子的视频</a>。</li></ol></section>
+<nav class="chapter-switcher"><a href="../free-monoids/">← 第 13 章：自由幺半群</a><a href="../the-yoneda-lemma/">第 15 章：Yoneda 引理 →</a></nav>
+</article><footer class="source-note"><p><strong>原文：</strong><a href="https://bartoszmilewski.com/2015/05/05/representable-functors/">Representable Functors</a></p><p><strong>核对底稿：</strong>作者博客正文与开源英文 Markdown；正文 16 个原文代码块、习题 1 个原文代码块、2 幅插图、公式、6 道习题和参考文献均已收录；参考答案中的代码属于本阅读器。</p><p><strong>许可：</strong>原作及本非官方中文译文依 <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> 署名—相同方式共享。</p></footer></main></body></html>

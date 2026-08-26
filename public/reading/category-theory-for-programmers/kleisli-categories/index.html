@@ -1,0 +1,362 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>第 4 章：Kleisli 范畴｜程序员的范畴论｜RIN III</title>
+  <meta name="description" content="Bartosz Milewski《程序员的范畴论》第 4 章完整中文翻译：Writer、带修饰函数的复合与 Kleisli 范畴">
+  <link rel="stylesheet" href="../reader.css">
+</head>
+<body>
+  <nav class="site-nav" aria-label="站点导航">
+    <a href="../../../mathematics/category-theory-for-programmers/">← 返回整本书学习记录</a>
+    <a href="../../../">RIN III</a>
+  </nav>
+
+  <main class="reader">
+    <header>
+      <span class="chapter-kicker">第一部分 · 第 4 章 · 完整中文译文</span>
+      <h1>Kleisli 范畴</h1>
+      <p class="byline">Bartosz Milewski · 2014 年 12 月 23 日</p>
+      <div class="title-rule"></div>
+      <p class="lead">副作用不必藏在全局可变状态里。把附加信息放进返回类型，再重新定义函数复合，就能在纯函数世界中表达日志等效应；这正是 Kleisli 范畴提供的自由度。</p>
+
+      <div class="translation-scope">
+        <span class="scope-label">译文范围</span>
+        <p>完整翻译本章正文，保留 1 张原图、全部 C++ 与 Haskell 代码、四步复合规则、Writer 示例以及 3 道习题。</p>
+      </div>
+
+      <nav aria-label="本页导航">
+        <ul class="chapter-nav">
+          <li><a href="#logging">把日志变成纯函数结果</a></li>
+          <li><a href="#writer-category">Writer 范畴</a></li>
+          <li><a href="#writer-haskell">Haskell 中的 Writer</a></li>
+          <li><a href="#kleisli">Kleisli 范畴</a></li>
+          <li><a href="#challenge">习题</a></li>
+        </ul>
+      </nav>
+    </header>
+
+    <article>
+      <section id="logging">
+        <p class="source-paragraph" data-source-paragraph="1">你已经看到，怎样把类型与纯函数建模为范畴。我也提到过，范畴论中有办法对副作用或非纯函数建模。下面看一个例子：记录日志或跟踪自身执行过程的函数。在命令式语言中，这种功能很可能通过修改某种全局状态来实现，例如：</p>
+
+        <pre><code class="language-cpp">string logger;
+
+bool negate(bool b) {
+     logger += "Not so! ";
+     return !b;
+}</code></pre>
+
+        <p class="source-paragraph" data-source-paragraph="2">你知道这不是纯函数，因为它的记忆化版本无法产生日志。这个函数具有<em>副作用</em>。</p>
+
+        <p class="source-paragraph" data-source-paragraph="3">现代编程会尽可能远离全局可变状态——哪怕只是因为并发会让它复杂不堪。你也绝不会把这样的代码放进程序库。</p>
+
+        <p class="source-paragraph" data-source-paragraph="4">幸运的是，我们可以把这个函数改成纯函数。只需显式地传入、传出日志。我们增加一个字符串参数，并把常规输出与包含更新后日志的字符串配成一对：</p>
+
+        <pre><code class="language-cpp">pair&lt;bool, string&gt; negate(bool b, string logger) {
+     return make_pair(!b, logger + "Not so! ");
+}</code></pre>
+
+        <p class="source-paragraph" data-source-paragraph="5">这个函数是纯的：它没有副作用；每次用相同参数调用，都会返回相同的 pair；如有必要，也可以将它记忆化。不过，考虑到日志具有累积性质，你必须记忆所有可能通向某次调用的历史。下面两次调用需要不同的记忆条目：</p>
+
+        <pre><code class="language-cpp">negate(true, "It was the best of times. ");</code></pre>
+
+        <p class="source-paragraph" data-source-paragraph="6">以及：</p>
+
+        <pre><code class="language-cpp">negate(true, "It was the worst of times. ");</code></pre>
+
+        <p class="source-paragraph" data-source-paragraph="7">其他历史也都如此。</p>
+
+        <p class="source-paragraph" data-source-paragraph="8">这也不是一个很好的程序库函数接口。调用者可以自由忽略返回类型中的字符串，因此这一点负担不大；但他们被迫传入字符串，这可能很不方便。</p>
+
+        <p class="source-paragraph" data-source-paragraph="9">有没有一种侵入性更低的方式来做同一件事？能否分离关注点？在这个简单例子中，<code>negate</code> 的主要目的，是把一个布尔值变成另一个布尔值，日志记录只是次要任务。诚然，记录的消息由具体函数决定；但把这些消息汇聚成连续日志，是另一个独立关注点。我们仍希望函数产生一段字符串，却想卸下它“生成完整日志”的责任。于是得到下面这个折中方案：</p>
+
+        <pre><code class="language-cpp">pair&lt;bool, string&gt; negate(bool b) {
+     return make_pair(!b, "Not so! ");
+}</code></pre>
+
+        <p class="source-paragraph" data-source-paragraph="10">其思想是：在两次函数调用<em>之间</em>汇聚日志。</p>
+
+        <p class="source-paragraph" data-source-paragraph="11">为了看看怎样做到这一点，我们换一个稍微真实的例子。先有一个从字符串到字符串的函数，把小写字符转换成大写：</p>
+
+        <pre><code class="language-cpp">string toUpper(string s) {
+    string result;
+    int (*toupperp)(int) = &amp;toupper; // toupper 已重载
+    transform(begin(s), end(s), back_inserter(result), toupperp);
+    return result;
+}</code></pre>
+
+        <p class="source-paragraph" data-source-paragraph="12">另有一个函数按照空白边界拆分字符串，返回字符串向量：</p>
+
+        <pre><code class="language-cpp">vector&lt;string&gt; toWords(string s) {
+    return words(s);
+}</code></pre>
+
+        <p class="source-paragraph" data-source-paragraph="13">真正的工作由辅助函数 <code>words</code> 完成：</p>
+
+        <pre><code class="language-cpp">vector&lt;string&gt; words(string s) {
+    vector&lt;string&gt; result{""};
+    for (auto i = begin(s); i != end(s); ++i)
+    {
+        if (isspace(*i))
+            result.push_back("");
+        else
+            result.back() += *i;
+    }
+    return result;
+}</code></pre>
+
+        <p class="source-paragraph" data-source-paragraph="14">我们想修改 <code>toUpper</code> 和 <code>toWords</code>：让它们在常规返回值上顺便“捎带”一段消息字符串。</p>
+
+        <figure>
+          <div class="figure-frame"><img class="portrait" src="piggyback.jpg" alt="一只小猪驮着另一只小猪，表示返回值捎带附加消息"></div>
+          <figcaption>在常规结果上捎带额外信息。</figcaption>
+        </figure>
+
+        <p class="source-paragraph" data-source-paragraph="15">我们要“修饰”这些函数的返回值。为了用通用方式完成它，定义模板 <code>Writer</code>，封装一个 pair：第一项是任意类型 <code>A</code> 的值，第二项是字符串：</p>
+
+        <pre><code class="language-cpp">template&lt;typename A&gt;
+using Writer = pair&lt;A, string&gt;;</code></pre>
+
+        <p class="source-paragraph" data-source-paragraph="16">下面是修饰后的函数：</p>
+
+        <pre><code class="language-cpp">Writer&lt;string&gt; toUpper(string s) {
+    string result;
+    int (*toupperp)(int) = &amp;toupper;
+    transform(begin(s), end(s), back_inserter(result), toupperp);
+    return make_pair(result, "toUpper ");
+}
+
+Writer&lt;vector&lt;string&gt;&gt; toWords(string s) {
+    return make_pair(words(s), "toWords ");
+}</code></pre>
+
+        <p class="source-paragraph" data-source-paragraph="17">我们想把这两个函数复合成另一个修饰函数：它把字符串转成大写，再拆分成单词，同时生成这些操作的日志。可以这样做：</p>
+
+        <pre><code class="language-cpp">Writer&lt;vector&lt;string&gt;&gt; process(string s) {
+    auto p1 = toUpper(s);
+    auto p2 = toWords(p1.first);
+    return make_pair(p2.first, p1.second + p2.second);
+}</code></pre>
+
+        <p class="source-paragraph" data-source-paragraph="18">目标达成了：日志汇聚不再是各个函数自身的关注点。每个函数只产生自己的消息，随后由外部把它们连接成更大的日志。</p>
+
+        <p class="source-paragraph" data-source-paragraph="19">现在想象一整个程序都按这种风格编写：那会是一场充满重复且容易出错的噩梦。但我们是程序员，知道怎样处理重复代码：抽象它！然而，这次不是寻常的抽象——我们必须抽象<em>函数复合本身</em>。而复合正是范畴论的本质，因此在继续写代码之前，先从范畴论视角分析问题。</p>
+      </section>
+
+      <section id="writer-category">
+        <h2>Writer 范畴</h2>
+
+        <p class="source-paragraph" data-source-paragraph="20">修饰一批函数的返回类型、借此捎带额外功能，是一个非常富有成果的想法。以后还会看到许多例子。起点是普通的类型与函数范畴。我们保留类型作为对象，但重新定义态射：态射现在是修饰后的函数。</p>
+
+        <p class="source-paragraph" data-source-paragraph="21">例如，假设要修饰从 <code>int</code> 到 <code>bool</code> 的函数 <code>isEven</code>。我们把它变成由修饰函数表示的态射。要点在于：尽管修饰函数返回 pair，这个态射仍被视为对象 <code>int</code> 与 <code>bool</code> 之间的箭头：</p>
+
+        <pre><code class="language-cpp">pair&lt;bool, string&gt; isEven(int n) {
+     return make_pair(n % 2 == 0, "isEven ");
+}</code></pre>
+
+        <p class="source-paragraph" data-source-paragraph="22">根据范畴定律，我们应该能把这个态射与另一个从对象 <code>bool</code> 指向某个对象的态射复合。特别是，应该能把它与前面的 <code>negate</code> 复合：</p>
+
+        <pre><code class="language-cpp">pair&lt;bool, string&gt; negate(bool b) {
+     return make_pair(!b, "Not so! ");
+}</code></pre>
+
+        <p class="source-paragraph" data-source-paragraph="23">显然，由于输入输出不匹配，不能像复合普通函数一样复合这两个态射。它们的复合应该更像下面这样：</p>
+
+        <pre><code class="language-cpp">pair&lt;bool, string&gt; isOdd(int n) {
+    pair&lt;bool, string&gt; p1 = isEven(n);
+    pair&lt;bool, string&gt; p2 = negate(p1.first);
+    return make_pair(p2.first, p1.second + p2.second);
+}</code></pre>
+
+        <p class="source-paragraph" data-source-paragraph="24">于是，在这个正在构造的新范畴中，两个态射的复合规则如下：</p>
+        <ol>
+          <li>执行与第一个态射对应的修饰函数；</li>
+          <li>提取结果 pair 的第一项，把它传给与第二个态射对应的修饰函数；</li>
+          <li>连接第一个结果的第二项（字符串）与第二个结果的第二项（字符串）；</li>
+          <li>返回新的 pair：第一项是最终结果的第一项，第二项是连接后的字符串。</li>
+        </ol>
+
+        <p class="source-paragraph" data-source-paragraph="25">如果想在 C++ 中把这种复合抽象为高阶函数，就必须使用一个由三种类型参数化的模板，分别对应范畴中的三个对象。它接受两个按上述规则可复合的修饰函数，返回第三个修饰函数：</p>
+
+        <pre><code class="language-cpp">template&lt;typename A, typename B, typename C&gt;
+function&lt;Writer&lt;C&gt;(A)&gt; compose(function&lt;Writer&lt;B&gt;(A)&gt; m1,
+                               function&lt;Writer&lt;C&gt;(B)&gt; m2)
+{
+    return [m1, m2](A x) {
+        auto p1 = m1(x);
+        auto p2 = m2(p1.first);
+        return make_pair(p2.first, p1.second + p2.second);
+    };
+}</code></pre>
+
+        <p class="source-paragraph" data-source-paragraph="26">现在可以回到早先的例子，使用这个新模板实现 <code>toUpper</code> 与 <code>toWords</code> 的复合：</p>
+
+        <pre><code class="language-cpp">Writer&lt;vector&lt;string&gt;&gt; process(string s) {
+   return compose&lt;string, string, vector&lt;string&gt;&gt;(
+       toUpper, toWords)(s);
+}</code></pre>
+
+        <p class="source-paragraph" data-source-paragraph="27">把类型传给 <code>compose</code> 模板时仍有许多噪声。只要编译器符合 C++14，支持带返回类型推导的泛型 lambda，就能避免这些噪声（这段代码归功于 Eric Niebler）：</p>
+
+        <pre><code class="language-cpp">auto const compose = [](auto m1, auto m2) {
+    return [m1, m2](auto x) {
+        auto p1 = m1(x);
+        auto p2 = m2(p1.first);
+        return make_pair(p2.first, p1.second + p2.second);
+    };
+};</code></pre>
+
+        <p class="source-paragraph" data-source-paragraph="28">在这个新定义下，<code>process</code> 的实现简化为：</p>
+
+        <pre><code class="language-cpp">Writer&lt;vector&lt;string&gt;&gt; process(string s) {
+   return compose(toUpper, toWords)(s);
+}</code></pre>
+
+        <p class="source-paragraph" data-source-paragraph="29">但事情还没有结束。我们已经定义了新范畴中的复合，那么恒等态射是什么？它们不是普通的恒等函数！它们必须是从类型 A 回到类型 A 的态射，也就是说，是下面形式的修饰函数：</p>
+
+        <pre><code class="language-cpp">Writer&lt;A&gt; identity(A);</code></pre>
+
+        <p class="source-paragraph" data-source-paragraph="30">它们在复合下必须表现为单位元。观察复合定义可以看出，恒等态射应该原样传递参数，并且只给日志贡献一个空字符串：</p>
+
+        <pre><code class="language-cpp">template&lt;typename A&gt;
+Writer&lt;A&gt; identity(A x) {
+    return make_pair(x, "");
+}</code></pre>
+
+        <p class="source-paragraph" data-source-paragraph="31">你很容易验证，我们刚刚定义的确实是一个合法范畴。特别是，这个复合显然满足结合律。追踪每个 pair 的第一项，会发现它只是普通的函数复合，而函数复合满足结合律；第二项则被连接起来，连接同样满足结合律。</p>
+
+        <p class="source-paragraph" data-source-paragraph="32">敏锐的读者也许会发现，这个构造很容易推广到任意幺半群，而不只限于字符串幺半群。我们可以在 <code>compose</code> 中使用 <code>mappend</code>，在 <code>identity</code> 中使用 <code>mempty</code>，分别替代 <code>+</code> 与 <code>""</code>。实在没有理由把日志限制为字符串。优秀的程序库作者应该能识别出使程序库运转所需的最小约束——在这里，日志库唯一的要求，就是日志具备幺半群性质。</p>
+      </section>
+
+      <section id="writer-haskell">
+        <h2>Haskell 中的 Writer</h2>
+
+        <p class="source-paragraph" data-source-paragraph="33">同样的内容用 Haskell 写会简洁一些，而且编译器能提供更多帮助。先定义 <code>Writer</code> 类型：</p>
+
+        <pre><code class="language-haskell">type Writer a = (a, String)</code></pre>
+
+        <p class="source-paragraph" data-source-paragraph="34">这里只定义了一个类型别名，相当于 C++ 的 <code>typedef</code>（或 <code>using</code>）。类型 <code>Writer</code> 由类型变量 <code>a</code> 参数化，等价于由 <code>a</code> 与 <code>String</code> 构成的 pair。pair 的语法极其简单：把两个项目放进括号，中间用逗号隔开。</p>
+
+        <p class="source-paragraph" data-source-paragraph="35">我们的态射，是从任意类型到某种 <code>Writer</code> 类型的函数：</p>
+
+        <pre><code class="language-haskell">a -&gt; Writer b</code></pre>
+
+        <p class="source-paragraph" data-source-paragraph="36">我们把复合声明成一个有趣的中缀运算符，有时称为“鱼”：</p>
+
+        <pre><code class="language-haskell">(&gt;=&gt;) ::
+  (a -&gt; Writer b) -&gt; (b -&gt; Writer c) -&gt; (a -&gt; Writer c)</code></pre>
+
+        <p class="source-paragraph" data-source-paragraph="37">这是一个双参数函数，其中每个参数本身都是函数，而返回值仍是函数。第一个参数的类型是 <code>(a -&gt; Writer b)</code>，第二个是 <code>(b -&gt; Writer c)</code>，结果是 <code>(a -&gt; Writer c)</code>。</p>
+
+        <p class="source-paragraph" data-source-paragraph="38">下面是这个中缀运算符的定义——两个参数 <code>m1</code> 与 <code>m2</code> 分别出现在鱼形符号两侧：</p>
+
+        <pre><code class="language-haskell">m1 &gt;=&gt; m2 = \x -&gt;
+    let (y, s1) = m1 x
+        (z, s2) = m2 y
+    in (z, s1 ++ s2)</code></pre>
+
+        <p class="source-paragraph" data-source-paragraph="39">结果是一个接受参数 <code>x</code> 的 lambda 函数。lambda 写作反斜杠——可以把它看成希腊字母 λ 被截掉了一条腿。</p>
+
+        <p class="source-paragraph" data-source-paragraph="40"><code>let</code> 表达式允许声明辅助变量。这里，调用 <code>m1</code> 的结果通过模式匹配绑定到变量 pair <code>(y, s1)</code>；然后使用第一个模式得到的参数 <code>y</code> 调用 <code>m2</code>，并把结果匹配到 <code>(z, s2)</code>。</p>
+
+        <p class="source-paragraph" data-source-paragraph="41">Haskell 通常直接对 pair 做模式匹配，而不像前面的 C++ 代码那样使用访问器。除此之外，两种实现之间的对应关系相当直白。</p>
+
+        <p class="source-paragraph" data-source-paragraph="42"><code>let</code> 表达式的整体值由 <code>in</code> 子句指定：这里是一个 pair，第一项为 <code>z</code>，第二项是两个字符串 <code>s1 ++ s2</code> 的连接结果。</p>
+
+        <p class="source-paragraph" data-source-paragraph="43">我还会为这个范畴定义恒等态射；不过由于很久以后才会明朗的原因，我把它称为 <code>return</code>：</p>
+
+        <pre><code class="language-haskell">return :: a -&gt; Writer a
+return x = (x, "")</code></pre>
+
+        <p class="source-paragraph" data-source-paragraph="44">为了完整起见，下面给出修饰函数 <code>upCase</code> 与 <code>toWords</code> 的 Haskell 版本：</p>
+
+        <pre><code class="language-haskell">upCase :: String -&gt; Writer String
+upCase s = (map toUpper s, "upCase ")
+
+toWords :: String -&gt; Writer [String]
+toWords s = (words s, "toWords ")</code></pre>
+
+        <p class="source-paragraph" data-source-paragraph="45">函数 <code>map</code> 对应 C++ 的 <code>transform</code>。它把字符函数 <code>toUpper</code> 应用于字符串 <code>s</code>。辅助函数 <code>words</code> 已在标准 Prelude 库中定义。</p>
+
+        <p class="source-paragraph" data-source-paragraph="46">最后，借助鱼运算符完成两个函数的复合：</p>
+
+        <pre><code class="language-haskell">process :: String -&gt; Writer [String]
+process = upCase &gt;=&gt; toWords</code></pre>
+      </section>
+
+      <section id="kleisli">
+        <h2>Kleisli 范畴</h2>
+
+        <p class="source-paragraph" data-source-paragraph="47">你也许已经猜到，这个范畴不是我当场发明的。它是所谓 Kleisli 范畴的一个例子——一种建立在 Monad 上的范畴。我们还没准备好讨论 Monad，但我想先让你尝尝它们能做什么。就目前的有限目标而言，Kleisli 范畴的对象是底层编程语言的类型。从类型 A 到类型 B 的态射，是从 A 到某种由 B 经特定“修饰”得到的类型的函数。每个 Kleisli 范畴都定义自己复合这类态射的方式，也定义相对于该复合的恒等态射。（稍后会看到，这个不够精确的“修饰”一词，对应范畴中的自函子概念。）</p>
+
+        <p class="source-paragraph" data-source-paragraph="48">本文用作范畴基础的这个 Monad 称为 <em>Writer Monad</em>，用于记录日志或跟踪函数执行。它也是一种更普遍机制的例子：把效应嵌入纯计算。前面已经看到，可以在集合范畴中对编程语言的类型与函数建模（仍然照例忽略底）。这里，我们把模型扩展为一个略有不同的范畴：其中的态射由修饰函数表示，而它们的复合不只负责把一个函数的输出传给下一个函数的输入。现在我们多了一项可供操纵的自由度：<em>复合本身</em>。事实证明，恰恰是这项自由度，让我们能够为命令式语言中传统上依赖副作用实现的程序，赋予简单的指称语义。</p>
+      </section>
+
+      <section id="challenge">
+        <h2>习题</h2>
+
+        <p class="source-paragraph" data-source-paragraph="49">没有为所有可能参数值定义的函数称为偏函数。严格说，它不是数学意义上的函数，因此不符合标准范畴模型。不过，可以用一个返回修饰类型 <code>optional</code> 的函数来表示它：</p>
+
+        <pre><code class="language-cpp">template&lt;typename A&gt; class optional {
+    bool _isValid;
+    A    _value;
+public:
+    optional()    : _isValid(false) {}
+    optional(A v) : _isValid(true), _value(v) {}
+    bool isValid() const { return _isValid; }
+    A value() const { return _value; }
+};</code></pre>
+
+        <p class="source-paragraph" data-source-paragraph="50">例如，下面是修饰函数 <code>safe_root</code> 的实现：</p>
+
+        <pre><code class="language-cpp">optional&lt;double&gt; safe_root(double x) {
+    if (x &gt;= 0) return optional&lt;double&gt;{sqrt(x)};
+    else return optional&lt;double&gt;{};
+}</code></pre>
+
+        <p class="source-paragraph" data-source-paragraph="51">请完成下列任务：</p>
+        <ol class="challenges">
+          <li>构造偏函数的 Kleisli 范畴：定义复合与恒等态射。
+            <details class="exercise-answer"><summary>点击展开参考答案</summary><pre><code class="language-cpp">template&lt;typename A&gt;
+optional&lt;A&gt; identity(A x) { return optional&lt;A&gt;{x}; }
+
+template&lt;typename A, typename B, typename C&gt;
+auto compose(auto f, auto g) {
+    return [f, g](A x) -&gt; optional&lt;C&gt; {
+        auto y = f(x);
+        return y.isValid() ? g(y.value()) : optional&lt;C&gt;{};
+    };
+}</code></pre><p>若第一个态射失败，复合立即失败；成功时才把内部值交给第二个态射。恒等态射只把值放入有效的 <code>optional</code>。</p></details>
+          </li>
+          <li>实现修饰函数 <code>safe_reciprocal</code>：当参数不等于零时，返回有效的倒数。
+            <details class="exercise-answer"><summary>点击展开参考答案</summary><pre><code class="language-cpp">optional&lt;double&gt; safe_reciprocal(double x) {
+    if (x != 0) return optional&lt;double&gt;{1.0 / x};
+    return optional&lt;double&gt;{};
+}</code></pre></details>
+          </li>
+          <li>复合 <code>safe_root</code> 与 <code>safe_reciprocal</code>，实现 <code>safe_root_reciprocal</code>，在可能时计算 <code>sqrt(1/x)</code>。
+            <details class="exercise-answer"><summary>点击展开参考答案</summary><pre><code class="language-cpp">optional&lt;double&gt; safe_root_reciprocal(double x) {
+    auto r = safe_reciprocal(x);
+    if (!r.isValid()) return optional&lt;double&gt;{};
+    return safe_root(r.value());
+}</code></pre><p>它只在 <code>x &gt; 0</code> 时成功：零没有倒数，负数的倒数没有实数平方根。</p></details>
+          </li>
+        </ol>
+      </section>
+
+      <nav class="chapter-switcher" aria-label="章节切换">
+        <a href="../categories-great-and-small/">← 第 3 章：大大小小的范畴</a>
+        <a href="../products-and-coproducts/">第 5 章：积与余积 →</a>
+      </nav>
+    </article>
+
+    <footer class="source-note" id="source">
+      <p><strong>原文：</strong><a href="https://bartoszmilewski.com/2014/12/23/kleisli-categories/">Kleisli Categories</a></p>
+      <p><strong>核对底稿：</strong>作者博客正文与开源英文 Markdown 版本；正文、代码、插图、复合规则和习题均已收录。</p>
+      <p><strong>许可：</strong>原作及本非官方中文译文依 <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> 署名—相同方式共享。</p>
+    </footer>
+  </main>
+</body>
+</html>

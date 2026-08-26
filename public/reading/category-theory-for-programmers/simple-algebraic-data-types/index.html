@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>第 6 章：简单代数数据类型｜程序员的范畴论｜RIN III</title>
+  <meta name="description" content="Bartosz Milewski《程序员的范畴论》第 6 章完整中文翻译：积类型、记录、和类型与类型代数">
+  <link rel="stylesheet" href="../reader.css">
+</head>
+<body>
+  <nav class="site-nav" aria-label="站点导航">
+    <a href="../../../mathematics/category-theory-for-programmers/">← 返回整本书学习记录</a>
+    <a href="../../../">RIN III</a>
+  </nav>
+  <main class="reader">
+    <header>
+      <span class="chapter-kicker">第一部分 · 第 6 章 · 完整中文译文</span>
+      <h1>简单代数数据类型</h1>
+      <p class="byline">Bartosz Milewski</p>
+      <div class="title-rule"></div>
+      <p class="lead">程序里的许多数据结构，都可以由积与余积这两种组合方式构造。把它们看成乘法与加法，便会得到一套能推导结构、等价关系乃至递归类型的“类型代数”。</p>
+      <div class="translation-scope"><span class="scope-label">译文范围</span><p>完整翻译本章正文，保留原图、全部代码、公式、两张对照表以及 5 道习题。</p></div>
+      <nav aria-label="本页导航"><ul class="chapter-nav">
+        <li><a href="#product-types">积类型</a></li><li><a href="#records">记录</a></li><li><a href="#sum-types">和类型</a></li><li><a href="#algebra">类型代数</a></li><li><a href="#challenges">习题</a></li>
+      </ul></nav>
+    </header>
+    <article>
+      <section>
+        <p class="source-paragraph" data-source-paragraph="1">我们已经看到组合类型的两种基本方式：积与余积。事实证明，日常编程里的许多数据结构，仅用这两种机制便能构造。这一点有重要的实践意义：数据结构的许多性质都可以组合。例如，若你知道怎样判断基础类型的值是否相等，也知道怎样把这种比较推广到积类型与余积类型，就可以自动为复合类型推导相等运算符。在 Haskell 中，对于很大一类复合类型，你可以自动推导相等、比较、与字符串互相转换等能力。</p>
+        <p class="source-paragraph" data-source-paragraph="2">下面仔细看看积类型与和类型在编程中的样子。</p>
+      </section>
+
+      <section id="product-types">
+        <h2>积类型</h2>
+        <p class="source-paragraph" data-source-paragraph="3">编程语言中两种类型之积的标准实现是 pair。在 Haskell 中，pair 是原始类型构造器；在 C++ 中，它是标准库定义的一个相对复杂的模板。</p>
+        <figure><div class="figure-frame"><img src="pair.jpg" alt="由两个分量组成的 pair"></div></figure>
+        <p class="source-paragraph" data-source-paragraph="4">pair 并非严格可交换：<code>(Int, Bool)</code> 不能替代 <code>(Bool, Int)</code>，尽管二者携带相同的信息。不过，它们在同构意义下可交换；同构由 <code>swap</code> 函数给出，而它自身就是自己的逆：</p>
+        <pre><code class="language-haskell">swap :: (a, b) -&gt; (b, a)
+swap (x, y) = (y, x)</code></pre>
+        <p class="source-paragraph" data-source-paragraph="5">可以把这两种 pair 理解为用不同格式存储同一份数据，就像大端序与小端序。</p>
+        <p class="source-paragraph" data-source-paragraph="6">把 pair 嵌套在 pair 里，便能把任意多个类型组合成积；但还有更简单的办法：嵌套 pair 等价于元组。这是因为 pair 的不同嵌套方式彼此同构。若要按顺序把三个类型 <code>a</code>、<code>b</code>、<code>c</code> 组合成积，可以有两种写法：</p>
+        <pre><code class="language-haskell">((a, b), c)</code></pre>
+        <p class="source-paragraph" data-source-paragraph="7">或者：</p>
+        <pre><code class="language-haskell">(a, (b, c))</code></pre>
+        <p class="source-paragraph" data-source-paragraph="8">这两个类型不同——不能把其中一个传给期待另一个的函数——但它们的元素一一对应。下面的函数把前者映射成后者：</p>
+        <pre><code class="language-haskell">alpha :: ((a, b), c) -&gt; (a, (b, c))
+alpha ((x, y), z) = (x, (y, z))</code></pre>
+        <p class="source-paragraph" data-source-paragraph="9">而且这个函数可逆：</p>
+        <pre><code class="language-haskell">alpha_inv :: (a, (b, c)) -&gt; ((a, b), c)
+alpha_inv  (x, (y, z)) = ((x, y), z)</code></pre>
+        <p class="source-paragraph" data-source-paragraph="10">所以它是同构。这只是重新包装同一份数据的不同方式。</p>
+        <p class="source-paragraph" data-source-paragraph="11">可以把构造积类型理解为类型上的二元运算。从这个角度看，上述同构很像我们在幺半群中见过的结合律：</p>
+        <div class="math-display">(a × b) × c = a × (b × c)</div>
+        <p class="source-paragraph" data-source-paragraph="12">不同在于：对幺半群而言，两种乘积组合方式相等；这里却只“在同构意义下”相等。</p>
+        <p class="source-paragraph" data-source-paragraph="13">只要能够接受同构而不坚持严格相等，还能更进一步：单位类型 <code>()</code> 是积的单位元，就像 1 是乘法的单位元。某类型 <code>a</code> 的值与一个单位值配成 pair，并未增加任何信息。类型：</p>
+        <pre><code class="language-haskell">(a, ())</code></pre>
+        <p class="source-paragraph" data-source-paragraph="14">与 <code>a</code> 同构。下面就是这个同构：</p>
+        <pre><code class="language-haskell">rho :: (a, ()) -&gt; a
+rho (x, ()) = x</code></pre>
+        <pre><code class="language-haskell">rho_inv :: a -&gt; (a, ())
+rho_inv x = (x, ())</code></pre>
+        <p class="source-paragraph" data-source-paragraph="15">这些观察可以形式化为：Set（集合范畴）是一个<em>幺半范畴</em>。它是一个同时具有幺半群结构的范畴，也就是说，可以“相乘”其中的对象——这里就是取笛卡尔积。以后我会进一步讨论幺半范畴，并给出完整定义。</p>
+        <p class="source-paragraph" data-source-paragraph="16">Haskell 中还有一种更一般的积类型定义方式；尤其在很快要看到的、积类型与和类型结合的场景中很有用。它使用带多个参数的具名构造器。例如，pair 也可以定义成：</p>
+        <pre><code class="language-haskell">data Pair a b = P a b</code></pre>
+        <p class="source-paragraph" data-source-paragraph="17">这里，<code>Pair a b</code> 是由另外两个类型 <code>a</code> 与 <code>b</code> 参数化的类型名，<code>P</code> 是数据构造器名。把两个类型传给类型构造器 <code>Pair</code>，就定义出一种 pair 类型；把两个相应类型的值传给构造器 <code>P</code>，就构造出一个 pair 值。例如，把值 <code>stmt</code> 定义为 <code>String</code> 与 <code>Bool</code> 的 pair：</p>
+        <pre><code class="language-haskell">stmt :: Pair String Bool
+stmt = P "This statement is" False</code></pre>
+        <p class="source-paragraph" data-source-paragraph="18">第一行是类型签名。它使用类型构造器 <code>Pair</code>，以 <code>String</code> 与 <code>Bool</code> 替换 <code>Pair</code> 通用定义中的 <code>a</code> 与 <code>b</code>。第二行把具体字符串与具体布尔值传给数据构造器 <code>P</code>，定义实际的值。类型构造器构造类型；数据构造器构造值。</p>
+        <p class="source-paragraph" data-source-paragraph="19">Haskell 中类型构造器与数据构造器的名字位于不同命名空间，因此经常会看到两者使用同一个名字：</p>
+        <pre><code class="language-haskell">data Pair a b = Pair a b</code></pre>
+        <p class="source-paragraph" data-source-paragraph="20">若眯起眼睛看，甚至可以把内建 pair 类型视为这种声明的变体，只是把名字 <code>Pair</code> 换成了二元运算符 <code>(,)</code>。事实上，可以像使用其他具名构造器一样使用 <code>(,)</code>，以其前缀形式构造 pair：</p>
+        <pre><code class="language-haskell">stmt = (,) "This statement is" False</code></pre>
+        <p class="source-paragraph" data-source-paragraph="21">类似地，可以用 <code>(,,)</code> 构造三元组，依此类推。</p>
+        <p class="source-paragraph" data-source-paragraph="22">除了使用通用 pair 或元组，也可以定义特定的具名积类型：</p>
+        <pre><code class="language-haskell">data Stmt = Stmt String Bool</code></pre>
+        <p class="source-paragraph" data-source-paragraph="23">它只是 <code>String</code> 与 <code>Bool</code> 的积，但拥有自己的名称和构造器。这种声明风格的优点在于：你可以定义多种内容相同但意义与功能不同、因而不能彼此替换的类型。</p>
+        <p class="source-paragraph" data-source-paragraph="24">用元组和多参数构造器编程可能变得凌乱且容易出错，因为必须持续记住每个分量代表什么。通常最好给分量命名。带有具名字段的积类型，在 Haskell 中称为<em>记录</em>，在 C 中称为 <code>struct</code>。</p>
+      </section>
+
+      <section id="records">
+        <h2>记录</h2>
+        <p class="source-paragraph" data-source-paragraph="25">来看一个简单例子。我们想描述化学元素，把两个字符串——名称与符号——和一个整数——原子序数——组合成一种数据结构。可以使用元组 <code>(String, String, Int)</code>，然后记住每个分量的含义。提取分量时则使用模式匹配，例如下面的函数检查元素符号是否为元素名称的前缀（例如 <strong>He</strong> 是 <strong>Helium</strong> 的前缀）：</p>
+        <pre><code class="language-haskell">startsWithSymbol :: (String, String, Int) -&gt; Bool
+startsWithSymbol (name, symbol, _) = isPrefixOf symbol name</code></pre>
+        <p class="source-paragraph" data-source-paragraph="26">这段代码容易出错，也难以阅读和维护。定义记录要好得多：</p>
+        <pre><code class="language-haskell">data Element = Element { name         :: String
+                       , symbol       :: String
+                       , atomicNumber :: Int }</code></pre>
+        <p class="source-paragraph" data-source-paragraph="27">以下两个互逆的转换函数证明了两种表示同构：</p>
+        <pre><code class="language-haskell">tupleToElem :: (String, String, Int) -&gt; Element
+tupleToElem (n, s, a) = Element { name = n
+                                , symbol = s
+                                , atomicNumber = a }</code></pre>
+        <pre><code class="language-haskell">elemToTuple :: Element -&gt; (String, String, Int)
+elemToTuple e = (name e, symbol e, atomicNumber e)</code></pre>
+        <p class="source-paragraph" data-source-paragraph="28">注意，记录字段名同时也是访问这些字段的函数。例如，<code>atomicNumber e</code> 从 <code>e</code> 中取得 <code>atomicNumber</code> 字段。这里的 <code>atomicNumber</code> 是以下类型的函数：</p>
+        <pre><code class="language-haskell">atomicNumber :: Element -&gt; Int</code></pre>
+        <p class="source-paragraph" data-source-paragraph="29">采用 <code>Element</code> 的记录语法后，<code>startsWithSymbol</code> 函数更容易读懂：</p>
+        <pre><code class="language-haskell">startsWithSymbol :: Element -&gt; Bool
+startsWithSymbol e = isPrefixOf (symbol e) (name e)</code></pre>
+        <p class="source-paragraph" data-source-paragraph="30">还可以利用 Haskell 的技巧：用反引号包围函数 <code>isPrefixOf</code>，把它变成中缀运算符，使代码读起来几乎像一句话：</p>
+        <pre><code class="language-haskell">startsWithSymbol e = symbol e `isPrefixOf` name e</code></pre>
+        <p class="source-paragraph" data-source-paragraph="31">这里可以省略括号，因为中缀运算符的优先级低于函数调用。</p>
+      </section>
+
+      <section id="sum-types">
+        <h2>和类型</h2>
+        <p class="source-paragraph" data-source-paragraph="32">正如集合范畴中的积导出积类型，余积也导出和类型。Haskell 中和类型的标准实现是：</p>
+        <pre><code class="language-haskell">data Either a b = Left a | Right b</code></pre>
+        <p class="source-paragraph" data-source-paragraph="33">与 pair 一样，<code>Either</code> 在同构意义下可交换，可以嵌套，而且嵌套顺序在同构意义下无关紧要。例如，可以定义一个相当于三元组之和的类型：</p>
+        <pre><code class="language-haskell">data OneOfThree a b c = Sinistral a | Medial b | Dextral c</code></pre>
+        <p class="source-paragraph" data-source-paragraph="34">依此类推。</p>
+        <p class="source-paragraph" data-source-paragraph="35">事实证明，Set 对于余积也是一个（对称）幺半范畴。二元运算由不交并承担，单位元由始对象承担。用类型来说，<code>Either</code> 是幺半运算符，空类型 <code>Void</code> 是中性元素。可以把 <code>Either</code> 看成加号，把 <code>Void</code> 看成零。的确，给和类型加上 <code>Void</code> 不会改变它的内容。例如：</p>
+        <pre><code class="language-haskell">Either a Void</code></pre>
+        <p class="source-paragraph" data-source-paragraph="36">与 <code>a</code> 同构，因为根本无法构造这种类型的 <code>Right</code> 版本——不存在 <code>Void</code> 类型的值。<code>Either a Void</code> 的所有居民都由 <code>Left</code> 构造器产生，只是封装了类型 <code>a</code> 的值。因此，用符号表示就是 <em>a + 0 = a</em>。</p>
+        <p class="source-paragraph" data-source-paragraph="37">和类型在 Haskell 中相当常见；对应的 C++ 联合或变体却少见得多，原因有几个。</p>
+        <p class="source-paragraph" data-source-paragraph="38">首先，最简单的和类型只是枚举，在 C++ 中用 <code>enum</code> 实现。Haskell 和类型：</p>
+        <pre><code class="language-haskell">data Color = Red | Green | Blue</code></pre>
+        <p class="source-paragraph" data-source-paragraph="39">对应的 C++ 是：</p>
+        <pre><code class="language-cpp">enum { Red, Green, Blue };</code></pre>
+        <p class="source-paragraph" data-source-paragraph="40">更简单的和类型：</p>
+        <pre><code class="language-haskell">data Bool = True | False</code></pre>
+        <p class="source-paragraph" data-source-paragraph="41">就是 C++ 的原始类型 <code>bool</code>。</p>
+        <p class="source-paragraph" data-source-paragraph="42">表示值存在或缺失的简单和类型，在 C++ 中往往借助特殊技巧和“不可能”的值实现，例如空字符串、负数、空指针等。若这种可选性是有意为之，在 Haskell 中则用 <code>Maybe</code> 类型表达：</p>
+        <pre><code class="language-haskell">data Maybe a = Nothing | Just a</code></pre>
+        <p class="source-paragraph" data-source-paragraph="43"><code>Maybe</code> 是两种类型之和。把两个构造器拆成各自独立的类型，就能看清这一点。第一部分会是：</p>
+        <pre><code class="language-haskell">data NothingType = Nothing</code></pre>
+        <p class="source-paragraph" data-source-paragraph="44">这是只有一个值 <code>Nothing</code> 的枚举。换言之，它是单元素集合，等价于单位类型 <code>()</code>。第二部分：</p>
+        <pre><code class="language-haskell">data JustType a = Just a</code></pre>
+        <p class="source-paragraph" data-source-paragraph="45">只是对类型 <code>a</code> 的封装。我们本可以把 <code>Maybe</code> 编码为：</p>
+        <pre><code class="language-haskell">type Maybe a = Either () a</code></pre>
+        <p class="source-paragraph" data-source-paragraph="46">更复杂的和类型在 C++ 中经常用指针模拟。指针要么为空，要么指向某个具体类型的值。例如，Haskell 的列表可定义成一种递归和类型：</p>
+        <pre><code class="language-haskell">data List a = Nil | Cons a (List a)</code></pre>
+        <p class="source-paragraph" data-source-paragraph="47">它可以翻译成 C++，用空指针技巧实现空列表：</p>
+        <pre><code class="language-cpp">template&lt;typename A&gt;
+class List {
+    Node&lt;A&gt; * _head;
+public:
+    List() : _head(nullptr) {}  // Nil
+    List(A a, List&lt;A&gt; l)        // Cons
+      : _head(new Node&lt;A&gt;(a, l))
+    {}
+};</code></pre>
+        <p class="source-paragraph" data-source-paragraph="48">注意，Haskell 的两个构造器 <code>Nil</code> 与 <code>Cons</code> 被翻译成两个重载的 <code>List</code> 构造函数，参数也相互对应：<code>Nil</code> 无参数；<code>Cons</code> 接受一个值和一个列表。<code>List</code> 类不需要标签来区分和类型的两个组成部分，而是用 <code>_head</code> 的特殊值 <code>nullptr</code> 编码 <code>Nil</code>。</p>
+        <p class="source-paragraph" data-source-paragraph="49">不过，Haskell 与 C++ 类型之间最主要的差别，是 Haskell 数据结构不可变。若用某个特定构造器创建对象，该对象会永远记得使用了哪个构造器以及传入了哪些参数。因此，以 <code>Just "energy"</code> 创建的 <code>Maybe</code> 对象永远不会变成 <code>Nothing</code>。同样，空列表会永远为空，含三个元素的列表也会始终拥有同样的三个元素。</p>
+        <p class="source-paragraph" data-source-paragraph="50">正是这种不可变性使构造可逆。给定一个对象，你总能把它拆解回构造时使用的那些部分。拆解通过模式匹配完成，其中再次把构造器当作模式使用；构造器参数若存在，就用变量（或其他模式）替换。</p>
+        <p class="source-paragraph" data-source-paragraph="51"><code>List</code> 数据类型有两个构造器，因此拆解任意 <code>List</code> 时要使用与二者对应的两个模式：一个匹配空的 <code>Nil</code> 列表，另一个匹配以 <code>Cons</code> 构造的列表。例如，下面是在 <code>List</code> 上定义的简单函数：</p>
+        <pre><code class="language-haskell">maybeTail :: List a -&gt; Maybe (List a)
+maybeTail Nil = Nothing
+maybeTail (Cons _ t) = Just t</code></pre>
+        <p class="source-paragraph" data-source-paragraph="52"><code>maybeTail</code> 定义的第一部分以 <code>Nil</code> 构造器为模式，返回 <code>Nothing</code>。第二部分以 <code>Cons</code> 构造器为模式。因为不关心第一个构造器参数，所以用通配符替换；<code>Cons</code> 的第二个参数绑定到变量 <code>t</code>（尽管严格说来它从不变化：变量一旦绑定表达式就不会改变，我仍会把这些东西称为变量）。返回值是 <code>Just t</code>。根据 <code>List</code> 的构造方式，它会匹配其中一条子句。若使用 <code>Cons</code> 构造，传给它的两个参数会被取回（第一个随后被丢弃）。</p>
+        <p class="source-paragraph" data-source-paragraph="53">更精巧的和类型在 C++ 中会用多态类层次结构实现。一族拥有共同祖先的类，可以理解为一种变体类型，其中虚函数表充当隐藏标签。Haskell 会对构造器做模式匹配并调用专门代码；C++ 则根据虚函数表指针分派虚函数调用，完成同样的事。</p>
+        <p class="source-paragraph" data-source-paragraph="54">你很少看到 C++ 用 <code>union</code> 表示和类型，因为联合对可容纳的内容限制严重。甚至连 <code>std::string</code> 都不能放进联合，因为它拥有复制构造函数。</p>
+      </section>
+
+      <section id="algebra">
+        <h2>类型代数</h2>
+        <p class="source-paragraph" data-source-paragraph="55">单独使用积类型与和类型，已经能定义各种有用的数据结构；但真正的力量来自把二者结合起来。我们再次借助了组合的力量。</p>
+        <p class="source-paragraph" data-source-paragraph="56">总结目前的发现：类型系统背后有两种可交换幺半结构。一种是以 <code>Void</code> 为中性元素的和类型，另一种是以单位类型 <code>()</code> 为中性元素的积类型。我们愿意把它们分别类比加法和乘法；在这个类比中，<code>Void</code> 对应零，单位类型 <code>()</code> 对应一。</p>
+        <p class="source-paragraph" data-source-paragraph="57">看看这个类比能走多远。例如，乘以零是否得到零？换句话说，一个分量为 <code>Void</code> 的积类型是否与 <code>Void</code> 同构？比如，能否构造一个 <code>Int</code> 与 <code>Void</code> 的 pair？</p>
+        <p class="source-paragraph" data-source-paragraph="58">构造 pair 需要两个值。整数很容易得到，却不存在 <code>Void</code> 类型的值。因此对任意类型 <code>a</code>，类型 <code>(a, Void)</code> 都是空类型——没有任何值——所以等价于 <code>Void</code>。换句话说，<em>a × 0 = 0</em>。</p>
+        <p class="source-paragraph" data-source-paragraph="59">连接加法与乘法的另一项性质是分配律：</p>
+        <pre><code class="language-haskell">a * (b + c) = a * b + a * c</code></pre>
+        <p class="source-paragraph" data-source-paragraph="60">它也适用于积类型与和类型吗？适用——照例是在同构意义下。左边对应类型：</p>
+        <pre><code class="language-haskell">(a, Either b c)</code></pre>
+        <p class="source-paragraph" data-source-paragraph="61">右边对应类型：</p>
+        <pre><code class="language-haskell">Either (a, b) (a, c)</code></pre>
+        <p class="source-paragraph" data-source-paragraph="62">下面的函数从前者转换到后者：</p>
+        <pre><code class="language-haskell">prodToSum :: (a, Either b c) -&gt; Either (a, b) (a, c)
+prodToSum (x, e) =
+    case e of
+      Left  y -&gt; Left  (x, y)
+      Right z -&gt; Right (x, z)</code></pre>
+        <p class="source-paragraph" data-source-paragraph="63">反向转换函数则是：</p>
+        <pre><code class="language-haskell">sumToProd :: Either (a, b) (a, c) -&gt; (a, Either b c)
+sumToProd e =
+    case e of
+      Left  (x, y) -&gt; (x, Left  y)
+      Right (x, z) -&gt; (x, Right z)</code></pre>
+        <p class="source-paragraph" data-source-paragraph="64"><code>case of</code> 子句用于在函数内部进行模式匹配。每个模式后跟一个箭头，以及模式匹配时求值的表达式。例如，若用下面的值调用 <code>prodToSum</code>：</p>
+        <pre><code class="language-haskell">prod1 :: (Int, Either String Float)
+prod1 = (2, Left "Hi!")</code></pre>
+        <p class="source-paragraph" data-source-paragraph="65">那么 <code>case e of</code> 中的 <code>e</code> 等于 <code>Left "Hi!"</code>。它会匹配模式 <code>Left y</code>，以 <code>"Hi!"</code> 替换 <code>y</code>。由于 <code>x</code> 已经匹配为 <code>2</code>，<code>case of</code> 子句以及整个函数的结果会如预期那样成为 <code>Left (2, "Hi!")</code>。</p>
+        <p class="source-paragraph" data-source-paragraph="66">我不打算证明这两个函数互逆；但仔细想想，它们必然互逆！它们只是在平凡地重新包装两个数据结构的内容。数据相同，只是格式不同。</p>
+        <p class="source-paragraph" data-source-paragraph="67">数学家为这两个相互交织的幺半群起了名字：<em>半环</em>。它不是完整的<em>环</em>，因为我们无法定义类型的减法。因此，半环有时也叫 <em>rig</em>——这是“没有 n（negative，负数）的 ring”这一双关。除此以外，我们可以把关于自然数（它们构成 rig）的陈述翻译成类型的陈述，从中得到很多成果。下面是一张包含若干重要条目的翻译表：</p>
+        <table><thead><tr><th>数</th><th>类型</th></tr></thead><tbody>
+          <tr><td>0</td><td><code>Void</code></td></tr><tr><td>1</td><td><code>()</code></td></tr>
+          <tr><td><em>a + b</em></td><td><code>data Either a b = Left a | Right b</code></td></tr>
+          <tr><td><em>a × b</em></td><td><code>(a, b)</code> 或 <code>data Pair a b = Pair a b</code></td></tr>
+          <tr><td><em>2 = 1 + 1</em></td><td><code>data Bool = True | False</code></td></tr>
+          <tr><td><em>1 + a</em></td><td><code>data Maybe a = Nothing | Just a</code></td></tr>
+        </tbody></table>
+        <p class="source-paragraph" data-source-paragraph="68">列表类型很有意思，因为它被定义成一个方程的解；正在定义的类型同时出现在等式两边：</p>
+        <pre><code class="language-haskell">data List a = Nil | Cons a (List a)</code></pre>
+        <p class="source-paragraph" data-source-paragraph="69">按惯例做替换，并以 <code>x</code> 取代 <code>List a</code>，得到：</p>
+        <pre><code class="language-haskell">x = 1 + a * x</code></pre>
+        <p class="source-paragraph" data-source-paragraph="70">因为不能对类型做减法或除法，所以无法用传统代数方法求解。不过，可以尝试连续代入：不断把右边的 <code>x</code> 替换成 <code>(1 + a*x)</code>，并使用分配律。于是得到：</p>
+        <pre><code class="language-haskell">x = 1 + a*x
+x = 1 + a*(1 + a*x) = 1 + a + a*a*x
+x = 1 + a + a*a*(1 + a*x) = 1 + a + a*a + a*a*a*x
+...
+x = 1 + a + a*a + a*a*a + a*a*a*a...</code></pre>
+        <p class="source-paragraph" data-source-paragraph="71">最终得到积（元组）的无穷和，可以解释为：列表要么为空，即 <code>1</code>；要么是单元素，即 <code>a</code>；要么是一对，即 <code>a*a</code>；要么是三元组，即 <code>a*a*a</code>；依此类推……这正是列表——一串 <code>a</code>！</p>
+        <p class="source-paragraph" data-source-paragraph="72">列表还远不止这些。学过函子与不动点后，我们会重新讨论列表和其他递归数据结构。</p>
+        <p class="source-paragraph" data-source-paragraph="73">用符号变量求解方程——这就是代数！这些类型正因如此而得名：代数数据类型。</p>
+        <p class="source-paragraph" data-source-paragraph="74">最后，还应提到类型代数的一种极其重要的解释。两个类型 <code>a</code> 与 <code>b</code> 的积必须同时包含一个 <code>a</code> 类型的值和一个 <code>b</code> 类型的值，因此两种类型都必须有居民。相反，两种类型的和只需包含 <code>a</code> 的值或 <code>b</code> 的值之一，因此只要其中一种有居民即可。逻辑中的“与”和“或”也形成半环，并且同样能映射到类型论：</p>
+        <table><thead><tr><th>逻辑</th><th>类型</th></tr></thead><tbody>
+          <tr><td>false</td><td><code>Void</code></td></tr><tr><td>true</td><td><code>()</code></td></tr>
+          <tr><td><em>a || b</em></td><td><code>data Either a b = Left a | Right b</code></td></tr>
+          <tr><td><em>a &amp;&amp; b</em></td><td><code>(a, b)</code></td></tr>
+        </tbody></table>
+        <p class="source-paragraph" data-source-paragraph="75">这个类比还能深入得多，它正是逻辑与类型论之间 Curry–Howard 同构的基础。讨论函数类型时，我们会回到它。</p>
+      </section>
+
+      <section id="challenges"><h2>习题</h2><ol class="challenges">
+        <li>给出 <code>Maybe a</code> 与 <code>Either () a</code> 之间的同构。
+          <details class="exercise-answer"><summary>点击展开参考答案</summary><pre><code class="language-haskell">toEither Nothing  = Left ()
+toEither (Just x) = Right x
+
+toMaybe (Left ())  = Nothing
+toMaybe (Right x)  = Just x</code></pre><p>按两个构造器分别代入可得 <code>toMaybe . toEither = id</code> 与 <code>toEither . toMaybe = id</code>。</p></details>
+        </li>
+        <li>Haskell 中定义了以下和类型：
+          <pre><code class="language-haskell">data Shape = Circle Float
+           | Rect Float Float</code></pre>
+          当我们定义作用于 <code>Shape</code> 的 <code>area</code> 函数时，会对两个构造器做模式匹配：
+          <pre><code class="language-haskell">area :: Shape -&gt; Float
+area (Circle r) = pi * r * r
+area (Rect d h) = d * h</code></pre>
+          在 C++ 或 Java 中把 <code>Shape</code> 实现为接口，创建 <code>Circle</code> 和 <code>Rect</code> 两个类，并把 <code>area</code> 实现为虚函数。
+          <details class="exercise-answer"><summary>点击展开参考答案</summary><pre><code class="language-cpp">struct Shape {
+    virtual double area() const = 0;
+    virtual ~Shape() = default;
+};
+struct Circle : Shape {
+    double r;
+    double area() const override { return std::numbers::pi * r * r; }
+};
+struct Rect : Shape {
+    double d, h;
+    double area() const override { return d * h; }
+};</code></pre></details>
+        </li>
+        <li>继续上一例：我们很容易添加计算 <code>Shape</code> 周长的新函数 <code>circ</code>，而无需改动 <code>Shape</code> 的定义：
+          <pre><code class="language-haskell">circ :: Shape -&gt; Float
+circ (Circle r) = 2.0 * pi * r
+circ (Rect d h) = 2.0 * (d + h)</code></pre>
+          给你的 C++ 或 Java 实现添加 <code>circ</code>。原有代码的哪些部分必须改动？
+          <details class="exercise-answer"><summary>点击展开参考答案</summary><p>需要在基类 <code>Shape</code> 中增加虚函数 <code>circ</code>，并修改每个已有派生类实现它。相比之下，Haskell 只新增独立函数，不必改动 <code>Shape</code> 数据定义。这体现了表达式问题（expression problem）的一侧：面向对象较易增加新数据变体，代数数据类型较易增加新操作。</p></details>
+        </li>
+        <li>继续：给 <code>Shape</code> 添加一种新形状 <code>Square</code>，并完成所有必要更新。在 Haskell 与 C++ 或 Java 中分别需要改动哪些代码？（即使不会 Haskell，需要做的修改也应该相当明显。）
+          <details class="exercise-answer"><summary>点击展开参考答案</summary><p>Haskell 要修改 <code>Shape</code> 定义，加入 <code>Square Float</code>，并给每个现有的全模式匹配函数（<code>area</code>、<code>circ</code>）增加分支。C++/Java 只需新增实现 <code>Shape</code> 的 <code>Square</code> 类，不必修改已有形状类。</p></details>
+        </li>
+        <li>证明对于类型而言，<em>a + a = 2 × a</em> 在同构意义下成立。记住，根据翻译表，<em>2</em> 对应 <code>Bool</code>。
+          <details class="exercise-answer"><summary>点击展开参考答案</summary><pre><code class="language-haskell">toProduct (Left  x) = (False, x)
+toProduct (Right x) = (True,  x)
+
+toSum (False, x) = Left x
+toSum (True,  x) = Right x</code></pre><p>两个函数互逆，因此 <code>Either a a</code> 与 <code>(Bool, a)</code> 同构。</p></details>
+        </li>
+      </ol></section>
+
+      <nav class="chapter-switcher" aria-label="章节切换"><a href="../products-and-coproducts/">← 第 5 章：积与余积</a><a href="../functors/">第 7 章：函子 →</a></nav>
+    </article>
+    <footer class="source-note" id="source">
+      <p><strong>原文：</strong><a href="https://bartoszmilewski.com/2015/01/13/simple-algebraic-data-types/">Simple Algebraic Data Types</a></p>
+      <p><strong>核对底稿：</strong>作者博客正文与开源英文 Markdown 版本；正文、代码、公式、插图、表格和习题均已收录。</p>
+      <p><strong>许可：</strong>原作及本非官方中文译文依 <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> 署名—相同方式共享。</p>
+    </footer>
+  </main>
+</body>
+</html>

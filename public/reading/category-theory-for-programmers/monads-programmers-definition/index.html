@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>第 20 章：Monad——程序员的定义｜程序员的范畴论｜RIN III</title><meta name="description" content="《程序员的范畴论》第 20 章完整中文翻译：Kleisli 范畴、fish、bind、join 与 do 记法"><link rel="stylesheet" href="../reader.css"></head>
+<body><nav class="site-nav"><a href="../../../mathematics/category-theory-for-programmers/">← 返回整本书学习记录</a><a href="../../../">RIN III</a></nav><main class="reader"><header><span class="chapter-kicker">第三部分 · 第 20 章 · 完整中文译文</span><h1>Monad：程序员的定义</h1><p class="byline">Bartosz Milewski</p><div class="title-rule"></div><p class="lead">Monad 不是关于副作用的神秘仪式，而是一套让“带装饰的函数”可以满足范畴复合律的结构。</p><div class="translation-scope"><span class="scope-label">译文范围</span><p>完整翻译本章正文，保留全部 27 个原文代码块与链接；本章原文没有插图和习题。</p></div><nav><ul class="chapter-nav"><li><a href="#myth">Monad 神话</a></li><li><a href="#kleisli">Kleisli 范畴</a></li><li><a href="#fish">Fish 解剖</a></li><li><a href="#do">do 记法</a></li></ul></nav></header><article>
+
+<section id="myth"><p class="source-paragraph" data-source-paragraph="1">程序员围绕 Monad 发展出了一整套神话。它据说是编程中最抽象、最困难的概念之一。有人“懂了”，有人不懂。对许多人而言，理解 Monad 的那一刻近似神秘体验。Monad 抽象了如此多不同构造的本质，以至于日常生活中根本没有合适类比。我们只能像摸象的盲人一样在黑暗中摸索，摸到大象不同部位后胜利地高呼：“这是绳子”“这是树干”或“这是墨西哥卷饼！”</p>
+<p class="source-paragraph" data-source-paragraph="2">让我澄清事实：Monad 周围的所有神秘感都来自误解。Monad 是一个非常简单的概念；让人困惑的是它应用的多样性。</p>
+<p class="source-paragraph" data-source-paragraph="3">为写这篇文章做研究时，我查了布基胶带（duct tape，也叫 duck tape）及其用途。下面只列一小部分：</p><ul><li>密封管道；</li><li>修复阿波罗 13 号上的二氧化碳净化器；</li><li>治疗疣；</li><li>修复苹果 iPhone 4 的掉话问题；</li><li>制作舞会礼服；</li><li>建造悬索桥。</li></ul>
+<p class="source-paragraph" data-source-paragraph="4">现在想象一下：你不知道布基胶带是什么，却试图仅凭这张清单把它猜出来。祝你好运！</p>
+<p class="source-paragraph" data-source-paragraph="5">所以，我想再给“Monad 就像……”陈词滥调合集加一项：Monad 就像布基胶带。它的用途千差万别，原理却非常简单——把事物粘起来。更准确地说，它复合事物。</p>
+<p class="source-paragraph" data-source-paragraph="6">这部分解释了许多程序员——尤其来自命令式背景的人——为什么难以理解 Monad。问题在于，我们不习惯用函数复合来思考编程。这可以理解：我们经常给中间值命名，而不是直接把它们从一个函数传给另一个；也常内联短小的胶水代码，而不把它抽成辅助函数。下面是 C 语言中向量长度函数的命令式实现：</p><pre><code class="language-c">double vlen(double *v) {
+    double d = 0.0;
+    int n;
+    for (n = 0; n &lt; 3; ++n)
+        d += v[n]* v[n];
+    return sqrt(d);
+}</code></pre>
+<p class="source-paragraph" data-source-paragraph="7">对比这个显式使用函数复合的（风格化）Haskell 版本：</p><pre><code class="language-haskell">vlen = sqrt . sum . fmap  (flip (^) 2)</code></pre>
+<p class="source-paragraph" data-source-paragraph="8">（为了让它更晦涩，这里还对指数运算符 <code>(^)</code> 做了偏应用，把第二个参数设为 <code>2</code>。）</p>
+<p class="source-paragraph" data-source-paragraph="9">我不是说 Haskell 的无点风格总是更好，只是函数复合位于编程中一切工作的底层。即便我们实际在复合函数，Haskell 仍不遗余力提供一种叫 <code>do</code> 记法的命令式语法，用于 Monad 复合。稍后会看到它的用法；但先解释为什么首先需要 Monad 复合。</p></section>
+
+<section id="kleisli"><h2>Kleisli 范畴</h2>
+<p class="source-paragraph" data-source-paragraph="10">此前，我们通过装饰普通函数得到了 Writer Monad。具体装饰方式，是把返回值与字符串配对，或更一般地，与幺半群元素配对。现在可以认出，这种装饰是函子：</p><pre><code class="language-haskell">newtype Writer w a = Writer (a, w)
+
+instance Functor (Writer w) where
+    fmap f (Writer (a, w)) = Writer (f a, w)</code></pre>
+<p class="source-paragraph" data-source-paragraph="11">随后，我们找到一种复合装饰后函数，也就是 <em>Kleisli 箭头（Kleisli arrow）</em>的方法；这类函数形如：</p><pre><code class="language-haskell">a -&gt; Writer w b</code></pre>
+<p class="source-paragraph" data-source-paragraph="12">正是在这种复合内部，我们实现了日志累积。</p>
+<p class="source-paragraph" data-source-paragraph="13">现在可以给出更一般的 Kleisli 范畴定义。从范畴 C 与自函子 <em>m</em> 开始。对应的 Kleisli 范畴 K 与 C 具有相同对象，但态射不同。K 中对象 <em>a</em>、<em>b</em> 之间的态射，在原范畴 C 中实现为：</p><div class="math-display">a → m b</div>
+<p class="source-paragraph" data-source-paragraph="14">务必记住：在 K 中，我们把 Kleisli 箭头当作 <em>a</em>、<em>b</em> 之间的态射，而不是 <em>a</em>、<em>mb</em> 之间的态射。</p>
+<p class="source-paragraph" data-source-paragraph="15">在例子中，对某个固定幺半群 <code>w</code>，<em>m</em> 被特化为 <code>Writer w</code>。</p>
+<p class="source-paragraph" data-source-paragraph="16">只有能为 Kleisli 箭头定义适当复合，它们才会形成范畴。若存在满足结合律，并且每个对象都有恒等箭头的复合，函子 <em>m</em> 就称为 <em>Monad</em>，由此产生的范畴称为 Kleisli 范畴。</p>
+<p class="source-paragraph" data-source-paragraph="17">Haskell 使用<em>鱼运算符（fish operator）</em> <code>&gt;=&gt;</code> 定义 Kleisli 复合，恒等箭头是名为 <code>return</code> 的多态函数。下面用 Kleisli 复合定义 Monad：</p><pre><code class="language-haskell">class Monad m where
+    (&gt;=&gt;) :: (a -&gt; m b) -&gt; (b -&gt; m c) -&gt; (a -&gt; m c)
+    return :: a -&gt; m a</code></pre>
+<p class="source-paragraph" data-source-paragraph="18">请记住，Monad 有许多等价定义，这不是 Haskell 生态中的主要定义。我喜欢它在概念上的简洁以及提供的直觉，但编程时还有更方便的定义，马上就会讨论。</p>
+<p class="source-paragraph" data-source-paragraph="19">在这种表述中，Monad 定律很容易表达。Haskell 无法强制执行它们，但可以把它们用于等式推理。它们只是 Kleisli 范畴的标准复合律：</p><pre><code class="language-haskell">(f &gt;=&gt; g) &gt;=&gt; h = f &gt;=&gt; (g &gt;=&gt; h) -- 结合律
+return &gt;=&gt; f = f                  -- 左单位律
+f &gt;=&gt; return = f                  -- 右单位律</code></pre>
+<p class="source-paragraph" data-source-paragraph="20">这种定义也表达了 Monad 真正是什么：一种复合装饰后函数的方式。它不关乎副作用或状态，而关乎复合。以后会看到，装饰后的函数可用于表达多种效应或状态，但那不是 Monad 的目的。Monad 是有黏性的布基胶带，把一个装饰后函数的末端接到另一个装饰后函数的起点。</p>
+<p class="source-paragraph" data-source-paragraph="21">回到 <code>Writer</code>：日志函数（<code>Writer</code> 函子的 Kleisli 箭头）形成范畴，因为 <code>Writer</code> 是 Monad：</p><pre><code class="language-haskell">instance Monoid w =&gt; Monad (Writer w) where
+    f &gt;=&gt; g = \a -&gt;
+        let Writer (b, s)  = f a
+            Writer (c, s') = g b
+        in Writer (c, s `mappend` s')
+    return a = Writer (a, mempty)</code></pre>
+<p class="source-paragraph" data-source-paragraph="22">只要 <code>w</code> 满足幺半群定律，<code>Writer w</code> 就满足 Monad 定律（Haskell 同样无法强制后者）。</p>
+<p class="source-paragraph" data-source-paragraph="23"><code>Writer</code> Monad 有一个有用的 Kleisli 箭头 <code>tell</code>，唯一目的就是把参数追加到日志：</p><pre><code class="language-haskell">tell :: w -&gt; Writer w ()
+tell s = Writer ((), s)</code></pre>
+<p class="source-paragraph" data-source-paragraph="24">以后会把它用作其他 Monad 函数的构件。</p></section>
+
+<section id="fish"><h2>Fish 解剖</h2>
+<p class="source-paragraph" data-source-paragraph="25">为不同 Monad 实现鱼运算符时，很快会发现大量代码重复，很容易抽取。首先，两个函数的 Kleisli 复合必须返回函数，所以实现不妨从一个接受 <code>a</code> 类型参数的 lambda 开始：</p><pre><code class="language-haskell">(&gt;=&gt;) :: (a -&gt; m b) -&gt; (b -&gt; m c) -&gt; (a -&gt; m c)
+f &gt;=&gt; g = \a -&gt; ...</code></pre>
+<p class="source-paragraph" data-source-paragraph="26">对这个参数唯一能做的事，是把它传给 <code>f</code>：</p><pre><code class="language-haskell">f &gt;=&gt; g = \a -&gt; let mb = f a
+                in ...</code></pre>
+<p class="source-paragraph" data-source-paragraph="27">此时要生成 <code>m c</code> 类型的结果，手上有 <code>m b</code> 类型对象和函数 <code>g :: b -&gt; m c</code>。定义一个替我们完成这件事的函数。它称为<em>绑定（bind）</em>，通常写作中缀运算符：</p><pre><code class="language-haskell">(&gt;&gt;=) :: m a -&gt; (a -&gt; m b) -&gt; m b</code></pre>
+<p class="source-paragraph" data-source-paragraph="28">对每个 Monad，可以不定义鱼运算符，改为定义 bind。事实上，Haskell 的标准 Monad 定义使用 bind：</p><pre><code class="language-haskell">class Monad m where
+    (&gt;&gt;=) :: m a -&gt; (a -&gt; m b) -&gt; m b
+    return :: a -&gt; m a</code></pre>
+<p class="source-paragraph" data-source-paragraph="29">下面是 <code>Writer</code> Monad 的 bind：</p><pre><code class="language-haskell">(Writer (a, w)) &gt;&gt;= f = let Writer (b, w') = f a
+                        in  Writer (b, w `mappend` w')</code></pre>
+<p class="source-paragraph" data-source-paragraph="30">它确实比鱼运算符定义更短。</p>
+<p class="source-paragraph" data-source-paragraph="31">利用 <code>m</code> 是函子这一事实，还可以继续解剖 bind。用 <code>fmap</code> 把函数 <code>a -&gt; m b</code> 应用于 <code>m a</code> 的内容，会把 <code>a</code> 变成 <code>m b</code>；所以应用结果类型是 <code>m (m b)</code>。它不完全是我们需要的 <code>m b</code>，但很接近。只需一个压缩或展平 <code>m</code> 双重应用的函数。这个函数称为 <code>join</code>：</p><pre><code class="language-haskell">join :: m (m a) -&gt; m a</code></pre>
+<p class="source-paragraph" data-source-paragraph="32">用 <code>join</code> 可把 bind 改写为：</p><pre><code class="language-haskell">ma &gt;&gt;= f = join (fmap f ma)</code></pre>
+<p class="source-paragraph" data-source-paragraph="33">由此得到定义 Monad 的第三种方式：</p><pre><code class="language-haskell">class Functor m =&gt; Monad m where
+    join :: m (m a) -&gt; m a
+    return :: a -&gt; m a</code></pre>
+<p class="source-paragraph" data-source-paragraph="34">这里显式要求 <code>m</code> 是 <code>Functor</code>。前两种 Monad 定义不必这样要求，因为任何支持鱼运算符或 bind 的类型构造器 <code>m</code> 都自动是函子。例如，可以用 bind 与 <code>return</code> 定义 <code>fmap</code>：</p><pre><code class="language-haskell">fmap f ma = ma &gt;&gt;= \a -&gt; return (f a)</code></pre>
+<p class="source-paragraph" data-source-paragraph="35">为完整起见，下面是 <code>Writer</code> Monad 的 <code>join</code>：</p><pre><code class="language-haskell">join :: Monoid w =&gt; Writer w (Writer w a) -&gt; Writer w a
+join (Writer ((Writer (a, w')), w)) = Writer (a, w `mappend` w')</code></pre></section>
+
+<section id="do"><h2><code>do</code> 记法</h2>
+<p class="source-paragraph" data-source-paragraph="36">使用 Monad 写代码的一种方式，是处理 Kleisli 箭头，用鱼运算符复合它们。这种编程方式是无点风格的推广。无点代码紧凑，常常很优雅，但一般也可能难以理解，近乎晦涩。因此多数程序员更愿意给函数参数与中间值命名。</p>
+<p class="source-paragraph" data-source-paragraph="37">处理 Monad 时，这意味着更偏爱 bind 而不是鱼运算符。Bind 接受 Monad 值并返回 Monad 值，程序员可以选择给这些值命名。但这几乎算不上改进。真正想要的，是假装我们在处理普通值，而不是封装它们的 Monad 容器。命令式代码就是这样工作的——更新全局日志等副作用基本藏在视线之外。这正是 Haskell 的 <code>do</code> 记法所模拟的。</p>
+<p class="source-paragraph" data-source-paragraph="38">你也许会问：那为什么还用 Monad？如果想让副作用不可见，为什么不留在命令式语言？答案是 Monad 让我们对副作用拥有更好的控制。例如，<code>Writer</code> Monad 中的日志从一个函数传给另一个函数，从不全局暴露；不可能把日志搞乱或制造数据竞争。而且，Monad 代码与程序其他部分之间有清楚的边界和隔离。</p>
+<p class="source-paragraph" data-source-paragraph="39"><code>do</code> 记法只是 Monad 复合的<em>语法糖（syntactic sugar）</em>。表面上很像命令式代码，但会直接翻译成 bind 与 lambda 表达式序列。</p>
+<p class="source-paragraph" data-source-paragraph="40">例如，取先前用于说明 <code>Writer</code> Monad 中 Kleisli 箭头复合的例子。按当前定义，可改写为：</p><pre><code class="language-haskell">process :: String -&gt; Writer String [String]
+process = upCase &gt;=&gt; toWords</code></pre>
+<p class="source-paragraph" data-source-paragraph="41">这个函数把输入字符串的所有字符转成大写并拆成单词，同时记录操作日志。</p>
+<p class="source-paragraph" data-source-paragraph="42">使用 <code>do</code> 记法会写成：</p><pre><code class="language-haskell">process s = do
+    upStr &lt;- upCase s
+    toWords upStr</code></pre>
+<p class="source-paragraph" data-source-paragraph="43">这里 <code>upStr</code> 只是 <code>String</code>，尽管 <code>upCase</code> 产生 <code>Writer</code>：</p><pre><code class="language-haskell">upCase :: String -&gt; Writer String String
+upCase s = Writer (map toUpper s, "upCase ")</code></pre>
+<p class="source-paragraph" data-source-paragraph="44">这是因为编译器会把 <code>do</code> 块<em>去糖（desugar）</em>为：</p><pre><code class="language-haskell">process s =
+    upCase s &gt;&gt;= \upStr -&gt;
+        toWords upStr</code></pre>
+<p class="source-paragraph" data-source-paragraph="45"><code>upCase</code> 的 Monad 结果被绑定到接受 <code>String</code> 的 lambda；这个字符串的名字正是 <code>do</code> 块里的 <code>upStr</code>。读到：</p><pre><code class="language-haskell">upStr &lt;- upCase s</code></pre>
+<p class="source-paragraph" data-source-paragraph="46">我们会说 <code>upStr</code> “得到” <code>upCase s</code> 的结果。</p>
+<p class="source-paragraph" data-source-paragraph="47">把 <code>toWords</code> 内联后，伪命令式风格更明显。用一次 <code>tell</code> 调用记录字符串 <code>"toWords "</code>，随后用 <code>return</code> 返回通过普通字符串函数 <code>words</code> 拆分 <code>upStr</code> 的结果：</p><pre><code class="language-haskell">process s = do
+    upStr &lt;- upCase s
+    tell "toWords "
+    return (words upStr)</code></pre>
+<p class="source-paragraph" data-source-paragraph="48">这里，<code>do</code> 块的每一行都会在去糖后代码中引入一个新的嵌套 bind：</p><pre><code class="language-haskell">process s =
+    upCase s &gt;&gt;= \upStr -&gt;
+      tell "toWords " &gt;&gt;= \() -&gt;
+        return (words upStr)</code></pre>
+<p class="source-paragraph" data-source-paragraph="49">注意 <code>tell</code> 产生单元值，所以无需把它传给后续 lambda。忽略 Monad 结果的内容（但不忽略它的效应——这里是对日志的贡献）很常见，因此有一个特殊运算符，可在这种情况下代替 bind：</p><pre><code class="language-haskell">(&gt;&gt;) :: m a -&gt; m b -&gt; m b
+m &gt;&gt; k = m &gt;&gt;= (\_ -&gt; k)</code></pre>
+<p class="source-paragraph" data-source-paragraph="50">代码实际去糖结果是：</p><pre><code class="language-haskell">process s =
+    upCase s &gt;&gt;= \upStr -&gt;
+      tell "toWords " &gt;&gt;
+        return (words upStr)</code></pre>
+<p class="source-paragraph" data-source-paragraph="51">一般来说，<code>do</code> 块由若干行（或子块）组成：它们要么用左箭头引入新名字，并让名字在剩余代码中可用；要么纯粹为副作用执行。代码行之间隐含 bind 运算符。顺带一提，Haskell 可用花括号与分号替代 <code>do</code> 块格式，这为“Monad 是重载分号的方式”这种描述提供了理由。</p>
+<p class="source-paragraph" data-source-paragraph="52">注意，去糖 <code>do</code> 记法时 lambda 与 bind 的嵌套，会让每一行的结果影响 <code>do</code> 块其余部分的执行。这个性质可用于引入复杂控制结构，例如模拟异常。</p>
+<p class="source-paragraph" data-source-paragraph="53">有趣的是，与 <code>do</code> 记法等价的东西已经应用于命令式语言，特别是 C++。我说的是<em>可恢复函数或协程（resumable function / coroutine）</em>。C++ 的 <a href="https://bartoszmilewski.com/2014/02/26/c17-i-see-a-monad-in-your-future/">future 构成 Monad</a> 已不是秘密；它是稍后会讨论的续延 Monad（continuation monad）的例子。续延的问题在于很难复合。在 Haskell 中，<code>do</code> 记法把“我的处理器调用你的处理器”造成的意大利面，变成非常像顺序代码的形式；可恢复函数让 C++ 也能完成同样变换。同一机制还能把<a href="https://bartoszmilewski.com/2014/04/21/getting-lazy-with-c/">嵌套循环的意大利面</a>变成列表推导（list comprehension）或“生成器（generator）”；它们本质上是列表 Monad 的 <code>do</code> 记法。没有 Monad 这个统一抽象时，每个问题通常都靠语言专用扩展解决；在 Haskell 中，这些全部通过库处理。</p></section>
+
+<nav class="chapter-switcher"><a href="../free-forgetful-adjunctions/">← 第 19 章：自由/遗忘伴随</a><a href="../monads-and-effects/">第 21 章：Monad 与效应 →</a></nav>
+</article><footer class="source-note"><p><strong>原文：</strong><a href="https://bartoszmilewski.com/2016/11/21/monads-programmers-definition/">Monads: Programmer's Definition</a></p><p><strong>核对底稿：</strong>作者博客正文与开源英文 Markdown；全部正文、27 个原文代码块和链接均已收录；本章原文没有插图和习题。</p><p><strong>许可：</strong>原作及本非官方中文译文依 <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> 署名—相同方式共享。</p></footer></main></body></html>
