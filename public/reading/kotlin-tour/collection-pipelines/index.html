@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="把 map、filter、associate、groupBy 和 fold 看成数据形状的连续变换，而不是一串炫技调用。">
+  <title>集合式数据处理｜Kotlin 项目实战篇｜RIN III</title>
+  <link rel="stylesheet" href="../reader.css">
+</head>
+<body>
+  <nav class="site-nav" aria-label="站点导航"><a href="../index.html">← Kotlin 中文学习版</a><a href="../../../computer-science/kotlin-tour/">RIN III 学习记录</a></nav>
+  <main class="reader project-reader">
+    <header class="chapter-header">
+      <span class="chapter-kicker">项目实战篇 · 第 2 章</span>
+      <h1>集合式数据处理</h1>
+      <p class="lead">把 map、filter、associate、groupBy 和 fold 看成数据形状的连续变换，而不是一串炫技调用。</p>
+      <div class="title-rule"></div>
+      <aside class="compression-note"><strong>阅读约定</strong><p>本章是基于 Kotlin 官方资料整理翻译的结构化精读，不是逐段完整翻译。保留项目阅读所需的核心概念、关键边界和代表性代码，暂缓与当前学习目标关系较弱的高级细节。</p></aside>
+      <aside class="learning-note"><strong>本章主线</strong><p>读集合链时，每一步都问“输入是什么、输出变成什么、原集合有没有被修改”，长链就会重新变得可读。</p></aside>
+      <nav class="chapter-switcher" aria-label="章节导航"><a href="../project-and-gradle/index.html">← Kotlin 项目与 Gradle</a><a class="course-home" href="../index.html">全部章节</a><a href="../generics-and-variance/index.html">泛型与型变 →</a></nav>
+    </header>
+    <article class="translated-article">
+      <h2>1. 先看数据形状，不要先看函数名</h2>
+      <pre><code>val cardsByOwner: Map&lt;UserId, List&lt;Card&gt;&gt; = cards
+    .filter { it.isVisible }
+    .sortedByDescending { it.updatedAt }
+    .groupBy { it.ownerId }</code></pre>
+      <p>这段代码的主线是：<code>List&lt;Card&gt;</code> → 过滤后仍是列表 → 排序后仍是列表 → 按 owner 分组后成为 <code>Map&lt;UserId, List&lt;Card&gt;&gt;</code>。只要写出中间类型，链条的意图就清楚了。</p>
+      <div class="table-wrapper"><table><thead><tr><th>操作</th><th>问题</th><th>典型结果</th></tr></thead><tbody>
+      <tr><td><code>map</code></td><td>每个元素要变成什么？</td><td>元素类型可能改变，数量通常不变</td></tr>
+      <tr><td><code>filter</code></td><td>哪些元素留下？</td><td>类型不变，数量可能减少</td></tr>
+      <tr><td><code>associateBy</code></td><td>用什么作为唯一键？</td><td><code>Map&lt;K, V&gt;</code></td></tr>
+      <tr><td><code>groupBy</code></td><td>按什么把多个元素归组？</td><td><code>Map&lt;K, List&lt;V&gt;&gt;</code></td></tr>
+      <tr><td><code>fold</code></td><td>如何从初始值累计？</td><td>任意累积结果</td></tr>
+      </tbody></table></div>
+      <h2>2. 返回新集合，还是原地修改</h2>
+      <p>多数常用集合操作返回结果而不修改原集合。<code>filter()</code> 的结果如果既不保存也不继续传递，就会丢失。可变集合才有写操作；还要区分 <code>sorted()</code>（返回新列表）与 <code>sort()</code>（原地修改）。</p>
+      <pre><code>val source = mutableListOf(3, 1, 2)
+val copy = source.sorted() // source 仍是 3, 1, 2
+source.sort()              // source 变成 1, 2, 3</code></pre>
+      <h2>3. List 与 Sequence 的执行方式</h2>
+      <p>集合链通常逐步产生中间集合；<code>Sequence</code> 延迟执行，并按元素穿过整条流水线。数据量小、步骤少时直接用集合更清楚；链很长、数据量大或需要尽早停止时，再评估 <code>asSequence()</code>。</p>
+      <pre><code>val firstMatch = records
+    .asSequence()
+    .map(::parse)
+    .filter { it.isValid }
+    .firstOrNull()</code></pre>
+      <aside class="boundary-note warning"><strong>容易误用</strong><ul><li>默认把所有链都改成 Sequence；额外抽象并不保证更快。</li><li>在 <code>map</code> 里偷偷修改外部状态，让流水线难以推理。</li><li>十几步链条仍不命名中间概念；此时拆成有业务含义的函数通常更好。</li></ul></aside>
+      <h2>4. 从语法读回业务</h2>
+      <p>最终不要只说“这里用了 <code>groupBy</code>”，而要说“这里把可见卡片按所有者归组，供下一步逐个所有者展示”。函数是手段，数据形状变化才是业务叙事。</p>
+      <section class="project-lab">
+        <span class="note-kind">下周项目对照</span>
+        <h2>不要另写玩具代码，直接在项目里取证</h2>
+        <p><strong>先搜索：</strong><code>.map</code>、<code>.filter</code>、<code>.associate</code>、<code>.groupBy</code>、<code>.fold</code>、<code>asSequence</code></p>
+        <ol><li>选一个真实文件，用一句话写出它在业务流程中的职责。</li><li>圈出本章概念的一个真实用法，写清输入、输出与所有者。</li><li>沿调用方向再追一层，确认它的生命周期或依赖边界。</li><li>找一条对应测试；如果没有，写下最值得补的可观察行为。</li></ol>
+      </section>
+    </article>
+    <section class="recall" aria-labelledby="recall-title">
+      <span class="note-kind">读完自测</span>
+      <h2 id="recall-title">合上正文，回答这三个问题</h2>
+      <ol><li>本章最重要的边界是什么？</li><li>项目里哪个类型或文件最能体现这个边界？</li><li>如果把这个边界拿掉，最可能出现什么错误？</li></ol>
+    </section>
+    <nav class="chapter-switcher" aria-label="章节导航"><a href="../project-and-gradle/index.html">← Kotlin 项目与 Gradle</a><a class="course-home" href="../index.html">全部章节</a><a href="../generics-and-variance/index.html">泛型与型变 →</a></nav>
+    <footer class="license-note"><p>本章是项目导向的结构化精读，不是官方文档的逐段完整翻译。主要依据：<a href="https://kotlinlang.org/docs/collection-operations.html">集合操作总览</a>、<a href="https://kotlinlang.org/docs/collection-transformations.html">集合转换</a>、<a href="https://kotlinlang.org/docs/sequences.html">序列</a>。原始内容由 JetBrains 与 Kotlin 贡献者维护，采用 <a href="https://github.com/JetBrains/kotlin-web-site/blob/master/LICENSE">Apache License 2.0</a>；版本差异以官方原文为准。</p></footer>
+  </main>
+</body>
+</html>
