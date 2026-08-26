@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>第 2 章：类型与函数｜程序员的范畴论｜RIN III</title>
+  <meta name="description" content="Bartosz Milewski《程序员的范畴论》第 2 章完整中文翻译，保留全部代码、公式、插图、注释与习题">
+  <link rel="stylesheet" href="../reader.css">
+</head>
+<body>
+  <nav class="site-nav" aria-label="站点导航">
+    <a href="../../../mathematics/category-theory-for-programmers/">← 返回整本书学习记录</a>
+    <a href="../../../">RIN III</a>
+  </nav>
+
+  <main class="reader">
+    <header>
+      <span class="chapter-kicker">第一部分 · 第 2 章 · 完整中文译文</span>
+      <h1>类型与函数</h1>
+      <p class="byline">Bartosz Milewski · 2014 年 11 月 24 日</p>
+      <div class="title-rule"></div>
+      <p class="lead">类型首先服务于复合：它们描述函数两端怎样严丝合缝地连接。本章进一步把类型理解为值的集合，把纯函数理解为集合之间的数学映射。</p>
+
+      <div class="translation-scope">
+        <span class="scope-label">译文范围</span>
+        <p>完整翻译本章正文，保留 1 张原图、全部 C/C++ 与 Haskell 代码、数学符号、两条文献链接以及 6 道习题和子题。导航与范围说明属于阅读器编辑层。</p>
+      </div>
+
+      <nav aria-label="本页导航">
+        <ul class="chapter-nav">
+          <li><a href="#who-needs-types">谁需要类型</a></li>
+          <li><a href="#composability">类型关乎可复合性</a></li>
+          <li><a href="#what-are-types">类型是什么</a></li>
+          <li><a href="#mathematical-model">为什么需要数学模型</a></li>
+          <li><a href="#pure-functions">纯函数与脏函数</a></li>
+          <li><a href="#examples">类型示例</a></li>
+          <li><a href="#challenges">习题</a></li>
+        </ul>
+      </nav>
+    </header>
+
+    <article>
+      <p class="source-paragraph" data-source-paragraph="1">类型与函数构成的范畴在编程中扮演着重要角色，因此我们先来谈谈类型是什么，以及为什么需要它们。</p>
+
+      <section id="who-needs-types">
+        <h2>谁需要类型？</h2>
+
+        <p class="source-paragraph" data-source-paragraph="2">关于静态类型与动态类型、强类型与弱类型各自的优点，似乎一直存在争议。让我用一个思想实验来说明这些选择。想象数百万只猴子坐在计算机键盘前，兴高采烈地随机敲击按键，生成程序、编译程序，再运行它们。</p>
+
+        <figure>
+          <div class="figure-frame">
+            <img class="portrait" src="img_1329.jpg" alt="一只坐在电脑前随机敲击键盘的猴子">
+          </div>
+        </figure>
+
+        <p class="source-paragraph" data-source-paragraph="3">如果使用机器语言，猴子生成的任何字节组合都会被接受并运行。但使用高级语言时，我们确实会感谢编译器能够发现词法和语法错误。许多猴子会因此得不到香蕉，不过剩余的程序成为有用程序的机会更高。类型检查又为荒谬程序设置了一道屏障。此外，在动态类型语言中，类型不匹配要等到运行时才会暴露；而在强类型、静态检查的语言中，类型不匹配会在编译时被发现，从而在大量错误程序获得运行机会之前就将它们排除。</p>
+
+        <p class="source-paragraph" data-source-paragraph="4">所以问题是：我们想让猴子开心，还是想产出正确的程序？</p>
+
+        <p class="source-paragraph" data-source-paragraph="5">“打字猴子”思想实验通常以写出莎士比亚全集为目标。如果把拼写检查器和语法检查器加入循环，成功概率会大幅提高。类型检查器的对应物还会更进一步：一旦罗密欧被声明为人类，它就会确保罗密欧不会突然长出叶子，也不会用强大的引力场捕获光子。</p>
+      </section>
+
+      <section id="composability">
+        <h2>类型关乎可复合性</h2>
+
+        <p class="source-paragraph" data-source-paragraph="6">范畴论研究箭头的复合，但并非任意两支箭头都能复合。一支箭头的目标对象必须与下一支箭头的源对象相同。在编程中，我们把一个函数的结果传给另一个函数。如果接收方函数不能正确解释来源函数产生的数据，程序就无法工作。两端必须彼此吻合，复合才能成立。语言的类型系统越强，就越能精确描述并机械地验证这种匹配。</p>
+
+        <p class="source-paragraph" data-source-paragraph="7">我听过的、反对强静态类型检查的唯一严肃论点，是它可能排除某些语义上正确的程序。实践中，这种情况极少发生；而且无论如何，每种语言都会提供某种后门，让你在确有必要时绕过类型系统。就连 Haskell 也有 <code>unsafeCoerce</code>。但这类工具应当谨慎使用。弗兰茨·卡夫卡笔下的格里高尔·萨姆沙变成一只巨大的甲虫时，打破了类型系统；而我们都知道故事最后怎样收场。</p>
+
+        <p class="source-paragraph" data-source-paragraph="8">另一个常见论点是，处理类型会给程序员增加太多负担。亲手写过几次 C++ 迭代器声明之后，我本来也能同情这种感受；但有一种称为<em>类型推断</em>的技术，能让编译器依据类型被使用的上下文推导出其中大多数。在 C++ 中，你现在可以把变量声明为 <code>auto</code>，让编译器自己判断它的类型。</p>
+
+        <p class="source-paragraph" data-source-paragraph="9">在 Haskell 中，除了少数情况，类型标注完全是可选的。不过程序员往往仍会写出类型标注，因为它们能够透露许多代码语义，也能让编译错误更容易理解。Haskell 项目通常从设计类型开始；随后，类型标注会驱动实现，并成为由编译器强制执行的注释。</p>
+
+        <p class="source-paragraph" data-source-paragraph="10">强静态类型有时会被当作不测试代码的借口。你偶尔会听 Haskell 程序员说：“只要能编译，它就一定正确。”当然，类型正确的程序并不保证会产生正确输出。由于这种漫不经心的态度，在多项研究中，Haskell 的代码质量并没有像人们预期的那样遥遥领先。商业环境中，修复缺陷的压力似乎只会把质量推到某个水平；这主要取决于软件开发的经济规律以及最终用户的容忍度，与编程语言或方法论几乎无关。更好的衡量标准，也许是统计有多少项目延期，或者交付时功能遭到大幅削减。</p>
+
+        <p class="source-paragraph" data-source-paragraph="11">至于“单元测试可以替代强类型”的说法，不妨考虑强类型语言中的一种常见重构：改变某个函数的参数类型。在强类型语言中，只需修改该函数的声明，然后修复所有构建错误。在弱类型语言中，函数现在需要另一种数据这一事实无法传播到各个调用点。单元测试也许能抓住一部分不匹配，但测试几乎总是一个概率过程，而不是确定性过程。测试无法很好地替代证明。</p>
+      </section>
+
+      <section id="what-are-types">
+        <h2>类型是什么？</h2>
+
+        <p class="source-paragraph" data-source-paragraph="12">关于类型，最简单的直觉是：类型就是值的集合。类型 <code>Bool</code>（还记得吗，Haskell 中的具体类型以大写字母开头）是由 <code>True</code> 与 <code>False</code> 构成的二元素集合。类型 <code>Char</code> 则是所有 Unicode 字符构成的集合，例如 <code>a</code> 或 <code>ą</code>。</p>
+
+        <p class="source-paragraph" data-source-paragraph="13">集合可以有限，也可以无限。<code>String</code> 类型是 <code>Char</code> 列表的同义词，它就是无限集合的一个例子。</p>
+
+        <p class="source-paragraph" data-source-paragraph="14">当我们声明 <code>x</code> 是一个 <code>Integer</code> 时：</p>
+
+        <pre><code class="language-haskell">x :: Integer</code></pre>
+
+        <p class="source-paragraph" data-source-paragraph="15">我们的意思是：它是整数集合的一个元素。Haskell 中的 <code>Integer</code> 是无限集合，可用于任意精度算术。另有一个有限集合 <code>Int</code> 与机器类型相对应，类似于 C++ 的 <code>int</code>。</p>
+
+        <p class="source-paragraph" data-source-paragraph="16">有些微妙之处会让“类型就是集合”这一认同变得棘手。涉及循环定义的多态函数会产生问题，而且你也不可能拥有“所有集合的集合”；不过我承诺过，不会在数学细节上吹毛求疵。好消息是，集合确实构成一个范畴，称为 <strong>Set</strong>，我们直接使用它即可。在 <strong>Set</strong> 中，对象是集合，态射（箭头）是函数。</p>
+
+        <p class="source-paragraph" data-source-paragraph="17"><strong>Set</strong> 是一个非常特殊的范畴，因为我们确实可以窥视其对象内部，并由此获得大量直觉。例如，我们知道空集没有元素，知道存在特殊的单元素集合，也知道函数把一个集合的元素映射到另一个集合的元素。函数可以把两个元素映射到一个元素，却不能把一个元素映射到两个元素。我们知道恒等函数把集合中的每个元素映射回它自己，等等。接下来的计划，是逐渐忘掉所有这些内部信息，转而只用范畴论语言——也就是对象和箭头——表达上述概念。</p>
+
+        <p class="source-paragraph" data-source-paragraph="18">在理想世界里，我们只需说 Haskell 类型是集合，Haskell 函数是集合之间的数学函数。但这里有一个小问题：数学函数并不执行任何代码——它只是“知道”答案。Haskell 函数则必须计算答案。如果能在有限步内得到答案，无论步数多大，都不成问题。但有些计算涉及递归，而递归可能永不终止。我们不能简单禁止 Haskell 中的不终止函数，因为区分终止函数和不终止函数是不可判定的——这就是著名的停机问题。因此，计算机科学家想出了一个绝妙主意；或者取决于你的看法，也可以说是一个大补丁：给每一种类型扩充一个特殊值，称为<em>底</em>，写作 <code>_|_</code>，也可用 Unicode 符号 ⊥ 表示。这个“值”对应一次不终止的计算。因此，下面声明的函数：</p>
+
+        <pre><code class="language-haskell">f :: Bool -&gt; Bool</code></pre>
+
+        <p class="source-paragraph" data-source-paragraph="19">可能返回 <code>True</code>、<code>False</code> 或 <code>_|_</code>；最后一种结果意味着它永远不会终止。</p>
+
+        <p class="source-paragraph" data-source-paragraph="20">有趣的是，一旦接受底是类型系统的一部分，把每一种运行时错误都视为底就会很方便，甚至可以允许函数显式返回底。后一种做法通常使用表达式 <code>undefined</code>，例如：</p>
+
+        <pre><code class="language-haskell">f :: Bool -&gt; Bool
+f x = undefined</code></pre>
+
+        <p class="source-paragraph" data-source-paragraph="21">这个定义能够通过类型检查，因为 <code>undefined</code> 求值为底，而底是任何类型的成员，其中也包括 <code>Bool</code>。你甚至可以写成：</p>
+
+        <pre><code class="language-haskell">f :: Bool -&gt; Bool
+f = undefined</code></pre>
+
+        <p class="source-paragraph" data-source-paragraph="22">这里没有 <code>x</code>，因为底同样也是函数类型 <code>Bool -&gt; Bool</code> 的成员。</p>
+
+        <p class="source-paragraph" data-source-paragraph="23">可能返回底的函数称为<em>偏函数</em>；与之相对的是<em>全函数</em>，它会为每一个可能的参数返回有效结果。</p>
+
+        <p class="source-paragraph" data-source-paragraph="24">由于底的存在，你会看到人们把 Haskell 类型与函数的范畴称为 <strong>Hask</strong>，而不是 <strong>Set</strong>。从理论角度看，这是无穷无尽的麻烦之源，所以我现在要挥起屠刀，终止这条推理路线。从实践角度看，忽略不终止函数与底、把 <strong>Hask</strong> 当作真正的 <strong>Set</strong> 并无大碍。<a href="https://www.cs.ox.ac.uk/jeremy.gibbons/publications/fast+loose.pdf">Nils Anders Danielsson、John Hughes、Patrik Jansson 与 Jeremy Gibbons 的论文 <cite>Fast and Loose Reasoning is Morally Correct</cite></a>，为在大多数情境中忽略底提供了论证。</p>
+      </section>
+
+      <section id="mathematical-model">
+        <h2>为什么需要数学模型？</h2>
+
+        <p class="source-paragraph" data-source-paragraph="25">作为程序员，你极其熟悉所用编程语言的句法与语法。语言规范通常一开头就会用形式化记法描述这些方面。但语言的含义，也就是语义，却难描述得多：它需要更多篇幅，很少足够形式化，几乎从不完整。因此才会有语言律师之间永无止境的争论，也才会形成一个专门著书、阐释语言标准细微之处的庞大行业。</p>
+
+        <p class="source-paragraph" data-source-paragraph="26">我们确实拥有描述语言语义的形式化工具，但由于它们非常复杂，主要用于经过简化的学术语言，而不是现实世界中的编程巨兽。其中一种工具称为<em>操作语义</em>，它描述程序执行的机制，定义了一个形式化、理想化的解释器。C++ 等工业语言的语义通常采用非形式化的操作推理来描述，并经常借助所谓的“抽象机器”。</p>
+
+        <p class="source-paragraph" data-source-paragraph="27">问题在于，使用操作语义很难证明程序的性质。要说明程序具备某项性质，本质上必须让它在理想化解释器中“运行”一遍。</p>
+
+        <p class="source-paragraph" data-source-paragraph="28">程序员从不做形式化正确性证明，这一点并不重要。我们始终“认为”自己写的是正确程序。没有人坐到键盘前会说：“哦，我随便扔几行代码进去，看看会发生什么。”我们相信自己写下的代码会执行某些动作，并产生想要的结果；当事实并非如此时，通常还会非常惊讶。这意味着我们确实会推理自己编写的程序，而通常的推理方式，是在脑中运行一个解释器。只是追踪所有变量真的非常困难。计算机擅长运行程序——人类不擅长！如果人类擅长，也就不需要计算机了。</p>
+
+        <p class="source-paragraph" data-source-paragraph="29">但还有另一种选择，称为<em>指称语义</em>，它以数学为基础。在指称语义中，每一种编程构造都有对应的数学解释。这样一来，如果想证明程序的某项性质，只需证明一个数学定理。你可能觉得证明定理很难，但事实上，人类已经积累了数千年的数学方法，因此有海量知识可以利用。而且，与职业数学家证明的定理相比，编程中遇到的问题通常相当简单，甚至微不足道。</p>
+
+        <p class="source-paragraph" data-source-paragraph="30">考虑 Haskell 中阶乘函数的定义；Haskell 是一种相当适合指称语义的语言：</p>
+
+        <pre><code class="language-haskell">fact n = product [1..n]</code></pre>
+
+        <p class="source-paragraph" data-source-paragraph="31">表达式 <code>[1..n]</code> 是从 <code>1</code> 到 <code>n</code> 的整数列表。函数 <code>product</code> 把列表中的所有元素相乘。这与数学教材里的阶乘定义别无二致。再与 C 语言版本比较：</p>
+
+        <pre><code class="language-c">int fact(int n) {
+    int i;
+    int result = 1;
+    for (i = 2; i &lt;= n; ++i)
+        result *= i;
+    return result;
+}</code></pre>
+
+        <p class="source-paragraph" data-source-paragraph="32">还需要我多说吗？</p>
+
+        <p class="source-paragraph" data-source-paragraph="33">好吧，我第一个承认，这是一次投机取巧的比较！阶乘函数显然有数学指称。敏锐的读者也许会问：从键盘读取一个字符，或通过网络发送一个数据包，它们的数学模型是什么？很长时间里，这都是一个令人尴尬的问题，只能引出相当曲折的解释。指称语义似乎并不适合许多重要任务；这些任务对编写有用程序不可或缺，却很容易用操作语义处理。突破来自范畴论。Eugenio Moggi 发现，计算效应可以映射到 Monad。事实证明，这项观察十分重要：它不仅让指称语义重获新生，使纯函数式程序更加实用，还为传统编程投下了新的光线。等我们掌握更多范畴论工具后，我会再讨论 Monad。</p>
+
+        <p class="source-paragraph" data-source-paragraph="34">为编程建立数学模型有一项重要优势：可以对软件正确性进行形式化证明。编写消费类软件时，这可能显得不那么重要；但在某些编程领域，失败的代价极其高昂，甚至会危及人的生命。即使只是为医疗系统编写 Web 应用，你也会庆幸 Haskell 标准库中的函数和算法附带正确性证明。</p>
+      </section>
+
+      <section id="pure-functions">
+        <h2>纯函数与脏函数</h2>
+
+        <p class="source-paragraph" data-source-paragraph="35">我们在 C++ 或其他命令式语言中称作函数的东西，与数学家所说的函数并不相同。数学函数只是从值到值的映射。</p>
+
+        <p class="source-paragraph" data-source-paragraph="36">我们可以在编程语言中实现数学函数：给定输入值，这种函数会计算输出值。求一个数平方的函数，大概会把输入值与自身相乘。每次调用它都会这样做，并且保证每次传入相同输入时都产生相同输出。一个数的平方不会随着月相而改变。</p>
+
+        <p class="source-paragraph" data-source-paragraph="37">此外，计算一个数的平方不应该附带给你的狗发放美味零食的副作用。做这种事的“函数”无法轻易建模为数学函数。</p>
+
+        <p class="source-paragraph" data-source-paragraph="38">在编程语言中，给定相同输入时始终产生相同结果、而且没有副作用的函数，称为<em>纯函数</em>。在 Haskell 这样的纯函数式语言中，所有函数都是纯函数。因此，为这些语言赋予指称语义并使用范畴论建模会更加容易。至于其他语言，你始终可以把自己限制在它的纯子集内，或者单独推理副作用。稍后我们会看到，Monad 如何让我们只用纯函数对各种效应建模。因此，把讨论限制在数学函数上并不会真正失去什么。</p>
+      </section>
+
+      <section id="examples">
+        <h2>类型示例</h2>
+
+        <p class="source-paragraph" data-source-paragraph="39">一旦意识到类型就是集合，你就能想到一些相当奇特的类型。例如，与空集对应的类型是什么？不，它不是 C++ 的 <code>void</code>，尽管这个类型在 Haskell 中确实称为 <code>Void</code>。它是一种没有任何值栖居其中的类型。你可以定义一个接受 <code>Void</code> 的函数，却永远无法调用它。因为要调用它，就必须提供一个 <code>Void</code> 类型的值，而这样的值根本不存在。至于这个函数能返回什么，则完全没有限制：它可以返回任意类型（尽管它永远不会真的返回，因为它根本无法被调用）。换句话说，这是一个返回类型多态的函数。Haskell 程序员给它起了一个名字：</p>
+
+        <pre><code class="language-haskell">absurd :: Void -&gt; a</code></pre>
+
+        <p class="source-paragraph" data-source-paragraph="40">（请记住，<code>a</code> 是可以代表任何类型的类型变量。）这个名称不是巧合。还有一种用逻辑解释类型与函数的更深层方式，称为 Curry–Howard 同构。类型 <code>Void</code> 表示假，而函数 <code>absurd</code> 的类型对应“由假可推出任何命题”，也就是拉丁格言“<span lang="la">ex falso sequitur quodlibet</span>”。</p>
+
+        <p class="source-paragraph" data-source-paragraph="41">接下来，是与单元素集合对应的类型。它只有一个可能的值；这个值只是“存在着”。你也许不会立刻认出它，但这正是 C++ 的 <code>void</code>。想一想从这个类型出发、以及以它为终点的函数。从 <code>void</code> 出发的函数总能被调用。如果它是纯函数，就会始终返回同一个结果。下面是一个例子：</p>
+
+        <pre><code class="language-c">int f44() { return 44; }</code></pre>
+
+        <p class="source-paragraph" data-source-paragraph="42">你也许认为这个函数接受的是“无”，但正如我们刚刚看到的，接受“无”的函数永远无法调用，因为不存在代表“无”的值。那么这个函数到底接受什么？从概念上说，它接受一个只有唯一实例的哑元值，因此不必显式提到它。不过 Haskell 中有表示这个值的符号：一对空括号 <code>()</code>。于是，由于一个有趣的巧合（真的是巧合吗？），调用 void 函数在 C++ 与 Haskell 中看起来完全一样。而且，由于 Haskell 热爱简洁，同一个符号 <code>()</code> 同时用作类型、构造器以及单元素集合所对应的唯一值。所以上面的函数用 Haskell 写成：</p>
+
+        <pre><code class="language-haskell">f44 :: () -&gt; Integer
+f44 () = 44</code></pre>
+
+        <p class="source-paragraph" data-source-paragraph="43">第一行声明 <code>f44</code> 把类型 <code>()</code>——读作“unit”——映射到类型 <code>Integer</code>。第二行通过模式匹配 unit 唯一的构造器 <code>()</code> 来定义 <code>f44</code>，并产生数字 44。调用它时，要提供 unit 值 <code>()</code>：</p>
+
+        <pre><code class="language-haskell">f44 ()</code></pre>
+
+        <p class="source-paragraph" data-source-paragraph="44">请注意，每个从 unit 出发的函数，都等价于从目标类型中挑选一个元素（这里挑选的是 <code>Integer</code> 中的 44）。实际上，可以把 <code>f44</code> 看作数字 44 的另一种表示。这说明我们怎样用函数（箭头）来代替对集合元素的显式谈论。从 unit 到任意类型 A 的函数，与集合 A 中的元素一一对应。</p>
+
+        <p class="source-paragraph" data-source-paragraph="45">那么，返回类型是 <code>void</code> 的函数——或者在 Haskell 中，返回 unit 的函数——又如何？C++ 使用这种函数产生副作用，但我们已经知道，它们不是数学意义上的真正函数。返回 unit 的纯函数什么也不做：它只是丢弃参数。</p>
+
+        <p class="source-paragraph" data-source-paragraph="46">从数学上说，从集合 A 到单元素集合的函数，会把 A 中的每个元素都映射到该单元素集合的唯一元素。对每个 A，都恰好存在一个这样的函数。下面是参数为 <code>Integer</code> 时的函数：</p>
+
+        <pre><code class="language-haskell">fInt :: Integer -&gt; ()
+fInt x = ()</code></pre>
+
+        <p class="source-paragraph" data-source-paragraph="47">给它任意整数，它都会返回 unit。本着简洁精神，Haskell 允许你对要丢弃的参数使用通配符模式，也就是下划线。这样就不必替它发明一个名字。因此，上面的函数可以改写为：</p>
+
+        <pre><code class="language-haskell">fInt :: Integer -&gt; ()
+fInt _ = ()</code></pre>
+
+        <p class="source-paragraph" data-source-paragraph="48">请注意，这个函数的实现不仅与传入的值无关，甚至与参数的类型无关。</p>
+
+        <p class="source-paragraph" data-source-paragraph="49">可以用同一个公式为任意类型实现的函数，称为<em>参数多态函数</em>。把具体类型换成类型参数，就能用一条等式实现一整族这样的函数。从任意类型到 unit 类型的多态函数应该叫什么？当然就叫 <code>unit</code>：</p>
+
+        <pre><code class="language-haskell">unit :: a -&gt; ()
+unit _ = ()</code></pre>
+
+        <p class="source-paragraph" data-source-paragraph="50">在 C++ 中，这个函数写成：</p>
+
+        <pre><code class="language-cpp">template&lt;typename T&gt;
+void unit(T) {}</code></pre>
+
+        <p class="source-paragraph" data-source-paragraph="51">类型谱系中的下一种类型是二元素集合。在 C++ 中，它称为 <code>bool</code>；在 Haskell 中，不出所料地称为 <code>Bool</code>。区别在于，C++ 的 <code>bool</code> 是内建类型，而 Haskell 中可以这样定义它：</p>
+
+        <pre><code class="language-haskell">data Bool = True | False</code></pre>
+
+        <p class="source-paragraph" data-source-paragraph="52">这个定义应读作：<code>Bool</code> 要么是 <code>True</code>，要么是 <code>False</code>。原则上，我们也应该能在 C++ 中用枚举定义布尔类型：</p>
+
+        <pre><code class="language-cpp">enum bool {
+    true,
+    false
+};</code></pre>
+
+        <p class="source-paragraph" data-source-paragraph="53">但 C++ 的 <code>enum</code> 暗地里是整数。也可以改用 C++11 的 <code>enum class</code>，可那样一来，就必须用类名限定它的值，例如 <code>bool::true</code> 和 <code>bool::false</code>，更不用说每个使用它的文件还得包含适当的头文件。</p>
+
+        <p class="source-paragraph" data-source-paragraph="54">从 <code>Bool</code> 出发的纯函数，只不过是从目标类型中挑选两个值：一个对应 <code>True</code>，另一个对应 <code>False</code>。</p>
+
+        <p class="source-paragraph" data-source-paragraph="55">返回 <code>Bool</code> 的函数称为<em>谓词</em>。例如，Haskell 库 <code>Data.Char</code> 中充满了 <code>isAlpha</code>、<code>isDigit</code> 之类的谓词。C++ 中也有类似的库，其中定义了 <code>isalpha</code> 和 <code>isdigit</code> 等函数，但它们返回 <code>int</code>，而不是布尔值。真正的谓词定义在 <code>std::ctype</code> 中，形式为 <code>ctype::is(alpha, c)</code>、<code>ctype::is(digit, c)</code>，等等。</p>
+      </section>
+
+      <section id="challenges">
+        <h2>习题</h2>
+        <ol class="challenges">
+          <li>在你最喜欢的语言中定义高阶函数（或函数对象）<code>memoize</code>。它接受纯函数 <code>f</code>，返回一个行为几乎与 <code>f</code> 完全相同的函数；区别是，对于每个参数，它只调用原函数一次，把结果保存在内部，此后每次收到同一参数时都返回已保存的结果。你可以通过性能区分记忆化函数与原函数。例如，尝试记忆化一个计算耗时很长的函数。第一次调用时必须等待结果；之后使用相同参数调用，应当立刻得到结果。
+            <details class="exercise-answer"><summary>点击展开参考答案</summary><pre><code class="language-kotlin">fun &lt;A, B&gt; memoize(f: (A) -&gt; B): (A) -&gt; B {
+    val cache = mutableMapOf&lt;A, B&gt;()
+    return { a -&gt; cache.getOrPut(a) { f(a) } }
+}</code></pre><p>这要求 <code>A</code> 有稳定的相等与哈希语义，并假设 <code>f</code> 是纯函数。并发环境还需要线程安全缓存。</p></details>
+          </li>
+          <li>尝试记忆化标准库中通常用于产生随机数的函数。它有效吗？
+            <details class="exercise-answer"><summary>点击展开参考答案</summary><p>无参数随机函数可视为 <code>() -&gt; Int</code>。记忆化后，第一次产生的随机数会被永久缓存，以后总返回同一个值。它不再表现为随机数生成器，说明原函数依赖隐藏状态、不是纯函数。</p></details>
+          </li>
+          <li>大多数随机数生成器可以用种子初始化。实现一个函数：它接受一个种子，用该种子调用随机数生成器并返回结果。然后记忆化这个函数。它有效吗？
+            <details class="exercise-answer"><summary>点击展开参考答案</summary><pre><code class="language-kotlin">fun seeded(seed: Int): Int = java.util.Random(seed.toLong()).nextInt()
+val memoizedSeeded = memoize(::seeded)</code></pre><p>有效。相同种子每次创建相同初始状态并取第一个结果，因此输入唯一决定输出。这里把隐藏状态显式化成了参数。</p></details>
+          </li>
+          <li>下面哪些 C++ 函数是纯函数？尝试记忆化它们，并观察多次调用记忆化版本和未记忆化版本时分别会发生什么。
+            <ol type="a">
+              <li>正文示例中的阶乘函数。</li>
+              <li><pre><code class="language-cpp">std::getchar()</code></pre></li>
+              <li><pre><code class="language-cpp">bool f() {
+    std::cout &lt;&lt; "Hello!" &lt;&lt; std::endl;
+    return true;
+}</code></pre></li>
+              <li><pre><code class="language-cpp">int f(int x) {
+    static int y = 0;
+    y += x;
+    return y;
+}</code></pre></li>
+            </ol>
+            <details class="exercise-answer"><summary>点击展开参考答案</summary><p>只有阶乘是纯函数。<code>getchar</code> 依赖输入流；打印函数虽然返回值固定，却产生输出副作用；带静态变量的函数依赖并修改隐藏状态。记忆化阶乘保持语义，另外三个都会改变原有的可观察行为。</p></details>
+          </li>
+          <li>从 <code>Bool</code> 到 <code>Bool</code> 一共有多少个不同函数？你能把它们全部实现出来吗？
+            <details class="exercise-answer"><summary>点击展开参考答案</summary><p>共有 <code>2² = 4</code> 个：恒假、恒真、恒等和取反。</p><pre><code class="language-haskell">false _ = False
+true  _ = True
+ident x = x
+negate x = not x</code></pre></details>
+          </li>
+          <li>画出一个范畴：它唯一的对象是类型 <code>Void</code>、<code>()</code>（unit）和 <code>Bool</code>，箭头对应这些类型之间所有可能的函数。用函数名标记各支箭头。
+            <details class="exercise-answer"><summary>点击展开参考答案</summary><p>从 <code>Void</code> 到每个对象各有唯一的 <code>absurd</code>；从 <code>()</code> 到自身有 <code>id</code>，到 <code>Bool</code> 有选出 <code>True</code> 与 <code>False</code> 的两个函数，到 <code>Void</code> 没有函数；从 <code>Bool</code> 到 <code>()</code> 有唯一 <code>unit</code>，到自身有恒假、恒真、恒等、取反四个函数，到 <code>Void</code> 没有函数。<code>Void -&gt; Void</code> 的唯一函数同时就是恒等。</p></details>
+          </li>
+        </ol>
+      </section>
+
+      <nav class="chapter-switcher" aria-label="章节切换">
+        <a href="../category-the-essence-of-composition/">← 第 1 章：范畴——复合的本质</a>
+        <a href="../categories-great-and-small/">第 3 章：大大小小的范畴 →</a>
+      </nav>
+    </article>
+
+    <footer class="source-note" id="source">
+      <p><strong>原文：</strong><a href="https://bartoszmilewski.com/2014/11/24/types-and-functions/">Types and Functions</a></p>
+      <p><strong>核对底稿：</strong>作者博客正文与开源英文 Markdown 版本；正文、代码、数学符号、插图、链接、注释和习题均已收录。</p>
+      <p><strong>许可：</strong>原作及本非官方中文译文依 <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> 署名—相同方式共享。概念或措辞有疑问时，以作者英文原文为准。</p>
+    </footer>
+  </main>
+</body>
+</html>

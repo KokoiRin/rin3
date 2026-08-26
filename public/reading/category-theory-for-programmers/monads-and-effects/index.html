@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>第 21 章：Monad 与效应｜程序员的范畴论｜RIN III</title><meta name="description" content="《程序员的范畴论》第 21 章完整中文翻译：偏函数、非确定性、Reader、Writer、State、异常、续延与 IO"><link rel="stylesheet" href="../reader.css"></head>
+<body><nav class="site-nav"><a href="../../../mathematics/category-theory-for-programmers/">← 返回整本书学习记录</a><a href="../../../">RIN III</a></nav><main class="reader"><header><span class="chapter-kicker">第三部分 · 第 21 章 · 完整中文译文</span><h1>Monad 与效应</h1><p class="byline">Bartosz Milewski</p><div class="title-rule"></div><p class="lead">函数返回类型的不同“装饰”，可以把终止、非确定性、状态、异常、续延和 I/O 重新表达为纯函数；Monad 负责让这些装饰后的函数继续组合。</p><div class="translation-scope"><span class="scope-label">译文范围</span><p>完整翻译本章正文，保留全部 37 个原文代码块和链接；本章原文没有插图和习题。</p></div><nav><ul class="chapter-nav"><li><a href="#problem">问题</a></li><li><a href="#partiality">偏性</a></li><li><a href="#nondeterminism">非确定性</a></li><li><a href="#reader-writer-state">环境与状态</a></li><li><a href="#exceptions">异常</a></li><li><a href="#continuations">续延</a></li><li><a href="#io">交互式输入输出</a></li><li><a href="#conclusion">结论</a></li></ul></nav></header><article>
+
+<p class="source-paragraph" data-source-paragraph="1">既然已经知道 Monad 的用途——让装饰后的函数可以复合——真正有趣的问题就是：为什么装饰后的函数在函数式编程中如此重要？我们已经见过 Writer Monad：装饰让我们能够跨多次函数调用创建并累积日志。原本需要不纯函数（例如访问并修改某种全局状态）解决的问题，被纯函数解决了。</p>
+
+<section id="problem"><h2>问题</h2><p class="source-paragraph" data-source-paragraph="2">下面是一份相似问题的简短清单，摘自 <a href="https://core.ac.uk/download/pdf/21173011.pdf">Eugenio Moggi 的奠基论文</a>；传统上，它们都通过放弃函数纯度解决：</p><ul><li>偏性（partiality）：可能永不终止的计算；</li><li>非确定性（nondeterminism）：可能返回多个结果的计算；</li><li>副作用（side effect）：访问或修改状态的计算；<ul><li>只读状态，即环境；</li><li>只写状态，即日志；</li><li>读写状态；</li></ul></li><li>异常：可能失败的偏函数；</li><li>续延：保存程序状态并在需要时恢复的能力；</li><li>交互式输入；</li><li>交互式输出。</li></ul>
+<p class="source-paragraph" data-source-paragraph="3">真正令人震撼的是，这些问题全都可以用同一个聪明技巧解决：转向装饰后的函数。当然，每种情形中的装饰完全不同。</p>
+<p class="source-paragraph" data-source-paragraph="4">必须意识到，在这个阶段并不要求装饰具备 Monad 结构。只有当我们坚持要求复合——能够把一个装饰后的函数分解成更小的装饰后函数——时，才需要 Monad。同样，因为每种装饰不同，Monad 复合的实现也不同，但总体模式相同。它是一个非常简单的模式：满足结合律并配有恒等元的复合。</p>
+<p class="source-paragraph" data-source-paragraph="5">下一节包含大量 Haskell 示例。如果急于回到范畴论，或者已经熟悉 Haskell 的 Monad 实现，可以略读甚至跳过。</p></section>
+
+<section id="solution"><h2>解决方案</h2><p class="source-paragraph" data-source-paragraph="6">先分析使用 <code>Writer</code> Monad 的方式。我们从完成某项任务的纯函数开始——给定参数，它产生某个输出。随后用另一个函数替换它，把原输出与字符串配成一对来装饰它。这就是日志问题的解决方案。</p>
+<p class="source-paragraph" data-source-paragraph="7">但不能止步于此，因为我们通常不想处理单体式解决方案。需要把一个产生日志的函数分解成更小的产生日志函数。正是这些小函数的复合把我们引向 Monad。</p>
+<p class="source-paragraph" data-source-paragraph="8">真正惊人的是，同样的返回类型装饰模式适用于大量通常需要放弃纯度的问题。下面逐项检查清单，为每个问题找出相应装饰。</p></section>
+
+<section id="partiality"><h3>偏性</h3><p class="source-paragraph" data-source-paragraph="9">对每个可能不终止的函数，把其返回类型改成“提升类型（lifted type）”——它包含原类型的所有值，外加特殊的“底”值 ⊥。例如，作为集合的 <code>Bool</code> 有两个元素 <code>True</code>、<code>False</code>；提升后的 <code>Bool</code> 有三个元素。返回提升 <code>Bool</code> 的函数可能产生 <code>True</code> 或 <code>False</code>，也可能永远执行下去。</p>
+<p class="source-paragraph" data-source-paragraph="10">有趣的是，在 Haskell 这样的惰性语言中，一个永不结束的函数实际上可能“返回”一个值，而且这个值还能传给下一个函数。我们把这个特殊值称为<em>底（bottom）</em>。只要不显式需要它（例如对它做模式匹配或把它输出），它就能四处传递而不会阻塞程序。因为每个 Haskell 函数都可能不终止，Haskell 的所有类型都被假定为提升类型。这就是我们常谈 Haskell（提升）类型与函数的范畴 Hask，而不是更简单的 Set 的原因。不过 Hask 是否真是范畴并不明确，参见 <a href="http://math.andrej.com/2016/08/06/hask-is-not-a-category/">Andrej Bauer 的文章</a>。</p></section>
+
+<section id="nondeterminism"><h3>非确定性</h3><p class="source-paragraph" data-source-paragraph="11">若函数可能返回多个不同结果，不妨一次把它们全部返回。从语义上说，非确定函数等价于返回结果列表的函数。在有惰性求值与垃圾回收的语言中，这非常合理。例如，只需一个值时取表头即可，表尾永远不会求值；需要随机值时，用随机数生成器选择列表第 <em>n</em> 个元素。惰性甚至允许返回无限结果列表。</p>
+<p class="source-paragraph" data-source-paragraph="12">列表 Monad 是 Haskell 对非确定计算的实现，其中 <code>join</code> 实现为 <code>concat</code>。记住，<code>join</code> 应把容器的容器展平；<code>concat</code> 把列表的列表连接成单一列表。<code>return</code> 创建单元素列表：</p><pre><code class="language-haskell">instance Monad [] where
+    join = concat
+    return x = [x]</code></pre>
+<p class="source-paragraph" data-source-paragraph="13">列表 Monad 的 bind 由一般公式给出：先 <code>fmap</code>，再 <code>join</code>；这里得到：</p><pre><code class="language-haskell">as &gt;&gt;= k = concat (fmap k as)</code></pre>
+<p class="source-paragraph" data-source-paragraph="14">自身产生列表的函数 <code>k</code> 会应用到列表 <code>as</code> 的每个元素，结果是列表的列表，再用 <code>concat</code> 展平。</p>
+<p class="source-paragraph" data-source-paragraph="15">从程序员角度看，处理列表比在循环中调用非确定函数，或实现返回迭代器的函数更容易（不过在<a href="http://ericniebler.com/2014/04/27/range-comprehensions/">现代 C++</a> 中，返回惰性 range 几乎等价于在 Haskell 中返回列表）。</p>
+<p class="source-paragraph" data-source-paragraph="16">创造性使用非确定性的好例子是游戏编程。例如，计算机与人类下棋时无法预测对手下一步，但可以生成所有可能走法的列表，并逐一分析。同样，非确定解析器可以为给定表达式生成所有可能解析的列表。</p>
+<p class="source-paragraph" data-source-paragraph="17">尽管可以把返回列表的函数解释为非确定函数，列表 Monad 的用途要广泛得多。把产生列表的计算拼接起来，是命令式编程中迭代构造——循环——的完美函数式替代。单个循环常可改写为 <code>fmap</code>，把循环体应用于列表每个元素；列表 Monad 的 <code>do</code> 记法可替换复杂嵌套循环。</p>
+<p class="source-paragraph" data-source-paragraph="18">我最喜欢的例子，是生成勾股数组——能够构成直角三角形边长的正整数三元组：</p><pre><code class="language-haskell">triples = do
+    z &lt;- [1..]
+    x &lt;- [1..z]
+    y &lt;- [x..z]
+    guard (x^2 + y^2 == z^2)
+    return (x, y, z)</code></pre>
+<p class="source-paragraph" data-source-paragraph="19">第一行表示 <code>z</code> 从正数无限列表 <code>[1..]</code> 中得到一个元素；随后 <code>x</code> 从 1 到 <code>z</code> 的有限列表 <code>[1..z]</code> 中得到元素；最后 <code>y</code> 从 <code>x</code> 到 <code>z</code> 的列表中得到元素。现在有三个数 1≤x≤y≤z。函数 <code>guard</code> 接受 <code>Bool</code> 表达式，返回单元列表：</p><pre><code class="language-haskell">guard :: Bool -&gt; [()]
+guard True  = [()]
+guard False = []</code></pre>
+<p class="source-paragraph" data-source-paragraph="20">这个函数属于更大的 <code>MonadPlus</code> 类型类，这里用于过滤掉非勾股数组。查看 bind（或相关运算符 <code>&gt;&gt;</code>）的实现会发现，输入空列表时会产生空列表；输入非空列表——这里是包含单元值的单元素列表 <code>[()]</code>——时，bind 调用续延，也就是 <code>return (x,y,z)</code>，产生只含一个已验证勾股数组的列表。外围 bind 会把所有这些单元素列表连接起来，形成最终的无限结果。当然，<code>triples</code> 的调用者永远无法消费整个列表，但 Haskell 是惰性的，所以无妨。</p>
+<p class="source-paragraph" data-source-paragraph="21">通常需要三层嵌套循环的问题，借助列表 Monad 与 <code>do</code> 记法大幅简化。还不止如此，Haskell 允许用列表推导进一步简化：</p><pre><code class="language-haskell">triples = [(x, y, z) | z &lt;- [1..]
+                     , x &lt;- [1..z]
+                     , y &lt;- [x..z]
+                     , x^2 + y^2 == z^2]</code></pre>
+<p class="source-paragraph" data-source-paragraph="22">这只是列表 Monad（严格说是 <code>MonadPlus</code>）的又一层语法糖。</p>
+<p class="source-paragraph" data-source-paragraph="23">你可能会在其他函数式或命令式语言中，以生成器与协程的面貌看到类似构造。</p></section>
+
+<section id="reader-writer-state"><h3>只读状态</h3><p class="source-paragraph" data-source-paragraph="24">能只读访问某种外部状态或环境的函数，总能换成把环境作为额外参数的函数。纯函数 <code>(a,e)-&gt;b</code>（<code>e</code> 是环境类型）乍看不像 Kleisli 箭头；但一旦柯里化为 <code>a-&gt;(e-&gt;b)</code>，就会认出其装饰是老朋友 Reader 函子：</p><pre><code class="language-haskell">newtype Reader e a = Reader (e -&gt; a)</code></pre>
+<p class="source-paragraph" data-source-paragraph="25">可以把返回 <code>Reader</code> 的函数解释为生成一个迷你可执行程序：给定环境就产生所需结果的动作。辅助函数 <code>runReader</code> 用于执行该动作：</p><pre><code class="language-haskell">runReader :: Reader e a -&gt; e -&gt; a
+runReader (Reader f) e = f e</code></pre>
+<p class="source-paragraph" data-source-paragraph="26">不同环境值可能产生不同结果。</p>
+<p class="source-paragraph" data-source-paragraph="27">注意，返回 <code>Reader</code> 的函数与 <code>Reader</code> 动作本身都是纯的。</p>
+<p class="source-paragraph" data-source-paragraph="28">实现 Reader Monad 的 bind，先注意必须产生一个接受环境 <code>e</code> 并生成 <code>b</code> 的函数：</p><pre><code class="language-haskell">ra &gt;&gt;= k = Reader (\e -&gt; ...)</code></pre>
+<p class="source-paragraph" data-source-paragraph="29">在 lambda 内，可以执行动作 <code>ra</code> 产生 <code>a</code>：</p><pre><code class="language-haskell">ra &gt;&gt;= k = Reader (\e -&gt; let a = runReader ra e
+                         in ...)</code></pre>
+<p class="source-paragraph" data-source-paragraph="30">再把 <code>a</code> 传给续延 <code>k</code>，得到新动作 <code>rb</code>：</p><pre><code class="language-haskell">ra &gt;&gt;= k = Reader (\e -&gt; let a  = runReader ra e
+                             rb = k a
+                         in ...)</code></pre>
+<p class="source-paragraph" data-source-paragraph="31">最后，用同一个环境 <code>e</code> 运行 <code>rb</code>：</p><pre><code class="language-haskell">ra &gt;&gt;= k = Reader (\e -&gt; let a  = runReader ra e
+                             rb = k a
+                         in runReader rb e)</code></pre>
+<p class="source-paragraph" data-source-paragraph="32">实现 <code>return</code> 时，创建一个忽略环境并原样返回值的动作。</p>
+<p class="source-paragraph" data-source-paragraph="33">把一切放在一起，再稍作简化，得到：</p><pre><code class="language-haskell">instance Monad (Reader e) where
+    ra &gt;&gt;= k = Reader (\e -&gt; runReader (k (runReader ra e)) e)
+    return x = Reader (\e -&gt; x)</code></pre>
+
+<h3>只写状态</h3><p class="source-paragraph" data-source-paragraph="34">这就是最初的日志例子。装饰由 <code>Writer</code> 函子给出：</p><pre><code class="language-haskell">newtype Writer w a = Writer (a, w)</code></pre>
+<p class="source-paragraph" data-source-paragraph="35">为完整起见，还有一个平凡的辅助函数 <code>runWriter</code>，用于拆开数据构造器：</p><pre><code class="language-haskell">runWriter :: Writer w a -&gt; (a, w)
+runWriter (Writer (a, w)) = (a, w)</code></pre>
+<p class="source-paragraph" data-source-paragraph="36">如前所见，为让 <code>Writer</code> 可组合，<code>w</code> 必须是幺半群。下面用 bind 写出 <code>Writer</code> 的 Monad 实例：</p><pre><code class="language-haskell">instance (Monoid w) =&gt; Monad (Writer w) where
+    (Writer (a, w)) &gt;&gt;= k = let (a', w') = runWriter (k a)
+                            in Writer (a', w `mappend` w')
+    return a = Writer (a, mempty)</code></pre>
+
+<h3>状态</h3><p class="source-paragraph" data-source-paragraph="37">能读写状态的函数结合了 Reader 与 Writer 的装饰。可以把它们想成纯函数：把状态作为额外参数，并产生“值/状态”对作为结果，即 <code>(a,s)-&gt;(b,s)</code>。柯里化后得到 Kleisli 箭头形式 <code>a-&gt;(s-&gt;(b,s))</code>，装饰抽象在 <code>State</code> 函子中：</p><pre><code class="language-haskell">newtype State s a = State (s -&gt; (a, s))</code></pre>
+<p class="source-paragraph" data-source-paragraph="38">同样，可把 Kleisli 箭头看成返回动作，再用辅助函数执行：</p><pre><code class="language-haskell">runState :: State s a -&gt; s -&gt; (a, s)
+runState (State f) s = f s</code></pre>
+<p class="source-paragraph" data-source-paragraph="39">不同初始状态不仅可能产生不同结果，还可能产生不同最终状态。</p>
+<p class="source-paragraph" data-source-paragraph="40">State Monad 的 bind 实现与 Reader 很相似，只是必须小心地在每一步传递正确状态：</p><pre><code class="language-haskell">sa &gt;&gt;= k = State (\s -&gt; let (a, s') = runState sa s
+                            sb = k a
+                        in runState sb s')</code></pre>
+<p class="source-paragraph" data-source-paragraph="41">完整实例为：</p><pre><code class="language-haskell">instance Monad (State s) where
+    sa &gt;&gt;= k = State (\s -&gt; let (a, s') = runState sa s
+                            in runState (k a) s')
+    return a = State (\s -&gt; (a, s))</code></pre>
+<p class="source-paragraph" data-source-paragraph="42">还有两个用于操纵状态的辅助 Kleisli 箭头。一个取出状态供检查：</p><pre><code class="language-haskell">get :: State s s
+get = State (\s -&gt; (s, s))</code></pre>
+<p class="source-paragraph" data-source-paragraph="43">另一个用全新状态替换它：</p><pre><code class="language-haskell">put :: s -&gt; State s ()
+put s' = State (\s -&gt; ((), s'))</code></pre></section>
+
+<section id="exceptions"><h3>异常</h3><p class="source-paragraph" data-source-paragraph="44">会抛异常的命令式函数其实是偏函数——对某些参数值没有定义。用纯的全函数实现异常，最简单的方式是使用 <code>Maybe</code> 函子。把偏函数扩展为全函数：有意义时返回 <code>Just a</code>，否则返回 <code>Nothing</code>。若还想返回失败原因的信息，可以改用 <code>Either</code> 函子（例如把第一个类型固定为 <code>String</code>）。</p>
+<p class="source-paragraph" data-source-paragraph="45">下面是 <code>Maybe</code> 的 Monad 实例：</p><pre><code class="language-haskell">instance Monad Maybe where
+    Nothing &gt;&gt;= k = Nothing
+    Just a  &gt;&gt;= k = k a
+    return a = Just a</code></pre>
+<p class="source-paragraph" data-source-paragraph="46">注意，<code>Maybe</code> 的 Monad 复合在检测到错误时，会正确地短路计算（续延 <code>k</code> 永远不会调用）。这正是对异常的预期行为。</p></section>
+
+<section id="continuations"><h3>续延</h3><p class="source-paragraph" data-source-paragraph="47">这就是求职面试后可能遇到的“别打给我们，我们会打给你！”情形。你不会直接得到答案，而要提供一个处理器——一个在结果就绪时被调用的函数。这种编程风格在调用时还不知道结果的情形尤其有用，例如结果正由另一线程计算，或从远程网站传来。这里的 Kleisli 箭头返回一个接受处理器的函数，处理器表示“计算的剩余部分”：</p><pre><code class="language-haskell">data Cont r a = Cont ((a -&gt; r) -&gt; r)</code></pre>
+<p class="source-paragraph" data-source-paragraph="48">处理器 <code>a-&gt;r</code> 最终被调用时产生 <code>r</code> 类型结果，该结果在最后返回。续延由结果类型参数化。（实践中，它常是某种状态指示器。）</p>
+<p class="source-paragraph" data-source-paragraph="49">还有一个执行 Kleisli 箭头所返回动作的辅助函数。它接受处理器并传给续延：</p><pre><code class="language-haskell">runCont :: Cont r a -&gt; (a -&gt; r) -&gt; r
+runCont (Cont k) h = k h</code></pre>
+<p class="source-paragraph" data-source-paragraph="50">续延的复合出了名地困难，因此通过 Monad——尤其是 <code>do</code> 记法——处理它们，优势巨大。</p>
+<p class="source-paragraph" data-source-paragraph="51">推导 bind 的实现。先看去掉包装后的签名：</p><pre><code class="language-haskell">(&gt;&gt;=) :: ((a -&gt; r) -&gt; r) -&gt;
+         (a -&gt; (b -&gt; r) -&gt; r) -&gt;
+         ((b -&gt; r) -&gt; r)</code></pre>
+<p class="source-paragraph" data-source-paragraph="52">目标是创建接受处理器 <code>b-&gt;r</code> 并产生结果 <code>r</code> 的函数，所以从这里开始：</p><pre><code class="language-haskell">ka &gt;&gt;= kab = Cont (\hb -&gt; ...)</code></pre>
+<p class="source-paragraph" data-source-paragraph="53">在 lambda 内，要用适当处理器调用函数 <code>ka</code>，该处理器表示其余计算。把处理器实现为 lambda：</p><pre><code class="language-haskell">runCont ka (\a -&gt; ...)</code></pre>
+<p class="source-paragraph" data-source-paragraph="54">这里其余计算先用 <code>a</code> 调用 <code>kab</code>，再把 <code>hb</code> 传给得到的动作 <code>kb</code>：</p><pre><code class="language-haskell">runCont ka (\a -&gt; let kb = kab a
+                  in runCont kb hb)</code></pre>
+<p class="source-paragraph" data-source-paragraph="55">可以看到，续延由内向外复合；最终处理器 <code>hb</code> 从计算最内层调用。完整实例是：</p><pre><code class="language-haskell">instance Monad (Cont r) where
+    ka &gt;&gt;= kab = Cont (\hb -&gt; runCont ka (\a -&gt; runCont (kab a) hb))
+    return a = Cont (\ha -&gt; ha a)</code></pre></section>
+
+<section id="io"><h3>交互式输入</h3><p class="source-paragraph" data-source-paragraph="56">这是最棘手的问题，也是许多困惑的来源。显然，如果 <code>getChar</code> 返回键盘输入的字符，它就不可能纯。但如果它把字符放在容器里返回呢？只要没有办法从容器中取出字符，就可以声称函数是纯的。每次调用 <code>getChar</code> 都返回完全相同的容器；概念上，该容器包含所有可能字符的叠加态。</p>
+<p class="source-paragraph" data-source-paragraph="57">若熟悉量子力学，理解这个类比应该不难。这就像装着薛定谔的猫的盒子——只不过根本无法打开或窥视盒子内部。盒子由特殊的内置 <code>IO</code> 函子定义。在例子中，<code>getChar</code> 可声明为 Kleisli 箭头：</p><pre><code class="language-haskell">getChar :: () -&gt; IO Char</code></pre>
+<p class="source-paragraph" data-source-paragraph="58">（实际上，从单元类型出发的函数等价于选取返回类型的一个值，所以声明简化为 <code>getChar :: IO Char</code>。）</p>
+<p class="source-paragraph" data-source-paragraph="59">作为函子，<code>IO</code> 允许用 <code>fmap</code> 操纵内容；作为函子，它也能保存任意类型内容，不只是字符。真正的用途在于，Haskell 中 <code>IO</code> 是 Monad，所以能复合产生 <code>IO</code> 对象的 Kleisli 箭头。</p>
+<p class="source-paragraph" data-source-paragraph="60">你可能以为 Kleisli 复合允许窥视 <code>IO</code> 对象的内容（若继续量子类比，就是“使波函数坍缩”）。确实，可以把 <code>getChar</code> 与另一个 Kleisli 箭头复合，后者接受字符并把它转成整数。问题是，第二支 Kleisli 箭头只能把整数作为 <code>IO Int</code> 返回；你仍得到所有可能整数的叠加态，以此类推。薛定谔的猫永远不会从袋子里出来。一旦进入 <code>IO</code> Monad，就无法离开。<code>IO</code> 没有与 <code>runState</code> 或 <code>runReader</code> 对应的东西——没有 <code>runIO</code>！</p>
+<p class="source-paragraph" data-source-paragraph="61">除了与另一支 Kleisli 箭头复合，还能怎样处理 Kleisli 箭头的结果——<code>IO</code> 对象？可以从 <code>main</code> 返回它。Haskell 中 <code>main</code> 的签名是：</p><pre><code class="language-haskell">main :: IO ()</code></pre>
+<p class="source-paragraph" data-source-paragraph="62">也可以把它看作 Kleisli 箭头：</p><pre><code class="language-haskell">main :: () -&gt; IO ()</code></pre>
+<p class="source-paragraph" data-source-paragraph="63">从这个视角看，Haskell 程序只是 <code>IO</code> Monad 中一支巨大的 Kleisli 箭头。可以用 Monad 复合，从较小 Kleisli 箭头组合出它。怎样处理最终 <code>IO</code> 对象（也叫 <code>IO</code> 动作），由运行时系统负责。</p>
+<p class="source-paragraph" data-source-paragraph="64">注意，箭头本身是纯函数——一路到底全是纯函数。脏活被交给系统。系统最终执行 <code>main</code> 返回的 <code>IO</code> 动作时，会做读取用户输入、修改文件、打印讨厌消息、格式化磁盘等各种坏事。Haskell 程序从不弄脏自己的手（好吧，除非调用 <code>unsafePerformIO</code>，但那是另一回事）。</p>
+<p class="source-paragraph" data-source-paragraph="65">当然，因为 Haskell 是惰性的，<code>main</code> 几乎立即返回，脏活随即开始。在执行 <code>IO</code> 动作期间，纯计算结果会按需请求并求值。因此现实中，程序执行是纯（Haskell）代码与脏（系统）代码的交错。</p>
+<p class="source-paragraph" data-source-paragraph="66"><code>IO</code> Monad 还有一种更离奇却完全合理的数学模型：把整个宇宙当作程序中的对象。注意，命令式模型在概念上把宇宙视为外部全局对象，所以执行 I/O 的过程通过与它交互而产生副作用；它们既能读取也能修改宇宙状态。</p>
+<p class="source-paragraph" data-source-paragraph="67">我们已经知道怎样在函数式编程中处理状态——使用 State Monad。但与简单状态不同，宇宙状态无法用标准数据结构轻易描述。不过，只要永远不直接与它交互，就不必描述。只需假设存在类型 <code>RealWorld</code>，并且运行时凭借某种宇宙工程奇迹，可以提供这个类型的对象。<code>IO</code> 动作只是一个函数：</p><pre><code class="language-haskell">type IO a = RealWorld -&gt; (a, RealWorld)</code></pre>
+<p class="source-paragraph" data-source-paragraph="68">或者用 State Monad 表达：</p><pre><code class="language-haskell">type IO = State RealWorld</code></pre>
+<p class="source-paragraph" data-source-paragraph="69">不过，<code>IO</code> Monad 的 <code>&gt;=&gt;</code> 与 <code>return</code> 必须内建于语言。</p>
+
+<h3>交互式输出</h3><p class="source-paragraph" data-source-paragraph="70">同一个 <code>IO</code> Monad 也用于封装交互式输出。<code>RealWorld</code> 被认为包含全部输出设备。你可能会问：为什么不能直接从 Haskell 调用输出函数，并假装它们什么也没做？例如，为什么是：</p><pre><code class="language-haskell">putStr :: String -&gt; IO ()</code></pre>
+<p class="source-paragraph" data-source-paragraph="71">而不是更简单的：</p><pre><code class="language-haskell">putStr :: String -&gt; ()</code></pre>
+<p class="source-paragraph" data-source-paragraph="72">有两个原因。Haskell 是惰性的，所以永远不会调用输出——这里是单元对象——未被使用的函数。即使它不惰性，也可以自由改变这些调用的顺序，从而打乱输出。在 Haskell 中，强制两个函数顺序执行的唯一办法是建立数据依赖：一个函数的输入必须依赖另一个的输出。在 <code>IO</code> 动作之间传递 <code>RealWorld</code> 会强制排序。</p>
+<p class="source-paragraph" data-source-paragraph="73">概念上，在下面的程序中：</p><pre><code class="language-haskell">main :: IO ()
+main = do
+    putStr "Hello "
+    putStr "World!"</code></pre>
+<p class="source-paragraph" data-source-paragraph="74">打印“World!”的动作，接收到的是屏幕上已经有“Hello ”的宇宙；它输出一个屏幕上出现“Hello World!”的新宇宙。</p></section>
+
+<section id="conclusion"><h2>结论</h2><p class="source-paragraph" data-source-paragraph="75">当然，我只是触及 Monad 编程的表面。Monad 不仅用纯函数完成命令式编程通常靠副作用完成的工作，而且提供了高度控制与类型安全。但它也并非没有缺点。对 Monad 最大的抱怨，是它们彼此不容易组合。诚然，可以用 Monad Transformer 库组合大多数基础 Monad；创建一个把状态与异常等结合起来的 Monad 栈相对容易，但并不存在任意 Monad 叠加的通用公式。</p></section>
+
+<nav class="chapter-switcher"><a href="../monads-programmers-definition/">← 第 20 章：Monad——程序员的定义</a><a href="../monads-categorically/">第 22 章：Monad 的范畴定义 →</a></nav>
+</article><footer class="source-note"><p><strong>原文：</strong><a href="https://bartoszmilewski.com/2016/11/30/monads-and-effects/">Monads and Effects</a></p><p><strong>核对底稿：</strong>作者博客正文与开源英文 Markdown；全部正文、37 个原文代码块和链接均已收录；本章原文没有插图和习题。</p><p><strong>许可：</strong>原作及本非官方中文译文依 <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> 署名—相同方式共享。</p></footer></main></body></html>

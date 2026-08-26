@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>第 7 章：函子｜程序员的范畴论｜RIN III</title><meta name="description" content="《程序员的范畴论》第 7 章完整中文翻译：函子、Functor 类型类、Maybe、List、Reader 与函子复合"><link rel="stylesheet" href="../reader.css"></head>
+<body><nav class="site-nav"><a href="../../../mathematics/category-theory-for-programmers/">← 返回整本书学习记录</a><a href="../../../">RIN III</a></nav>
+<main class="reader"><header><span class="chapter-kicker">第一部分 · 第 7 章 · 完整中文译文</span><h1>函子</h1><p class="byline">Bartosz Milewski</p><div class="title-rule"></div>
+<p class="lead">函子是范畴之间保持结构的映射：它既映射对象，也映射态射，而且不破坏恒等与复合。落到程序中，它把类型构造器与“提升函数”的 <code>fmap</code> 连接起来。</p>
+<div class="translation-scope"><span class="scope-label">译文范围</span><p>完整翻译本章正文，保留 4 张原图、全部 53 个代码块、公式与 4 道习题。</p></div>
+<nav><ul class="chapter-nav"><li><a href="#programming">编程中的函子</a></li><li><a href="#reasoning">等式推理</a></li><li><a href="#typeclasses">类型类</a></li><li><a href="#list">List 函子</a></li><li><a href="#reader-functor">Reader 函子</a></li><li><a href="#containers">作为容器的函子</a></li><li><a href="#composition">函子复合</a></li><li><a href="#challenges">习题</a></li></ul></nav></header>
+<article>
+<section>
+<p class="source-paragraph" data-source-paragraph="1">冒着像坏掉的唱片一样重复的风险，我还是要说：函子是一个非常简单却强大的想法。范畴论里到处都是这样的想法。函子是范畴之间的映射。给定两个范畴 C 与 D，函子 F 把 C 中的对象映射到 D 中的对象——它是对象上的函数。若 <em>a</em> 是 C 中的对象，我们把它在 D 中的像写成 <em>F a</em>（不用括号）。但范畴不只有对象，还包括连接对象的态射。函子也映射态射——它还是态射上的函数。不过它不会随意映射态射，而会保持连接关系。</p>
+<p class="source-paragraph" data-source-paragraph="2">因此，若 C 中的态射 <em>f</em> 连接对象 <em>a</em> 与 <em>b</em>：</p><div class="math-display">f: a → b</div>
+<p class="source-paragraph" data-source-paragraph="3"><em>f</em> 在 D 中的像 <em>F f</em> 会连接 <em>a</em> 与 <em>b</em> 的像：</p><div class="math-display">F f: F a → F b</div>
+<p class="source-paragraph" data-source-paragraph="4">（这里混合了数学与 Haskell 记法，希望到现在已经容易理解。函子作用于对象或态射时，我不写括号。）</p>
+<figure><div class="figure-frame"><img src="functor.jpg" alt="函子把一个范畴中的对象和态射映射到另一范畴"></div></figure>
+<p class="source-paragraph" data-source-paragraph="5">函子保持范畴的结构：一个范畴中相连的东西，在另一个范畴中仍然相连。但范畴结构还包括态射复合。若 <em>h</em> 是 <em>f</em> 与 <em>g</em> 的复合：</p><div class="math-display">h = g ∘ f</div>
+<p class="source-paragraph" data-source-paragraph="6">我们要求它在 F 下的像等于 <em>f</em> 与 <em>g</em> 的像的复合：</p><div class="math-display">F h = F g ∘ F f</div>
+<figure><div class="figure-frame"><img src="functorcompos.jpg" alt="函子保持态射复合"></div></figure>
+<p class="source-paragraph" data-source-paragraph="7">最后，还要求 C 中所有恒等态射都映射成 D 中的恒等态射：</p><div class="math-display">F id<sub>a</sub> = id<sub>F a</sub></div>
+<p class="source-paragraph" data-source-paragraph="8">这里，id<sub>a</sub> 是对象 <em>a</em> 上的恒等态射，id<sub>F a</sub> 是 <em>F a</em> 上的恒等态射。</p>
+<figure><div class="figure-frame"><img src="functorid.jpg" alt="函子把恒等态射映射成恒等态射"></div></figure>
+<p class="source-paragraph" data-source-paragraph="9">这些条件使函子比普通函数受限得多。函子必须保持范畴结构。若把范畴想成由态射网络维系的一组对象，函子不允许撕裂这张织物。它可以把对象压在一起，也可以把多个态射粘成一个，但绝不能把东西拆散。这种“不可撕裂”的约束类似微积分中的连续性条件。从这个意义说，函子是“连续的”（不过还存在一种限制更强的函子连续性概念）。和函数一样，函子既可以折叠，也可以嵌入。当源范畴远小于目标范畴时，嵌入的一面更明显。极端情况下，源可以是平凡的单元素范畴——只有一个对象和一个态射（恒等态射）。从单元素范畴到任意其他范畴的函子，只是在那个范畴中选出一个对象。这完全类似从单元素集合出发的态射会选出目标集合中的元素。折叠程度最大的函子称为常函子 Δ<sub>c</sub>。它把源范畴中的每个对象都映射到目标范畴中选定的对象 <em>c</em>，也把源中的每个态射都映射到恒等态射 id<sub>c</sub>。它像一个黑洞，把一切压缩到一个奇点。讨论极限与余极限时，我们会更多地见到它。</p>
+</section>
+
+<section id="programming"><h2>编程中的函子</h2>
+<p class="source-paragraph" data-source-paragraph="10">回到现实，谈谈编程。我们有类型与函数构成的范畴。可以讨论把这个范畴映射到自身的函子——这种函子称为自函子。那么类型范畴中的自函子是什么？首先，它把类型映射到类型。我们已经见过这类映射，只是可能没有意识到：由其他类型参数化的类型定义就是例子。</p>
+<h3>Maybe 函子</h3>
+<p class="source-paragraph" data-source-paragraph="11"><code>Maybe</code> 的定义是从类型 <code>a</code> 到类型 <code>Maybe a</code> 的映射：</p><pre><code class="language-haskell">data Maybe a = Nothing | Just a</code></pre>
+<p class="source-paragraph" data-source-paragraph="12">这里有个重要细节：<code>Maybe</code> 本身不是类型，而是<em>类型构造器</em>。必须给它一个类型参数，例如 <code>Int</code> 或 <code>Bool</code>，它才成为类型。不带参数的 <code>Maybe</code> 表示类型上的函数。但能否把 <code>Maybe</code> 变成函子？（以后在编程语境中说函子，我几乎总是指自函子。）函子不仅映射对象（这里是类型），也映射态射（这里是函数）。对于任意从 <code>a</code> 到 <code>b</code> 的函数：</p><pre><code class="language-haskell">f :: a -&gt; b</code></pre>
+<p class="source-paragraph" data-source-paragraph="13">我们希望产生从 <code>Maybe a</code> 到 <code>Maybe b</code> 的函数。定义它需要处理与 <code>Maybe</code> 两个构造器对应的两种情况。<code>Nothing</code> 很简单：仍返回 <code>Nothing</code>。若参数是 <code>Just</code>，则对其中内容应用 <code>f</code>。因此 <code>f</code> 在 <code>Maybe</code> 下的像是：</p><pre><code class="language-haskell">f' :: Maybe a -&gt; Maybe b
+f' Nothing = Nothing
+f' (Just x) = Just (f x)</code></pre>
+<p class="source-paragraph" data-source-paragraph="14">（顺便一提，Haskell 允许变量名中使用撇号，这在此类场景中很方便。）在 Haskell 中，函子映射态射的部分实现为一个名叫 <code>fmap</code> 的高阶函数。对 <code>Maybe</code> 而言，它的签名是：</p><pre><code class="language-haskell">fmap :: (a -&gt; b) -&gt; (Maybe a -&gt; Maybe b)</code></pre>
+<figure><div class="figure-frame"><img src="functormaybe.jpg" alt="fmap 把 a 到 b 的函数提升为 Maybe a 到 Maybe b 的函数"></div></figure>
+<p class="source-paragraph" data-source-paragraph="15">我们常说 <code>fmap</code> <em>提升</em>了一个函数，提升后的函数作用于 <code>Maybe</code> 值。照例，由于柯里化，这个签名可有两种解释：接受一个本身为函数的参数 <code>(a -&gt; b)</code>，返回函数 <code>(Maybe a -&gt; Maybe b)</code>；或接受两个参数并返回 <code>Maybe b</code>：</p><pre><code class="language-haskell">fmap :: (a -&gt; b) -&gt; Maybe a -&gt; Maybe b</code></pre>
+<p class="source-paragraph" data-source-paragraph="16">根据前面的讨论，<code>Maybe</code> 的 <code>fmap</code> 实现如下：</p><pre><code class="language-haskell">fmap _ Nothing = Nothing
+fmap f (Just x) = Just (f x)</code></pre>
+<p class="source-paragraph" data-source-paragraph="17">要证明类型构造器 <code>Maybe</code> 与函数 <code>fmap</code> 共同构成函子，必须证明 <code>fmap</code> 保持恒等与复合。这些条件称为“函子定律”，其实只是保证范畴结构不被破坏。</p>
+</section>
+
+<section id="reasoning"><h3>等式推理</h3>
+<p class="source-paragraph" data-source-paragraph="18">为了证明函子定律，我会使用<em>等式推理</em>，这是 Haskell 中常见的证明技巧。它利用 Haskell 函数以等式定义这一事实：左边等于右边，因而可以随时互相替换；必要时重命名变量以避免冲突。可以把它看成内联函数，或反过来把表达式重构成函数。以恒等函数为例：</p><pre><code class="language-haskell">id x = x</code></pre>
+<p class="source-paragraph" data-source-paragraph="19">若在表达式中看到 <code>id y</code>，可以把它换成 <code>y</code>（内联）。若看到 <code>id</code> 作用于表达式，例如 <code>id (y + 2)</code>，也可换成表达式本身 <code>(y + 2)</code>。替换还能反向进行：任何表达式 <code>e</code> 都能换成 <code>id e</code>（重构）。若函数通过模式匹配定义，每条子定义都可以独立使用。比如根据上面的 <code>fmap</code> 定义，可以把 <code>fmap f Nothing</code> 换成 <code>Nothing</code>，也可反过来。下面看实际证明。先证明保持恒等：</p><pre><code class="language-haskell">fmap id = id</code></pre>
+<p class="source-paragraph" data-source-paragraph="20">需要考虑 <code>Nothing</code> 与 <code>Just</code> 两种情况。第一种如下（用 Haskell 伪代码把左边变成右边）：</p><pre><code class="language-haskell">  fmap id Nothing
+= { fmap 的定义 }
+  Nothing
+= { id 的定义 }
+  id Nothing</code></pre>
+<p class="source-paragraph" data-source-paragraph="21">最后一步反向使用了 <code>id</code> 的定义，把 <code>Nothing</code> 替换成 <code>id Nothing</code>。实践中，这类证明常从两头同时推进，直到在中间遇到同一个表达式；这里就是 <code>Nothing</code>。第二种情况同样容易：</p><pre><code class="language-haskell">  fmap id (Just x)
+= { fmap 的定义 }
+  Just (id x)
+= { id 的定义 }
+  Just x
+= { id 的定义 }
+  id (Just x)</code></pre>
+<p class="source-paragraph" data-source-paragraph="22">现在证明 <code>fmap</code> 保持复合：</p><pre><code class="language-haskell">fmap (g . f) = fmap g . fmap f</code></pre>
+<p class="source-paragraph" data-source-paragraph="23">先看 <code>Nothing</code>：</p><pre><code class="language-haskell">  fmap (g . f) Nothing
+= { fmap 的定义 }
+  Nothing
+= { fmap 的定义 }
+  fmap g Nothing
+= { fmap 的定义 }
+  fmap g (fmap f Nothing)</code></pre>
+<p class="source-paragraph" data-source-paragraph="24">再看 <code>Just</code>：</p><pre><code class="language-haskell">  fmap (g . f) (Just x)
+= { fmap 的定义 }
+  Just ((g . f) x)
+= { 复合的定义 }
+  Just (g (f x))
+= { fmap 的定义 }
+  fmap g (Just (f x))
+= { fmap 的定义 }
+  fmap g (fmap f (Just x))
+= { 复合的定义 }
+  (fmap g . fmap f) (Just x)</code></pre>
+<p class="source-paragraph" data-source-paragraph="25">必须强调，等式推理不适用于带副作用的 C++ 式“函数”。考虑：</p><pre><code class="language-cpp">int square(int x) {
+    return x * x;
+}
+
+int counter() {
+    static int c = 0;
+    return c++;
+}
+
+double y = square(counter());</code></pre>
+<p class="source-paragraph" data-source-paragraph="26">若使用等式推理，可以内联 <code>square</code> 得到：</p><pre><code class="language-cpp">double y = counter() * counter();</code></pre>
+<p class="source-paragraph" data-source-paragraph="27">这显然不是有效变换，也不会产生相同结果。尽管如此，若把 <code>square</code> 实现为宏，C++ 编译器仍会尝试做这种等式推理，并造成灾难性结果。</p>
+</section>
+
+<section id="optional"><h3>Optional</h3>
+<p class="source-paragraph" data-source-paragraph="28">函子在 Haskell 中很容易表达，但任何支持泛型编程和高阶函数的语言都能定义它。考虑 C++ 中与 <code>Maybe</code> 对应的模板类型 <code>optional</code>。下面是实现草图（实际实现复杂得多，需要处理参数传递方式、复制语义和 C++ 特有的资源管理问题）：</p><pre><code class="language-cpp">template&lt;typename T&gt;
+class optional {
+    bool _isValid; // 标签
+    T    _v;
+public:
+    optional()    : _isValid(false) {}         // Nothing
+    optional(T x) : _isValid(true) , _v(x) {}  // Just
+    bool isValid() const { return _isValid; }
+    T val() const { return _v; }
+};</code></pre>
+<p class="source-paragraph" data-source-paragraph="29">这个模板给出了函子定义的一部分：类型映射。它把任意类型 <code>T</code> 映射成新类型 <code>optional&lt;T&gt;</code>。再定义它对函数的作用：</p><pre><code class="language-cpp">template&lt;typename A, typename B&gt;
+std::function&lt;optional&lt;B&gt;(optional&lt;A&gt;)&gt;
+fmap(std::function&lt;B(A)&gt; f)
+{
+    return [f](optional&lt;A&gt; opt) {
+        if (!opt.isValid())
+            return optional&lt;B&gt;{};
+        else
+            return optional&lt;B&gt;{ f(opt.val()) };
+    };
+}</code></pre>
+<p class="source-paragraph" data-source-paragraph="30">这是一个高阶函数：接受函数并返回函数。它的非柯里化版本如下：</p><pre><code class="language-cpp">template&lt;typename A, typename B&gt;
+optional&lt;B&gt; fmap(std::function&lt;B(A)&gt; f, optional&lt;A&gt; opt) {
+    if (!opt.isValid())
+        return optional&lt;B&gt;{};
+    else
+        return optional&lt;B&gt;{ f(opt.val()) };
+}</code></pre>
+<p class="source-paragraph" data-source-paragraph="31">还可以把 <code>fmap</code> 做成 <code>optional</code> 的模板方法。选择太多，反而使 C++ 中抽象函子模式成为难题。函子应该是供继承的接口吗（遗憾的是，虚函数不能是模板）？应该是柯里化还是非柯里化的自由模板函数？C++ 编译器能正确推断缺失的类型，还是必须显式指定？假设输入函数 <code>f</code> 把 <code>int</code> 变成 <code>bool</code>，编译器如何确定 <code>g</code> 的类型：</p><pre><code class="language-cpp">auto g = fmap(f);</code></pre>
+<p class="source-paragraph" data-source-paragraph="32">尤其是未来有多个函子重载 <code>fmap</code> 时怎么办？（很快会看到更多函子。）</p>
+</section>
+
+<section id="typeclasses"><h3>类型类</h3>
+<p class="source-paragraph" data-source-paragraph="33">Haskell 怎样抽象函子？它使用类型类机制。类型类定义支持共同接口的一族类型。例如，支持相等判断的对象类定义为：</p><pre><code class="language-haskell">class Eq a where
+    (==) :: a -&gt; a -&gt; Bool</code></pre>
+<p class="source-paragraph" data-source-paragraph="34">这个定义说：若类型 <code>a</code> 支持运算符 <code>(==)</code>，它接受两个 <code>a</code> 类型参数并返回 <code>Bool</code>，那么 <code>a</code> 就属于 <code>Eq</code> 类。要告诉 Haskell 某种具体类型属于 <code>Eq</code>，必须把它声明为该类的一个<em>实例</em>，并提供 <code>(==)</code> 的实现。例如，给定二维 <code>Point</code>（两个 <code>Float</code> 的积类型）：</p><pre><code class="language-haskell">data Point = Pt Float Float</code></pre>
+<p class="source-paragraph" data-source-paragraph="35">可以这样定义点的相等：</p><pre><code class="language-haskell">instance Eq Point where
+    (Pt x y) == (Pt x' y') = x == x' &amp;&amp; y == y'</code></pre>
+<p class="source-paragraph" data-source-paragraph="36">这里把正在定义的运算符 <code>(==)</code> 放在两个模式 <code>(Pt x y)</code> 与 <code>(Pt x' y')</code> 之间，以中缀形式使用；单个等号后是函数体。一旦 <code>Point</code> 被声明为 <code>Eq</code> 的实例，就能直接比较点是否相等。注意，与 C++ 或 Java 不同，定义 <code>Point</code> 时无需指定 <code>Eq</code> 类（或接口），以后可在客户端代码中补充。类型类也是 Haskell 重载函数（及运算符）的唯一机制。我们需要用它为不同函子重载 <code>fmap</code>。不过有个难点：函子不是一种类型，而是类型之间的映射，即类型构造器。我们需要的类型类并非像 <code>Eq</code> 那样是一族类型，而是一族类型构造器。幸运的是，Haskell 类型类既能处理类型，也能处理类型构造器。下面是 <code>Functor</code> 类：</p><pre><code class="language-haskell">class Functor f where
+    fmap :: (a -&gt; b) -&gt; f a -&gt; f b</code></pre>
+<p class="source-paragraph" data-source-paragraph="37">它规定：若存在具有上述签名的函数 <code>fmap</code>，<code>f</code> 就是 <code>Functor</code>。小写 <code>f</code> 是类型变量，与 <code>a</code>、<code>b</code> 类似。不过编译器会根据其用法——像 <code>f a</code>、<code>f b</code> 那样作用于其他类型——推断它代表类型构造器而不是类型。因此，声明 <code>Functor</code> 实例时，必须给出类型构造器，例如 <code>Maybe</code>：</p><pre><code class="language-haskell">instance Functor Maybe where
+    fmap _ Nothing = Nothing
+    fmap f (Just x) = Just (f x)</code></pre>
+<p class="source-paragraph" data-source-paragraph="38">顺便说，<code>Functor</code> 类以及许多简单数据类型（包括 <code>Maybe</code>）的实例定义，都属于标准 Prelude 库。</p>
+</section>
+
+<section id="cpp-functor"><h3>C++ 中的函子</h3>
+<p class="source-paragraph" data-source-paragraph="39">能否在 C++ 中采用同样的方法？类型构造器对应 <code>optional</code> 这样的类模板，因此类比之下，应以<em>模板模板参数</em> <code>F</code> 参数化 <code>fmap</code>，语法如下：</p><pre><code class="language-cpp">template&lt;template&lt;typename&gt; F, typename A, typename B&gt;
+F&lt;B&gt; fmap(std::function&lt;B(A)&gt;, F&lt;A&gt;);</code></pre>
+<p class="source-paragraph" data-source-paragraph="40">我们希望为不同函子特化这个模板。遗憾的是，C++ 禁止对函数模板做偏特化，不能写：</p><pre><code class="language-cpp">template&lt;typename A, typename B&gt;
+optional&lt;B&gt; fmap&lt;optional&gt;(
+    std::function&lt;B(A)&gt; f, optional&lt;A&gt; opt)</code></pre>
+<p class="source-paragraph" data-source-paragraph="41">只能退回函数重载，这又回到了非柯里化 <code>fmap</code> 的原始定义：</p><pre><code class="language-cpp">template&lt;typename A, typename B&gt;
+optional&lt;B&gt; fmap(std::function&lt;B(A)&gt; f, optional&lt;A&gt; opt)
+{
+    if (!opt.isValid())
+        return optional&lt;B&gt;{};
+    else
+        return optional&lt;B&gt;{ f(opt.val()) };
+}</code></pre>
+<p class="source-paragraph" data-source-paragraph="42">这个定义能够工作，只是因为 <code>fmap</code> 的第二个参数选择了重载。它完全无视更一般的 <code>fmap</code> 定义。</p>
+</section>
+
+<section id="list"><h3>List 函子</h3>
+<p class="source-paragraph" data-source-paragraph="43">要建立函子在编程中所扮演角色的直觉，还需更多例子。任何由另一类型参数化的类型都是函子候选。泛型容器由其存储的元素类型参数化，所以看看简单容器 list：</p><pre><code class="language-haskell">data List a = Nil | Cons a (List a)</code></pre>
+<p class="source-paragraph" data-source-paragraph="44">类型构造器 <code>List</code> 把任意类型 <code>a</code> 映射到 <code>List a</code>。为了证明 <code>List</code> 是函子，必须定义函数提升：给定 <code>a -&gt; b</code>，定义 <code>List a -&gt; List b</code>：</p><pre><code class="language-haskell">fmap :: (a -&gt; b) -&gt; (List a -&gt; List b)</code></pre>
+<p class="source-paragraph" data-source-paragraph="45">作用于 <code>List a</code> 的函数要处理与两个列表构造器对应的两种情况。<code>Nil</code> 很简单：返回 <code>Nil</code>，空列表上没有多少事可做。<code>Cons</code> 稍复杂，因为涉及递归。先退一步看看目标：我们有一个 <code>a</code> 的列表、一个把 <code>a</code> 变成 <code>b</code> 的函数 <code>f</code>，想生成 <code>b</code> 的列表。显然应使用 <code>f</code> 把列表中每个元素从 <code>a</code> 变为 <code>b</code>。非空列表定义为表头与表尾的 <code>Cons</code>，所以实践中对表头应用 <code>f</code>，对表尾应用提升后的（经 <code>fmap</code> 的）<code>f</code>。这是递归定义，因为用提升后的 <code>f</code> 来定义提升后的 <code>f</code>：</p><pre><code class="language-haskell">fmap f (Cons x t) = Cons (f x) (fmap f t)</code></pre>
+<p class="source-paragraph" data-source-paragraph="46">右边的 <code>fmap f</code> 作用于比当前列表更短的列表——它的尾部。递归会走向越来越短的列表，最终必然到达空列表 <code>Nil</code>。前面已经决定，<code>fmap f</code> 作用于 <code>Nil</code> 返回 <code>Nil</code>，于是递归终止。最终用 <code>Cons</code> 构造器组合新表头 <code>(f x)</code> 与新表尾 <code>(fmap f t)</code>。合起来就是 list 函子的实例声明：</p><pre><code class="language-haskell">instance Functor List where
+    fmap _ Nil = Nil
+    fmap f (Cons x t) = Cons (f x) (fmap f t)</code></pre>
+<p class="source-paragraph" data-source-paragraph="47">若更熟悉 C++，可以考虑 <code>std::vector</code>，它可视为最通用的 C++ 容器。<code>std::vector</code> 的 <code>fmap</code> 只是在 <code>std::transform</code> 外薄薄封装一层：</p><pre><code class="language-cpp">template&lt;typename A, typename B&gt;
+std::vector&lt;B&gt; fmap(std::function&lt;B(A)&gt; f, std::vector&lt;A&gt; v)
+{
+    std::vector&lt;B&gt; w;
+    std::transform( std::begin(v)
+                  , std::end(v)
+                  , std::back_inserter(w)
+                  , f);
+    return w;
+}</code></pre>
+<p class="source-paragraph" data-source-paragraph="48">例如，可以用它平方一个数列中的元素：</p><pre><code class="language-cpp">std::vector&lt;int&gt; v{ 1, 2, 3, 4 };
+auto w = fmap([](int i) { return i*i; }, v);
+std::copy( std::begin(w)
+         , std::end(w)
+         , std::ostream_iterator(std::cout, ", "));</code></pre>
+<p class="source-paragraph" data-source-paragraph="49">多数 C++ 容器都实现了可传给 <code>std::transform</code> 的迭代器，因此都是函子；<code>std::transform</code> 是 <code>fmap</code> 更原始的近亲。遗憾的是，函子的简洁性淹没在迭代器和临时对象的惯常杂乱中（见上面的 <code>fmap</code> 实现）。令我欣慰的是，新提议的 C++ ranges 库让 range 的函子性质明显得多。</p>
+</section>
+
+<section id="reader-functor"><h3>Reader 函子</h3>
+<p class="source-paragraph" data-source-paragraph="50">现在你或许形成了一些直觉，例如函子是某种容器。下面看一个乍看完全不同的例子：把类型 <code>a</code> 映射到“返回 <code>a</code> 的函数”的类型。我们还未深入讨论函数类型——完整的范畴论处理即将到来——但作为程序员已有一定理解。在 Haskell 中，函数类型使用箭头类型构造器 <code>(-&gt;)</code> 构造，它接受参数类型与结果类型两个类型。你已经见过中缀形式 <code>a -&gt; b</code>；加上括号，也能以前缀形式使用：</p><pre><code class="language-haskell">(-&gt;) a b</code></pre>
+<p class="source-paragraph" data-source-paragraph="51">和普通函数一样，多参数类型函数也可偏应用。只给箭头一个类型参数时，它还在等待另一个。因此：</p><pre><code class="language-haskell">(-&gt;) a</code></pre>
+<p class="source-paragraph" data-source-paragraph="52">是类型构造器。还需要另一个类型 <code>b</code>，才能产生完整类型 <code>a -&gt; b</code>。它本身定义了一整族由 <code>a</code> 参数化的类型构造器。看看这是否也是一族函子。两个类型参数容易混淆，所以重命名：按照此前函子定义，把参数类型叫 <code>r</code>，结果类型叫 <code>a</code>。我们的类型构造器接受任意类型 <code>a</code>，把它映射到 <code>r -&gt; a</code>。要证明它是函子，需要把函数 <code>a -&gt; b</code> 提升为这样的函数：接受 <code>r -&gt; a</code>，返回 <code>r -&gt; b</code>。这两个类型分别是类型构造器 <code>(-&gt;) r</code> 作用于 <code>a</code> 与 <code>b</code> 的结果。此时 <code>fmap</code> 的类型签名是：</p><pre><code class="language-haskell">fmap :: (a -&gt; b) -&gt; (r -&gt; a) -&gt; (r -&gt; b)</code></pre>
+<p class="source-paragraph" data-source-paragraph="53">我们要解这个谜题：给定 <code>f :: a -&gt; b</code> 与 <code>g :: r -&gt; a</code>，构造 <code>r -&gt; b</code>。两个函数只有一种复合方式，而结果恰好就是所需。因此 <code>fmap</code> 实现为：</p><pre><code class="language-haskell">instance Functor ((-&gt;) r) where
+    fmap f g = f . g</code></pre>
+<p class="source-paragraph" data-source-paragraph="54">它就这样成立了！若喜欢简洁记法，可以注意复合也能写成前缀形式，从而进一步缩短定义：</p><pre><code class="language-haskell">fmap f g = (.) f g</code></pre>
+<p class="source-paragraph" data-source-paragraph="55">再省略参数，得到两个函数的直接等式：</p><pre><code class="language-haskell">fmap = (.)</code></pre>
+<p class="source-paragraph" data-source-paragraph="56">类型构造器 <code>(-&gt;) r</code> 与上述 <code>fmap</code> 实现的组合，称为 Reader 函子。</p>
+</section>
+
+<section id="containers"><h2>作为容器的函子</h2>
+<p class="source-paragraph" data-source-paragraph="57">我们已经看到一些编程语言中的函子：它们定义通用容器，或至少定义包含某个值的对象，而值的类型正是函子的参数。Reader 函子看起来像异类，因为我们不把函数当成数据。但纯函数可以被记忆化，函数执行也能变成查表，而表就是数据。反过来，由于 Haskell 的惰性，列表等传统容器实际上也可能实现为函数。例如，自然数的无穷列表可简洁定义为：</p><pre><code class="language-haskell">nats :: [Integer]
+nats = [1..]</code></pre>
+<p class="source-paragraph" data-source-paragraph="58">第一行的一对方括号是 Haskell 内建的列表类型构造器；第二行的方括号用于创建列表字面量。显然，这样的无穷列表无法存进内存。编译器把它实现成按需生成 <code>Integer</code> 的函数。Haskell 实际上模糊了数据与代码的边界：列表可视为函数，函数也可视为从参数映射到结果的表。若函数定义域有限且不太大，后一种看法甚至很实用。不过把 <code>strlen</code> 实现为查表就不现实，因为不同字符串有无穷多个。程序员不喜欢无穷，但在范畴论中，你得把无穷当早餐吃。无论全体字符串构成的集合，还是宇宙过去、现在和未来的所有可能状态，我们都能处理！因此，我愿把函子对象（由自函子生成的类型的对象）看成含有其参数类型的一个或多个值，即便那些值并没有实际存在其中。C++ 的 <code>std::future</code> 就是函子的一例：未来某时它可能包含一个值，但并无保证；访问它时可能阻塞，等待另一线程完成。另一个例子是 Haskell 的 <code>IO</code> 对象，它也许包含用户输入，或包含显示器上出现“Hello World!”的未来宇宙版本。按照这种解释，函子对象可能包含其参数类型的一个或多个值，也可能包含生成这些值的配方。我们根本不关心能否访问这些值——那完全是可选的，也不在函子的职责范围内。我们只关心能否用函数操纵这些值。若可以访问值，就应能看到操纵结果；若不能，我们只关心操纵能正确复合，而且用恒等函数操纵不会改变任何东西。为了说明我们多么不在乎能否访问函子对象中的值，来看一个完全忽略参数 <code>a</code> 的类型构造器：</p><pre><code class="language-haskell">data Const c a = Const c</code></pre>
+<p class="source-paragraph" data-source-paragraph="59"><code>Const</code> 类型构造器接受两个类型 <code>c</code> 与 <code>a</code>。和处理箭头构造器一样，我们偏应用它来构造函子。数据构造器（也叫 <code>Const</code>）只接受一个 <code>c</code> 类型的值，完全不依赖 <code>a</code>。该类型构造器的 <code>fmap</code> 类型是：</p><pre><code class="language-haskell">fmap :: (a -&gt; b) -&gt; Const c a -&gt; Const c b</code></pre>
+<p class="source-paragraph" data-source-paragraph="60">由于函子忽略类型参数，<code>fmap</code> 实现可以随意忽略函数参数——函数根本没有作用对象：</p><pre><code class="language-haskell">instance Functor (Const c) where
+    fmap _ (Const v) = Const v</code></pre>
+<p class="source-paragraph" data-source-paragraph="61">C++ 中也许更清楚（没想到我会说这句话！），因为它更明确地区分编译期的类型参数与运行期的值：</p><pre><code class="language-cpp">template&lt;typename C, typename A&gt;
+struct Const {
+    Const(C v) : _v(v) {}
+    C _v;
+};</code></pre>
+<p class="source-paragraph" data-source-paragraph="62">C++ 的 <code>fmap</code> 实现同样忽略函数参数，本质上只重新转换 <code>Const</code> 参数的类型而不改变其值：</p><pre><code class="language-cpp">template&lt;typename C, typename A, typename B&gt;
+Const&lt;C, B&gt; fmap(std::function&lt;B(A)&gt; f, Const&lt;C, A&gt; c) {
+    return Const&lt;C, B&gt;{c._v};
+}</code></pre>
+<p class="source-paragraph" data-source-paragraph="63">尽管古怪，<code>Const</code> 函子在许多构造中都扮演重要角色。在范畴论里，它是前面提到的 Δ<sub>c</sub> 函子的特例——自函子版的黑洞。以后还会见到它。</p>
+</section>
+
+<section id="composition"><h2>函子复合</h2>
+<p class="source-paragraph" data-source-paragraph="64">不难相信，范畴之间的函子像集合之间的函数一样可以复合。两个函子的复合作用于对象时，就是各自对象映射的复合；作用于态射时也一样。连续穿过两个函子后，恒等态射仍成为恒等态射，态射复合仍成为态射复合。没有太多玄机。尤其是，自函子很容易复合。还记得 <code>maybeTail</code> 吗？用 Haskell 内建列表实现重写如下：</p><pre><code class="language-haskell">maybeTail :: [a] -&gt; Maybe [a]
+maybeTail [] = Nothing
+maybeTail (x:xs) = Just xs</code></pre>
+<p class="source-paragraph" data-source-paragraph="65">（原先叫 <code>Nil</code> 的空列表构造器换成空方括号 <code>[]</code>；<code>Cons</code> 构造器换成中缀运算符 <code>:</code>。）<code>maybeTail</code> 的结果类型，是函子 <code>Maybe</code> 与 <code>[]</code> 作用于 <code>a</code> 后的复合。两个函子各有自己的 <code>fmap</code>；但若想把函数 <code>f</code> 应用于这个复合结构——一个 <code>Maybe</code> 列表——内部的内容呢？必须穿过两层函子。可以用 <code>fmap</code> 穿过外层 <code>Maybe</code>，但不能直接把 <code>f</code> 送进 <code>Maybe</code>，因为 <code>f</code> 不作用于列表。必须送入 <code>(fmap f)</code>，让它作用于内层列表。例如，下面平方 <code>Maybe</code> 整数列表中的元素：</p><pre><code class="language-haskell">square x = x * x
+
+mis :: Maybe [Int]
+mis = Just [1, 2, 3]
+
+mis2 = fmap (fmap square) mis</code></pre>
+<p class="source-paragraph" data-source-paragraph="66">编译器分析类型后，会确定外层 <code>fmap</code> 应使用 <code>Maybe</code> 实例的实现，内层则使用 list 函子的实现。上面代码还可以写成：</p><pre><code class="language-haskell">mis2 = (fmap . fmap) square mis</code></pre>
+<p class="source-paragraph" data-source-paragraph="67">这或许不那么直观。但记住，<code>fmap</code> 可以视为单参数函数：</p><pre><code class="language-haskell">fmap :: (a -&gt; b) -&gt; (f a -&gt; f b)</code></pre>
+<p class="source-paragraph" data-source-paragraph="68">在这里，<code>(fmap . fmap)</code> 中第二个 <code>fmap</code> 的参数是：</p><pre><code class="language-haskell">square :: Int -&gt; Int</code></pre>
+<p class="source-paragraph" data-source-paragraph="69">它返回以下类型的函数：</p><pre><code class="language-haskell">[Int] -&gt; [Int]</code></pre>
+<p class="source-paragraph" data-source-paragraph="70">第一个 <code>fmap</code> 再接受这个函数，返回：</p><pre><code class="language-haskell">Maybe [Int] -&gt; Maybe [Int]</code></pre>
+<p class="source-paragraph" data-source-paragraph="71">最后把该函数应用到 <code>mis</code>。回到范畴论：函子复合显然满足结合律（对象映射结合，态射映射也结合）。每个范畴还有一个平凡的恒等函子，把每个对象和每个态射都映射到自身。因此，函子具有某个范畴中的态射所拥有的全部性质。但那是什么范畴？它的对象必须是范畴，态射必须是函子，也就是“范畴的范畴”。不过，全体范畴组成的范畴必须包含自身，这会落入与“全体集合的集合”相同的悖论。好在存在由全体<em>小范畴</em>组成的范畴 Cat（它本身很大，所以不能成为自己的成员）。小范畴是对象构成集合、而不是某种比集合更大的东西的范畴。要注意，在范畴论中，即使不可数无穷集合也算“小”。我提到这些，是因为在多层抽象中不断辨认出相同结构，实在令人惊叹。以后会看到，函子本身也构成范畴。</p>
+</section>
+
+<section id="challenges"><h2>习题</h2><ol class="challenges">
+  <li>能否通过下面的定义把 <code>Maybe</code> 类型构造器变成函子？<pre><code class="language-haskell">fmap _ _ = Nothing</code></pre>它忽略两个参数。（提示：检查函子定律。）
+    <details class="exercise-answer"><summary>点击展开参考答案</summary><p>不能。恒等律要求 <code>fmap id = id</code>，但对 <code>Just x</code>，左边得到 <code>Nothing</code>，右边得到 <code>Just x</code>。除非整个类型只有 <code>Nothing</code>，否则定律不成立。</p></details>
+  </li>
+  <li>证明 Reader 函子的函子定律。提示：真的很简单。
+    <details class="exercise-answer"><summary>点击展开参考答案</summary><p>Reader 的 <code>fmap</code> 就是函数复合：<code>fmap f g = f . g</code>。所以 <code>fmap id g = id . g = g</code>；并且 <code>fmap (f . h) g = (f . h) . g = f . (h . g) = fmap f (fmap h g)</code>。两条定律分别来自恒等律和结合律。</p></details>
+  </li>
+  <li>用你第二喜欢的语言实现 Reader 函子（第一喜欢的当然是 Haskell）。
+    <details class="exercise-answer"><summary>点击展开参考答案</summary><pre><code class="language-kotlin">fun &lt;R, A, B&gt; readerMap(
+    f: (A) -&gt; B,
+    reader: (R) -&gt; A
+): (R) -&gt; B = { r -&gt; f(reader(r)) }</code></pre><p>它并不读取或复制环境 <code>R</code>，只是把 <code>reader</code> 产生的 <code>A</code> 交给 <code>f</code>。</p></details>
+  </li>
+  <li>证明 list 函子的函子定律。假设定律对当前列表的尾部成立（换句话说，使用<em>归纳法</em>）。
+    <details class="exercise-answer"><summary>点击展开参考答案</summary><p>空列表上两条定律都由 <code>fmap _ Nil = Nil</code> 直接成立。归纳步：假设定律对尾部 <code>xs</code> 成立。恒等律有 <code>fmap id (Cons x xs) = Cons (id x) (fmap id xs) = Cons x xs</code>。复合律两边的表头都为 <code>g (f x)</code>；根据归纳假设，表尾分别为 <code>fmap (g.f) xs</code> 与 <code>fmap g (fmap f xs)</code>，二者相等。因此定律对整条有限列表成立。</p></details>
+  </li>
+</ol></section>
+<nav class="chapter-switcher"><a href="../simple-algebraic-data-types/">← 第 6 章：简单代数数据类型</a><a href="../functoriality/">第 8 章：函子性 →</a></nav>
+</article><footer class="source-note"><p><strong>原文：</strong><a href="https://bartoszmilewski.com/2015/01/20/functors/">Functors</a></p><p><strong>核对底稿：</strong>作者博客正文与开源英文 Markdown；正文、代码、公式、插图和习题均已收录。</p><p><strong>许可：</strong>原作及本非官方中文译文依 <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> 署名—相同方式共享。</p></footer></main></body></html>

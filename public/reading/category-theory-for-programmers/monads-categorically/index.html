@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>第 22 章：Monad 的范畴定义｜程序员的范畴论｜RIN III</title><meta name="description" content="《程序员的范畴论》第 22 章完整中文翻译：幺半范畴、张量积、作为幺半群的 Monad 与伴随"><link rel="stylesheet" href="../reader.css"></head>
+<body><nav class="site-nav"><a href="../../../mathematics/category-theory-for-programmers/">← 返回整本书学习记录</a><a href="../../../">RIN III</a></nav><main class="reader"><header><span class="chapter-kicker">第三部分 · 第 22 章 · 完整中文译文</span><h1>Monad 的范畴定义</h1><p class="byline">Bartosz Milewski</p><div class="title-rule"></div><p class="lead">范畴论中的 Monad，是自函子范畴这个幺半范畴里的幺半群：函子复合充当乘法背景，μ 与 η 充当乘法和单位。</p><div class="translation-scope"><span class="scope-label">译文范围</span><p>完整翻译本章正文，保留全部 25 个原文代码块、12 次插图引用和公式；本章原文没有习题。</p></div><nav><ul class="chapter-nav"><li><a href="#categorical-monad">Monad 的范畴定义</a></li><li><a href="#monoidal">幺半范畴</a></li><li><a href="#monoid-object">幺半范畴中的幺半群</a></li><li><a href="#monad-monoid">作为幺半群的 Monad</a></li><li><a href="#adjunction">由伴随产生 Monad</a></li></ul></nav></header><article>
+
+<section id="categorical-monad"><p class="source-paragraph" data-source-paragraph="1">对程序员提到 Monad，话题多半会落到效应；对数学家而言，Monad 关乎代数。以后会讨论代数——它在编程中扮演重要角色——但先建立一些代数与 Monad 关系的直觉。现在的论证有点挥手式，请暂且容忍。</p>
+<p class="source-paragraph" data-source-paragraph="2">代数关乎创建、操纵和求值表达式。表达式由运算符构成。考虑简单表达式：</p><div class="math-display">x² + 2x + 1</div><p class="source-paragraph" data-source-paragraph="3">它由 <em>x</em> 这样的变量、1 或 2 这样的常量，以及加法、乘法等运算符绑定而成。程序员常把表达式想成树。</p>
+<figure><div class="figure-frame"><img src="exptree.png" alt="表达式 x² 加 2x 加 1 的语法树"></div></figure>
+<p class="source-paragraph" data-source-paragraph="4">树是容器，因此更一般地说，表达式是存储变量的容器。范畴论用自函子表示容器。若给变量 <em>x</em> 分配类型 <em>a</em>，表达式类型就是 <em>ma</em>，其中 <em>m</em> 是构造表达式树的自函子。（具有非平凡分支的表达式通常由递归定义的自函子创建。）</p>
+<p class="source-paragraph" data-source-paragraph="5">表达式最常见的操作是什么？是<em>代换（substitution）</em>：用表达式替换变量。例如，可在上例中用 <em>y-1</em> 替换 <em>x</em>，得到：</p><div class="math-display">(y-1)² + 2(y-1) + 1</div>
+<p class="source-paragraph" data-source-paragraph="6">这里发生的是：取 <em>ma</em> 类型表达式，应用 <em>a→mb</em> 类型的变换（<em>b</em> 表示 <em>y</em> 的类型），结果是 <em>mb</em> 类型表达式。展开写就是：</p><div class="math-display">ma → (a→mb) → mb</div><p class="source-paragraph" data-source-paragraph="7">没错，这就是 Monad bind 的签名。</p>
+<p class="source-paragraph" data-source-paragraph="8">以上只是动机。现在进入 Monad 的数学。数学家使用不同记法：偏爱字母 <em>T</em> 表示自函子，用希腊字母 μ 表示 <code>join</code>、η 表示 <code>return</code>。<code>join</code>、<code>return</code> 都是多态函数，因此可以猜到它们对应自然变换。</p>
+<p class="source-paragraph" data-source-paragraph="9">所以在范畴论中，Monad 定义为配备一对自然变换 μ、η 的自函子 <em>T</em>。</p>
+<p class="source-paragraph" data-source-paragraph="10">μ 是从函子平方 <em>T²</em> 回到 <em>T</em> 的自然变换。平方只是函子与自身复合 <em>T∘T</em>（只有自函子才能做这种平方）：</p><div class="math-display">μ:T²→T</div><p class="source-paragraph" data-source-paragraph="11">该自然变换在对象 <em>a</em> 处的分量是：</p><div class="math-display">μ<sub>a</sub>:T(Ta)→Ta</div><p class="source-paragraph" data-source-paragraph="12">在 Hask 中，这直接翻译成 <code>join</code> 的定义。</p>
+<p class="source-paragraph" data-source-paragraph="13">η 是恒等函子 <em>I</em> 与 <em>T</em> 之间的自然变换：</p><div class="math-display">η:I→T</div><p class="source-paragraph" data-source-paragraph="14">因为 <em>I</em> 对对象 <em>a</em> 的作用就是 <em>a</em>，η 的分量为：</p><div class="math-display">η<sub>a</sub>:a→Ta</div><p class="source-paragraph" data-source-paragraph="15">它直接翻译为 <code>return</code>。</p>
+<p class="source-paragraph" data-source-paragraph="16">这些自然变换还必须满足附加定律。一种看法是，这些定律让我们能为自函子 <em>T</em> 定义 Kleisli 范畴。回忆 <em>a</em>、<em>b</em> 之间的 Kleisli 箭头定义为态射 <em>a→Tb</em>。两支箭头的复合（写作带下标 T 的圆圈）可用 μ 实现：</p><div class="math-display">g∘<sub>T</sub>f = μ<sub>c</sub>∘(Tg)∘f</div><p class="source-paragraph" data-source-paragraph="17">其中：</p><div class="math-display">f:a→Tb<br>g:b→Tc</div><p class="source-paragraph" data-source-paragraph="18">这里 <em>T</em> 是函子，所以能应用于态射 <em>g</em>。换成 Haskell 记法更容易辨认：</p><pre><code class="language-haskell">f &gt;=&gt; g = join . fmap g . f</code></pre>
+<p class="source-paragraph" data-source-paragraph="19">或者按分量写：</p><pre><code class="language-haskell">(f &gt;=&gt; g) a = join (fmap g (f a))</code></pre>
+<p class="source-paragraph" data-source-paragraph="20">在代数解释中，这只是复合两次连续代换。</p>
+<p class="source-paragraph" data-source-paragraph="21">要让 Kleisli 箭头形成范畴，希望复合满足结合律，并让 η<sub>a</sub> 成为对象 <em>a</em> 上的恒等 Kleisli 箭头。这个要求可翻译成 μ、η 的 Monad 定律。但还有另一种推导方式，会让它们更像幺半群定律。事实上，μ 常称为<em>乘法（multiplication）</em>，η 称为<em>单位（unit）</em>。</p>
+<p class="source-paragraph" data-source-paragraph="22">粗略地说，结合律要求把 <em>T</em> 的立方 <em>T³</em> 约化为 <em>T</em> 的两种方式给出相同结果。左右两条单位律要求，把 η 应用于 <em>T</em> 后再用 μ 约化，会得到原来的 <em>T</em>。</p>
+<p class="source-paragraph" data-source-paragraph="23">这里有点棘手，因为我们在复合自然变换与函子，所以先复习水平复合。例如，<em>T³</em> 可看作 <em>T</em> 接在 <em>T²</em> 后面的复合。可以对它应用两个自然变换的水平复合：</p><div class="math-display">I<sub>T</sub>∘μ</div>
+<figure><div class="figure-frame"><img src="assoc1.png" alt="对 T 三次方应用 T 与 μ 的水平复合"></div></figure>
+<p class="source-paragraph" data-source-paragraph="24">得到 <em>T∘T</em>，再应用 μ 约化为 <em>T</em>。I<sub>T</sub> 是从 <em>T</em> 到自身的恒等自然变换。常把这种水平复合 I<sub>T</sub>∘μ 缩写为 <em>T∘μ</em>。记法并不含糊，因为函子与自然变换本身不能复合，所以这里的 <em>T</em> 必然表示 I<sub>T</sub>。</p>
+<p class="source-paragraph" data-source-paragraph="25">也可以在（自）函子范畴 [C,C] 中画出：</p><figure><div class="figure-frame"><img src="assoc2.png" alt="自函子范畴中从 T 三次方经 Tμ 到 T 的路径"></div></figure>
+<p class="source-paragraph" data-source-paragraph="26">另一种方式，把 <em>T³</em> 看作 <em>T²∘T</em>，对它应用 <em>μ∘T</em>。结果同样是 <em>T∘T</em>，再用 μ 约化为 <em>T</em>。要求两条路径结果相同。</p><figure><div class="figure-frame"><img src="assoc.png" alt="Monad 乘法 μ 的结合律交换图"></div></figure>
+<p class="source-paragraph" data-source-paragraph="27">类似地，可对恒等函子 <em>I</em> 接在 <em>T</em> 后的复合应用水平复合 <em>η∘T</em>，得到 <em>T²</em>，再用 μ 约化；结果应等于直接对 <em>T</em> 应用恒等自然变换。类比地，<em>T∘η</em> 也应如此。</p><figure><div class="figure-frame"><img src="unitlawcomp-1.png" alt="Monad 的左右单位律交换图"></div></figure>
+<p class="source-paragraph" data-source-paragraph="28">可以自行验证，这些定律保证 Kleisli 箭头复合确实满足范畴定律。</p>
+<p class="source-paragraph" data-source-paragraph="29">Monad 与幺半群的相似性非常醒目：都有乘法 μ、单位 η、结合律与单位律。但现有的幺半群定义太窄，无法把 Monad 描述为幺半群，所以要推广幺半群概念。</p></section>
+
+<section id="monoidal"><h2>幺半范畴</h2><p class="source-paragraph" data-source-paragraph="30">回到幺半群的常规定义：带有二元运算与特殊单位元的集合。Haskell 用类型类表达：</p><pre><code class="language-haskell">class Monoid m where
+    mappend :: m -&gt; m -&gt; m
+    mempty  :: m</code></pre>
+<p class="source-paragraph" data-source-paragraph="31">二元运算 <code>mappend</code> 必须满足结合律与单位律（与单位 <code>mempty</code> 相乘不做任何事）。</p>
+<p class="source-paragraph" data-source-paragraph="32">注意 Haskell 的 <code>mappend</code> 是柯里化的，可解释为把 <code>m</code> 的每个元素映射到一个函数：</p><pre><code class="language-haskell">mappend :: m -&gt; (m -&gt; m)</code></pre>
+<p class="source-paragraph" data-source-paragraph="33">这个解释产生了“幺半群是单对象范畴”的定义，其中自态射 <code>m-&gt;m</code> 表示幺半群元素。但因为 Haskell 内建柯里化，也完全可以从另一种乘法定义开始：</p><pre><code class="language-haskell">mu :: (m, m) -&gt; m</code></pre>
+<p class="source-paragraph" data-source-paragraph="34">这里笛卡尔积 <code>(m,m)</code> 成为待相乘元素对的来源。</p>
+<p class="source-paragraph" data-source-paragraph="35">这个定义提示另一条推广路径：用范畴积替换笛卡尔积。从全局定义积的范畴开始，在其中选对象 <em>m</em>，把乘法定义为态射：</p><div class="math-display">μ:m×m→m</div>
+<p class="source-paragraph" data-source-paragraph="36">但有个问题：任意范畴中无法窥视对象内部，怎样选择单位元？有一个技巧。还记得选择元素等价于从单元素集合出发的函数吗？Haskell 中可把 <code>mempty</code> 定义替换为：</p><pre><code class="language-haskell">eta :: () -&gt; m</code></pre>
+<p class="source-paragraph" data-source-paragraph="37">单元素集是 Set 中终对象，所以可自然推广到任何有终对象 <em>t</em> 的范畴：</p><div class="math-display">η:t→m</div><p class="source-paragraph" data-source-paragraph="38">这样无需谈论元素，也能选择单位“元素”。</p>
+<p class="source-paragraph" data-source-paragraph="39">与此前“单对象范畴”的幺半群定义不同，这里的幺半群定律不会自动满足，必须明确施加。要表述它们，先要建立底层范畴积自身的幺半结构。先回忆 Haskell 中怎样工作。</p>
+<p class="source-paragraph" data-source-paragraph="40">从结合律开始，Haskell 对应等式为：</p><pre><code class="language-haskell">mu x (mu y z) = mu (mu x y) z</code></pre>
+<p class="source-paragraph" data-source-paragraph="41">推广到其他范畴前，必须把它改写为函数（态射）相等，抽离其对单个变量的作用，也就是使用无点记法。知道笛卡尔积是双函子，左边可写作：</p><pre><code class="language-haskell">(mu . bimap id mu)(x, (y, z))</code></pre>
+<p class="source-paragraph" data-source-paragraph="42">右边为：</p><pre><code class="language-haskell">(mu . bimap mu id)((x, y), z)</code></pre>
+<p class="source-paragraph" data-source-paragraph="43">几乎达到目标。不幸的是，笛卡尔积并不严格结合——<code>(x,(y,z))</code> 不等于 <code>((x,y),z)</code>——所以不能直接无点地写：</p><pre><code class="language-haskell">mu . bimap id mu = mu . bimap mu id</code></pre>
+<p class="source-paragraph" data-source-paragraph="44">但二元组的两种嵌套同构。有一个称为<em>结合子（associator）</em>的可逆函数在二者之间转换：</p><pre><code class="language-haskell">alpha :: ((a, b), c) -&gt; (a, (b, c))
+alpha ((x, y), z) = (x, (y, z))</code></pre>
+<p class="source-paragraph" data-source-paragraph="45">借助结合子，可写出 μ 的无点结合律：</p><pre><code class="language-haskell">mu . bimap id mu . alpha = mu . bimap mu id</code></pre>
+<p class="source-paragraph" data-source-paragraph="46">单位律也可用类似技巧；新记法下为：</p><pre><code class="language-haskell">mu (eta (), x) = x
+mu (x, eta ()) = x</code></pre>
+<p class="source-paragraph" data-source-paragraph="47">可改写为：</p><pre><code class="language-haskell">(mu . bimap eta id) ((), x) = lambda ((), x)
+(mu . bimap id eta) (x, ()) = rho (x, ())</code></pre>
+<p class="source-paragraph" data-source-paragraph="48">同构 <code>lambda</code>、<code>rho</code> 分别称为左、右<em>幺元子（unitor）</em>，见证单位 <code>()</code> 在同构意义下是笛卡尔积的恒等元：</p><pre><code class="language-haskell">lambda :: ((), a) -&gt; a
+lambda ((), x) = x</code></pre><pre><code class="language-haskell">rho :: (a, ()) -&gt; a
+rho (x, ()) = x</code></pre>
+<p class="source-paragraph" data-source-paragraph="49">单位律的无点版本因此是：</p><pre><code class="language-haskell">mu . bimap id eta = lambda
+mu . bimap eta id = rho</code></pre>
+<p class="source-paragraph" data-source-paragraph="50">我们利用底层笛卡尔积本身在类型范畴中表现得像幺半乘法，为 μ、η 写出了无点幺半律。但要记住，笛卡尔积的结合律与单位律只在同构意义下成立。</p>
+<p class="source-paragraph" data-source-paragraph="51">事实证明，这些定律可推广到任何有积与终对象的范畴。范畴积确实在同构意义下结合，终对象也在同构意义下是单位。结合子与两个幺元子都是自然同构，定律可用交换图表示。</p><figure><div class="figure-frame"><img src="assocmon.png" alt="一般范畴中幺半乘法结合律交换图"></div></figure>
+<p class="source-paragraph" data-source-paragraph="52">注意，因为积是双函子，它可以提升一对态射——Haskell 用 <code>bimap</code> 完成。</p>
+<p class="source-paragraph" data-source-paragraph="53">可以到此为止，说任何具有范畴积与终对象的范畴上都能定义幺半群：只要选对象 <em>m</em> 与满足幺半律的态射 μ、η。但还能更进一步。表述 μ、η 的定律并不需要完整的范畴积。回忆，积由使用投影的泛构造定义，而我们的幺半律表述从未使用任何投影。</p>
+<p class="source-paragraph" data-source-paragraph="54">表现得像积却不是积的双函子，称为<em>张量积（tensor product）</em>，常用中缀运算符 ⊗ 表示。张量积的一般定义有点棘手，这里不必深究，只列出它的性质——最重要的是在同构意义下结合。</p>
+<p class="source-paragraph" data-source-paragraph="55">同样，不必让对象 <em>t</em> 是终对象。我们从没使用它的终对象性质——从任意对象到它存在唯一态射。只要求它与张量积协同良好，即它在同构意义下是张量积的单位。综合起来：</p>
+<p class="source-paragraph" data-source-paragraph="56"><em>幺半范畴（monoidal category）</em>是配备一个称为张量积的双函子的范畴 C：</p><div class="math-display">⊗:C×C→C</div><p class="source-paragraph" data-source-paragraph="57">以及一个称为单位对象的特殊对象 <em>i</em>，再加三个自然同构，分别称为结合子、左幺元子、右幺元子：</p><div class="math-display">α<sub>abc</sub>:(a⊗b)⊗c→a⊗(b⊗c)<br>λ<sub>a</sub>:i⊗a→a<br>ρ<sub>a</sub>:a⊗i→a</div><p class="source-paragraph" data-source-paragraph="58">（还存在一个简化四重张量积的相干条件。）</p>
+<p class="source-paragraph" data-source-paragraph="59">重要的是，张量积能描述许多熟悉的双函子：积、余积，以及马上会看到的自函子复合（还包括 Day convolution 等更奇特的积）。幺半范畴将在富范畴的表述中扮演关键角色。</p></section>
+
+<section id="monoid-object"><h2>幺半范畴中的幺半群</h2><p class="source-paragraph" data-source-paragraph="60">现在可以在更一般的幺半范畴背景中定义幺半群。先选一个对象 <em>m</em>。用张量积可形成 <em>m</em> 的幂：平方是 <em>m⊗m</em>。立方有两种形成方式，但通过结合子同构；更高次幂也类似（这正是需要相干条件之处）。形成幺半群需要选择两支态射：</p><div class="math-display">μ:m⊗m→m<br>η:i→m</div><p class="source-paragraph" data-source-paragraph="61">其中 <em>i</em> 是张量积的单位对象。</p>
+<figure><div class="figure-frame"><img src="monoid-1.jpg" alt="幺半范畴中的对象 m、乘法 μ 与单位 η"></div></figure>
+<p class="source-paragraph" data-source-paragraph="62">这些态射必须满足结合律与单位律，可用以下交换图表达：</p><figure><div class="figure-frame"><img src="assoctensor.jpg" alt="张量积上乘法 μ 的结合律"></div></figure><figure><div class="figure-frame"><img src="unitmon.jpg" alt="张量积上 μ 与 η 的左右单位律"></div></figure>
+<p class="source-paragraph" data-source-paragraph="63">注意，张量积必须是双函子至关重要，因为需要提升态射对，形成 μ⊗id 或 η⊗id 等积。这些图只是此前范畴积结果的直接推广。</p></section>
+
+<section id="monad-monoid"><h2>作为幺半群的 Monad</h2><p class="source-paragraph" data-source-paragraph="64">幺半结构会在意想不到的地方出现，其中之一是函子范畴。稍微眯起眼睛，函子复合就像一种乘法。问题是，并非任意两个函子都能复合——一个的目标范畴必须是另一个的源范畴。这只是通常的态射复合规则，而函子确实是 Cat 中的态射。但正如自态射总能复合，自函子也总能复合。对给定范畴 C，从 C 到 C 的自函子形成函子范畴 [C,C]。对象是自函子，态射是它们之间的自然变换。取其中任意两个对象 <em>F</em>、<em>G</em>，都能产生第三个对象 <em>F∘G</em>——二者复合得到的自函子。</p>
+<p class="source-paragraph" data-source-paragraph="65">自函子复合适合作张量积吗？首先要证明它是双函子，即能否提升一对态射——这里是自然变换。张量积版 <code>bimap</code> 的签名大致为：</p><div class="math-display">bimap:(a→b)→(c→d)→(a⊗c→b⊗d)</div><p class="source-paragraph" data-source-paragraph="66">把对象替换为自函子、箭头替换为自然变换、张量积替换为复合，就得到：</p><div class="math-display">(F→F′)→(G→G′)→(F∘G→F′∘G′)</div><p class="source-paragraph" data-source-paragraph="67">你也许认得，它正是水平复合的特殊情形。</p><figure><div class="figure-frame"><img src="horizcomp.png" alt="两个自然变换的水平复合"></div></figure>
+<p class="source-paragraph" data-source-paragraph="68">还有恒等自函子 <em>I</em>，可作为自函子复合——新张量积——的单位。而且函子复合满足结合律。事实上，结合律与单位律严格成立，无需结合子或两个幺元子。因此，自函子以函子复合作为张量积，形成严格幺半范畴（strict monoidal category）。</p>
+<p class="source-paragraph" data-source-paragraph="69">这个范畴中的幺半群是什么？它是一个对象——自函子 <em>T</em>——以及两支态射，也就是自然变换：</p><div class="math-display">μ:T∘T→T<br>η:I→T</div><p class="source-paragraph" data-source-paragraph="70">不只如此，下面是幺半群定律：</p><figure><div class="figure-frame"><img src="assoc.png" alt="自函子范畴中 μ 的幺半群结合律"></div></figure><figure><div class="figure-frame"><img src="unitlawcomp.png" alt="自函子范畴中 μ 与 η 的幺半群单位律"></div></figure>
+<p class="source-paragraph" data-source-paragraph="71">它们恰好就是此前见过的 Monad 定律。现在你理解 Saunders Mac Lane 的名言了：</p><blockquote><p>总而言之，Monad 不过是自函子范畴中的幺半群。</p></blockquote>
+<p class="source-paragraph" data-source-paragraph="72">你可能在函数式编程会议的 T 恤上见过这句话。</p></section>
+
+<section id="adjunction"><h2>由伴随产生 Monad</h2><p class="source-paragraph" data-source-paragraph="73"><a href="../adjunctions/">伴随</a> <em>L⊣R</em> 是在范畴 C、D 之间往返的一对函子。它们有两种复合，产生两个自函子 <em>R∘L</em>、<em>L∘R</em>。按伴随定义，这些自函子通过单位与余单位两个自然变换连接恒等函子：</p><div class="math-display">η:I<sub>D</sub>→R∘L<br>ε:L∘R→I<sub>C</sub></div>
+<p class="source-paragraph" data-source-paragraph="74">立即能看出，伴随的单位就像 Monad 的单位。事实证明，自函子 <em>R∘L</em> 确实是 Monad；只需定义与 η 配套的 μ，即从该自函子的平方到自身的自然变换：</p><div class="math-display">R∘L∘R∘L → R∘L</div>
+<p class="source-paragraph" data-source-paragraph="75">确实，可以用余单位压缩中间的 <em>L∘R</em>。μ 的准确公式由水平复合给出：</p><div class="math-display">μ = R∘ε∘L</div><p class="source-paragraph" data-source-paragraph="76">Monad 定律来自伴随单位、余单位满足的恒等式以及交换律。</p>
+<p class="source-paragraph" data-source-paragraph="77">Haskell 中不常看到由伴随导出的 Monad，因为伴随通常牵涉两个范畴。不过指数（函数对象）的定义是例外。形成这个伴随的两个自函子是：</p><div class="math-display">Lz=z×s<br>Rb=s⇒b</div><p class="source-paragraph" data-source-paragraph="78">它们的复合正是熟悉的 State Monad：</p><div class="math-display">R(Lz)=s⇒(z×s)</div><p class="source-paragraph" data-source-paragraph="79">此前在 Haskell 中见过：</p><pre><code class="language-haskell">newtype State s a = State (s -&gt; (a, s))</code></pre>
+<p class="source-paragraph" data-source-paragraph="80">再把伴随翻译为 Haskell。左函子是积函子：</p><pre><code class="language-haskell">newtype Prod s a = Prod (a, s)</code></pre>
+<p class="source-paragraph" data-source-paragraph="81">右函子是 Reader 函子：</p><pre><code class="language-haskell">newtype Reader s a = Reader (s -&gt; a)</code></pre>
+<p class="source-paragraph" data-source-paragraph="82">它们形成伴随：</p><pre><code class="language-haskell">instance Adjunction (Prod s) (Reader s) where
+  counit (Prod (Reader f, s)) = f s
+  unit a = Reader (\s -&gt; Prod (a, s))</code></pre>
+<p class="source-paragraph" data-source-paragraph="83">很容易确信，Reader 函子接在积函子之后的复合确实等价于 State 函子：</p><pre><code class="language-haskell">newtype State s a = State (s -&gt; (a, s))</code></pre>
+<p class="source-paragraph" data-source-paragraph="84">正如预期，伴随的 <code>unit</code> 等价于 State Monad 的 <code>return</code>。<code>counit</code> 通过把函数作用于参数来求值，可认作 <code>runState</code> 的非柯里化版本：</p><pre><code class="language-haskell">runState :: State s a -&gt; s -&gt; (a, s)
+runState (State f) s = f s</code></pre>
+<p class="source-paragraph" data-source-paragraph="85">（它是非柯里化的，因为在 <code>counit</code> 中作用于二元组。）</p>
+<p class="source-paragraph" data-source-paragraph="86">现在可把 State Monad 的 <code>join</code> 定义为自然变换 μ 的一个分量。为此需要三个自然变换的水平复合：</p><div class="math-display">μ=R∘ε∘L</div><p class="source-paragraph" data-source-paragraph="87">换句话说，需要把余单位 ε 偷渡过一层 Reader 函子。不能直接调用 <code>fmap</code>，因为编译器会选择 State 函子的实现，而不是 Reader 函子的实现。但回忆 Reader 的 <code>fmap</code> 只是左函数复合，所以直接使用函数复合。</p>
+<p class="source-paragraph" data-source-paragraph="88">首先剥掉 <code>State</code> 数据构造器，暴露 State 函子内部函数；用 <code>runState</code> 完成：</p><pre><code class="language-haskell">ssa :: State s (State s a)
+runState ssa :: s -&gt; (State s a, s)</code></pre>
+<p class="source-paragraph" data-source-paragraph="89">再与由 <code>uncurry runState</code> 定义的余单位左复合，最后重新套上 <code>State</code> 数据构造器：</p><pre><code class="language-haskell">join :: State s (State s a) -&gt; State s a
+join ssa = State (uncurry runState . runState ssa)</code></pre>
+<p class="source-paragraph" data-source-paragraph="90">这确实就是 State Monad 的 <code>join</code> 实现。</p>
+<p class="source-paragraph" data-source-paragraph="91">事实证明，不仅每个伴随都产生 Monad，反过来也成立：每个 Monad 都可因子分解为两个伴随函子的复合。不过这种分解不唯一。</p>
+<p class="source-paragraph" data-source-paragraph="92">下一章会讨论另一个自函子 <em>L∘R</em>。</p></section>
+
+<nav class="chapter-switcher"><a href="../monads-and-effects/">← 第 21 章：Monad 与效应</a><a href="../comonads/">第 23 章：Comonad →</a></nav>
+</article><footer class="source-note"><p><strong>原文：</strong><a href="https://bartoszmilewski.com/2016/12/27/monads-categorically/">Monads Categorically</a></p><p><strong>核对底稿：</strong>作者博客正文与开源英文 Markdown；全部正文、25 个原文代码块、12 次插图引用和公式均已收录；本章原文没有习题。</p><p><strong>许可：</strong>原作及本非官方中文译文依 <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> 署名—相同方式共享。</p></footer></main></body></html>

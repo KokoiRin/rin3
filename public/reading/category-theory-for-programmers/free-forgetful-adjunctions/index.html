@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>第 19 章：自由/遗忘伴随｜程序员的范畴论｜RIN III</title><meta name="description" content="《程序员的范畴论》第 19 章完整中文翻译：自由函子、遗忘函子、自由对象与表达式延迟求值"><link rel="stylesheet" href="../reader.css"></head>
+<body><nav class="site-nav"><a href="../../../mathematics/category-theory-for-programmers/">← 返回整本书学习记录</a><a href="../../../">RIN III</a></nav><main class="reader"><header><span class="chapter-kicker">第三部分 · 第 19 章 · 完整中文译文</span><h1>自由/遗忘伴随</h1><p class="byline">Bartosz Milewski</p><div class="title-rule"></div><p class="lead">自由函子（free functor）是遗忘函子（forgetful functor）的左伴随：它加入满足定律所需的结构，却不提前替我们选择具体解释。</p><div class="translation-scope"><span class="scope-label">译文范围</span><p>完整翻译本章正文，保留全部 2 个原文代码块、4 幅插图、公式和 1 道习题；习题附可展开答案。</p></div><nav><ul class="chapter-nav"><li><a href="#adjunction">自由/遗忘伴随</a></li><li><a href="#intuitions">一些直觉</a></li><li><a href="#challenges">习题</a></li></ul></nav></header><article>
+
+<section id="adjunction"><p class="source-paragraph" data-source-paragraph="1">自由构造是伴随的一项强大应用。<em>自由函子（free functor）</em>定义为<em>遗忘函子（forgetful functor）</em>的左伴随。遗忘函子通常相当简单，它会忘掉某些结构。例如，许多有趣范畴都建立在集合之上。但抽象了这些集合的范畴对象没有内部结构——它们没有元素。尽管如此，这些对象常保留着集合的记忆，因为存在从给定范畴 C 到 Set 的映射——函子。与 C 中某对象对应的集合，称为它的<em>底层集合（underlying set）</em>。</p>
+<p class="source-paragraph" data-source-paragraph="2">幺半群就是拥有底层集合——元素集合——的对象。从幺半群范畴 Mon 到集合范畴 Set 有一个遗忘函子 <em>U</em>，把幺半群映射到底层集合；它也把幺半群态射（同态）映射成集合之间的函数。</p>
+<p class="source-paragraph" data-source-paragraph="3">我喜欢把 Mon 想成具有双重人格。一方面，它是一堆带乘法与单位元的集合；另一方面，它是一个由无特征对象组成的范畴，对象唯一的结构编码在它们之间的态射里。每个保持乘法与单位元的集合函数，都会在 Mon 中产生一支态射。</p>
+<p class="source-paragraph" data-source-paragraph="4">需要记住：</p><ul><li>可能有许多幺半群映射到同一个集合；</li><li>幺半群态射比其底层集合之间的函数更少，最多也只能一样多。</li></ul>
+<p class="source-paragraph" data-source-paragraph="5">遗忘函子 <em>U</em> 的左伴随 <em>F</em> 是自由函子，它从生成元集合构造自由幺半群。这个伴随来自前面讨论过的<a href="../free-monoids/">自由幺半群泛构造</a>。</p>
+<figure><div class="figure-frame"><img src="forgetful.jpg" alt="不同幺半群可能有相同底层集合，集合函数多于保持结构的态射"></div><figcaption>幺半群 m₁、m₂ 具有相同底层集合；m₂、m₃ 的底层集合之间的函数，多于二者之间的幺半群态射。</figcaption></figure>
+<p class="source-paragraph" data-source-paragraph="6">用 Hom 集写，这个伴随是：</p><div class="math-display">Mon(Fx,m) ≅ Set(x,Um)</div>
+<p class="source-paragraph" data-source-paragraph="7">这个在 <em>x</em>、<em>m</em> 上自然的同构告诉我们：</p><ul><li>对自由幺半群 <em>Fx</em> 与任意幺半群 <em>m</em> 之间的每个同态，都有一个唯一函数，把生成元集合 <em>x</em> 嵌入 <em>m</em> 的底层集合；它属于 Set(x,Um)。</li><li>对每个把 <em>x</em> 嵌入某个 <em>m</em> 底层集合的函数，都存在唯一幺半群态射，从 <em>x</em> 生成的自由幺半群到 <em>m</em>。（这就是泛构造中称为 <em>h</em> 的态射。）</li></ul>
+<figure><div class="figure-frame"><img src="freemonadjunction.jpg" alt="自由幺半群同态与生成元集合函数的一一对应"></div></figure>
+<p class="source-paragraph" data-source-paragraph="8">直觉上，<em>Fx</em> 是能以 <em>x</em> 为基础构造的“最大”幺半群。若能查看幺半群内部，会看到 Mon(Fx,m) 中任意态射都把这个自由幺半群<em>嵌入</em>另一个幺半群 <em>m</em>，过程中可能认同某些元素。特别是，它把 <em>Fx</em> 的生成元（即 <em>x</em> 的元素）嵌入 <em>m</em>。伴随说明：右边 Set(x,Um) 中函数给出的 <em>x</em> 之嵌入，会唯一决定左边的幺半群嵌入，反之亦然。</p>
+<p class="source-paragraph" data-source-paragraph="9">Haskell 中，列表数据结构是自由幺半群（但有一些注意事项，参见 <a href="http://comonad.com/reader/2015/free-monoids-in-haskell/">Dan Doel 的博客文章</a>）。列表类型 <code>[a]</code> 是以类型 <code>a</code> 表示生成元集合的自由幺半群。例如，类型 <code>[Char]</code> 包含单位元——空列表 <code>[]</code>——以及 <code>['a']</code>、<code>['b']</code> 之类的单元素列表——自由幺半群的生成元。其余元素由“乘法”生成；这里两个列表的积只是把一个追加到另一个。追加满足结合律并有单位元（中性元素就是空列表）。由 <code>Char</code> 生成的自由幺半群，就是由 <code>Char</code> 中字符组成的所有字符串集合，Haskell 称之为 <code>String</code>：</p><pre><code class="language-haskell">type String = [Char]</code></pre>
+<p class="source-paragraph" data-source-paragraph="10">（<code>type</code> 定义类型同义词，也就是给已有类型另起一个名字。）</p>
+<p class="source-paragraph" data-source-paragraph="11">另一个有趣例子是只有一个生成元的自由幺半群，即单元列表类型 <code>[()]</code>。其元素为 <code>[]</code>、<code>[()]</code>、<code>[(),()]</code> 等。每个列表都可由一个自然数——长度——描述；单元列表不编码其他信息。追加两个这样的列表，会得到长度为二者长度之和的新列表。不难看出，类型 <code>[()]</code> 同构于自然数的加法幺半群（包含零）。下面两个互逆函数见证这个同构：</p><pre><code class="language-haskell">toNat :: [()] -&gt; Int
+toNat = length
+
+toLst :: Int -&gt; [()]
+toLst n = replicate n ()</code></pre>
+<p class="source-paragraph" data-source-paragraph="12">为简单起见，这里用了 <code>Int</code> 而非 <code>Natural</code>，但思想相同。函数 <code>replicate</code> 创建长度为 <code>n</code>、由给定值预填充的列表——这里填充单元值。</p></section>
+
+<section id="intuitions"><h2>一些直觉</h2>
+<p class="source-paragraph" data-source-paragraph="13">下面是一些挥手式论证。这种论证远非严格，但有助于形成直觉。</p>
+<p class="source-paragraph" data-source-paragraph="14">要理解自由/遗忘伴随，可以记住函子与函数本质上都有损。函子可能压缩多个对象与态射，函数可能把一个集合的多个元素聚到一起；它们的像也可能只覆盖陪域的一部分。</p>
+<p class="source-paragraph" data-source-paragraph="15">Set 中一个“普通”Hom 集会包含各种各样的函数：从损失最少的函数开始（例如单射，或者可能是同构），直到把整个定义域压成一个元素的常函数（如果陪域中有元素）。</p>
+<p class="source-paragraph" data-source-paragraph="16">我也倾向于把任意范畴中的态射想成有损的。这只是一种心智模型，但很有用，尤其是在思考伴随——特别是一边范畴为 Set 的伴随——时。</p>
+<p class="source-paragraph" data-source-paragraph="17">形式上，只能把态射分成可逆的（同构）与不可逆的；后者可被想象成有损。还有<em>单态射（monomorphism）</em>与<em>满态射（epimorphism）</em>，它们推广了单射（不压缩）与满射（覆盖整个陪域）的思想；但一支态射可能既是单态射又是满态射，却仍不可逆。</p>
+<p class="source-paragraph" data-source-paragraph="18">在 Free ⊣ Forgetful 伴随中，左边是约束更多的范畴 C，右边是约束更少的范畴 D。C 中态射“更少”，因为必须保持额外结构；对 Mon，它们必须保持乘法与单位元。D 中态射无需保持那么多结构，因此“更多”。</p>
+<p class="source-paragraph" data-source-paragraph="19">把遗忘函子 <em>U</em> 应用于 C 中对象 <em>c</em> 时，可以想成揭示 <em>c</em> 的“内部结构”。事实上，若 D 是 Set，就把 <em>U</em> 看成在<em>定义</em> <em>c</em> 的内部结构——底层集合。（在任意范畴中，除了对象与其他对象的连接，我们无法谈论对象内部；但这里本来就是挥手式直觉。）</p>
+<p class="source-paragraph" data-source-paragraph="20">若用 <em>U</em> 映射两个对象 <em>c′</em>、<em>c</em>，通常预期 Hom 集 C(c′,c) 的像只覆盖 D(Uc′,Uc) 的一个子集。因为 C(c′,c) 中态射必须保持额外结构，而 D(Uc′,Uc) 中态射无需如此。</p>
+<figure><div class="figure-frame"><img src="forgettingmorphisms.jpg" alt="遗忘函子把保持结构的态射映入更大的普通函数集合"></div></figure>
+<p class="source-paragraph" data-source-paragraph="21">但伴随被定义为特定 Hom 集之间的<em>同构</em>，所以选择 <em>c′</em> 时必须非常挑剔。在伴随中，<em>c′</em> 不是从 C 的任意地方选取，而来自自由函子 <em>F</em>（大概更小的）像：</p><div class="math-display">C(Fd,c) ≅ D(d,Uc)</div>
+<p class="source-paragraph" data-source-paragraph="22"><em>F</em> 的像因此必须由这样的对象组成：它们有大量态射指向任意 <em>c</em>。事实上，从 <em>Fd</em> 到 <em>c</em> 的保持结构态射，必须与从 <em>d</em> 到 <em>Uc</em> 的不保持结构态射一样多。这意味着 <em>F</em> 的像必须由本质上没有结构的对象构成（这样态射就没有结构需要保持）。这种“无结构”对象称为<em>自由对象（free object）</em>。</p>
+<figure><div class="figure-frame"><img src="freeimage.jpg" alt="自由函子的像选择出拥有足够多结构保持态射的自由对象"></div></figure>
+<p class="source-paragraph" data-source-paragraph="23">在幺半群例子中，自由幺半群除单位律与结合律生成的结构外，没有其他结构。除此之外，每次乘法都会产生全新元素。</p>
+<p class="source-paragraph" data-source-paragraph="24">在自由幺半群中，<em>2*3</em> 不是 6，而是新元素 <code>[2,3]</code>。由于 <code>[2,3]</code> 与 6 没有被认同，从这个自由幺半群到其他幺半群 <em>m</em> 的态射可以分别映射它们。但也可以把 <code>[2,3]</code> 与 6（它们的积）都映射到 <em>m</em> 的同一元素；或者在加法幺半群中认同 <code>[2,3]</code> 与 5（它们的和），等等。不同认同会得到不同幺半群。</p>
+<p class="source-paragraph" data-source-paragraph="25">这产生另一个有趣直觉：自由幺半群不执行幺半群运算，而是累积传给运算的参数。它不把 2、3 相乘，而是把 2、3 记在列表里。好处是无需预先指定使用什么幺半群运算。可以不断累积参数，最后才对结果应用运算符；到那时再选择运算符——可以求和、求积、做模 2 加法等。自由幺半群把表达式的创建与求值分离开。讨论代数时还会见到这个思想。</p>
+<p class="source-paragraph" data-source-paragraph="26">这个直觉可推广到其他更复杂的自由构造。例如，可以在求值前累积整棵表达式树。这样做的好处是，可以变换树，让求值更快或占用更少内存。例如矩阵演算的实现会采用这种办法，因为急切求值会为中间结果分配大量临时数组。</p></section>
+
+<section id="challenges"><h2>习题</h2><ol class="challenges"><li>考虑以单元素集合为生成元的自由幺半群。证明：从这个自由幺半群到任意幺半群 <em>m</em> 的态射，与从单元素集合到 <em>m</em> 底层集合的函数一一对应。<details class="exercise-answer"><summary>点击展开参考答案</summary><p>从单元素集合 <code>{*}</code> 到 <code>Um</code> 的函数，只需选择一个元素 <code>x∈m</code>。单生成元自由幺半群同构于自然数加法幺半群；选择 <code>x</code> 后，唯一的幺半群同态把长度 <code>n</code> 的列表映射为 <code>xⁿ</code>（零次幂是单位元）。反过来，任意同态都由生成元的像 <code>x=h([*])</code> 完全决定。两个构造互逆，因此建立一一对应。</p></details></li></ol></section>
+<nav class="chapter-switcher"><a href="../adjunctions/">← 第 18 章：伴随</a><a href="../monads-programmers-definition/">第 20 章：Monad——程序员的定义 →</a></nav>
+</article><footer class="source-note"><p><strong>原文：</strong><a href="https://bartoszmilewski.com/2016/04/25/freeforgetful-adjunctions/">Free/Forgetful Adjunctions</a></p><p><strong>核对底稿：</strong>作者博客正文与开源英文 Markdown；正文、2 个原文代码块、4 幅插图、公式和 1 道习题均已收录；参考答案属于本阅读器。</p><p><strong>许可：</strong>原作及本非官方中文译文依 <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> 署名—相同方式共享。</p></footer></main></body></html>
