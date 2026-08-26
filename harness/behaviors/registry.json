@@ -84,11 +84,11 @@
     },
     {
       "id": "RIN-DOC-001",
-      "version": 1,
+      "version": 2,
       "status": "active",
       "nameZh": "RIN 文档生成双视图",
       "behaviorZh": "一份有效的 RIN Markdown 是文章和 Slides 的共同内容源，并通过公共编译入口生成两个可互相访问的视图。",
-      "lastReviewedOn": "2026-08-10",
+      "lastReviewedOn": "2026-08-26",
       "code": [
         {
           "file": "packages/rin-document/src/parser.ts",

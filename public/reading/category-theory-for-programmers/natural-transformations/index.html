@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>第 10 章：自然变换｜程序员的范畴论｜RIN III</title><meta name="description" content="《程序员的范畴论》第 10 章完整中文翻译：自然变换、多态函数、函子范畴、2-范畴以及水平与垂直复合"><link rel="stylesheet" href="../reader.css"></head>
+<body><nav class="site-nav"><a href="../../../mathematics/category-theory-for-programmers/">← 返回整本书学习记录</a><a href="../../../">RIN III</a></nav><main class="reader"><header><span class="chapter-kicker">第一部分 · 第 10 章 · 完整中文译文</span><h1>自然变换</h1><p class="byline">Bartosz Milewski</p><div class="title-rule"></div><p class="lead">函子连接范畴，自然变换（natural transformation）连接函子。它不是随意挑选一族映射，而是要求每个分量都与函子对态射的作用协调，形成交换的自然性方块。</p><div class="translation-scope"><span class="scope-label">译文范围</span><p>完整翻译本章正文，保留全部 31 个原文代码块、13 张插图、公式与 6 道习题；习题附可展开参考答案。</p></div><nav><ul class="chapter-nav"><li><a href="#definition">定义与自然性</a></li><li><a href="#polymorphic">多态函数</a></li><li><a href="#beyond">超越普通自然性</a></li><li><a href="#functor-category">函子范畴</a></li><li><a href="#two-categories">2-范畴</a></li><li><a href="#conclusion">小结</a></li><li><a href="#challenges">习题</a></li></ul></nav></header><article>
+
+<section id="definition"><p class="source-paragraph" data-source-paragraph="1">我们把函子描述为保持结构的范畴间映射。函子把一个范畴“嵌入”另一个范畴；它可能把多个东西折叠成一个，却绝不切断连接。也可以说，我们借助函子在另一个范畴内部对一个范畴建模：源范畴充当蓝图，描述目标范畴中某部分结构。</p><figure><div class="figure-frame"><img src="1_functors.jpg" alt="两个函子以不同方式把源范畴映入目标范畴"></div></figure>
+<p class="source-paragraph" data-source-paragraph="2">一个范畴嵌入另一个范畴可以有许多方式。有时它们等价，有时截然不同：一个可能把整个源范畴压成单个对象；另一个可能把每个对象、每支态射分别映射到不同对象与态射。同一蓝图可以有许多实现。自然变换帮助比较这些实现。它们是函子之间的映射，而且是保持函子性质的特殊映射。</p>
+<p class="source-paragraph" data-source-paragraph="3">考虑范畴 C 与 D 之间的两个函子 F、G。只看 C 中一个对象 <em>a</em>，它分别映射到 <em>F a</em> 与 <em>G a</em>。函子之间的映射因此应把 <em>F a</em> 映射到 <em>G a</em>。</p><figure><div class="figure-frame"><img src="2_natcomp.jpg" alt="自然变换在对象 a 处从 F a 指向 G a"></div></figure>
+<p class="source-paragraph" data-source-paragraph="4"><em>F a</em>、<em>G a</em> 是同一范畴 D 中的对象。同一范畴对象间的映射不应违背范畴自身的纹理；我们不想人为创造连接。因此，使用已有连接——态射——最为“自然”。自然变换为每个对象 <em>a</em> 选择一支从 <em>F a</em> 到 <em>G a</em> 的态射。若自然变换称为 α，这支态射称为 α 在 <em>a</em> 处的<em>分量（component）</em>，记作 α<sub>a</sub>：</p><div class="math-display">α<sub>a</sub>: F a → G a</div>
+<p class="source-paragraph" data-source-paragraph="5">记住，<em>a</em> 是 C 中的对象，而 α<sub>a</sub> 是 D 中的态射。若某个 <em>a</em> 对应的 <em>F a</em> 与 <em>G a</em> 之间没有 D 中的态射，F 与 G 之间就不可能存在自然变换。</p>
+<p class="source-paragraph" data-source-paragraph="6">这还只是故事的一半，因为函子不只映射对象，也映射态射。自然变换怎样处理这些映射？事实是态射映射已经固定：任何 F 到 G 的自然变换都必须把 <em>F f</em> 变为 <em>G f</em>。更重要的是，两个函子对态射的映射大幅限制了兼容自然变换的选择。考虑 C 中从 <em>a</em> 到 <em>b</em> 的态射 <em>f</em>，它在 D 中映射为：</p><div class="math-display">F f: F a → F b<br>G f: G a → G b</div>
+<p class="source-paragraph" data-source-paragraph="7">自然变换 α 还提供两支态射，补全 D 中的图：</p><div class="math-display">α<sub>a</sub>: F a → G a<br>α<sub>b</sub>: F b → G b</div>
+<figure><div class="figure-frame"><img src="3_naturality.jpg" alt="由 Ff、Gf、alpha a 和 alpha b 组成的自然性方块"></div></figure>
+<p class="source-paragraph" data-source-paragraph="8">现在从 <em>F a</em> 到 <em>G b</em> 有两条路径。为保证它们相等，必须对任意 <em>f</em> 施加<em>自然性条件（naturality condition）</em>：</p><div class="math-display">G f ∘ α<sub>a</sub> = α<sub>b</sub> ∘ F f</div>
+<p class="source-paragraph" data-source-paragraph="9">自然性条件要求很严格。例如，若 <em>F f</em> 可逆，自然性会用 α<sub>a</sub> 确定 α<sub>b</sub>，也就是沿 <em>f</em> <em>传输</em> α<sub>a</sub>：</p><div class="math-display">α<sub>b</sub> = (G f) ∘ α<sub>a</sub> ∘ (F f)<sup>−1</sup></div>
+<figure><div class="figure-frame"><img src="4_transport.jpg" alt="通过可逆态射沿 f 传输自然变换分量"></div></figure>
+<p class="source-paragraph" data-source-paragraph="10">若两对象间有多支可逆态射，所有传输都必须一致。一般态射并不可逆，但由此也能看出：两个函子之间存在自然变换远非理所当然。由自然变换相连的函子是稀少还是丰富，会揭示函子所连接范畴的许多结构；讨论极限与 Yoneda 引理时会看到例子。</p>
+<p class="source-paragraph" data-source-paragraph="11">逐分量看，可以说自然变换把对象映射到态射；由于自然性条件，也可以说它把态射映射到交换方块——C 中每支态射在 D 中都有一个交换的<em>自然性方块（naturality square）</em>。</p><figure><div class="figure-frame"><img src="naturality.jpg" alt="自然变换把源范畴态射映射成目标范畴中的交换方块"></div></figure>
+<p class="source-paragraph" data-source-paragraph="12">这项性质在很多包含交换图的范畴构造中极其方便。恰当选择函子后，许多交换条件可以转化成自然性条件。讨论极限、余极限和伴随时会看到。</p>
+<p class="source-paragraph" data-source-paragraph="13">最后，自然变换还可定义函子同构。说两个函子自然同构，几乎就是在说它们相同。<em>自然同构（natural isomorphism）</em>是所有分量均为同构（可逆态射）的自然变换。</p></section>
+
+<section id="polymorphic"><h2>多态函数</h2>
+<p class="source-paragraph" data-source-paragraph="14">我们讨论过函子——更准确说自函子——在编程中的角色。它们对应把类型映射到类型的类型构造器，也把函数映射到函数；后者由高阶函数 <code>fmap</code>（或 C++ 中的 <code>transform</code>、<code>then</code> 等）实现。</p>
+<p class="source-paragraph" data-source-paragraph="15">构造自然变换时，从对象——这里是类型 <code>a</code>——出发。函子 F 把它映射为 <code>F a</code>，函子 G 映射为 <code>G a</code>。自然变换 <code>alpha</code> 在 <code>a</code> 处的分量是从 <code>F a</code> 到 <code>G a</code> 的函数。伪 Haskell 写作：</p><div class="math-display">α<sub>a</sub>: F a → G a</div>
+<p class="source-paragraph" data-source-paragraph="16">自然变换是对所有类型 <code>a</code> 定义的多态函数：</p><pre><code class="language-haskell">alpha :: forall a . F a -&gt; G a</code></pre>
+<p class="source-paragraph" data-source-paragraph="17">Haskell 中 <code>forall a</code> 可省略（显式写出反而需要开启 <code>ExplicitForAll</code> 扩展），通常写成：</p><pre><code class="language-haskell">alpha :: F a -&gt; G a</code></pre>
+<p class="source-paragraph" data-source-paragraph="18">要记住，它其实是由 <code>a</code> 参数化的一族函数。这再次体现 Haskell 语法的简洁。C++ 中类似构造稍显冗长：</p><pre><code class="language-cpp">template&lt;typename A&gt; G&lt;A&gt; alpha(F&lt;A&gt;);</code></pre>
+<p class="source-paragraph" data-source-paragraph="19">Haskell 多态函数与 C++ 泛型函数还有更深的差别，体现在实现与类型检查方式上。Haskell 多态函数必须对所有类型采用统一定义：同一公式适用于全部类型。这叫<em>参数多态（parametric polymorphism）</em>。</p>
+<p class="source-paragraph" data-source-paragraph="20">C++ 默认支持<em>特设多态（ad hoc polymorphism）</em>，模板不必对所有类型都有定义。模板能否用于某个类型，要等实例化时以具体类型替换参数才决定。类型检查被推迟，遗憾的是常产生难以理解的错误信息。</p>
+<p class="source-paragraph" data-source-paragraph="21">C++ 还支持函数重载和模板特化，允许同一函数针对不同类型拥有不同定义。Haskell 以类型类和类型族提供这项能力。</p>
+<p class="source-paragraph" data-source-paragraph="22">Haskell 参数多态带来意外结果：任何类型为：</p><pre><code class="language-haskell">alpha :: F a -&gt; G a</code></pre>
+<p class="source-paragraph" data-source-paragraph="23">且 F、G 都是函子的多态函数，会自动满足自然性条件。范畴记法如下（<em>f: a→b</em>）：</p><div class="math-display">G f ∘ α<sub>a</sub> = α<sub>b</sub> ∘ F f</div>
+<p class="source-paragraph" data-source-paragraph="24">Haskell 中，函子 G 对态射 <code>f</code> 的作用由 <code>fmap</code> 实现。先用带显式类型标注的伪 Haskell 写：</p><pre><code class="language-haskell">fmap_G f . alpha_a = alpha_b . fmap_F f</code></pre>
+<p class="source-paragraph" data-source-paragraph="25">由于类型推断，不需要这些标注，下面的等式成立：</p><pre><code class="language-haskell">fmap f . alpha = alpha . fmap f</code></pre>
+<p class="source-paragraph" data-source-paragraph="26">这仍不是实际 Haskell，因为代码中不能表达函数相等；但程序员可以在等式推理中使用它，编译器也可用它优化。</p>
+<p class="source-paragraph" data-source-paragraph="27">Haskell 中自然性自动成立，原因与“免费定理”有关。用于定义自然变换的参数多态对实现施加极强限制：一个公式适用于所有类型。这些限制转化成关于函数的等式定理。对变换函子的函数而言，免费定理就是自然性条件。（可进一步阅读作者博客 <a href="https://bartoszmilewski.com/2014/09/22/parametricity-money-for-nothing-and-theorems-for-free/">Parametricity: Money for Nothing and Theorems for Free</a>。）</p>
+<p class="source-paragraph" data-source-paragraph="28">此前把 Haskell 函子看作广义容器。延续这个类比，自然变换就是把一个容器内容重新包装到另一容器的配方。我们不触碰项目本身：既不修改，也不新建，只是把其中一些复制到新容器，有时复制多份。</p>
+<p class="source-paragraph" data-source-paragraph="29">自然性条件表示：先用 <code>fmap</code> 修改项目再重新包装，与先重新包装再用新容器自己的 <code>fmap</code> 修改项目，结果无关次序。重新包装与 <code>fmap</code> 相互正交：“一个搬鸡蛋，另一个煮鸡蛋。”</p>
+<p class="source-paragraph" data-source-paragraph="30">看几个 Haskell 自然变换例子。第一个位于 list 函子与 <code>Maybe</code> 函子之间：列表非空时返回表头。</p><pre><code class="language-haskell">safeHead :: [a] -&gt; Maybe a
+safeHead [] = Nothing
+safeHead (x:xs) = Just x</code></pre>
+<p class="source-paragraph" data-source-paragraph="31">它关于 <code>a</code> 多态，无限制地适用于任何 <code>a</code>，所以是参数多态，也是两个函子之间的自然变换。仍可验证自然性：</p><pre><code class="language-haskell">fmap f . safeHead = safeHead . fmap f</code></pre>
+<p class="source-paragraph" data-source-paragraph="32">空列表时：</p><pre><code class="language-haskell">fmap f (safeHead []) = fmap f Nothing = Nothing</code></pre><pre><code class="language-haskell">safeHead (fmap f []) = safeHead [] = Nothing</code></pre>
+<p class="source-paragraph" data-source-paragraph="33">非空列表时：</p><pre><code class="language-haskell">fmap f (safeHead (x:xs)) = fmap f (Just x) = Just (f x)</code></pre><pre><code class="language-haskell">safeHead (fmap f (x:xs)) =
+    safeHead (f x : fmap f xs) = Just (f x)</code></pre>
+<p class="source-paragraph" data-source-paragraph="34">这里使用 list 的 <code>fmap</code>：</p><pre><code class="language-haskell">fmap f [] = []
+fmap f (x:xs) = f x : fmap f xs</code></pre>
+<p class="source-paragraph" data-source-paragraph="35">以及 <code>Maybe</code> 的 <code>fmap</code>：</p><pre><code class="language-haskell">fmap f Nothing = Nothing
+fmap f (Just x) = Just (f x)</code></pre>
+<p class="source-paragraph" data-source-paragraph="36">当一个函子是平凡的 <code>Const</code> 时很有意思。从或到 <code>Const</code> 的自然变换，看起来就像返回类型或参数类型多态的函数。</p>
+<p class="source-paragraph" data-source-paragraph="37">例如，<code>length</code> 可视为从 list 函子到 <code>Const Int</code> 的自然变换：</p><pre><code class="language-haskell">length :: [a] -&gt; Const Int a
+length [] = Const 0
+length (x:xs) = Const (1 + unConst (length xs))</code></pre>
+<p class="source-paragraph" data-source-paragraph="38"><code>unConst</code> 用来剥去 <code>Const</code> 构造器：</p><pre><code class="language-haskell">unConst :: Const c a -&gt; c
+unConst (Const x) = x</code></pre>
+<p class="source-paragraph" data-source-paragraph="39">实践中 <code>length</code> 当然定义为：</p><pre><code class="language-haskell">length :: [a] -&gt; Int</code></pre>
+<p class="source-paragraph" data-source-paragraph="40">这实际上隐藏了它是自然变换的事实。</p>
+<p class="source-paragraph" data-source-paragraph="41">寻找<em>从</em> <code>Const</code> 函子出发的参数多态函数稍难，因为需要凭空创造一个值。我们最多只能做到：</p><pre><code class="language-haskell">scam :: Const Int a -&gt; Maybe a
+scam (Const x) = Nothing</code></pre>
+<p class="source-paragraph" data-source-paragraph="42">另一个常见函子是 <code>Reader</code>，它会在 Yoneda 引理中扮演重要角色。用 <code>newtype</code> 重写：</p><pre><code class="language-haskell">newtype Reader e a = Reader (e -&gt; a)</code></pre>
+<p class="source-paragraph" data-source-paragraph="43">它由两个类型参数化，但只在第二个参数上协变：</p><pre><code class="language-haskell">instance Functor (Reader e) where
+    fmap f (Reader g) = Reader (\x -&gt; f (g x))</code></pre>
+<p class="source-paragraph" data-source-paragraph="44">对于每种类型 <code>e</code>，都能定义从 <code>Reader e</code> 到任意函子 <code>f</code> 的一族自然变换。以后会看到，这族成员总与 <code>f e</code> 的元素一一对应（<a href="../the-yoneda-lemma/">Yoneda 引理</a>）。</p>
+<p class="source-paragraph" data-source-paragraph="45">例如，单位类型 <code>()</code> 只有元素 <code>()</code>。函子 <code>Reader ()</code> 把任意类型 <code>a</code> 映射到函数类型 <code>() -&gt; a</code>，也就是从集合 <code>a</code> 中选出单个元素的全部函数，其数量与 <code>a</code> 的元素数量相同。考虑从该函子到 <code>Maybe</code> 的自然变换：</p><pre><code class="language-haskell">alpha :: Reader () a -&gt; Maybe a</code></pre>
+<p class="source-paragraph" data-source-paragraph="46">只有两个：<code>dumb</code> 与 <code>obvious</code>：</p><pre><code class="language-haskell">dumb (Reader _) = Nothing</code></pre><p class="source-paragraph" data-source-paragraph="47">以及：</p><pre><code class="language-haskell">obvious (Reader g) = Just (g ())</code></pre>
+<p class="source-paragraph" data-source-paragraph="48">（对 <code>g</code> 唯一能做的事，就是把它应用于单位值 <code>()</code>。）正如 Yoneda 引理预测的，这两者对应 <code>Maybe ()</code> 的两个元素 <code>Nothing</code> 与 <code>Just ()</code>。以后会回到 Yoneda 引理；这里只是预告。</p></section>
+
+<section id="beyond"><h2>超越普通自然性</h2>
+<p class="source-paragraph" data-source-paragraph="49">两个函子之间的参数多态函数（包括 <code>Const</code> 的边界情况）总是自然变换。所有标准代数数据类型都是函子，所以这类类型之间的任何多态函数都是自然变换。</p>
+<p class="source-paragraph" data-source-paragraph="50">我们还有函数类型，它在返回类型上具有函子性。可以用函数类型构造 <code>Reader</code> 等函子，并定义作为高阶函数的自然变换。</p>
+<p class="source-paragraph" data-source-paragraph="51">不过函数类型在参数类型上不协变，而是逆变。当然，逆变函子等价于从对偶范畴出发的协变函子。两个逆变函子之间的多态函数，在范畴意义上仍是自然变换，只是它们作用于从对偶范畴到 Haskell 类型的函子。</p>
+<p class="source-paragraph" data-source-paragraph="52">还记得逆变函子例子：</p><pre><code class="language-haskell">newtype Op r a = Op (a -&gt; r)</code></pre>
+<p class="source-paragraph" data-source-paragraph="53">它在 <code>a</code> 上逆变：</p><pre><code class="language-haskell">instance Contravariant (Op r) where
+    contramap f (Op g) = Op (g . f)</code></pre>
+<p class="source-paragraph" data-source-paragraph="54">可写出从 <code>Op Bool</code> 到 <code>Op String</code> 的多态函数：</p><pre><code class="language-haskell">predToStr (Op f) = Op (\x -&gt; if f x then "T" else "F")</code></pre>
+<p class="source-paragraph" data-source-paragraph="55">两个函子不协变，所以它不是 Hask 中的自然变换。但由于二者都逆变，它们满足“反向”自然性条件：</p><pre><code class="language-haskell">contramap f . predToStr = predToStr . contramap f</code></pre>
+<p class="source-paragraph" data-source-paragraph="56">注意，因为 <code>contramap</code> 的签名，函数 <code>f</code> 必须朝与 <code>fmap</code> 相反的方向：</p><pre><code class="language-haskell">contramap :: (b -&gt; a) -&gt; (Op Bool a -&gt; Op Bool b)</code></pre>
+<p class="source-paragraph" data-source-paragraph="57">是否存在既非协变函子也非逆变函子的类型构造器？例如：</p><pre><code class="language-haskell">a -&gt; a</code></pre>
+<p class="source-paragraph" data-source-paragraph="58">它不是函子，因为同一个 <code>a</code> 同时出现在负位置（逆变）与正位置（协变）。无法为它实现 <code>fmap</code> 或 <code>contramap</code>。因此签名：</p><pre><code class="language-haskell">(a -&gt; a) -&gt; f a</code></pre>
+<p class="source-paragraph" data-source-paragraph="59">其中 <code>f</code> 是任意函子，这样的函数不可能是自然变换。有趣的是，自然变换有一种推广叫<em>双自然变换（dinatural transformation）</em>，专门处理这类情况；讨论端时会看到。</p></section>
+
+<section id="functor-category"><h2>函子范畴</h2>
+<p class="source-paragraph" data-source-paragraph="60">既然有函子之间的映射——自然变换——自然会问函子是否构成范畴。确实如此！每对范畴 C、D 都对应一个函子范畴。其对象是从 C 到 D 的函子，态射是这些函子之间的自然变换。</p>
+<p class="source-paragraph" data-source-paragraph="61">需要定义两个自然变换的复合，而这很容易：自然变换的分量是态射，我们知道怎样复合态射。</p>
+<p class="source-paragraph" data-source-paragraph="62">设 α 是从 F 到 G 的自然变换，它在对象 <em>a</em> 处的分量为：</p><div class="math-display">α<sub>a</sub>: F a → G a</div>
+<p class="source-paragraph" data-source-paragraph="63">要把 α 与从 G 到 H 的自然变换 β 复合；β 在 <em>a</em> 处的分量是：</p><div class="math-display">β<sub>a</sub>: G a → H a</div>
+<p class="source-paragraph" data-source-paragraph="64">两者可复合为：</p><div class="math-display">β<sub>a</sub> ∘ α<sub>a</sub>: F a → H a</div>
+<p class="source-paragraph" data-source-paragraph="65">把这支态射作为自然变换 <em>β·α</em>——先 α 后 β——的分量：</p><div class="math-display">(β · α)<sub>a</sub> = β<sub>a</sub> · α<sub>a</sub></div>
+<figure><div class="figure-frame"><img src="5_vertical.jpg" alt="两个自然变换逐分量垂直复合"></div></figure>
+<p class="source-paragraph" data-source-paragraph="66">看图足够久，就能确信复合结果确实是从 F 到 H 的自然变换：</p><div class="math-display">H f ∘ (β·α)<sub>a</sub> = (β·α)<sub>b</sub> ∘ F f</div>
+<figure><div class="figure-frame"><img src="6_verticalnaturality.jpg" alt="垂直复合保持自然性"></div></figure>
+<p class="source-paragraph" data-source-paragraph="67">自然变换的复合满足结合律，因为它们的分量是普通态射，而普通态射复合满足结合律。</p>
+<p class="source-paragraph" data-source-paragraph="68">最后，每个函子 F 都有恒等自然变换 1<sub>F</sub>，其分量为恒等态射 <em>id<sub>F a</sub>: F a→F a</em>。因此，函子确实构成范畴。</p>
+<p class="source-paragraph" data-source-paragraph="69">说一下记法。遵循 Saunders Mac Lane，我用点号表示刚描述的自然变换复合。问题在于自然变换有两种复合方式。这一种称为<em>垂直复合（vertical composition）</em>，因为描述它的图通常把函子竖直堆叠。垂直复合对于定义函子范畴至关重要；稍后解释水平复合。</p><figure><div class="figure-frame"><img src="6a_vertical.jpg" alt="自然变换的垂直复合"></div></figure>
+<p class="source-paragraph" data-source-paragraph="70">C、D 之间的<em>函子范畴（functor category）</em>记作 Fun(C,D)、[C,D]，有时也写成 D<sup>C</sup>。最后一种记法暗示函子范畴可能是某个更高范畴中的函数对象（指数对象）。确实如此吗？</p>
+<p class="source-paragraph" data-source-paragraph="71">回顾目前建立的抽象层级。起点是由对象与态射组成的范畴。范畴自身（严格说是对象构成集合的<em>小</em>范畴）又成为更高层范畴 Cat 中的对象；Cat 中的态射是函子。Cat 的 hom 集是函子集合，例如 Cat(C,D) 是 C、D 之间的函子集合。</p><figure><div class="figure-frame"><img src="7_cathomset.jpg" alt="Cat 中两个范畴之间的 hom 集由函子构成"></div></figure>
+<p class="source-paragraph" data-source-paragraph="72">函子范畴 [C,D] 也包含 C、D 之间的一组函子（外加作为态射的自然变换）。其对象与 Cat(C,D) 的成员相同。此外，函子范畴本身是范畴，因而必须是 Cat 的对象（两个小范畴间的函子范畴仍然是小范畴）。这在同一范畴内建立了 hom 集与对象的关系，与上一章的指数对象完全相同。看看怎样在 Cat 中构造它。</p>
+<p class="source-paragraph" data-source-paragraph="73">构造指数前先定义积。在 Cat 中这相对容易，因为小范畴的对象形成集合，而我们知道怎样取集合的笛卡尔积。积范畴 C×D 中的对象是一对 <em>(c,d)</em>，分别来自 C、D。两对对象 <em>(c,d)</em> 与 <em>(c′,d′)</em> 之间的态射是一对态射 <em>(f,g)</em>，其中 <em>f:c→c′</em>、<em>g:d→d′</em>。态射对逐分量复合，恒等也是一对恒等态射。简而言之，Cat 是完整的笛卡尔闭范畴，任意两范畴都有指数对象 D<sup>C</sup>。这里 Cat 中的“对象”是范畴，所以 D<sup>C</sup> 是范畴，可以与 C、D 之间的函子范畴等同。</p></section>
+
+<section id="two-categories"><h2>2-范畴</h2>
+<p class="source-paragraph" data-source-paragraph="74">进一步观察 Cat。按定义，Cat 的任意 hom 集都是函子集合。但已看到，两对象间的函子拥有比集合更丰富的结构：它们构成范畴，自然变换充当态射。由于函子在 Cat 中被视为态射，自然变换就是态射之间的态射。</p>
+<p class="source-paragraph" data-source-paragraph="75">这种更丰富的结构是 <em>2-范畴（2-category）</em> 的例子。它推广普通范畴：除对象与态射（在此语境可称 1-态射）之外，还有态射之间的态射，即 2-态射。</p>
+<p class="source-paragraph" data-source-paragraph="76">把 Cat 看成 2-范畴时：</p><ul><li>对象：小范畴；</li><li>1-态射：范畴之间的函子；</li><li>2-态射：函子之间的自然变换。</li></ul><figure><div class="figure-frame"><img src="8_cat-2-cat.jpg" alt="Cat 的对象、函子和自然变换形成 2-范畴"></div></figure>
+<p class="source-paragraph" data-source-paragraph="77">C、D 之间不再只有 hom 集，而有 hom 范畴——函子范畴 D<sup>C</sup>。还存在普通函子复合：从 C 到 D 的 F 与从 D 到 E 的 G 复合为从 C 到 E 的 G∘F。每个 hom 范畴内部还有一种复合，即函子间自然变换（2-态射）的垂直复合。</p>
+<p class="source-paragraph" data-source-paragraph="78">2-范畴有两种复合，于是要问它们怎样相互作用。</p>
+<p class="source-paragraph" data-source-paragraph="79">选择 Cat 中两个函子或 1-态射：</p><div class="math-display">F: C → D<br>G: D → E</div><p class="source-paragraph" data-source-paragraph="80">以及它们的复合 <em>G∘F: C→E</em>。再假设自然变换 α、β 分别作用于 F、G：</p><div class="math-display">α: F → F′<br>β: G → G′</div><figure><div class="figure-frame"><img src="10_horizontal.jpg" alt="两对函子及自然变换准备进行水平复合"></div></figure>
+<p class="source-paragraph" data-source-paragraph="81">不能对 α、β 做垂直复合，因为 α 的目标与 β 的源不同；实际上二者属于不同函子范畴 D<sup>C</sup> 与 E<sup>D</sup>。不过 F′、G′ 可以复合，因为 F′ 的目标就是 G′ 的源 D。那么 G′∘F′ 与 G∘F 有什么关系？</p>
+<p class="source-paragraph" data-source-paragraph="82">手里有 α、β，能否定义从 G∘F 到 G′∘F′ 的自然变换？下面勾勒构造。</p><figure><div class="figure-frame"><img src="9_horizontal.jpg" alt="自然变换水平复合的分量构造"></div></figure>
+<p class="source-paragraph" data-source-paragraph="83">照例，从 C 中对象 <em>a</em> 出发。它在 D 中分成两个像 <em>F a</em>、<em>F′a</em>，并由 α 的分量连接：</p><div class="math-display">α<sub>a</sub>: F a → F′a</div>
+<p class="source-paragraph" data-source-paragraph="84">从 D 到 E 后，这两个对象进一步分成四个：<em>G(Fa)</em>、<em>G′(Fa)</em>、<em>G(F′a)</em>、<em>G′(F′a)</em>，并有四支态射组成方块。其中两支是 β 的分量：</p><div class="math-display">β<sub>F a</sub>: G(Fa) → G′(Fa)<br>β<sub>F′a</sub>: G(F′a) → G′(F′a)</div>
+<p class="source-paragraph" data-source-paragraph="85">另外两支是两个函子对 α<sub>a</sub> 的映射：</p><div class="math-display">G α<sub>a</sub>: G(Fa) → G(F′a)<br>G′ α<sub>a</sub>: G′(Fa) → G′(F′a)</div>
+<p class="source-paragraph" data-source-paragraph="86">态射很多。目标是找从 <em>G(Fa)</em> 到 <em>G′(F′a)</em> 的态射，作为连接 G∘F 与 G′∘F′ 的自然变换分量。其实有两条路径：</p><div class="math-display">G′α<sub>a</sub> ∘ β<sub>F a</sub><br>β<sub>F′a</sub> ∘ Gα<sub>a</sub></div>
+<p class="source-paragraph" data-source-paragraph="87">幸运的是两者相等，因为这个方块正是 β 的自然性方块。</p>
+<p class="source-paragraph" data-source-paragraph="88">我们刚定义了从 G∘F 到 G′∘F′ 的自然变换分量。只要有足够耐心，证明其自然性相当直接。</p>
+<p class="source-paragraph" data-source-paragraph="89">该自然变换称为 α 与 β 的<em>水平复合（horizontal composition）</em>：</p><div class="math-display">β ∘ α: G ∘ F → G′ ∘ F′</div>
+<p class="source-paragraph" data-source-paragraph="90">继续遵循 Mac Lane，我用小圆圈表示水平复合；也有文献使用星号。</p>
+<p class="source-paragraph" data-source-paragraph="91">范畴论经验法则：每次遇到复合，都应该寻找一个范畴。自然变换的垂直复合属于函子范畴；水平复合又属于什么范畴？</p>
+<p class="source-paragraph" data-source-paragraph="92">要弄清这一点，可从侧面观察 Cat。不要把自然变换看成函子之间的箭头，而看成范畴之间的箭头。一个自然变换位于被其变换的函子所连接的两个范畴之间，因此也可认为它连接这两个范畴。</p><figure><div class="figure-frame"><img src="sideways.jpg" alt="从侧面把自然变换看作范畴之间的箭头"></div></figure>
+<p class="source-paragraph" data-source-paragraph="93">聚焦 Cat 的两个对象 C、D。连接 C 到 D 的函子之间有一组自然变换，可把它们视为从 C 到 D 的新箭头。同理，连接 D 到 E 的函子之间的自然变换可作为从 D 到 E 的新箭头。水平复合就是这些箭头的复合。</p>
+<p class="source-paragraph" data-source-paragraph="94">还有从 C 到 C 的恒等箭头：它是把 C 上恒等函子映射到自身的恒等自然变换。注意，水平复合的恒等也是垂直复合的恒等，反之不成立。</p>
+<p class="source-paragraph" data-source-paragraph="95">最后，两种复合满足<em>交换律（interchange law）</em>：</p><div class="math-display">(β′ · α′) ∘ (β · α) = (β′ ∘ β) · (α′ ∘ α)</div>
+<p class="source-paragraph" data-source-paragraph="96">借用 Saunders Mac Lane 的话：“读者也许会乐于画出证明这一事实所需的那些显然图表。”</p>
+<p class="source-paragraph" data-source-paragraph="97">还有一种以后有用的记法。在从侧面解释 Cat 时，从对象到对象有两种方式：函子或自然变换。不过，可把函子箭头重解释为特殊自然变换——作用于该函子的恒等自然变换。因此常见记法：</p><div class="math-display">F ∘ α</div>
+<p class="source-paragraph" data-source-paragraph="98">其中 F 是从 D 到 E 的函子，α 是从 C 到 D 的两个函子之间的自然变换。由于函子不能直接与自然变换复合，这被解释成恒等自然变换 1<sub>F</sub> 在 α 之后的水平复合。</p>
+<p class="source-paragraph" data-source-paragraph="99">类似地，<em>α∘F</em> 是 α 在 1<sub>F</sub> 之后的水平复合。</p></section>
+
+<section id="conclusion"><h2>小结</h2>
+<p class="source-paragraph" data-source-paragraph="100">本章结束了全书第一部分。我们已经学会范畴论的基本词汇。可以把对象和范畴视为名词，把态射、函子、自然变换视为动词：态射连接对象，函子连接范畴，自然变换连接函子。</p>
+<p class="source-paragraph" data-source-paragraph="101">但也看到，在一个抽象层级看似动作的东西，到下一级会成为对象。态射集合变成函数对象；作为对象，它又能成为另一支态射的源或目标。这正是高阶函数背后的思想。</p>
+<p class="source-paragraph" data-source-paragraph="102">函子把对象映射到对象，所以可用作类型构造器或参数化类型；函子也映射态射，所以又是高阶函数 <code>fmap</code>。<code>Const</code>、积和余积等简单函子能够生成大量代数数据类型。函数类型同样具有函子性，既协变又逆变，可用于扩展代数数据类型。</p>
+<p class="source-paragraph" data-source-paragraph="103">函子还能作为函子范畴中的对象；于是它们成为态射——自然变换——的源与目标。自然变换则是一类特殊的多态函数。</p></section>
+
+<section id="challenges"><h2>习题</h2><ol class="challenges">
+<li>定义从 <code>Maybe</code> 函子到 list 函子的自然变换，并证明自然性。
+<details class="exercise-answer"><summary>点击展开参考答案</summary><pre><code class="language-haskell">maybeToList :: Maybe a -&gt; [a]
+maybeToList Nothing  = []
+maybeToList (Just x) = [x]</code></pre><p>对任意 <code>f:a→b</code>：<code>Nothing</code> 分支两边都为 <code>[]</code>；<code>Just x</code> 分支，<code>fmap f (maybeToList (Just x))=[f x]</code>，而 <code>maybeToList (fmap f (Just x))=[f x]</code>。故 <code>fmap f . maybeToList = maybeToList . fmap f</code>。</p></details></li>
+<li>定义至少两个从 <code>Reader ()</code> 到 list 函子的不同自然变换。<code>()</code> 的不同列表有多少个？
+<details class="exercise-answer"><summary>点击展开参考答案</summary><pre><code class="language-haskell">none (Reader _) = []
+once (Reader g) = [g ()]
+twice (Reader g) = [g (), g ()]</code></pre><p>对每个自然数 <code>n≥0</code>，都可把 <code>g()</code> 重复 <code>n</code> 次，因此至少有可数无穷多个自然变换。<code>[()]</code> 的每个有限列表只由长度决定，所以也恰有可数无穷多个，与 Yoneda 预测一致。</p></details></li>
+<li>把上一题改为 <code>Reader Bool</code> 与 <code>Maybe</code>。
+<details class="exercise-answer"><summary>点击展开参考答案</summary><p>按 Yoneda，引出的自然变换与 <code>Maybe Bool</code> 的元素一一对应，共三个：始终返回 <code>Nothing</code>；返回 <code>Just (g False)</code>；返回 <code>Just (g True)</code>。</p><pre><code class="language-haskell">n (Reader g) = Nothing
+atFalse (Reader g) = Just (g False)
+atTrue  (Reader g) = Just (g True)</code></pre></details></li>
+<li>证明自然变换的水平复合满足自然性（提示：使用分量）。
+<details class="exercise-answer"><summary>点击展开参考答案</summary><p>令水平复合分量 <code>γₐ = β_{F′a} ∘ Gαₐ</code>。对 <code>f:a→b</code>：</p><div class="math-display">G′F′f ∘ γₐ<br>= G′F′f ∘ β<sub>F′a</sub> ∘ Gαₐ<br>= β<sub>F′b</sub> ∘ GF′f ∘ Gαₐ<br>= β<sub>F′b</sub> ∘ Gα<sub>b</sub> ∘ GFf<br>= γ<sub>b</sub> ∘ GFf</div><p>第二步用 β 的自然性，第三步用 α 的自然性经 G 映射后的等式，因此 γ 自然。</p></details></li>
+<li>写一篇短文，谈谈为什么你也许会乐于画出证明交换律所需的那些显然图表。
+<details class="exercise-answer"><summary>点击展开参考答案</summary><p>所谓“显然”，往往只是把四个自然变换的分量放到同一张网格后，每个小方块都由自然性交换。逐符号展开会同时混入水平与垂直两种复合，容易写错顺序；图表却把类型兼容性、路径起终点和两条总路径的相等直接显现出来。乐趣不在机械绘图，而在发现宏观交换律只是若干局部交换方块的拼接。</p></details></li>
+<li>为不同 <code>Op</code> 函子之间变换的反向自然性条件编写几个测试。可使用：<pre><code class="language-haskell">op :: Op Bool Int
+op = Op (\x -&gt; x &gt; 0)</code></pre><p>以及：</p><pre><code class="language-haskell">f :: String -&gt; Int
+f x = read x</code></pre>
+<details class="exercise-answer"><summary>点击展开参考答案</summary><pre><code class="language-haskell">predToStr (Op p) = Op (\x -&gt; if p x then "T" else "F")
+
+left  = contramap f (predToStr op)
+right = predToStr (contramap f op)
+
+test = case (left, right) of
+  (Op l, Op r) -&gt;
+    l "1" == r "1" &amp;&amp;
+    l "0" == r "0" &amp;&amp;
+    l "-2" == r "-2"</code></pre><p>两边都先用 <code>read</code> 把字符串变成整数，再判断是否为正，最后编码为 <code>"T"</code>/<code>"F"</code>，所以所有测试相等。</p></details></li>
+</ol></section>
+<nav class="chapter-switcher"><a href="../function-types/">← 第 9 章：函数类型</a><a href="../declarative-programming/">第 11 章：声明式编程 →</a></nav>
+</article><footer class="source-note"><p><strong>原文：</strong><a href="https://bartoszmilewski.com/2015/04/07/natural-transformations/">Natural Transformations</a></p><p><strong>核对底稿：</strong>作者博客正文与开源英文 Markdown；正文、31 个原文代码块、公式、13 张插图和 6 道习题均已收录；参考答案属于本阅读器。</p><p><strong>许可：</strong>原作及本非官方中文译文依 <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> 署名—相同方式共享。</p></footer></main></body></html>

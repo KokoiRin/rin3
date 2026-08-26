@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>第 17 章：一切皆态射｜程序员的范畴论｜RIN III</title><meta name="description" content="《程序员的范畴论》第 17 章完整中文翻译：函子、交换图、自然变换、Hom 集同构与不对称性"><link rel="stylesheet" href="../reader.css"></head>
+<body><nav class="site-nav"><a href="../../../mathematics/category-theory-for-programmers/">← 返回整本书学习记录</a><a href="../../../">RIN III</a></nav><main class="reader"><header><span class="chapter-kicker">第三部分 · 第 17 章 · 完整中文译文</span><h1>一切皆态射</h1><p class="byline">Bartosz Milewski</p><div class="title-rule"></div><p class="lead">在进入伴随之前，本章把函子、交换图、自然变换与泛构造重新放回同一条主线：真正携带可观察结构的是态射及其复合。</p><div class="translation-scope"><span class="scope-label">译文范围</span><p>完整翻译本章正文，保留全部 3 幅插图、公式和 1 道习题；本章原文没有代码块，习题附可展开答案。</p></div><nav><ul class="chapter-nav"><li><a href="#functors">函子</a></li><li><a href="#diagrams">交换图</a></li><li><a href="#natural-transformations">自然变换</a></li><li><a href="#hom-sets">Hom 集</a></li><li><a href="#isomorphisms">Hom 集同构</a></li><li><a href="#asymmetry">Hom 集的不对称性</a></li><li><a href="#challenges">习题</a></li></ul></nav></header><article>
+
+<p class="source-paragraph" data-source-paragraph="1">如果到现在我还没能让你相信范畴论的一切都关乎态射，那就是我没把工作做好。下一个主题是伴随，它用 Hom 集的同构来定义，因此有必要复习对 Hom 集构成要素的直觉。此外，你会看到，伴随提供了一种更一般的语言，可以描述我们以前研究过的许多构造，所以也值得顺便复习它们。</p>
+
+<section id="functors"><h2>函子</h2><p class="source-paragraph" data-source-paragraph="2">首先，你确实应该把函子想成态射的映射——Haskell 对 <code>Functor</code> 类型类的定义强调的正是这个视角，因为它围绕 <code>fmap</code> 展开。当然，函子也映射对象，也就是态射的端点，否则就无法讨论保持复合。对象告诉我们哪些态射对可以复合：若要复合两支态射，一支的目标必须等于另一支的源。因此，若想把态射复合映射为<em>提升（lifted）</em>后态射的复合，它们端点的映射几乎也随之确定了。</p></section>
+
+<section id="diagrams"><h2>交换图</h2><p class="source-paragraph" data-source-paragraph="3">态射的许多性质都用交换图表达。若一支特定态射可以通过其他态射以不止一种方式复合得到，就有了交换图。</p>
+<p class="source-paragraph" data-source-paragraph="4">特别是，交换图构成几乎所有泛构造的基础（始对象与终对象是显著例外）。我们在积、余积、其他各种（余）极限、指数对象、自由幺半群等定义中都见过这一点。</p>
+<p class="source-paragraph" data-source-paragraph="5">积是泛构造的简单例子。选取两个对象 <em>a</em>、<em>b</em>，看看是否存在对象 <em>c</em> 以及一对态射 <em>p</em>、<em>q</em>，使它具有作为二者之积的泛性质。</p>
+<figure><div class="figure-frame"><img src="productranking.jpg" alt="积候选及其因子态射"></div></figure>
+<p class="source-paragraph" data-source-paragraph="6">积是极限的一个特例。极限用锥定义，一般的锥由交换图构成。这些图的交换性可以由函子映射的适当自然性条件替代。这样一来，交换性就被降格为自然变换这门高级语言的汇编语言。</p></section>
+
+<section id="natural-transformations"><h2>自然变换</h2><p class="source-paragraph" data-source-paragraph="7">一般来说，每当需要把态射映射为交换方块时，自然变换都非常方便。自然性方块相对的两条边，是某支态射 <em>f</em> 在两个函子 <em>F</em>、<em>G</em> 下的映射；另外两边是自然变换的分量，它们也是态射。</p>
+<figure><div class="figure-frame"><img src="3_naturality.jpg" alt="自然变换的交换方块"></div></figure>
+<p class="source-paragraph" data-source-paragraph="8">自然性表示：移动到“相邻”分量时（相邻是指由态射连接），不会违背范畴或函子的结构。先用自然变换的分量跨越对象间隙，再借函子跳到相邻位置，还是反过来做，都没有区别。可以说，这两个方向彼此正交：自然变换让你左右移动，函子让你上下或前后移动。可以把函子的<em>像</em>想成目标范畴中的一张薄片；自然变换把对应 <em>F</em> 的薄片映射到对应 <em>G</em> 的另一张薄片。</p>
+<figure><div class="figure-frame"><img src="sheets.png" alt="两个函子的像如同薄片，由自然变换连接"></div></figure>
+<p class="source-paragraph" data-source-paragraph="9">我们在 Haskell 中见过这种正交性的例子。函子的作用改变容器内容，却不改变形状；自然变换则把未经改变的内容重新包装进另一个容器。这两项操作的顺序不重要。</p>
+<p class="source-paragraph" data-source-paragraph="10">我们见过用自然变换替代极限定义中的锥。自然性保证每个锥的侧面交换。然而，极限仍然用锥<em>之间</em>的映射定义，这些映射也必须满足交换条件。（例如，积定义中的三角形必须交换。）</p>
+<p class="source-paragraph" data-source-paragraph="11">这些条件同样可以由自然性替代。你可能记得，<em>泛</em>锥，也就是极限，被定义为下面两个函子之间的自然变换。第一个是（逆变）Hom 函子：</p><div class="math-display">F : c ↦ C(c,lim D)</div><p class="source-paragraph" data-source-paragraph="12">第二个同样是逆变函子，它把 C 中对象映射到锥，而锥本身也是自然变换：</p><div class="math-display">G : c ↦ Nat(Δ<sub>c</sub>,D)</div><p class="source-paragraph" data-source-paragraph="13">这里 Δ<sub>c</sub> 是常函子，<em>D</em> 是定义 C 中图的函子。函子 <em>F</em>、<em>G</em> 对 C 中态射的作用都定义良好。恰好，这两个函子之间的特定自然变换还是一个<em>同构</em>。</p></section>
+
+<section id="natural-isomorphisms"><h2>自然同构</h2><p class="source-paragraph" data-source-paragraph="14">自然同构——每个分量都可逆的自然变换——是范畴论表达“两个事物相同”的方式。这样的变换的每个分量，都必须是对象之间的同构，也就是拥有逆的态射。若把函子之像想成薄片，自然同构就是两张薄片之间一一对应的可逆映射。</p></section>
+
+<section id="hom-sets"><h2>Hom 集</h2><p class="source-paragraph" data-source-paragraph="15">但态射是什么？它们确实比对象拥有更多结构：与对象不同，态射有两个端点。但固定源对象与目标对象后，两者之间的态射就组成一个无聊的集合（至少对局部小范畴如此）。可以给集合中的元素起名叫 <em>f</em>、<em>g</em> 来区分它们——但真正让它们不同的究竟是什么？</p>
+<p class="source-paragraph" data-source-paragraph="16">给定 Hom 集中的态射之间，本质区别在于它们怎样与（来自相邻 Hom 集的）其他态射复合。例如，若有态射 <em>h</em>，它与 <em>f</em> 的复合（无论前复合还是后复合）不同于与 <em>g</em> 的复合：</p><div class="math-display">h ∘ f ≠ h ∘ g</div><p class="source-paragraph" data-source-paragraph="17">我们就能直接“观察”到 <em>f</em> 与 <em>g</em> 的区别。但即使区别无法直接观察，也可以用函子放大 Hom 集。函子 <em>F</em> 可能把两支态射映射成不同态射：</p><div class="math-display">F f ≠ F g</div><p class="source-paragraph" data-source-paragraph="18">目标是一个更丰富的范畴，其中相邻 Hom 集提供更高分辨率，例如：</p><div class="math-display">h′ ∘ F f ≠ h′ ∘ F g</div><p class="source-paragraph" data-source-paragraph="19">这里 <em>h′</em> 不属于 <em>F</em> 的像。</p></section>
+
+<section id="isomorphisms"><h2>Hom 集同构</h2><p class="source-paragraph" data-source-paragraph="20">许多范畴构造依赖 Hom 集之间的同构。但 Hom 集只是集合，它们之间的普通同构说明不了多少。对有限集合，同构只表示元素数量相同；若集合无限，则基数必须相同。然而，有意义的 Hom 集同构必须考虑复合，而复合牵涉不止一个 Hom 集。我们需要定义跨越整族 Hom 集的同构，并施加一些能与复合协同工作的兼容条件。<em>自然（natural）</em>同构正好满足要求。</p>
+<p class="source-paragraph" data-source-paragraph="21">但 Hom 集的自然同构是什么？自然性是函子之间映射的性质，不是集合之间映射的性质。所以我们真正谈论的是 Hom 集值函子之间的自然同构。这些函子不只是普通 Set 值函子；它们对态射的作用由适当的 Hom 函子诱导。Hom 函子规范地用前复合或后复合映射态射，取决于函子的协变性。</p>
+<p class="source-paragraph" data-source-paragraph="22">Yoneda 嵌入就是这种同构的一个例子。它把 C 中的 Hom 集映射到函子范畴中的 Hom 集，而且这个映射是自然的。Yoneda 嵌入中的一个函子是 C 中的 Hom 函子，另一个把对象映射到 Hom 函子之间的自然变换集合。</p>
+<p class="source-paragraph" data-source-paragraph="23">极限的定义也是 Hom 集之间的自然同构（第二个 Hom 集同样位于函子范畴）：</p><div class="math-display">C(c,lim D) ≃ Nat(Δ<sub>c</sub>,D)</div><p class="source-paragraph" data-source-paragraph="24">事实证明，指数对象或自由幺半群的构造，也可以改写成 Hom 集之间的自然同构。</p>
+<p class="source-paragraph" data-source-paragraph="25">这不是巧合——下一章会看到，它们只是伴随的不同例子，而伴随正是用 Hom 集的自然同构定义的。</p></section>
+
+<section id="asymmetry"><h2>Hom 集的不对称性</h2><p class="source-paragraph" data-source-paragraph="26">还有一个观察有助于理解伴随。Hom 集通常并不对称：C(a,b) 往往与 C(b,a) 大不相同。把偏序看作范畴，最能展示这种不对称性。在偏序中，当且仅当 <em>a</em> 小于等于 <em>b</em>，才存在从 <em>a</em> 到 <em>b</em> 的态射。若 <em>a</em>、<em>b</em> 不同，就不可能存在反方向从 <em>b</em> 到 <em>a</em> 的态射。因此，若 Hom 集 C(a,b) 非空——这里表示它是单元素集——则 C(b,a) 必为空，除非 <em>a=b</em>。这个范畴中的箭头具有明确的单向流动。</p>
+<p class="source-paragraph" data-source-paragraph="27">预序基于不一定反对称的关系，所以也“基本上”具有方向性，只是偶尔会有环。把任意范畴想成预序的推广很方便。</p>
+<p class="source-paragraph" data-source-paragraph="28">预序是薄范畴——全部 Hom 集要么是单元素集合，要么为空。可以把一般范畴想象成“厚”预序。</p></section>
+
+<section id="challenges"><h2>习题</h2><ol class="challenges"><li>考察自然性条件的一些退化情形，并画出相应的图。例如，如果函子 <em>F</em> 或 <em>G</em> 把 <em>f:a→b</em> 两端的对象 <em>a</em>、<em>b</em> 都映射到同一个对象，会发生什么，即 <em>Fa=Fb</em> 或 <em>Ga=Gb</em>？（注意，这样会得到锥或余锥。）再考虑 <em>Fa=Ga</em> 或 <em>Fb=Gb</em> 的情形。最后，若一开始就是自环态射 <em>f:a→a</em>，又会怎样？<details class="exercise-answer"><summary>点击展开参考答案</summary><p>一般方块满足 <code>Gf∘αa=αb∘Ff</code>。若 F 在这两个对象上是常函子且把 <code>f</code> 映成恒等，则分量从共同顶点指向 G 的像，并满足 <code>Gf∘αa=αb</code>，形成锥；若 G 局部为常函子，则分量从 F 的像指向共同顶点，形成余锥。若 <code>Fa=Ga</code> 且取 <code>αa=id</code>，方块退化为三角形 <code>Gf=αb∘Ff</code>；若 <code>Fb=Gb</code> 且 <code>αb=id</code>，则为 <code>Gf∘αa=Ff</code>。若 <code>f:a→a</code>，方块四角只涉及 <code>Fa</code>、<code>Ga</code>，自然性变成 <code>Gf∘αa=αa∘Ff</code>：α 把两个自同态交织起来。</p></details></li></ol></section>
+<nav class="chapter-switcher"><a href="../yoneda-embedding/">← 第 16 章：Yoneda 嵌入</a><a href="../adjunctions/">第 18 章：伴随 →</a></nav>
+</article><footer class="source-note"><p><strong>原文：</strong><a href="https://bartoszmilewski.com/2016/03/15/its-all-about-morphisms/">It's All About Morphisms</a></p><p><strong>核对底稿：</strong>作者博客正文与开源英文 Markdown；正文、3 幅插图、公式和 1 道习题均已收录；本章原文没有代码块，参考答案属于本阅读器。</p><p><strong>许可：</strong>原作及本非官方中文译文依 <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> 署名—相同方式共享。</p></footer></main></body></html>

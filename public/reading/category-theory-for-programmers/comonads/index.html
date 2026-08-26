@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>第 23 章：Comonad｜程序员的范畴论｜RIN III</title><meta name="description" content="《程序员的范畴论》第 23 章完整中文翻译：co-Kleisli、Product、Stream、Store 与 Comonad"><link rel="stylesheet" href="../reader.css"></head>
+<body><nav class="site-nav"><a href="../../../mathematics/category-theory-for-programmers/">← 返回整本书学习记录</a><a href="../../../">RIN III</a></nav><main class="reader"><header><span class="chapter-kicker">第三部分 · 第 23 章 · 完整中文译文</span><h1>Comonad</h1><p class="byline">Bartosz Milewski</p><div class="title-rule"></div><p class="lead">Comonad 是 Monad 的对偶：它不把值放入上下文，而是让计算从一个预先充满数据、带当前焦点的上下文中取值并向周围扩展。</p><div class="translation-scope"><span class="scope-label">译文范围</span><p>完整翻译本章正文，保留全部 39 个原文代码块和公式；本章无插图，1 道习题附可展开答案。</p></div><nav><ul class="chapter-nav"><li><a href="#programming">用 Comonad 编程</a></li><li><a href="#product">Product Comonad</a></li><li><a href="#composition">解剖复合</a></li><li><a href="#stream">Stream Comonad</a></li><li><a href="#categorical">范畴定义</a></li><li><a href="#store">Store Comonad</a></li><li><a href="#challenges">习题</a></li></ul></nav></header><article>
+
+<p class="source-paragraph" data-source-paragraph="1">既然已经讲完 Monad，就可以收获对偶性的好处：只需反转箭头并在对偶范畴中工作，便免费得到 Comonad。</p>
+<p class="source-paragraph" data-source-paragraph="2">回忆最基本层面上，Monad 关乎复合 Kleisli 箭头：</p><pre><code class="language-haskell">a -&gt; m b</code></pre><p class="source-paragraph" data-source-paragraph="3">其中 <code>m</code> 是具有 Monad 结构的函子。若用 <code>w</code>（倒过来的 <code>m</code>）表示 Comonad，就能把 <em>co-Kleisli 箭头</em>定义为：</p><pre><code class="language-haskell">w a -&gt; b</code></pre>
+<p class="source-paragraph" data-source-paragraph="4">Co-Kleisli 箭头的鱼运算符对应物定义为：</p><pre><code class="language-haskell">(=&gt;=) :: (w a -&gt; b) -&gt; (w b -&gt; c) -&gt; (w a -&gt; c)</code></pre>
+<p class="source-paragraph" data-source-paragraph="5">要让 co-Kleisli 箭头形成范畴，还必须有恒等 co-Kleisli 箭头，称为 <code>extract</code>：</p><pre><code class="language-haskell">extract :: w a -&gt; a</code></pre><p class="source-paragraph" data-source-paragraph="6">它是 <code>return</code> 的对偶。还必须施加结合律、左恒等律和右恒等律。合起来可在 Haskell 中这样定义 Comonad：</p><pre><code class="language-haskell">class Functor w =&gt; Comonad w where
+    (=&gt;=) :: (w a -&gt; b) -&gt; (w b -&gt; c) -&gt; (w a -&gt; c)
+    extract :: w a -&gt; a</code></pre>
+<p class="source-paragraph" data-source-paragraph="7">实践中会使用稍有不同的基本操作，马上会看到。问题是：Comonad 在编程中有什么用？</p>
+
+<section id="programming"><h2>用 Comonad 编程</h2><p class="source-paragraph" data-source-paragraph="8">比较 Monad 与 Comonad。Monad 用 <code>return</code> 把值放进容器，却不给你访问容器内部值的手段。当然，实现 Monad 的数据结构可能额外提供内容访问，但那只是奖励，没有从 Monad 提取值的公共接口。我们还见过以永不暴露内容为荣的 <code>IO</code> Monad。</p>
+<p class="source-paragraph" data-source-paragraph="9">Comonad 则提供从中提取单个值的手段，却不提供插入值的手段。因此，若把 Comonad 想成容器，它总是预先装有内容，并允许窥视。</p>
+<p class="source-paragraph" data-source-paragraph="10">正如 Kleisli 箭头接受一个值并产生某种装饰结果——为值增加上下文——co-Kleisli 箭头接受一个值连同完整上下文并产生结果。它体现了<em>上下文计算（contextual computation）</em>。</p></section>
+
+<section id="product"><h2>Product Comonad</h2><p class="source-paragraph" data-source-paragraph="11">还记得 Reader Monad 吗？我们用它处理需要访问只读环境 <code>e</code> 的计算。这种计算可表示为纯函数：</p><pre><code class="language-haskell">(a, e) -&gt; b</code></pre><p class="source-paragraph" data-source-paragraph="12">我们用柯里化把它变成 Kleisli 箭头：</p><pre><code class="language-haskell">a -&gt; (e -&gt; b)</code></pre><p class="source-paragraph" data-source-paragraph="13">但注意，它原本就具有 co-Kleisli 箭头形式。把参数整理成更方便的函子形式：</p><pre><code class="language-haskell">data Product e a = Prod e a deriving Functor</code></pre>
+<p class="source-paragraph" data-source-paragraph="14">让被复合的箭头共享同一个环境，就能轻易定义复合运算符：</p><pre><code class="language-haskell">(=&gt;=) ::
+  (Product e a -&gt; b) -&gt;
+  (Product e b -&gt; c) -&gt;
+  (Product e a -&gt; c)
+f =&gt;= g = \(Prod e a) -&gt; let b = f (Prod e a)
+                             c = g (Prod e b)
+                         in c</code></pre>
+<p class="source-paragraph" data-source-paragraph="15"><code>extract</code> 的实现直接忽略环境：</p><pre><code class="language-haskell">extract (Prod e a) = a</code></pre>
+<p class="source-paragraph" data-source-paragraph="16">不出所料，Product Comonad 可以执行与 Reader Monad 完全相同的计算。某种意义上，环境的 Comonad 实现更自然——符合“在上下文中计算”的精神；另一方面，Monad 拥有方便的 <code>do</code> 语法糖。</p>
+<p class="source-paragraph" data-source-paragraph="17">Reader Monad 与 Product Comonad 的联系更深，因为 Reader 函子是 Product 函子的右伴随。不过一般来说，Comonad 覆盖的计算概念与 Monad 不同，稍后还会看到更多例子。</p>
+<p class="source-paragraph" data-source-paragraph="18">Product Comonad 很容易推广到任意积类型，包括元组和记录。</p></section>
+
+<section id="composition"><h2>解剖复合</h2><p class="source-paragraph" data-source-paragraph="19">继续对偶化，可以直接把 Monad 的 bind、join 对偶化；也可以重复解剖鱼运算符的过程。后一种方式更有启发。</p>
+<p class="source-paragraph" data-source-paragraph="20">起点是：复合运算符必须产生接受 <code>w a</code> 并生成 <code>c</code> 的 co-Kleisli 箭头。产生 <code>c</code> 的唯一办法，是把第二个函数应用于 <code>w b</code> 类型参数：</p><pre><code class="language-haskell">(=&gt;=) :: (w a -&gt; b) -&gt; (w b -&gt; c) -&gt; (w a -&gt; c)
+f =&gt;= g = g ...</code></pre>
+<p class="source-paragraph" data-source-paragraph="21">但怎样产生可传给 <code>g</code> 的 <code>w b</code>？手上有 <code>w a</code> 参数与函数 <code>f :: w a -&gt; b</code>。解决办法是定义 bind 的对偶，称为 <em>extend</em>：</p><pre><code class="language-haskell">extend :: (w a -&gt; b) -&gt; w a -&gt; w b</code></pre><p class="source-paragraph" data-source-paragraph="22">用 <code>extend</code> 可实现复合：</p><pre><code class="language-haskell">f =&gt;= g = g . extend f</code></pre>
+<p class="source-paragraph" data-source-paragraph="23">还能继续解剖 <code>extend</code> 吗？你可能想直接把 <code>w a-&gt;b</code> 应用于 <code>w a</code>，但随后会发现无法把结果 <code>b</code> 转为 <code>w b</code>；Comonad 不提供提升值的手段。Monad 的类似构造中，这里用了 <code>fmap</code>。若手上有 <code>w (w a)</code>，这里也能使用 <code>fmap</code>。只要能把 <code>w a</code> 变成 <code>w (w a)</code> 即可——而这恰好是 <code>join</code> 的对偶，称为 <code>duplicate</code>：</p><pre><code class="language-haskell">duplicate :: w a -&gt; w (w a)</code></pre>
+<p class="source-paragraph" data-source-paragraph="24">所以与 Monad 一样，Comonad 有三种等价定义：用 co-Kleisli 箭头、<code>extend</code> 或 <code>duplicate</code>。下面直接取自 <code>Control.Comonad</code>：</p><pre><code class="language-haskell">class Functor w =&gt; Comonad w where
+  extract :: w a -&gt; a
+  duplicate :: w a -&gt; w (w a)
+  duplicate = extend id
+  extend :: (w a -&gt; b) -&gt; w a -&gt; w b
+  extend f = fmap f . duplicate</code></pre>
+<p class="source-paragraph" data-source-paragraph="25">库分别提供 <code>extend</code> 与 <code>duplicate</code> 的默认互相实现，所以只需覆盖其中一个。</p>
+<p class="source-paragraph" data-source-paragraph="26">这些函数背后的直觉是：一般可把 Comonad 看成装满 <code>a</code> 值的容器（Product Comonad 是只含一个值的特例）。其中有“当前”值，可用 <code>extract</code> 轻易访问。Co-Kleisli 箭头执行聚焦于当前值的计算，同时可访问周围所有值。想象 Conway 生命游戏：每个格子包含一个值（通常是 <code>True</code> 或 <code>False</code>），对应 Comonad 是聚焦于“当前”格子的网格。</p>
+<p class="source-paragraph" data-source-paragraph="27"><code>duplicate</code> 做什么？它把 Comonad 容器 <code>w a</code> 变成容器的容器 <code>w (w a)</code>，其中每个内层容器聚焦于原 <code>w a</code> 中不同的 <code>a</code>。生命游戏中，会得到“网格的网格”：外层每格包含一个聚焦于不同格子的内层网格。</p>
+<p class="source-paragraph" data-source-paragraph="28"><code>extend</code> 接受 co-Kleisli 箭头和装满 <code>a</code> 的 Comonad 容器 <code>w a</code>，把计算应用到所有 <code>a</code>，以 <code>b</code> 替换它们，结果是装满 <code>b</code> 的 Comonad 容器。它逐个移动焦点并应用 co-Kleisli 箭头。生命游戏中，箭头根据当前格子的上下文——大概是最近邻——计算新状态。<code>extend</code> 的默认实现正说明这个过程：先用 <code>duplicate</code> 产生所有可能焦点，再对每个焦点应用 <code>f</code>。</p></section>
+
+<section id="stream"><h2>Stream Comonad</h2><p class="source-paragraph" data-source-paragraph="29">移动容器焦点的过程，用无限流最容易说明。流像列表，但没有空构造器：</p><pre><code class="language-haskell">data Stream a = Cons a (Stream a)</code></pre><p class="source-paragraph" data-source-paragraph="30">它显然是函子：</p><pre><code class="language-haskell">instance Functor Stream where
+    fmap f (Cons a as) = Cons (f a) (fmap f as)</code></pre><p class="source-paragraph" data-source-paragraph="31">流的焦点是第一个元素，所以：</p><pre><code class="language-haskell">extract (Cons a _) = a</code></pre><p class="source-paragraph" data-source-paragraph="32"><code>duplicate</code> 产生流的流，每个内层流聚焦于不同元素：</p><pre><code class="language-haskell">duplicate (Cons a as) = Cons (Cons a as) (duplicate as)</code></pre>
+<p class="source-paragraph" data-source-paragraph="33">第一个元素是原流，第二个是原流的尾，第三个是它的尾，以此无限继续。完整实例是：</p><pre><code class="language-haskell">instance Comonad Stream where
+    extract (Cons a _) = a
+    duplicate (Cons a as) = Cons (Cons a as) (duplicate as)</code></pre>
+<p class="source-paragraph" data-source-paragraph="34">这是非常函数式的流视角。命令式语言可能从把流前移一位的 <code>advance</code> 方法开始；这里 <code>duplicate</code> 一次产生所有偏移后的流。Haskell 的惰性使之可能，而且值得。为实用起见还会实现类似 <code>advance</code> 的函数：</p><pre><code class="language-haskell">tail :: Stream a -&gt; Stream a
+tail (Cons a as) = as</code></pre><p class="source-paragraph" data-source-paragraph="35">但它绝不是 Comonad 接口的一部分。</p>
+<p class="source-paragraph" data-source-paragraph="36">若有数字信号处理经验，会立刻看出流上的 co-Kleisli 箭头就是数字滤波器，而 <code>extend</code> 产生滤波后的流。</p>
+<p class="source-paragraph" data-source-paragraph="37">以移动平均滤波器为简单例子。下面函数求流前 <code>n</code> 个元素之和：</p><pre><code class="language-haskell">sumS :: Num a =&gt; Int -&gt; Stream a -&gt; a
+sumS n (Cons a as) = if n &lt;= 0 then 0 else a + sumS (n - 1) as</code></pre><p class="source-paragraph" data-source-paragraph="38">下面计算流前 <code>n</code> 个元素平均值：</p><pre><code class="language-haskell">average :: Fractional a =&gt; Int -&gt; Stream a -&gt; a
+average n stm = (sumS n stm) / (fromIntegral n)</code></pre><p class="source-paragraph" data-source-paragraph="39">偏应用后的 <code>average n</code> 是 co-Kleisli 箭头，所以可把它 <code>extend</code> 到整条流：</p><pre><code class="language-haskell">movingAvg :: Fractional a =&gt; Int -&gt; Stream a -&gt; Stream a
+movingAvg n = extend (average n)</code></pre><p class="source-paragraph" data-source-paragraph="40">结果是运行平均值组成的流。</p>
+<p class="source-paragraph" data-source-paragraph="41">流是单向一维 Comonad 的例子，很容易改成双向或扩展到二维及更高维。</p></section>
+
+<section id="categorical"><h2>Comonad 的范畴定义</h2><p class="source-paragraph" data-source-paragraph="42">在范畴论中定义 Comonad，是直接运用对偶性的练习。与 Monad 一样，从自函子 <em>T</em> 开始；定义 Monad 的两个自然变换 η、μ 在 Comonad 中反转：</p><div class="math-display">ε:T→I<br>δ:T→T²</div><p class="source-paragraph" data-source-paragraph="43">它们的分量对应 <code>extract</code> 与 <code>duplicate</code>。Comonad 定律是 Monad 定律的镜像，毫不意外。</p>
+<p class="source-paragraph" data-source-paragraph="44">还有由伴随推导 Monad。对偶会反转伴随：左伴随变成右伴随，反之亦然。既然复合 <em>R∘L</em> 定义 Monad，<em>L∘R</em> 必然定义 Comonad。伴随的余单位：</p><div class="math-display">ε:L∘R→I</div><p class="source-paragraph" data-source-paragraph="45">正是 Comonad 定义中的 ε，按分量就是 Haskell 的 <code>extract</code>。还可以用伴随单位：</p><div class="math-display">η:I→R∘L</div><p class="source-paragraph" data-source-paragraph="46">在 <em>L∘R</em> 中间插入 <em>R∘L</em>，产生 <em>L∘R∘L∘R</em>。由 <em>T</em> 制造 <em>T²</em> 定义 δ，完成 Comonad 定义。</p>
+<p class="source-paragraph" data-source-paragraph="47">还见过 Monad 是幺半群。其对偶需要余幺半群（comonoid）。原先把幺半群定义为单对象范畴时，反转全部自态射只会得到另一个幺半群，没有有趣的对偶。但定义 Monad 时采用了更一般的“幺半范畴中的对象”定义，基于两支态射：</p><div class="math-display">μ:m⊗m→m<br>η:i→m</div><p class="source-paragraph" data-source-paragraph="48">反转它们，得到幺半范畴中的余幺半群：</p><div class="math-display">δ:m→m⊗m<br>ε:m→i</div>
+<p class="source-paragraph" data-source-paragraph="49">可以在 Haskell 中写出余幺半群定义：</p><pre><code class="language-haskell">class Comonoid m where
+  split   :: m -&gt; (m, m)
+  destroy :: m -&gt; ()</code></pre><p class="source-paragraph" data-source-paragraph="50">但它相当平凡，<code>destroy</code> 显然忽略参数：</p><pre><code class="language-haskell">destroy _ = ()</code></pre><p class="source-paragraph" data-source-paragraph="51"><code>split</code> 只是一对函数：</p><pre><code class="language-haskell">split x = (f x, g x)</code></pre>
+<p class="source-paragraph" data-source-paragraph="52">考虑与幺半群单位律对偶的余幺半群定律：</p><pre><code class="language-haskell">lambda . bimap destroy id . split = id
+rho . bimap id destroy . split = id</code></pre><p class="source-paragraph" data-source-paragraph="53">这里 <code>lambda</code>、<code>rho</code> 是左右幺元子。代入定义得到：</p><pre><code class="language-haskell">lambda (bimap destroy id (split x))
+= lambda (bimap destroy id (f x, g x))
+= lambda ((), g x)
+= g x</code></pre><p class="source-paragraph" data-source-paragraph="54">这证明 <code>g=id</code>。类似地，第二条定律展开为 <code>f=id</code>。因此：</p><pre><code class="language-haskell">split x = (x, x)</code></pre><p class="source-paragraph" data-source-paragraph="55">它说明 Haskell（更一般地说 Set）中每个对象都是平凡余幺半群。</p>
+<p class="source-paragraph" data-source-paragraph="56">幸运的是，还有其他更有趣的幺半范畴可以定义余幺半群，其中之一是自函子范畴。事实证明，正如 Monad 是自函子范畴中的幺半群：</p><blockquote><p>Comonad 是自函子范畴中的余幺半群。</p></blockquote></section>
+
+<section id="store"><h2>Store Comonad</h2><p class="source-paragraph" data-source-paragraph="57">另一个重要 Comonad 是 State Monad 的对偶，称为 Costate Comonad，也称 Store Comonad。</p>
+<p class="source-paragraph" data-source-paragraph="58">此前看到，State Monad 由定义指数的伴随生成：</p><div class="math-display">Lz=z×s<br>Ra=s⇒a</div><p class="source-paragraph" data-source-paragraph="59">用同一个伴随定义 Costate Comonad。Comonad 由复合 <em>L∘R</em> 定义：</p><div class="math-display">L(Ra)=(s⇒a)×s</div>
+<p class="source-paragraph" data-source-paragraph="60">翻译到 Haskell，从左边 Product 函子与右边 Reader 函子的伴随开始。Product 接在 Reader 后的复合等价于：</p><pre><code class="language-haskell">data Store s a = Store (s -&gt; a) s</code></pre>
+<p class="source-paragraph" data-source-paragraph="61">伴随余单位在对象 <code>a</code> 处是态射：</p><div class="math-display">ε<sub>a</sub>:((s⇒a)×s)→a</div><p class="source-paragraph" data-source-paragraph="62">Haskell 中写作：</p><pre><code class="language-haskell">counit (Prod (Reader f, s)) = f s</code></pre><p class="source-paragraph" data-source-paragraph="63">它成为 <code>extract</code>：</p><pre><code class="language-haskell">extract (Store f s) = f s</code></pre>
+<p class="source-paragraph" data-source-paragraph="64">伴随单位：</p><pre><code class="language-haskell">unit :: a -&gt; Reader s (Product a, s)
+unit a = Reader (\s -&gt; Prod (a, s))</code></pre><p class="source-paragraph" data-source-paragraph="65">可改写为偏应用的数据构造器：</p><pre><code class="language-haskell">Store f :: s -&gt; Store f s</code></pre>
+<p class="source-paragraph" data-source-paragraph="66">把 δ，也就是 <code>duplicate</code>，构造成水平复合：</p><div class="math-display">δ:L∘R→L∘R∘L∘R<br>δ=L∘η∘R</div><p class="source-paragraph" data-source-paragraph="67">必须把 η 偷渡过最左侧的 <em>L</em>，即 Product 函子。这表示让 η（或 <code>Store f</code>）作用于二元组左分量——Product 的 <code>fmap</code> 正会这样做。得到：</p><pre><code class="language-haskell">duplicate (Store f s) = Store (Store f) s</code></pre><p class="source-paragraph" data-source-paragraph="68">（记住，在 δ 公式中，<em>L</em>、<em>R</em> 表示分量为恒等态射的恒等自然变换。）</p>
+<p class="source-paragraph" data-source-paragraph="69">完整 Store Comonad 定义为：</p><pre><code class="language-haskell">instance Comonad (Store s) where
+  extract (Store f s) = f s
+  duplicate (Store f s) = Store (Store f) s</code></pre>
+<p class="source-paragraph" data-source-paragraph="70">可以把 <code>Store</code> 的 Reader 部分看成由 <code>s</code> 类型元素作键的广义 <code>a</code> 容器。例如，若 <code>s</code> 是 <code>Int</code>，<code>Reader Int a</code> 就是双向无限 <code>a</code> 流。<code>Store</code> 把这个容器与一个键类型值配对；这里是把 <code>Reader Int a</code> 与一个 <code>Int</code> 配对，<code>extract</code> 用该整数索引无限流。可把 <code>Store</code> 第二个分量想成当前位置。</p>
+<p class="source-paragraph" data-source-paragraph="71">继续这个例子，<code>duplicate</code> 创建一个由 <code>Int</code> 索引的新无限流，元素本身也是流。在当前位置，它包含原始流；若用另一个正或负 <code>Int</code> 作键，就得到移到新索引位置的流。</p>
+<p class="source-paragraph" data-source-paragraph="72">一般地，可以确信 <code>extract</code> 作用于 <code>duplicate</code> 后的 <code>Store</code> 会产生原 <code>Store</code>（Comonad 恒等律正是 <code>extract . duplicate = id</code>）。</p>
+<p class="source-paragraph" data-source-paragraph="73">Store Comonad 是 Lens 库的重要理论基础。概念上，<code>Store s a</code> 封装了使用类型 <code>s</code> 作索引，“聚焦”（像透镜一样）于数据类型 <code>a</code> 某个子结构的思想。特别是，函数：</p><pre><code class="language-haskell">a -&gt; Store s a</code></pre><p class="source-paragraph" data-source-paragraph="74">等价于一对函数：</p><pre><code class="language-haskell">set :: a -&gt; s -&gt; a
+get :: a -&gt; s</code></pre><p class="source-paragraph" data-source-paragraph="75">若 <code>a</code> 是积类型，<code>set</code> 可实现为设置 <code>a</code> 内部类型为 <code>s</code> 的字段并返回修改后的 <code>a</code>；<code>get</code> 则读取 <code>a</code> 中 <code>s</code> 字段的值。下一章会进一步探索这些思想。</p></section>
+
+<section id="challenges"><h2>习题</h2><ol class="challenges"><li>使用 <code>Store</code> Comonad 实现 Conway 生命游戏。提示：为 <code>s</code> 选择什么类型？<details class="exercise-answer"><summary>点击展开参考答案</summary><p>用二维坐标作为焦点类型：<code>s=(Int,Int)</code>，用函数 <code>(Int,Int)-&gt;Bool</code> 表示无限网格。局部规则读取当前焦点的八个邻居，<code>extend</code> 会把规则应用到所有焦点：</p><pre><code class="language-haskell">type Coord = (Int, Int)
+type Grid = Store Coord Bool
+
+neighbors :: Coord -&gt; [Coord]
+neighbors (x,y) =
+  [(x+dx,y+dy) | dx &lt;- [-1..1], dy &lt;- [-1..1], (dx,dy) /= (0,0)]
+
+rule :: Grid -&gt; Bool
+rule (Store cells p) =
+  let alive = length (filter cells (neighbors p))
+      here  = cells p
+  in alive == 3 || (here &amp;&amp; alive == 2)
+
+step :: Grid -&gt; Grid
+step = extend rule</code></pre><p><code>Store cells p</code> 中 <code>cells</code> 是整个棋盘，<code>p</code> 是当前格；<code>duplicate</code> 生成聚焦于每个坐标的棋盘，故 <code>extend rule</code> 同时计算下一代所有格子。</p></details></li></ol></section>
+<nav class="chapter-switcher"><a href="../monads-categorically/">← 第 22 章：Monad 的范畴定义</a><a href="../f-algebras/">第 24 章：F-代数 →</a></nav>
+</article><footer class="source-note"><p><strong>原文：</strong><a href="https://bartoszmilewski.com/2017/01/02/comonads/">Comonads</a></p><p><strong>核对底稿：</strong>作者博客正文与开源英文 Markdown；全部正文、39 个原文代码块和公式均已收录；1 道习题附参考答案，答案中的代码属于本阅读器。</p><p><strong>许可：</strong>原作及本非官方中文译文依 <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> 署名—相同方式共享。</p></footer></main></body></html>
