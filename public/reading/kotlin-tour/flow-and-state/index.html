@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Flow 表达随时间到来的多个值；StateFlow 表达当前状态，SharedFlow 表达共享广播。关键是先确定谁拥有状态。">
+  <title>Flow 与状态｜Kotlin 项目实战篇｜RIN III</title>
+  <link rel="stylesheet" href="../reader.css">
+</head>
+<body>
+  <nav class="site-nav" aria-label="站点导航"><a href="../index.html">← Kotlin 中文学习版</a><a href="../../../computer-science/kotlin-tour/">RIN III 学习记录</a></nav>
+  <main class="reader project-reader">
+    <header class="chapter-header">
+      <span class="chapter-kicker">项目实战篇 · 第 5 章</span>
+      <h1>Flow 与状态</h1>
+      <p class="lead">Flow 表达随时间到来的多个值；StateFlow 表达当前状态，SharedFlow 表达共享广播。关键是先确定谁拥有状态。</p>
+      <div class="title-rule"></div>
+      <aside class="compression-note"><strong>阅读约定</strong><p>本章是基于 Kotlin 官方资料整理翻译的结构化精读，不是逐段完整翻译。保留项目阅读所需的核心概念、关键边界和代表性代码，暂缓与当前学习目标关系较弱的高级细节。</p></aside>
+      <aside class="learning-note"><strong>本章主线</strong><p>读 Flow 代码要分清上游生产、操作符变换、下游收集，以及冷流何时启动、热流由哪个作用域维持。</p></aside>
+      <nav class="chapter-switcher" aria-label="章节导航"><a href="../coroutines/index.html">← 协程与结构化并发</a><a class="course-home" href="../index.html">全部章节</a><a href="../kmp-boundaries-and-testing/index.html">KMP 边界与测试 →</a></nav>
+    </header>
+    <article class="translated-article">
+      <h2>1. 从一个值走向一串值</h2>
+      <pre><code>fun observeCards(): Flow&lt;List&lt;Card&gt;&gt; = repository.cards
+    .map { cards -&gt; cards.filter(Card::isVisible) }
+    .distinctUntilChanged()</code></pre>
+      <p>挂起函数通常在一次调用中返回一个结果；<code>Flow&lt;T&gt;</code> 可以随时间发出多个 T。流水线由生产者、若干中间操作符和收集者组成。</p>
+      <h2>2. 冷流：收集才开始</h2>
+      <pre><code>val updates = flow {
+    emit(loadInitial())
+    emitAll(watchChanges())
+}
+
+updates.collect { render(it) }</code></pre>
+      <p>普通 Flow 通常是冷的：每个收集者都会启动一遍上游。看到某个函数返回 Flow，不要假设工作已经开始；要继续找到 <code>collect</code>、<code>first</code>、<code>launchIn</code>、<code>stateIn</code> 等终端位置。</p>
+      <h2>3. StateFlow：始终有“当前值”</h2>
+      <pre><code>private val _state = MutableStateFlow(ScreenState())
+val state: StateFlow&lt;ScreenState&gt; = _state
+
+fun select(id: ItemId) {
+    _state.update { it.copy(selectedId = id) }
+}</code></pre>
+      <p><code>StateFlow</code> 是热的状态容器，始终有一个当前 <code>value</code>，新订阅者会立即拿到最新状态。常见边界是内部持有可变的 <code>MutableStateFlow</code>，对外只暴露只读 <code>StateFlow</code>。</p>
+      <h2>4. SharedFlow：共享广播，不等于状态</h2>
+      <p><code>SharedFlow</code> 也是热流，但不要求一定有当前值。它适合多个订阅者共享通知或数据流。若业务问题是“界面现在是什么状态”，优先建模为 StateFlow；若是“发生了一次通知”，才考虑事件流，同时明确无人订阅时是否允许丢失。</p>
+      <h2>5. 把冷流转成热状态</h2>
+      <pre><code>val state: StateFlow&lt;ScreenState&gt; = repository.items
+    .map(::toScreenState)
+    .stateIn(
+        scope = scope,
+        started = SharingStarted.WhileSubscribed(5_000),
+        initialValue = ScreenState.Loading
+    )</code></pre>
+      <p><code>stateIn</code> 的关键不是函数名，而是三个决策：由哪个 Scope 维持、什么时候启动/停止、订阅前的初始状态是什么。这三项共同决定资源和生命周期。</p>
+      <h2>6. 操作符表达时间语义</h2>
+      <ul><li><code>map</code>：转换每次发出的值。</li><li><code>combine</code>：任一输入变化时，用各自最新值计算。</li><li><code>flatMapLatest</code>：新输入到来时取消旧的子流。</li><li><code>collectLatest</code>：新值到来时取消仍在处理的旧值。</li><li><code>catch</code>：处理上游异常，但不应吞掉取消。</li></ul>
+      <aside class="boundary-note warning"><strong>容易误用</strong><ul><li>把一次性事件塞进 StateFlow，旋转屏幕或重新订阅后重复消费。</li><li>把 MutableStateFlow 公开出去，任何调用方都能改状态。</li><li>只看 Flow 的声明，不追踪最终在哪个 Scope 中收集，导致重复订阅或资源泄漏。</li></ul></aside>
+      <section class="project-lab">
+        <span class="note-kind">下周项目对照</span>
+        <h2>不要另写玩具代码，直接在项目里取证</h2>
+        <p><strong>先搜索：</strong><code>Flow</code>、<code>StateFlow</code>、<code>MutableStateFlow</code>、<code>collect</code>、<code>stateIn</code>、<code>combine</code></p>
+        <ol><li>选一个真实文件，用一句话写出它在业务流程中的职责。</li><li>圈出本章概念的一个真实用法，写清输入、输出与所有者。</li><li>沿调用方向再追一层，确认它的生命周期或依赖边界。</li><li>找一条对应测试；如果没有，写下最值得补的可观察行为。</li></ol>
+      </section>
+    </article>
+    <section class="recall" aria-labelledby="recall-title">
+      <span class="note-kind">读完自测</span>
+      <h2 id="recall-title">合上正文，回答这三个问题</h2>
+      <ol><li>本章最重要的边界是什么？</li><li>项目里哪个类型或文件最能体现这个边界？</li><li>如果把这个边界拿掉，最可能出现什么错误？</li></ol>
+    </section>
+    <nav class="chapter-switcher" aria-label="章节导航"><a href="../coroutines/index.html">← 协程与结构化并发</a><a class="course-home" href="../index.html">全部章节</a><a href="../kmp-boundaries-and-testing/index.html">KMP 边界与测试 →</a></nav>
+    <footer class="license-note"><p>本章是项目导向的结构化精读，不是官方文档的逐段完整翻译。主要依据：<a href="https://kotlinlang.org/docs/coroutines-flow.html">Flow</a>、<a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-state-flow/">StateFlow API</a>。原始内容由 JetBrains 与 Kotlin 贡献者维护，采用 <a href="https://github.com/JetBrains/kotlin-web-site/blob/master/LICENSE">Apache License 2.0</a>；版本差异以官方原文为准。</p></footer>
+  </main>
+</body>
+</html>

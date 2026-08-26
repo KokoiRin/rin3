@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="先读懂构建脚本、模块、目标与源码集，再进入业务代码；目录位置本身就是一条编译规则。">
+  <title>Kotlin 项目与 Gradle｜Kotlin 项目实战篇｜RIN III</title>
+  <link rel="stylesheet" href="../reader.css">
+</head>
+<body>
+  <nav class="site-nav" aria-label="站点导航"><a href="../index.html">← Kotlin 中文学习版</a><a href="../../../computer-science/kotlin-tour/">RIN III 学习记录</a></nav>
+  <main class="reader project-reader">
+    <header class="chapter-header">
+      <span class="chapter-kicker">项目实战篇 · 第 1 章</span>
+      <h1>Kotlin 项目与 Gradle</h1>
+      <p class="lead">先读懂构建脚本、模块、目标与源码集，再进入业务代码；目录位置本身就是一条编译规则。</p>
+      <div class="title-rule"></div>
+      <aside class="compression-note"><strong>阅读约定</strong><p>本章是基于 Kotlin 官方资料整理翻译的结构化精读，不是逐段完整翻译。保留项目阅读所需的核心概念、关键边界和代表性代码，暂缓与当前学习目标关系较弱的高级细节。</p></aside>
+      <aside class="learning-note"><strong>本章主线</strong><p>一个 Kotlin 文件能使用哪些 API、会编译到哪些平台，不只由代码决定，还由它所在的模块、源码集和依赖配置决定。</p></aside>
+      <nav class="chapter-switcher" aria-label="章节导航"><a href="../libraries-and-apis/index.html">← 库与 API</a><a class="course-home" href="../index.html">全部章节</a><a href="../collection-pipelines/index.html">集合式数据处理 →</a></nav>
+    </header>
+    <article class="translated-article">
+      <h2>1. 先建立项目地图</h2>
+      <p>真实项目的第一层语言不是 Kotlin 语法，而是构建结构。通常先找 <code>settings.gradle.kts</code>，确认项目包含哪些模块；再看各模块的 <code>build.gradle.kts</code>，确认插件、目标、源码集和依赖。</p>
+      <div class="concept-grid">
+        <section><h3>模块</h3><p>独立构建和依赖的边界，例如应用、共享业务模块、基础库。</p></section>
+        <section><h3>目标（target）</h3><p>代码要编译到哪里，例如 JVM、Android、iOS 或 JS。</p></section>
+        <section><h3>源码集（source set）</h3><p>一组拥有相同目标、依赖与编译选项的源码。</p></section>
+        <section><h3>依赖</h3><p>决定当前源码集能看见哪些库和 API。</p></section>
+      </div>
+      <h2>2. 读懂一段 KMP 构建脚本</h2>
+      <pre><code>kotlin {
+    androidTarget()
+    iosArm64()
+    iosSimulatorArm64()
+
+    sourceSets {
+        commonMain.dependencies {
+            implementation(libs.kotlinx.coroutines.core)
+        }
+        androidMain.dependencies {
+            implementation(libs.androidx.lifecycle.runtime)
+        }
+        commonTest.dependencies {
+            implementation(kotlin("test"))
+        }
+    }
+}</code></pre>
+      <p>这段配置可以按三个问题阅读：</p>
+      <ol><li><strong>编译到哪里？</strong> Android、iPhone 真机和 iOS 模拟器。</li><li><strong>什么代码共享？</strong> <code>commonMain</code> 会编译到所有已声明目标。</li><li><strong>能力从哪里来？</strong> 协程是跨平台依赖；Android 生命周期库只属于 <code>androidMain</code>。</li></ol>
+      <aside class="boundary-note"><strong>关键方向</strong><p>平台源码集可以使用 <code>commonMain</code> 的声明；<code>commonMain</code> 不能反向使用平台源码集的声明。这个单向关系是理解 KMP 边界的起点。</p></aside>
+      <h2>3. 目录位置就是能力范围</h2>
+      <p><code>commonMain</code> 中的代码必须能在全部目标上成立，因此不能直接使用 <code>java.io.File</code>、Android Context 或 Apple Foundation 等单平台 API。平台能力应留在对应源码集，再通过接口或 <code>expect</code>/<code>actual</code> 接到共享代码。</p>
+      <p>中间源码集（例如 <code>iosMain</code>、<code>appleMain</code>）用于“只在一组平台之间共享”。先理解默认层级，不必一开始手工搭复杂的源码集树。</p>
+      <h2>4. 不要把 Gradle 当作依赖清单</h2>
+      <p>构建脚本同时表达架构：哪些模块允许互相引用、哪些能力可以跨平台、测试会在哪些目标运行。遇到某个符号“明明存在却引用不到”，先检查模块和源码集可见性，再怀疑 import。</p>
+      <aside class="boundary-note warning"><strong>容易误用</strong><ul><li>看到新版本就盲目升级插件；Kotlin、Gradle、AGP 和 IDE 存在兼容关系。</li><li>把平台库加到 <code>commonMain</code>，然后试图用条件分支绕过编译限制。</li><li>为了“整洁”过早自定义源码集层级，增加理解和维护成本。</li></ul></aside>
+      <section class="project-lab">
+        <span class="note-kind">下周项目对照</span>
+        <h2>不要另写玩具代码，直接在项目里取证</h2>
+        <p><strong>先搜索：</strong><code>settings.gradle.kts</code>、<code>build.gradle.kts</code>、<code>sourceSets</code>、<code>commonMain</code>、<code>implementation</code></p>
+        <ol><li>选一个真实文件，用一句话写出它在业务流程中的职责。</li><li>圈出本章概念的一个真实用法，写清输入、输出与所有者。</li><li>沿调用方向再追一层，确认它的生命周期或依赖边界。</li><li>找一条对应测试；如果没有，写下最值得补的可观察行为。</li></ol>
+      </section>
+    </article>
+    <section class="recall" aria-labelledby="recall-title">
+      <span class="note-kind">读完自测</span>
+      <h2 id="recall-title">合上正文，回答这三个问题</h2>
+      <ol><li>本章最重要的边界是什么？</li><li>项目里哪个类型或文件最能体现这个边界？</li><li>如果把这个边界拿掉，最可能出现什么错误？</li></ol>
+    </section>
+    <nav class="chapter-switcher" aria-label="章节导航"><a href="../libraries-and-apis/index.html">← 库与 API</a><a class="course-home" href="../index.html">全部章节</a><a href="../collection-pipelines/index.html">集合式数据处理 →</a></nav>
+    <footer class="license-note"><p>本章是项目导向的结构化精读，不是官方文档的逐段完整翻译。主要依据：<a href="https://kotlinlang.org/docs/multiplatform/multiplatform-discover-project.html">KMP 项目结构基础</a>、<a href="https://kotlinlang.org/docs/multiplatform/multiplatform-add-dependencies.html">添加 KMP 依赖</a>。原始内容由 JetBrains 与 Kotlin 贡献者维护，采用 <a href="https://github.com/JetBrains/kotlin-web-site/blob/master/LICENSE">Apache License 2.0</a>；版本差异以官方原文为准。</p></footer>
+  </main>
+</body>
+</html>
