@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>第 13 章：自由幺半群｜程序员的范畴论｜RIN III</title><meta name="description" content="《程序员的范畴论》第 13 章完整中文翻译：自由幺半群、同态、遗忘函子与泛构造"><link rel="stylesheet" href="../reader.css"></head>
+<body><nav class="site-nav"><a href="../../../mathematics/category-theory-for-programmers/">← 返回整本书学习记录</a><a href="../../../">RIN III</a></nav><main class="reader"><header><span class="chapter-kicker">第二部分 · 第 13 章 · 完整中文译文</span><h1>自由幺半群</h1><p class="byline">Bartosz Milewski</p><div class="title-rule"></div><p class="lead">自由构造（free construction）只加入满足定律所必需的最少等同关系。自由幺半群（free monoid）因此把生成元保留为列表，再以连接作为乘法。</p><div class="translation-scope"><span class="scope-label">译文范围</span><p>完整翻译本章正文，保留全部 10 个原文代码块、3 幅插图、公式和 3 道习题；习题附可展开答案。</p></div><nav><ul class="chapter-nav"><li><a href="#free-construction">自由构造</a></li><li><a href="#haskell">Haskell 中的自由幺半群</a></li><li><a href="#universal">自由幺半群的泛构造</a></li><li><a href="#challenges">习题</a></li></ul></nav></header><article>
+
+<section id="free-construction"><p class="source-paragraph" data-source-paragraph="1">幺半群（monoid）在范畴论与编程中都是重要概念。范畴对应强类型语言，幺半群对应无类型语言。这是因为在幺半群中，任意两支箭头都可以复合，就像在无类型语言中任意两个函数都可以复合一样（当然，执行程序时可能得到运行时错误）。</p>
+<p class="source-paragraph" data-source-paragraph="2">我们已经看到，幺半群可以描述为只有一个对象的范畴，全部逻辑都编码在态射复合规则里。这个范畴模型与更传统的集合论定义完全等价：在集合中“相乘”两个元素得到第三个元素。这个“乘法”过程还可以拆成两步：先组成一对元素，再把这对元素认同为某个现有元素——它们的“积”。</p>
+<p class="source-paragraph" data-source-paragraph="3">如果放弃乘法的第二步——不再把元素对认同为现有元素——会怎样？例如，可以从任意集合出发，组成所有可能的元素对，并把它们称为新元素；再让这些新元素与所有可能的元素配对，如此继续。这是一种连锁反应——我们会永远不断加入新元素。结果得到的无限集合<em>几乎</em>是一个幺半群。但幺半群还需要单位元与结合律。没问题：可以加入一个特殊的单位元，再认同其中一些元素对——恰好足以满足单位律与结合律。</p>
+<p class="source-paragraph" data-source-paragraph="4">来看一个简单例子。从二元素集合 {<em>a</em>, <em>b</em>} 开始，称它们为自由幺半群的生成元（generators）。首先加入特殊元素 <em>e</em> 作为单位元。接着加入所有元素对，并称它们为“积”。<em>a</em> 与 <em>b</em> 的积是 (<em>a</em>, <em>b</em>)；<em>b</em> 与 <em>a</em> 的积是 (<em>b</em>, <em>a</em>)；<em>a</em> 与自身的积是 (<em>a</em>, <em>a</em>)；<em>b</em> 与自身的积是 (<em>b</em>, <em>b</em>)。也可以与 <em>e</em> 配对，如 (<em>a</em>, <em>e</em>)、(<em>e</em>, <em>b</em>) 等，但我们分别把它们认同为 <em>a</em>、<em>b</em> 等。因此这一轮只加入 (<em>a</em>, <em>a</em>)、(<em>a</em>, <em>b</em>)、(<em>b</em>, <em>a</em>)、(<em>b</em>, <em>b</em>)，最后得到集合 {<em>e</em>, <em>a</em>, <em>b</em>, (<em>a</em>, <em>a</em>), (<em>a</em>, <em>b</em>), (<em>b</em>, <em>a</em>), (<em>b</em>, <em>b</em>)}。</p>
+<figure><div class="figure-frame"><img src="bunnies.jpg" alt="由生成元不断组成更长元素对的自由构造"></div></figure>
+<p class="source-paragraph" data-source-paragraph="5">下一轮继续加入 (<em>a</em>, (<em>a</em>, <em>b</em>))、((<em>a</em>, <em>b</em>), <em>a</em>) 等元素。此时必须确保结合律成立，所以把 (<em>a</em>, (<em>b</em>, <em>a</em>)) 与 ((<em>a</em>, <em>b</em>), <em>a</em>) 等认同起来。换句话说，我们不再需要内部括号。</p>
+<p class="source-paragraph" data-source-paragraph="6">你大概能猜到这个过程的最终结果：我们会生成由任意数量 <em>a</em>、<em>b</em> 构成的所有列表。事实上，如果把 <em>e</em> 表示为空列表，就会发现这里的“乘法”不过是列表连接。</p>
+<p class="source-paragraph" data-source-paragraph="7">这种不断生成元素的所有可能组合、并只做满足定律所必需的最少认同的构造，称为<em>自由构造（free construction）</em>。我们刚才所做的，就是从生成元集合 {<em>a</em>, <em>b</em>} 构造出<em>自由幺半群（free monoid）</em>。</p></section>
+
+<section id="haskell"><h2>Haskell 中的自由幺半群</h2>
+<p class="source-paragraph" data-source-paragraph="8">Haskell 中的二元素集合等价于类型 <code>Bool</code>，由它生成的自由幺半群等价于类型 <code>[Bool]</code>（<code>Bool</code> 的列表）。（这里有意忽略无限列表带来的问题。）</p>
+<p class="source-paragraph" data-source-paragraph="9">Haskell 用下面的类型类定义幺半群：</p><pre><code class="language-haskell">class Monoid m where
+    mempty  :: m
+    mappend :: m -&gt; m -&gt; m</code></pre>
+<p class="source-paragraph" data-source-paragraph="10">它只是说，每个 <code>Monoid</code> 都必须有一个称为 <code>mempty</code> 的中性元素，以及一个称为 <code>mappend</code> 的二元函数（乘法）。Haskell 无法表达单位律与结合律，因此每次实例化幺半群时，都必须由程序员验证这些定律。</p>
+<p class="source-paragraph" data-source-paragraph="11">任意类型的列表都构成幺半群，这由下面的实例定义描述：</p><pre><code class="language-haskell">instance Monoid [a] where
+    mempty  = []
+    mappend = (++)</code></pre>
+<p class="source-paragraph" data-source-paragraph="12">它说明空列表 <code>[]</code> 是单位元，列表连接 <code>(++)</code> 是二元运算。</p>
+<p class="source-paragraph" data-source-paragraph="13">正如已经看到的，<code>a</code> 类型的列表对应以集合 <code>a</code> 为生成元的自由幺半群。自然数在乘法下构成的幺半群不是自由幺半群，因为我们认同了大量乘积。例如比较：</p><pre><code class="language-haskell">2 * 3 = 6
+[2] ++ [3] = [2, 3] -- 不等于 [6]</code></pre>
+<p class="source-paragraph" data-source-paragraph="14">这很容易，但问题是：在不能查看对象内部的范畴论里，能否完成这种自由构造？我们将使用一贯的主力工具：泛构造（universal construction）。</p>
+<p class="source-paragraph" data-source-paragraph="15">第二个有趣问题是：任何幺半群能否都通过某个自由幺半群得到，只需认同多于定律最低要求的元素？我会说明，这可以直接从泛构造推出。</p></section>
+
+<section id="universal"><h2>自由幺半群的泛构造</h2>
+<p class="source-paragraph" data-source-paragraph="16">回想之前接触的泛构造，你可能已经注意到：它与其说是在构造什么，不如说是在挑选最符合给定模式的对象。因此，若想用泛构造“构造”自由幺半群，就必须考察一大批幺半群，再从中选出一个。我们需要由幺半群组成的整个范畴。但幺半群能形成范畴吗？</p>
+<p class="source-paragraph" data-source-paragraph="17">先把幺半群看作带有额外结构的集合，这些结构由单位元与乘法定义。我们选择那些保持幺半群结构的函数作为态射。这样的结构保持函数称为<em>同态（homomorphism）</em>。幺半群同态必须把两个元素的积映射为这两个元素各自像的积：</p><pre><code class="language-haskell">h (a * b) = h a * h b</code></pre>
+<p class="source-paragraph" data-source-paragraph="18">而且必须把单位元映射到单位元。</p>
+<p class="source-paragraph" data-source-paragraph="19">例如，考虑从整数列表到整数的同态。如果把 <code>[2]</code> 映射到 2，把 <code>[3]</code> 映射到 3，就必须把 <code>[2, 3]</code> 映射到 6，因为连接：</p><pre><code class="language-haskell">[2] ++ [3] = [2, 3]</code></pre>
+<p class="source-paragraph" data-source-paragraph="20">变成了乘法：</p><pre><code class="language-haskell">2 * 3 = 6</code></pre>
+<p class="source-paragraph" data-source-paragraph="21">现在忘掉每个幺半群的内部结构，只把它们看成对象，并考察相应的态射。由此得到幺半群范畴 Mon。</p>
+<p class="source-paragraph" data-source-paragraph="22">好吧，在忘掉内部结构之前，再注意一个重要性质。Mon 的每个对象都可以平凡地映射到一个集合——就是其元素组成的集合，称为<em>底层集合（underlying set）</em>。事实上，不仅能把 Mon 的对象映射到集合，也能把 Mon 的态射（同态）映射到函数。这看起来同样理所当然，但马上就会有用。从 Mon 到 Set 的这种对象与态射映射实际上是一个函子。由于它“忘掉”了幺半群结构——一旦进入普通集合，就不再区分单位元，也不再关心乘法——所以称为<em>遗忘函子（forgetful functor）</em>。遗忘函子在范畴论中经常出现。</p>
+<p class="source-paragraph" data-source-paragraph="23">现在对 Mon 有两种不同视角。可以像对待任何其他范畴一样，只看它的对象和态射；在这种视角中，看不到幺半群的内部结构。对于 Mon 中某个特定对象，只能说它通过态射连接自身与其他对象。态射的“乘法表”——也就是复合规则——来自另一种视角：把幺半群看成集合。转向范畴论并未让我们彻底失去这种视角——仍可通过遗忘函子访问它。</p>
+<p class="source-paragraph" data-source-paragraph="24">应用泛构造，需要定义一个特殊性质，使我们能够在幺半群范畴中搜索并选出自由幺半群的最佳候选。但自由幺半群由生成元定义；不同的生成元选择会产生不同的自由幺半群（<code>Bool</code> 的列表不同于 <code>Int</code> 的列表）。构造必须从一个生成元集合开始。于是我们又回到了集合！</p>
+<p class="source-paragraph" data-source-paragraph="25">这正是遗忘函子发挥作用之处。可以用它对幺半群做 X 光透视，在这些团块的 X 光影像中识别生成元。具体如下。</p>
+<p class="source-paragraph" data-source-paragraph="26">从生成元集合 <em>x</em> 开始。它是 Set 中的一个集合。</p>
+<p class="source-paragraph" data-source-paragraph="27">要匹配的模式由 Mon 中的对象——幺半群 <em>m</em>——以及 Set 中的函数 <em>p</em> 组成：</p><pre><code class="language-haskell">p :: x -&gt; U m</code></pre>
+<p class="source-paragraph" data-source-paragraph="28">其中 <em>U</em> 是从 Mon 到 Set 的遗忘函子。这是一个奇怪的异质模式——一半在 Mon 中，一半在 Set 中。</p>
+<p class="source-paragraph" data-source-paragraph="29">其思想是，函数 <em>p</em> 会在 <em>m</em> 的 X 光影像中标出生成元。函数可能并不擅长标识集合中的点（可能把多个点压成一个），但这没关系。泛构造会选出这个模式的最佳代表，把一切整理妥当。</p>
+<figure><div class="figure-frame"><img src="monoid-pattern.jpg" alt="生成元集合经函数映入幺半群的底层集合"></div></figure>
+<p class="source-paragraph" data-source-paragraph="30">还必须定义候选之间的排序。假设有另一个候选：幺半群 <em>n</em>，以及在其 X 光影像中标出生成元的函数：</p><pre><code class="language-haskell">q :: x -&gt; U n</code></pre>
+<p class="source-paragraph" data-source-paragraph="31">若存在幺半群态射（即保持结构的同态）：</p><pre><code class="language-haskell">h :: m -&gt; n</code></pre>
+<p class="source-paragraph" data-source-paragraph="32">而它在 <em>U</em> 下的像（记住，<em>U</em> 是函子，所以会把态射映射成函数）通过 <em>p</em> 因子分解：</p><pre><code class="language-haskell">q = U h . p</code></pre>
+<p class="source-paragraph" data-source-paragraph="33">我们就说 <em>m</em> 比 <em>n</em> 更好。若把 <em>p</em> 看作在 <em>m</em> 中选出生成元，把 <em>q</em> 看作在 <em>n</em> 中选出“相同的”生成元，就可以把 <em>h</em> 看作在两个幺半群之间映射这些生成元。记住，按定义，<em>h</em> 保持幺半群结构。这意味着一个幺半群中两个生成元的积，会被映射到第二个幺半群中对应生成元的积，如此类推。</p>
+<figure><div class="figure-frame"><img src="monoid-ranking.jpg" alt="两个幺半群候选之间满足因子分解条件的同态"></div><figcaption>幺半群候选的排序。</figcaption></figure>
+<p class="source-paragraph" data-source-paragraph="34">利用这种排序，可以找到最佳候选——自由幺半群。定义如下：</p>
+<blockquote><p>当且仅当对于任意另一个幺半群 <em>n</em>（连同函数 <em>q</em>），都存在唯一一支从 <em>m</em> 到 <em>n</em> 且满足上述因子分解性质的态射 <em>h</em> 时，我们称 <em>m</em>（连同函数 <em>p</em>）为以 <em>x</em> 为生成元的<strong>自由幺半群</strong>。</p></blockquote>
+<p class="source-paragraph" data-source-paragraph="35">顺带一提，这也回答了第二个问题。函数 <em>U h</em> 能够把 <em>U m</em> 中的多个元素压成 <em>U n</em> 中的一个元素。这种压缩对应于认同自由幺半群中的某些元素。因此，任何以 <em>x</em> 为生成元的幺半群，都可以由基于 <em>x</em> 的自由幺半群通过认同其中一些元素得到。自由幺半群正是只做了最低限度认同的那个幺半群。</p>
+<p class="source-paragraph" data-source-paragraph="36">讨论伴随时，我们还会回到自由幺半群。</p></section>
+
+<section id="challenges"><h2>习题</h2><ol class="challenges">
+<li>你可能会像我最初那样认为，要求幺半群同态保持单位元是多余的。毕竟对所有 <em>a</em>，都有：<pre><code class="language-haskell">h a * h e = h (a * e) = h a</code></pre>所以 <code>h e</code> 像右单位元一样作用（类似地也是左单位元）。问题在于，所有 <code>h a</code> 可能只覆盖目标幺半群的一个子幺半群；在 <code>h</code> 的像之外可能还有一个“真正的”单位元。证明：保持乘法的幺半群同构必然自动保持单位元。<details class="exercise-answer"><summary>点击展开参考答案</summary><p>设 <code>h:M→N</code> 是保持乘法的同构。由于 <code>h</code> 满射，任意 <code>b∈N</code> 都可写成 <code>h(a)</code>。于是 <code>h(e_M)b=h(e_M)h(a)=h(e_Ma)=h(a)=b</code>；同理 <code>bh(e_M)=b</code>。所以 <code>h(e_M)</code> 是 N 的双侧单位元。单位元唯一，因此 <code>h(e_M)=e_N</code>。</p></details></li>
+<li>考虑从以连接为运算的整数列表，到以乘法为运算的整数之间的幺半群同态。空列表 <code>[]</code> 的像是什么？假设所有单元素列表都映射到其中所含的整数，即 <code>[3]</code> 映射到 3，等等。<code>[1, 2, 3, 4]</code> 的像是什么？有多少个不同列表映射到整数 12？这两个幺半群之间还有其他同态吗？<details class="exercise-answer"><summary>点击展开参考答案</summary><p><code>[]</code> 必须映射到乘法单位元 1；<code>[1,2,3,4]</code> 映射到 <code>1×2×3×4=24</code>。映射到 12 的列表有无限多个，例如可在任何乘积为 12 的列表中任意插入 1，也可插入成对的 <code>-1</code>。还有许多其他同态：整数列表是以整数集合为生成元的自由幺半群，所以任意指定每个单元素列表的整数像，都会唯一延伸成一个同态；只有额外要求 <code>[n]↦n</code> 时，乘积映射才是唯一的。</p></details></li>
+<li>由单元素集合生成的自由幺半群是什么？你能看出它同构于什么吗？<details class="exercise-answer"><summary>点击展开参考答案</summary><p>它由空列表、长度为 1 的列表、长度为 2 的列表……组成。每个元素完全由列表长度决定，因此它同构于自然数在加法下构成的幺半群：空列表对应 0，列表连接对应长度相加。</p></details></li>
+</ol></section>
+<nav class="chapter-switcher"><a href="../limits-and-colimits/">← 第 12 章：极限与余极限</a><a href="../representable-functors/">第 14 章：可表函子 →</a></nav>
+</article><footer class="source-note"><p><strong>原文：</strong><a href="https://bartoszmilewski.com/2015/04/29/free-monoids/">Free Monoids</a></p><p><strong>核对底稿：</strong>作者博客正文与开源英文 Markdown；正文、10 个原文代码块、3 幅插图和 3 道习题均已收录；参考答案属于本阅读器。</p><p><strong>许可：</strong>原作及本非官方中文译文依 <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> 署名—相同方式共享。</p></footer></main></body></html>

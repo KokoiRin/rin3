@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>第 8 章：函子性｜程序员的范畴论｜RIN III</title><meta name="description" content="《程序员的范畴论》第 8 章完整中文翻译：双函子、函子化代数数据类型、协变与逆变函子、Profunctor 与 Hom 函子"><link rel="stylesheet" href="../reader.css"></head>
+<body><nav class="site-nav"><a href="../../../mathematics/category-theory-for-programmers/">← 返回整本书学习记录</a><a href="../../../">RIN III</a></nav>
+<main class="reader"><header><span class="chapter-kicker">第一部分 · 第 8 章 · 完整中文译文</span><h1>函子性</h1><p class="byline">Bartosz Milewski</p><div class="title-rule"></div>
+<p class="lead">函子性（functoriality）不只属于单参数容器。积、余积、函数箭头以及代数数据类型，都能从参数位置的方向性出发，被组织成双函子、逆变函子或 Profunctor。</p>
+<div class="translation-scope"><span class="scope-label">译文范围</span><p>完整翻译本章正文，保留全部 43 个原文代码块、6 张插图、公式与 6 道习题；习题另附可展开参考答案。</p></div>
+<nav><ul class="chapter-nav"><li><a href="#bifunctors">双函子</a></li><li><a href="#product-coproduct">积与余积双函子</a></li><li><a href="#adt">函子化代数数据类型</a></li><li><a href="#cpp">C++ 中的函子</a></li><li><a href="#writer">Writer 函子</a></li><li><a href="#variance">协变与逆变</a></li><li><a href="#profunctors">Profunctor</a></li><li><a href="#hom">Hom 函子</a></li><li><a href="#challenges">习题</a></li></ul></nav></header>
+<article>
+<section><p class="source-paragraph" data-source-paragraph="1">现在你已经知道函子是什么，也看过几个例子，下面看看怎样用较小的函子构造更大的函子。尤其值得研究的是：哪些类型构造器——它们对应范畴对象之间的映射——可以扩展成函子，也就是同时包含态射映射。</p></section>
+
+<section id="bifunctors"><h2>双函子</h2>
+<p class="source-paragraph" data-source-paragraph="2">函子是 Cat（范畴之范畴）中的态射，因此许多关于态射——特别是函数——的直觉也适用于函子。例如，函数可以有两个参数，函子同样可以有两个参数，这叫作<em>双函子（bifunctor）</em>。在对象层面，双函子把每一对对象——一个来自范畴 C，一个来自范畴 D——映射到范畴 E 中的一个对象。换句话说，它是从范畴的<em>笛卡尔积（Cartesian product）</em> C×D 到 E 的映射。</p>
+<figure><div class="figure-frame"><img src="bifunctor.jpg" alt="双函子从两个范畴各取一个对象并映射到第三个范畴"></div></figure>
+<p class="source-paragraph" data-source-paragraph="3">这很直接。但函子性意味着双函子还必须映射态射；这一次，它要把一对态射——分别来自 C 与 D——映射成 E 中的一个态射。</p>
+<p class="source-paragraph" data-source-paragraph="4">一对态射正是积范畴 C×D 中的一支态射。范畴笛卡尔积中的态射定义为一对态射，它从一对对象指向另一对对象。态射对按显然的方式复合：</p><div class="math-display">(f, g) ∘ (f′, g′) = (f ∘ f′, g ∘ g′)</div>
+<p class="source-paragraph" data-source-paragraph="5">这个复合满足结合律，并且有恒等元——一对恒等态射 <em>(id, id)</em>。因此范畴的笛卡尔积确实是一个范畴。</p>
+<p class="source-paragraph" data-source-paragraph="6">理解双函子的一个简单办法，是分别把它看成每个参数上的函子。这样便不必把函子的结构定律——保持复合与恒等——重新翻译成双函子定律，只需对每个参数分别检查。不过一般而言，分别具有函子性并不足以证明联合函子性。联合函子性失败的范畴称为<em>预幺半范畴（premonoidal category）</em>。</p>
+<p class="source-paragraph" data-source-paragraph="7">下面在 Haskell 中定义双函子。这里三个范畴相同，都是 Haskell 类型范畴。双函子是接受两个类型参数的类型构造器。下面的 <code>Bifunctor</code> 类型类定义直接取自 <code>Control.Bifunctor</code>：</p>
+<pre><code class="language-haskell">class Bifunctor f where
+    bimap :: (a -&gt; c) -&gt; (b -&gt; d) -&gt; f a b -&gt; f c d
+    bimap g h = first g . second h
+    first :: (a -&gt; c) -&gt; f a b -&gt; f c b
+    first g = bimap g id
+    second :: (b -&gt; d) -&gt; f a b -&gt; f a d
+    second = bimap id</code></pre>
+<figure><div class="figure-frame"><img src="bimap.jpg" alt="bimap 同时映射双函子的两个参数"></div><figcaption><code>bimap</code></figcaption></figure>
+<p class="source-paragraph" data-source-paragraph="8">类型变量 <code>f</code> 表示双函子。在所有类型签名中，它始终应用于两个类型参数。第一个签名定义 <code>bimap</code>，它同时映射两个函数。结果是一个提升后的函数 <code>f a b -&gt; f c d</code>，作用于双函子类型构造器生成的类型。定义还给出了以 <code>first</code> 与 <code>second</code> 表示的 <code>bimap</code> 默认实现。（前面提过，这并非总能成立，因为两个映射可能不交换，即 <code>first g . second h</code> 未必等于 <code>second h . first g</code>。）</p>
+<p class="source-paragraph" data-source-paragraph="9">另外两个签名 <code>first</code> 与 <code>second</code> 分别是两种 <code>fmap</code>，证明 <code>f</code> 在第一个与第二个参数上具有函子性。</p>
+<div class="figure-grid"><figure><div class="figure-frame"><img src="first.jpg" alt="first 只映射双函子的第一个参数"></div><figcaption><code>first</code></figcaption></figure><figure><div class="figure-frame"><img src="second.jpg" alt="second 只映射双函子的第二个参数"></div><figcaption><code>second</code></figcaption></figure></div>
+<p class="source-paragraph" data-source-paragraph="10">类型类定义又用 <code>bimap</code> 给出了二者的默认实现。</p>
+<p class="source-paragraph" data-source-paragraph="11">声明 <code>Bifunctor</code> 实例时，可以实现 <code>bimap</code> 并接受 <code>first</code>、<code>second</code> 的默认实现；也可以实现 <code>first</code> 与 <code>second</code>，接受 <code>bimap</code> 的默认实现。（当然也可以三个都实现，但必须自行保证它们保持上述关系。）</p>
+</section>
+
+<section id="product-coproduct"><h2>积与余积双函子</h2>
+<p class="source-paragraph" data-source-paragraph="12">双函子的一个重要例子是范畴积——通过<a href="../products-and-coproducts/">泛构造</a>定义的两个对象之积。若每对对象的积都存在，那么从这两个对象到其积的映射具有双函子性。这在一般范畴中成立，在 Haskell 中尤其如此。下面是 pair 构造器——最简单的积类型——的 <code>Bifunctor</code> 实例：</p>
+<pre><code class="language-haskell">instance Bifunctor (,) where
+    bimap f g (x, y) = (f x, g y)</code></pre>
+<p class="source-paragraph" data-source-paragraph="13">这里几乎没有别的选择：<code>bimap</code> 把第一个函数应用于 pair 的第一项，把第二个函数应用于第二项。给定类型，代码几乎会自己写出来：</p>
+<pre><code class="language-haskell">bimap :: (a -&gt; c) -&gt; (b -&gt; d) -&gt; (a, b) -&gt; (c, d)</code></pre>
+<p class="source-paragraph" data-source-paragraph="14">双函子在对象上的作用就是配对类型，例如：</p><pre><code class="language-haskell">(,) a b = (a, b)</code></pre>
+<p class="source-paragraph" data-source-paragraph="15">根据对偶性，若范畴中每对对象都有余积，余积也是双函子。在 Haskell 中，<code>Either</code> 类型构造器就是 <code>Bifunctor</code> 实例：</p>
+<pre><code class="language-haskell">instance Bifunctor Either where
+    bimap f _ (Left x)  = Left (f x)
+    bimap _ g (Right y) = Right (g y)</code></pre>
+<p class="source-paragraph" data-source-paragraph="16">这段代码同样几乎是由类型自动写成的。</p>
+<p class="source-paragraph" data-source-paragraph="17">还记得幺半范畴吗？幺半范畴定义作用于对象的二元运算符以及单位对象。我提过，Set 关于笛卡尔积是幺半范畴，单元素集合为单位；关于不交并也构成幺半范畴，空集为单位。此前没有说的是：幺半范畴的一项要求，是这个二元运算符必须为双函子。这很重要——我们希望幺半积与由态射定义的范畴结构兼容。现在距离幺半范畴的完整定义又近了一步；但还需理解自然性。</p>
+</section>
+
+<section id="adt"><h2>函子化代数数据类型</h2>
+<p class="source-paragraph" data-source-paragraph="18">我们见过若干参数化数据类型，并成功为它们定义 <code>fmap</code>，证明它们是函子。复杂数据类型由简单类型构造。尤其是，代数数据类型（algebraic data type，ADT）由和与积构造。刚刚看到和与积具有函子性，也知道函子可以复合。所以，只要证明 ADT 的基本构件具有函子性，就知道参数化 ADT 也具有函子性。</p>
+<p class="source-paragraph" data-source-paragraph="19">参数化 ADT 的基本构件有哪些？首先，是不依赖函子类型参数的项目，例如 <code>Maybe</code> 中的 <code>Nothing</code> 或 <code>List</code> 中的 <code>Nil</code>。它们等价于 <code>Const</code> 函子。记住，<code>Const</code> 忽略它的类型参数——严格说是第二个参数，也就是我们关心的参数；第一个参数保持不变。</p>
+<p class="source-paragraph" data-source-paragraph="20">其次，是仅仅封装类型参数本身的元素，例如 <code>Maybe</code> 的 <code>Just</code>。它们等价于恒等函子（identity functor）。此前我把恒等函子称为 Cat 中的恒等态射，但没有给出 Haskell 定义：</p>
+<pre><code class="language-haskell">data Identity a = Identity a</code></pre>
+<pre><code class="language-haskell">instance Functor Identity where
+    fmap f (Identity x) = Identity (f x)</code></pre>
+<p class="source-paragraph" data-source-paragraph="21">可以把 <code>Identity</code> 看成最简单的容器，它总是恰好存储一个类型 <code>a</code> 的不可变值。</p>
+<p class="source-paragraph" data-source-paragraph="22">代数数据结构中的其他一切，都由这两种原语借助积与和构造。</p>
+<p class="source-paragraph" data-source-paragraph="23">有了这些知识，重新审视 <code>Maybe</code>：</p><pre><code class="language-haskell">data Maybe a = Nothing | Just a</code></pre>
+<p class="source-paragraph" data-source-paragraph="24">它是两个类型之和，而我们知道和具有函子性。第一部分 <code>Nothing</code> 可以表示成作用于 <code>a</code> 的 <code>Const ()</code>（<code>Const</code> 的第一个参数设为 unit；以后会看到更有趣的用法）。第二部分只是恒等函子的另一个名字。因此在同构意义下，可把 <code>Maybe</code> 定义为：</p>
+<pre><code class="language-haskell">type Maybe a = Either (Const () a) (Identity a)</code></pre>
+<p class="source-paragraph" data-source-paragraph="25">所以，<code>Maybe</code> 是双函子 <code>Either</code> 与两个函子 <code>Const ()</code>、<code>Identity</code> 的复合。（<code>Const</code> 实际上是双函子，只是这里总对它做偏应用。）</p>
+<p class="source-paragraph" data-source-paragraph="26">我们已知函子复合仍是函子；很容易相信双函子也如此。只需弄清双函子与两个函子的复合怎样作用于态射：给定两支态射，先分别用两个函子提升它们，再用双函子提升所得的那对已提升态射。</p>
+<p class="source-paragraph" data-source-paragraph="27">可以用 Haskell 表达这种复合。定义数据类型，它由双函子 <code>bf</code>（接受两个类型参数的类型构造器变量）、两个函子 <code>fu</code> 与 <code>gu</code>（各接受一个类型变量的类型构造器）以及普通类型 <code>a</code>、<code>b</code> 参数化。先把 <code>fu</code> 作用于 <code>a</code>、<code>gu</code> 作用于 <code>b</code>，再把 <code>bf</code> 作用于所得两个类型：</p>
+<pre><code class="language-haskell">newtype BiComp bf fu gu a b = BiComp (bf (fu a) (gu b))</code></pre>
+<p class="source-paragraph" data-source-paragraph="28">这就是对象或类型上的复合。注意，在 Haskell 中，应用类型构造器与应用函数使用相同语法。</p>
+<p class="source-paragraph" data-source-paragraph="29">如果有点迷失，试着依次把 <code>BiComp</code> 应用于 <code>Either</code>、<code>Const ()</code>、<code>Identity</code>、<code>a</code> 和 <code>b</code>。你会得到简化版 <code>Maybe b</code>（<code>a</code> 被忽略）。</p>
+<p class="source-paragraph" data-source-paragraph="30">新数据类型 <code>BiComp</code> 在 <code>a</code>、<code>b</code> 上是双函子，前提是 <code>bf</code> 本身是 <code>Bifunctor</code>，<code>fu</code>、<code>gu</code> 是 <code>Functor</code>。编译器必须知道 <code>bf</code> 有可用的 <code>bimap</code> 定义，<code>fu</code>、<code>gu</code> 有可用的 <code>fmap</code> 定义。Haskell 在实例声明中用前置条件表达这一点：一组类约束后接双箭头：</p>
+<pre><code class="language-haskell">instance (Bifunctor bf, Functor fu, Functor gu) =&gt;
+  Bifunctor (BiComp bf fu gu) where
+    bimap f1 f2 (BiComp x) = BiComp (bimap (fmap f1) (fmap f2) x)</code></pre>
+<p class="source-paragraph" data-source-paragraph="31"><code>BiComp</code> 的 <code>bimap</code> 由 <code>bf</code> 的 <code>bimap</code> 以及 <code>fu</code>、<code>gu</code> 的两个 <code>fmap</code> 定义。每次使用 <code>BiComp</code> 时，编译器都会自动推断所有类型，并选择正确的重载函数。</p>
+<p class="source-paragraph" data-source-paragraph="32"><code>bimap</code> 定义中的 <code>x</code> 类型是：</p><pre><code class="language-haskell">bf (fu a) (gu b)</code></pre>
+<p class="source-paragraph" data-source-paragraph="33">这读起来很拗口。外层 <code>bimap</code> 穿过外层 <code>bf</code>，两个 <code>fmap</code> 分别钻到 <code>fu</code> 与 <code>gu</code> 之下。若 <code>f1</code>、<code>f2</code> 类型为：</p>
+<pre><code class="language-haskell">f1 :: a -&gt; a'
+f2 :: b -&gt; b'</code></pre>
+<p class="source-paragraph" data-source-paragraph="34">最终结果类型是 <code>bf (fu a') (gu b')</code>：</p>
+<pre><code class="language-haskell">bimap ::(fu a -&gt; fu a') -&gt; (gu b -&gt; gu b')
+  -&gt; bf (fu a) (gu b) -&gt; bf (fu a') (gu b')</code></pre>
+<p class="source-paragraph" data-source-paragraph="35">如果喜欢拼图，这种类型操作足以带来数小时的娱乐。</p>
+<p class="source-paragraph" data-source-paragraph="36">由此可见，我们其实不必单独证明 <code>Maybe</code> 是函子；这个事实由它作为两个函子化原语之和的构造方式自动推出。</p>
+<p class="source-paragraph" data-source-paragraph="37">敏锐的读者也许会问：既然为代数数据类型推导 <code>Functor</code> 实例如此机械，能否让编译器自动完成？确实可以，也确实如此。只需在源文件顶部加入一行，启用相应的 Haskell 扩展：</p>
+<pre><code class="language-haskell">{-# LANGUAGE DeriveFunctor #-}</code></pre>
+<p class="source-paragraph" data-source-paragraph="38">然后在数据结构后添加 <code>deriving Functor</code>：</p>
+<pre><code class="language-haskell">data Maybe a = Nothing | Just a
+  deriving Functor</code></pre>
+<p class="source-paragraph" data-source-paragraph="39">对应的 <code>fmap</code> 便会自动生成。</p>
+<p class="source-paragraph" data-source-paragraph="40">代数数据结构的规律性不仅允许推导 <code>Functor</code>，还允许推导其他多个类型类实例，包括前面提到的 <code>Eq</code>。也可以教编译器推导自己的类型类实例，不过这更高级。思想相同：你为基本构件、和与积提供行为，其余交给编译器推导。</p>
+</section>
+
+<section id="cpp"><h2>C++ 中的函子</h2>
+<p class="source-paragraph" data-source-paragraph="41">如果你是 C++ 程序员，实现函子显然只能靠自己。不过，你应该能在 C++ 中辨认某些代数数据结构。若把这种结构做成泛型模板，就应能迅速为它实现 <code>fmap</code>。</p>
+<p class="source-paragraph" data-source-paragraph="42">来看树结构。在 Haskell 中会把它定义为递归和类型：</p>
+<pre><code class="language-haskell">data Tree a = Leaf a | Node (Tree a) (Tree a)
+    deriving Functor</code></pre>
+<p class="source-paragraph" data-source-paragraph="43">如前所述，在 C++ 中实现和类型的一种方式是类层次结构。在面向对象语言中，自然会想把 <code>fmap</code> 实现为基类 <code>Functor</code> 的虚函数，再由各子类覆写。遗憾的是，这不可能，因为 <code>fmap</code> 是模板：它不仅由所作用对象的类型（<code>this</code> 指针）参数化，还由所应用函数的返回类型参数化；而 C++ 的虚函数不能模板化。我们将把 <code>fmap</code> 实现成泛型自由函数，并用 <code>dynamic_cast</code> 代替模式匹配。</p>
+<p class="source-paragraph" data-source-paragraph="44">为了支持动态转换，基类至少要定义一个虚函数，所以把析构函数设为虚函数（无论如何这都是好主意）：</p>
+<pre><code class="language-cpp">template&lt;typename T&gt;
+struct Tree {
+    virtual ~Tree() {}
+};</code></pre>
+<p class="source-paragraph" data-source-paragraph="45"><code>Leaf</code> 只是伪装的 <code>Identity</code> 函子：</p>
+<pre><code class="language-cpp">template&lt;typename T&gt;
+struct Leaf : public Tree&lt;T&gt; {
+    T _label;
+    Leaf(T l) : _label(l) {}
+};</code></pre>
+<p class="source-paragraph" data-source-paragraph="46"><code>Node</code> 是积类型：</p>
+<pre><code class="language-cpp">template&lt;typename T&gt;
+struct Node : public Tree&lt;T&gt; {
+    Tree&lt;T&gt; * _left;
+    Tree&lt;T&gt; * _right;
+    Node(Tree&lt;T&gt; * l, Tree&lt;T&gt; * r) : _left(l), _right(r) {}
+};</code></pre>
+<p class="source-paragraph" data-source-paragraph="47">实现 <code>fmap</code> 时，对 <code>Tree</code> 的具体类型做动态分派。<code>Leaf</code> 分支应用 <code>Identity</code> 版 <code>fmap</code>；<code>Node</code> 分支则像一个双函子与两份 <code>Tree</code> 函子的复合。C++ 程序员也许不习惯这样分析代码，但这是练习范畴论思维的好机会。</p>
+<pre><code class="language-cpp">template&lt;typename A, typename B&gt;
+Tree&lt;B&gt; * fmap(std::function&lt;B(A)&gt; f, Tree&lt;A&gt; * t)
+{
+    Leaf&lt;A&gt; * pl = dynamic_cast &lt;Leaf&lt;A&gt;*&gt;(t);
+    if (pl)
+        return new Leaf&lt;B&gt;(f (pl-&gt;_label));
+    Node&lt;A&gt; * pn = dynamic_cast&lt;Node&lt;A&gt;*&gt;(t);
+    if (pn)
+        return new Node&lt;B&gt;( fmap&lt;A&gt;(f, pn-&gt;_left)
+                          , fmap&lt;A&gt;(f, pn-&gt;_right));
+    return nullptr;
+}</code></pre>
+<p class="source-paragraph" data-source-paragraph="48">为简单起见，我忽略了内存与资源管理问题；生产代码中大概应使用智能指针（根据策略选择独占或共享）。</p>
+<p class="source-paragraph" data-source-paragraph="49">与 Haskell 的 <code>fmap</code> 实现比较：</p>
+<pre><code class="language-haskell">instance Functor Tree where
+    fmap f (Leaf a) = Leaf (f a)
+    fmap f (Node t t') = Node (fmap f t) (fmap f t')</code></pre>
+<p class="source-paragraph" data-source-paragraph="50">这个实现也能由编译器自动推导。</p>
+</section>
+
+<section id="writer"><h2>Writer 函子</h2>
+<p class="source-paragraph" data-source-paragraph="51">我答应过会回到前面描述的 <a href="../kleisli-categories/">Kleisli 范畴</a>。那个范畴中的态射由返回 <code>Writer</code> 数据结构的“修饰”函数表示：</p>
+<pre><code class="language-haskell">type Writer a = (a, String)</code></pre>
+<p class="source-paragraph" data-source-paragraph="52">我说过这种修饰与自函子有关。的确，<code>Writer</code> 类型构造器在 <code>a</code> 上具有函子性。甚至不必实现 <code>fmap</code>，因为它只是简单积类型。</p>
+<p class="source-paragraph" data-source-paragraph="53">一般而言，Kleisli 范畴与函子有什么关系？Kleisli 范畴既然是范畴，就定义了复合与恒等。复合由鱼运算符给出：</p>
+<pre><code class="language-haskell">(&gt;=&gt;) :: (a -&gt; Writer b) -&gt; (b -&gt; Writer c) -&gt; (a -&gt; Writer c)
+m1 &gt;=&gt; m2 = \x -&gt;
+    let (y, s1) = m1 x
+        (z, s2) = m2 y
+    in (z, s1 ++ s2)</code></pre>
+<p class="source-paragraph" data-source-paragraph="54">恒等态射由名为 <code>return</code> 的函数给出：</p>
+<pre><code class="language-haskell">return :: a -&gt; Writer a
+return x = (x, "")</code></pre>
+<p class="source-paragraph" data-source-paragraph="55">事实证明，只要长时间盯着这两个函数的类型（我是说，<em>非常</em>久），就能找到组合它们的方法，产生具有正确签名、可以充当 <code>fmap</code> 的函数：</p>
+<pre><code class="language-haskell">fmap f = id &gt;=&gt; (\x -&gt; return (f x))</code></pre>
+<p class="source-paragraph" data-source-paragraph="56">鱼运算符在这里组合两个函数：一个是熟悉的 <code>id</code>，另一个是 lambda，它先对参数应用 <code>f</code>，再对结果应用 <code>return</code>。最难理解的也许是 <code>id</code> 的用法。鱼运算符的参数不应该接受“普通”类型并返回修饰类型吗？其实并非如此。没有人规定 <code>a -&gt; Writer b</code> 里的 <code>a</code> 必须是“普通”类型；它是类型变量，可以是任何类型，包括 <code>Writer b</code> 这样的修饰类型。</p>
+<p class="source-paragraph" data-source-paragraph="57">因此，<code>id</code> 会把 <code>Writer a</code> 变成 <code>Writer a</code>。鱼运算符取出其中的 <code>a</code> 值，把它作为 <code>x</code> 传给 lambda；<code>f</code> 在那里把它变成 <code>b</code>，<code>return</code> 再把它修饰成 <code>Writer b</code>。合在一起，就得到从 <code>Writer a</code> 到 <code>Writer b</code> 的函数，恰好是 <code>fmap</code> 应产生的东西。</p>
+<p class="source-paragraph" data-source-paragraph="58">注意，这个论证非常一般：可以把 <code>Writer</code> 换成任意类型构造器。只要它支持鱼运算符与 <code>return</code>，就能定义 <code>fmap</code>。所以 Kleisli 范畴中的修饰总是函子。（不过，并非每个函子都产生 Kleisli 范畴。）</p>
+<p class="source-paragraph" data-source-paragraph="59">你也许会问，刚刚定义的 <code>fmap</code> 是否与编译器通过 <code>deriving Functor</code> 推导的相同。有趣的是，确实相同。这源于 Haskell 实现多态函数的方式，称为<em>参数多态（parametric polymorphism）</em>，它会产生所谓的<em>免费定理（theorems for free）</em>。其中一条定理说：若某类型构造器存在保持恒等的 <code>fmap</code> 实现，那么它必然唯一。</p>
+</section>
+
+<section id="variance"><h2>协变与逆变函子</h2>
+<p class="source-paragraph" data-source-paragraph="60">复习 Writer 函子之后，回到 Reader 函子。它基于偏应用的函数箭头类型构造器：</p><pre><code class="language-haskell">(-&gt;) r</code></pre>
+<p class="source-paragraph" data-source-paragraph="61">可把它重写成类型同义词：</p><pre><code class="language-haskell">type Reader r a = r -&gt; a</code></pre>
+<p class="source-paragraph" data-source-paragraph="62">它的 <code>Functor</code> 实例是：</p><pre><code class="language-haskell">instance Functor (Reader r) where
+    fmap f g = f . g</code></pre>
+<p class="source-paragraph" data-source-paragraph="63">但与 pair 或 <code>Either</code> 类型构造器一样，函数类型构造器也接受两个类型参数。pair 与 <code>Either</code> 在两个参数上都有函子性，因而是双函子。函数构造器也是吗？</p>
+<p class="source-paragraph" data-source-paragraph="64">尝试让它在第一个参数上具有函子性。先定义一个类型同义词，它与 <code>Reader</code> 相似，只是参数翻转：</p><pre><code class="language-haskell">type Op r a = a -&gt; r</code></pre>
+<p class="source-paragraph" data-source-paragraph="65">这次固定返回类型 <code>r</code>，改变参数类型 <code>a</code>。看看能否匹配类型以实现如下签名的 <code>fmap</code>：</p><pre><code class="language-haskell">fmap :: (a -&gt; b) -&gt; (a -&gt; r) -&gt; (b -&gt; r)</code></pre>
+<p class="source-paragraph" data-source-paragraph="66">手里只有两个接受 <code>a</code>、分别返回 <code>b</code> 与 <code>r</code> 的函数，根本无法构造接受 <code>b</code> 并返回 <code>r</code> 的函数！若能把第一个函数反转成接受 <code>b</code> 返回 <code>a</code>，情况就不同。任意函数不能求逆，但我们可以转到对偶范畴。</p>
+<p class="source-paragraph" data-source-paragraph="67">简要回顾：每个范畴 C 都有对偶范畴 C<sup>op</sup>。它与 C 对象相同，但所有箭头反转。</p>
+<p class="source-paragraph" data-source-paragraph="68">考虑从 C<sup>op</sup> 到另一范畴 D 的函子：</p><div class="math-display">F: C<sup>op</sup> → D</div>
+<p class="source-paragraph" data-source-paragraph="69">它把 C<sup>op</sup> 中的态射 <em>f<sup>op</sup>: a→b</em> 映射为 D 中的 <em>F f<sup>op</sup>: F a→F b</em>。但 <em>f<sup>op</sup></em> 暗中对应原范畴 C 中的态射 <em>f: b→a</em>。注意方向反了。</p>
+<p class="source-paragraph" data-source-paragraph="70">F 是普通函子，但可基于它定义另一个不是普通函子的映射，称为 G。G 从 C 映射到 D；对象映射与 F 相同，但映射态射时反转方向。它接受 C 中的 <em>f: b→a</em>，先变成反向态射 <em>f<sup>op</sup>: a→b</em>，再用 F 得到 <em>F f<sup>op</sup>: F a→F b</em>。</p>
+<p class="source-paragraph" data-source-paragraph="71">由于 <em>F a</em> 与 <em>G a</em> 相同，<em>F b</em> 与 <em>G b</em> 相同，整个过程可写为：</p><div class="math-display">G f: (b → a) → (G a → G b)</div>
+<p class="source-paragraph" data-source-paragraph="72">这是一个“带扭转的函子”。以这种方式反转态射方向的范畴映射，称为<em>逆变函子（contravariant functor）</em>。逆变函子其实就是从对偶范畴出发的普通函子。顺便说，此前研究的普通函子称为<em>协变函子（covariant functor）</em>。</p>
+<figure><div class="figure-frame"><img src="contravariant.jpg" alt="逆变函子反转态射方向"></div><figcaption>逆变（contravariant）。</figcaption></figure>
+<p class="source-paragraph" data-source-paragraph="73">下面是 Haskell 中定义逆变函子（严格说是逆变自函子）的类型类：</p>
+<pre><code class="language-haskell">class Contravariant f where
+    contramap :: (b -&gt; a) -&gt; (f a -&gt; f b)</code></pre>
+<p class="source-paragraph" data-source-paragraph="74">类型构造器 <code>Op</code> 是它的实例：</p>
+<pre><code class="language-haskell">instance Contravariant (Op r) where
+    -- (b -&gt; a) -&gt; Op r a -&gt; Op r b
+    contramap f g = g . f</code></pre>
+<p class="source-paragraph" data-source-paragraph="75">注意，函数 <code>f</code> 插入在 <code>Op</code> 内容——函数 <code>g</code>——的<em>前面</em>，也就是右边。</p>
+<p class="source-paragraph" data-source-paragraph="76">若注意到它只是参数翻转后的函数复合运算符，<code>Op</code> 的 <code>contramap</code> 定义还可更简短。翻转参数的专用函数叫 <code>flip</code>：</p>
+<pre><code class="language-haskell">flip :: (a -&gt; b -&gt; c) -&gt; (b -&gt; a -&gt; c)
+flip f y x = f x y</code></pre>
+<p class="source-paragraph" data-source-paragraph="77">于是得到：</p><pre><code class="language-haskell">contramap = flip (.)</code></pre>
+</section>
+
+<section id="profunctors"><h2>Profunctor</h2>
+<p class="source-paragraph" data-source-paragraph="78">我们看到函数箭头运算符在第一个参数上逆变，在第二个参数上协变。这样的东西有名字吗？若目标范畴是 Set，它称为 <em>Profunctor</em>。逆变函子等价于从对偶范畴出发的协变函子，因此 Profunctor 定义为：</p><div class="math-display">C<sup>op</sup> × D → Set</div>
+<p class="source-paragraph" data-source-paragraph="79">粗略说 Haskell 类型就是集合，因此把 <code>Profunctor</code> 这个名字用于双参数类型构造器 <code>p</code>：它在第一个参数上逆变，在第二个参数上协变。下面是 <code>Data.Profunctor</code> 库的相应类型类：</p>
+<pre><code class="language-haskell">class Profunctor p where
+  dimap :: (a -&gt; b) -&gt; (c -&gt; d) -&gt; p b c -&gt; p a d
+  dimap f g = lmap f . rmap g
+  lmap :: (a -&gt; b) -&gt; p b c -&gt; p a c
+  lmap f = dimap f id
+  rmap :: (b -&gt; c) -&gt; p a b -&gt; p a c
+  rmap = dimap id</code></pre>
+<p class="source-paragraph" data-source-paragraph="80">三个函数都有默认实现。与 <code>Bifunctor</code> 相同，声明 <code>Profunctor</code> 实例时，可以实现 <code>dimap</code> 并接受 <code>lmap</code>、<code>rmap</code> 的默认值，也可以实现后二者并接受 <code>dimap</code> 的默认值。</p>
+<figure><div class="figure-frame"><img src="dimap.jpg" alt="dimap 在输入侧逆变并在输出侧协变"></div><figcaption><code>dimap</code></figcaption></figure>
+<p class="source-paragraph" data-source-paragraph="81">现在可以断言，函数箭头运算符是 <code>Profunctor</code> 实例：</p>
+<pre><code class="language-haskell">instance Profunctor (-&gt;) where
+  dimap ab cd bc = cd . bc . ab
+  lmap = flip (.)
+  rmap = (.)</code></pre>
+<p class="source-paragraph" data-source-paragraph="82">Profunctor 应用于 Haskell 的 <code>lens</code> 库。讨论端与余端时，我们还会见到它。</p>
+</section>
+
+<section id="hom"><h2>Hom 函子</h2>
+<p class="source-paragraph" data-source-paragraph="83">以上例子反映了一个更一般的结论：把一对对象 <em>a</em>、<em>b</em> 映射到二者间态射集合——hom 集 C(a,b)——的映射是函子。它是从积范畴 C<sup>op</sup>×C 到集合范畴 Set 的函子。</p>
+<p class="source-paragraph" data-source-paragraph="84">定义它在态射上的作用。C<sup>op</sup>×C 中的态射，是 C 中的一对态射：</p><div class="math-display">f: a′ → a<br>g: b → b′</div>
+<p class="source-paragraph" data-source-paragraph="85">提升这对态射，必须得到从集合 C(a,b) 到集合 C(a′,b′) 的态射（函数）。任取 C(a,b) 的元素 <em>h</em>——即从 <em>a</em> 到 <em>b</em> 的态射——把它映射为：</p><div class="math-display">g ∘ h ∘ f</div>
+<p class="source-paragraph" data-source-paragraph="86">这正是 C(a′,b′) 的一个元素。可见，Hom 函子（hom-functor）是 Profunctor 的特例。</p>
+</section>
+
+<section id="challenges"><h2>习题</h2><ol class="challenges">
+<li>证明数据类型：<pre><code class="language-haskell">data Pair a b = Pair a b</code></pre>是双函子。加分项：实现 <code>Bifunctor</code> 的全部三个方法，并用等式推理说明它们与默认实现兼容。
+<details class="exercise-answer"><summary>点击展开参考答案</summary><pre><code class="language-haskell">instance Bifunctor Pair where
+  bimap f g (Pair a b) = Pair (f a) (g b)
+  first f (Pair a b) = Pair (f a) b
+  second g (Pair a b) = Pair a (g b)</code></pre><p>展开默认式：<code>first f . second g</code> 先得到 <code>Pair a (g b)</code>，再得到 <code>Pair (f a) (g b)</code>，等于 <code>bimap f g</code>。同理 <code>bimap f id = first f</code>，<code>bimap id g = second g</code>。</p></details></li>
+<li>证明标准 <code>Maybe</code> 与下列去糖形式同构：<pre><code class="language-haskell">type Maybe' a = Either (Const () a) (Identity a)</code></pre>
+<details class="exercise-answer"><summary>点击展开参考答案</summary><pre><code class="language-haskell">toMaybe' Nothing  = Left (Const ())
+toMaybe' (Just x) = Right (Identity x)
+
+fromMaybe' (Left (Const ()))   = Nothing
+fromMaybe' (Right (Identity x)) = Just x</code></pre><p>分别对 <code>Nothing</code>/<code>Just</code> 与 <code>Left</code>/<code>Right</code> 展开，两种复合都还原输入，因此互逆。</p></details></li>
+<li><code>PreList</code> 用参数 <code>b</code> 代替递归：<pre><code class="language-haskell">data PreList a b = Nil | Cons a b</code></pre>证明它是 <code>Bifunctor</code> 实例。
+<details class="exercise-answer"><summary>点击展开参考答案</summary><pre><code class="language-haskell">instance Bifunctor PreList where
+  bimap _ _ Nil = Nil
+  bimap f g (Cons a b) = Cons (f a) (g b)</code></pre><p><code>Nil</code> 不含参数值；<code>Cons</code> 的两个字段分别用两个函数映射。恒等与复合定律逐字段继承自函数定律。</p></details></li>
+<li>证明下列数据类型在 <code>a</code>、<code>b</code> 上定义双函子：<pre><code class="language-haskell">data K2 c a b = K2 c</code></pre><pre><code class="language-haskell">data Fst a b = Fst a</code></pre><pre><code class="language-haskell">data Snd a b = Snd b</code></pre><p>加分项：把你的解答与 Conor McBride 的论文 <a href="http://strictlypositive.org/CJ.pdf"><em>Clowns to the Left of me, Jokers to the Right</em></a> 对照。</p>
+<details class="exercise-answer"><summary>点击展开参考答案</summary><pre><code class="language-haskell">instance Bifunctor (K2 c) where
+  bimap _ _ (K2 c) = K2 c
+instance Bifunctor Fst where
+  bimap f _ (Fst a) = Fst (f a)
+instance Bifunctor Snd where
+  bimap _ g (Snd b) = Snd (g b)</code></pre><p><code>K2</code> 忽略两个参数，<code>Fst</code> 只使用第一个，<code>Snd</code> 只使用第二个；未使用位置上的函数必然被忽略。</p></details></li>
+<li>在 Haskell 以外的语言中定义双函子，并为泛型 pair 实现 <code>bimap</code>。
+<details class="exercise-answer"><summary>点击展开参考答案</summary><pre><code class="language-kotlin">fun &lt;A, B, C, D&gt; bimap(
+  f: (A) -&gt; C,
+  g: (B) -&gt; D,
+  pair: Pair&lt;A, B&gt;
+): Pair&lt;C, D&gt; = f(pair.first) to g(pair.second)</code></pre><p>两个分量独立映射，因此保持恒等函数与逐分量复合。</p></details></li>
+<li><code>std::map</code> 在模板参数 <code>Key</code> 与 <code>T</code> 上应视为双函子还是 Profunctor？怎样重新设计才能使它成为其中之一？
+<details class="exercise-answer"><summary>点击展开参考答案</summary><p>标准 <code>std::map&lt;Key,T&gt;</code> 对 <code>T</code> 可以协变映射；但对 <code>Key</code> 既不是普通双函子，也不是自然的 Profunctor。把键经任意 <code>Key→Key′</code> 映射可能发生碰撞，必须额外决定怎样合并值；逆变也无法从新键凭空得到旧键。若把它重新理解为查找函数 <code>Key→optional&lt;T&gt;</code>（例如不可变的 <code>Reader Key (Maybe T)</code>），便在 <code>Key</code> 上逆变、在 <code>T</code> 上协变，从而成为 Profunctor：<code>dimap pre post table = fmap post . table . pre</code>，其中 <code>post</code> 被提升到 <code>optional</code> 内。</p></details></li>
+</ol></section>
+<nav class="chapter-switcher"><a href="../functors/">← 第 7 章：函子</a><a href="../function-types/">第 9 章：函数类型 →</a></nav>
+</article><footer class="source-note"><p><strong>原文：</strong><a href="https://bartoszmilewski.com/2015/02/03/functoriality/">Functoriality</a></p><p><strong>核对底稿：</strong>作者博客正文与开源英文 Markdown；正文、43 个原文代码块、公式、6 张插图和 6 道习题均已收录；参考答案属于本阅读器。</p><p><strong>许可：</strong>原作及本非官方中文译文依 <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> 署名—相同方式共享。</p></footer></main></body></html>

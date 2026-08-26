@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>第 12 章：极限与余极限｜程序员的范畴论｜RIN III</title><meta name="description" content="《程序员的范畴论》第 12 章完整中文翻译：图、锥、极限、等化子、拉回、余极限、推出与连续函子"><link rel="stylesheet" href="../reader.css"></head>
+<body><nav class="site-nav"><a href="../../../mathematics/category-theory-for-programmers/">← 返回整本书学习记录</a><a href="../../../">RIN III</a></nav><main class="reader"><header><span class="chapter-kicker">第二部分 · 第 12 章 · 完整中文译文</span><h1>极限与余极限</h1><p class="byline">Bartosz Milewski</p><div class="title-rule"></div><p class="lead">极限（limit）把一整张图的约束压缩到一个没有多余信息的泛对象中。积、终对象、等化子与拉回只是不同形状图的极限；反转箭头便得到余极限。</p><div class="translation-scope"><span class="scope-label">译文范围</span><p>完整翻译本章正文，保留全部 25 个原文代码块、18 次原文插图引用、公式和 6 道习题；习题附可展开答案。</p></div><nav><ul class="chapter-nav"><li><a href="#cones">图与锥</a></li><li><a href="#natural-iso">作为自然同构的极限</a></li><li><a href="#examples">极限示例</a></li><li><a href="#colimits">余极限</a></li><li><a href="#continuity">连续性</a></li><li><a href="#challenges">习题</a></li></ul></nav></header><article>
+
+<section id="cones"><p class="source-paragraph" data-source-paragraph="1">范畴论中，一切似乎都彼此关联，也都能从多个角度观察。以<a href="../products-and-coproducts/">积的泛构造</a>为例：现在了解了更多<a href="../functors/">函子</a>与<a href="../natural-transformations/">自然变换</a>，能否简化甚至推广它？来试试。</p><figure><div class="figure-frame"><img src="productpattern.jpg" alt="积由两个对象和候选锥顶组成的模式"></div></figure>
+<p class="source-paragraph" data-source-paragraph="2">积的构造从选择两个对象 <em>a</em>、<em>b</em> 开始。但“选择对象”是什么意思？能否以更范畴化的方式重述？两个对象形成一种非常简单的模式。可以把模式抽象成一个非常简单但确实是范畴的范畴，称为 2。它只有对象 1、2，除必需的两个恒等态射外没有别的态射。现在，在 C 中选择两个对象可改述为定义从 2 到 C 的函子 D。函子映射对象，所以它的像就是两个对象（也可能折叠成一个，这也没问题）；它还映射态射，这里只把恒等态射映射成恒等态射。</p>
+<p class="source-paragraph" data-source-paragraph="3">这种方式的妙处，是它建立在范畴概念上，摆脱了“选择对象”这种来自祖先采集狩猎词汇的不精确说法。顺便说，它也很容易推广，因为完全可以用比 2 更复杂的范畴定义模式。</p><figure><div class="figure-frame"><img src="two.jpg" alt="只有两个对象和恒等态射的范畴 2"></div></figure>
+<p class="source-paragraph" data-source-paragraph="4">继续。积定义的下一步是选择候选对象 <em>c</em>。也可用来自单对象范畴的函子重述；若使用 Kan 延拓，这是正确做法。但我们还没准备好讨论 Kan 延拓，所以采用另一个技巧：从同一个范畴 2 到 C 的常函子 Δ。在 C 中选择 <em>c</em> 可以用 Δ<sub>c</sub> 完成。记住，Δ<sub>c</sub> 把所有对象映射到 <em>c</em>，所有态射映射到 id<sub>c</sub>。</p><figure><div class="figure-frame"><img src="twodelta.jpg" alt="常函子 Delta c 把范畴 2 的两个对象映射到 c"></div></figure>
+<p class="source-paragraph" data-source-paragraph="5">现在 Δ<sub>c</sub> 与 D 都从 2 到 C，自然要问二者之间的自然变换。2 只有两个对象，所以自然变换有两个分量。对象 1 经 Δ<sub>c</sub> 映射到 <em>c</em>，经 D 映射到 <em>a</em>；因此自然变换在 1 处的分量是从 <em>c</em> 到 <em>a</em> 的态射，称为 <em>p</em>。第二个分量同理，是从 <em>c</em> 到 <em>b</em> 的态射 <em>q</em>。这恰好就是原积定义中的两个投影。所以，无需再谈选择对象与投影，只需选择函子与自然变换。在这个简单例子中，自然性条件自动成立，因为 2 除恒等外没有态射。</p><figure><div class="figure-frame"><img src="productcone.jpg" alt="积候选是从常函子到二对象图的自然变换"></div></figure>
+<p class="source-paragraph" data-source-paragraph="6">若把构造推广到含有非平凡态射的模式范畴，自然性会对 Δ<sub>c</sub> 到 D 的变换施加条件。这样的变换称为<em>锥（cone）</em>：Δ 的像是锥或金字塔的顶点，自然变换各分量形成侧面，D 的像构成锥底。</p>
+<p class="source-paragraph" data-source-paragraph="7">一般构造锥时，从定义模式的小范畴 I 开始，它通常有限。选择从 I 到 C 的函子 D，并把它（或其像）称为<em>图（diagram）</em>。再选 C 中对象 <em>c</em> 作为锥顶，用它定义从 I 到 C 的常函子 Δ<sub>c</sub>。从 Δ<sub>c</sub> 到 D 的自然变换就是一个锥。若 I 有限，它只是一组把 <em>c</em> 连接到图——D 对 I 的像——的态射。</p><figure><div class="figure-frame"><img src="cone.jpg" alt="对象 c 作为锥顶，通过自然变换分量连接图 D"></div></figure>
+<p class="source-paragraph" data-source-paragraph="8">自然性要求图中所有三角形（锥壁）交换。取 I 中任意态射 <em>f</em>；D 把它映射到 C 中态射 <em>D f</em>，构成某个三角形的底边。常函子 Δ<sub>c</sub> 把 <em>f</em> 映射为 <em>c</em> 上的恒等态射。Δ 把态射两端压成一个对象，于是自然性方块退化为交换三角形；三角形两臂就是自然变换的分量。</p><figure><div class="figure-frame"><img src="conenaturality.jpg" alt="锥的自然性方块退化为交换三角形"></div></figure>
+<p class="source-paragraph" data-source-paragraph="9">这只是一个锥。我们真正关心的是<em>泛锥（universal cone）</em>，就像定义积时选择泛对象。</p>
+<p class="source-paragraph" data-source-paragraph="10">可以有多种处理方法。例如，基于给定函子 D 定义<em>锥范畴（category of cones）</em>，其中对象是锥。并非 C 中每个对象 <em>c</em> 都能成为锥顶，因为 Δ<sub>c</sub> 与 D 之间可能没有自然变换。</p>
+<p class="source-paragraph" data-source-paragraph="11">要成为范畴，还需定义锥之间的态射。它们由锥顶之间的态射完全决定，但不是任意态射都行。积构造中，候选对象（锥顶）之间的态射必须是投影的共同因子：</p><pre><code class="language-haskell">p' = p . m
+q' = q . m</code></pre><figure><div class="figure-frame"><img src="productranking.jpg" alt="积候选之间的因子态射"></div></figure>
+<p class="source-paragraph" data-source-paragraph="12">一般情况下，这转化为这样的条件：以因子态射为一边的三角形全部交换。</p><figure><div class="figure-frame"><img src="conecommutativity.jpg" alt="两个锥之间由因子态射连接的交换三角形"></div><figcaption>连接两个锥的交换三角形，<em>h</em> 是因子态射；下方锥为泛锥。</figcaption></figure>
+<p class="source-paragraph" data-source-paragraph="13">把这些因子态射作为锥范畴的态射。不难检查它们可复合，恒等态射也能因子分解，因此锥确实形成范畴。</p>
+<p class="source-paragraph" data-source-paragraph="14">现在可把泛锥定义为锥范畴的<em>终对象</em>。终对象定义说，从任何其他对象到它都有唯一态射。这里表示：从任意其他锥的锥顶到泛锥锥顶，都有唯一因子态射。这个泛锥称为图 D 的<em>极限（limit）</em>，记作 lim D；常把锥顶简称为极限或极限对象。</p>
+<p class="source-paragraph" data-source-paragraph="15">直觉上，极限把整张图的性质凝聚在一个对象中。例如，两对象离散图的极限就是二者的积；积连同两个投影包含两个对象的信息，而泛性保证没有多余杂质。</p></section>
+
+<section id="natural-iso"><h2>作为自然同构的极限</h2>
+<p class="source-paragraph" data-source-paragraph="16">这个极限定义仍有些不够令人满意。它能工作，但连接任意两个锥的三角形还带着交换条件。若能用某个自然性条件替代，会优雅得多。怎样做到？</p>
+<p class="source-paragraph" data-source-paragraph="17">现在面对的不再是一个锥，而是整个锥集合（实际是锥范畴）。若极限存在——必须强调，没有保证——其中一个锥是泛锥。对每个锥，都有唯一因子态射把其锥顶 <em>c</em> 映射到泛锥锥顶 lim D。（其实无需说“其他”锥，因为恒等态射把泛锥映射到自身并平凡地经自身分解。）重要之处是：给定任意锥，都有唯一的一支特殊态射。锥到特殊态射的映射是一一映射。</p>
+<p class="source-paragraph" data-source-paragraph="18">这支特殊态射属于 hom 集 C(c,lim D)。该 hom 集的其他成员没那么幸运，它们不会让两个锥的映射因子分解。我们想对每个 <em>c</em>，从集合 C(c,lim D) 中挑出一支满足特定交换条件的态射。这听起来像在定义自然变换，确实如此。</p>
+<p class="source-paragraph" data-source-paragraph="19">但这个变换连接哪两个函子？</p>
+<p class="source-paragraph" data-source-paragraph="20">第一个函子把 <em>c</em> 映射到集合 C(c,lim D)。它是从 C 到 Set 的函子，把对象映射到集合；实际上是逆变函子。定义它在态射上的作用。取 <em>f:c′→c</em>。函子把 <em>c′</em> 映射为 C(c′,lim D)。提升 <em>f</em> 需要从 C(c,lim D) 到 C(c′,lim D) 的映射。任选成员 <em>u:c→lim D</em>，把 <em>u</em> 与 <em>f</em> 前复合，得到 <em>u∘f:c′→lim D</em>，即 C(c′,lim D) 的成员：</p><pre><code class="language-haskell">contramap :: (c' -&gt; c) -&gt; (c -&gt; Lim D) -&gt; (c' -&gt; Lim D)
+contramap f u = u . f</code></pre>
+<p class="source-paragraph" data-source-paragraph="21"><em>c</em>、<em>c′</em> 顺序反转，正是逆变函子的特征。</p><figure><div class="figure-frame"><img src="homsetmapping.jpg" alt="前复合把一个 hom 集逆变映射到另一个 hom 集"></div></figure>
+<p class="source-paragraph" data-source-paragraph="22">定义自然变换还需要另一个从 C 到 Set 的函子，这次考虑锥集合。锥就是自然变换，所以考察自然变换集合 Nat(Δ<sub>c</sub>,D)。把 <em>c</em> 映射到该集合也是逆变函子。怎样证明？仍定义它在态射 <em>f:c′→c</em> 上的作用。提升 <em>f</em> 应给出：</p><div class="math-display">Nat(Δ<sub>c</sub>,D) → Nat(Δ<sub>c′</sub>,D)</div>
+<p class="source-paragraph" data-source-paragraph="23">怎样映射自然变换？自然变换是每个 I 中对象一支态射的分量选择。α∈Nat(Δ<sub>c</sub>,D) 在 I 中对象 <em>a</em> 处的分量是 <em>α<sub>a</sub>:Δ<sub>c</sub>a→Da</em>，也就是 <em>α<sub>a</sub>:c→Da</em>。给定 <em>f</em>、α，需要构造 β∈Nat(Δ<sub>c′</sub>,D)，其分量 <em>β<sub>a</sub>:c′→Da</em>。只需前复合：</p><div class="math-display">β<sub>a</sub> = α<sub>a</sub> ∘ f</div>
+<p class="source-paragraph" data-source-paragraph="24">不难证明这些分量组成自然变换。</p><figure><div class="figure-frame"><img src="natmapping.jpg" alt="通过前复合逐分量映射锥自然变换"></div></figure>
+<p class="source-paragraph" data-source-paragraph="25">给定态射 <em>f</em>，我们逐分量构造了两个自然变换集合之间的映射，它定义函子 <em>c↦Nat(Δ<sub>c</sub>,D)</em> 的 <code>contramap</code>。</p>
+<p class="source-paragraph" data-source-paragraph="26">至此得到两个从 C 到 Set 的逆变函子，没有作任何假设，它们总是存在。</p>
+<p class="source-paragraph" data-source-paragraph="27">顺便说，第一个函子在范畴论中很重要，讨论 Yoneda 引理时会再见。从任意范畴 C 到 Set 的逆变函子称为<em>预层（presheaf）</em>；这个特例称为<em>可表预层（representable presheaf）</em>。第二个函子也是预层。</p>
+<p class="source-paragraph" data-source-paragraph="28">有了两个函子，就能讨论自然变换。结论是：从 I 到 C 的函子 D 具有极限 lim D，当且仅当刚定义的两个函子之间存在自然同构：</p><div class="math-display">C(c, lim D) ≃ Nat(Δ<sub>c</sub>, D)</div>
+<p class="source-paragraph" data-source-paragraph="29">提醒一下，自然同构是每个分量均为同构——可逆态射——的自然变换。</p>
+<p class="source-paragraph" data-source-paragraph="30">这里不展开证明。过程直接但繁琐。处理自然变换时，通常关注其分量，也就是态射。此处两个函子的目标都是 Set，所以自然同构的分量是函数。它们还是高阶函数，因为从 hom 集映射到自然变换集合。分析函数时观察它怎样作用于参数：这里参数是 C(c,lim D) 的成员——一支态射；结果是 Nat(Δ<sub>c</sub>,D) 的成员——自然变换，也就是锥；这个自然变换又有自己的态射分量。所以一路到底都是态射，只要追踪清楚，就能证明结论。</p>
+<p class="source-paragraph" data-source-paragraph="31">最重要的结果是：这个同构的自然性条件，恰好就是锥映射的交换条件。</p>
+<p class="source-paragraph" data-source-paragraph="32">预告一下，集合 Nat(Δ<sub>c</sub>,D) 可视为函子范畴中的 hom 集；所以这个自然同构连接两个 hom 集，指向更一般的关系——伴随（adjunction）。</p></section>
+
+<section id="examples"><h2>极限示例</h2>
+<p class="source-paragraph" data-source-paragraph="33">我们已经看到，范畴 2 生成的简单图，其极限就是范畴积。</p>
+<p class="source-paragraph" data-source-paragraph="34">还有更简单的极限：终对象。第一反应可能认为单元素范畴会产生终对象，事实更加极端：终对象是空范畴所生成图的极限。从空范畴出发的函子不选择任何对象，所以锥只剩锥顶；泛锥就是这样一个锥顶：任何其他锥顶到它都有唯一态射。这正是终对象定义。</p>
+<p class="source-paragraph" data-source-paragraph="35">下一个有趣极限称为<em>等化子（equalizer）</em>。它由含两个对象、二者间有两支平行态射（以及恒等态射）的范畴生成。这个范畴在 C 中选择出包含对象 <em>a</em>、<em>b</em> 与两支态射的图：</p><pre><code class="language-haskell">f :: a -&gt; b
+g :: a -&gt; b</code></pre>
+<p class="source-paragraph" data-source-paragraph="36">在图上构造锥，需要添加锥顶 <em>c</em> 与两个投影：</p><pre><code class="language-haskell">p :: c -&gt; a
+q :: c -&gt; b</code></pre><figure><div class="figure-frame"><img src="equalizercone.jpg" alt="两支平行态射之上的等化子锥"></div></figure>
+<p class="source-paragraph" data-source-paragraph="37">有两个必须交换的三角形：</p><pre><code class="language-haskell">q = f . p
+q = g . p</code></pre>
+<p class="source-paragraph" data-source-paragraph="38">这说明 <code>q</code> 由任一方程唯一决定，可以从图中省略，只剩条件：</p><pre><code class="language-haskell">f . p = g . p</code></pre>
+<p class="source-paragraph" data-source-paragraph="39">若限定在 Set，函数 <code>p</code> 的像选择 <code>a</code> 的一个子集，函数 <code>f</code>、<code>g</code> 限制到这个子集后相等。</p>
+<p class="source-paragraph" data-source-paragraph="40">例如，让 <em>a</em> 是由坐标 <em>x,y</em> 参数化的二维平面，<em>b</em> 是实数轴，并取：</p><pre><code class="language-haskell">f (x, y) = 2 * y + x
+g (x, y) = y - x</code></pre>
+<p class="source-paragraph" data-source-paragraph="41">二者的等化子是实数集合（锥顶 <em>c</em>）以及函数：</p><pre><code class="language-haskell">p t = (t, (-2) * t)</code></pre>
+<p class="source-paragraph" data-source-paragraph="42"><code>p t</code> 在二维平面中定义一条直线，沿线两函数相等。</p>
+<p class="source-paragraph" data-source-paragraph="43">当然，还有其他集合 <em>c′</em> 与函数 <em>p′</em> 也满足：</p><pre><code class="language-haskell">f . p' = g . p'</code></pre>
+<p class="source-paragraph" data-source-paragraph="44">但它们都唯一地经 <code>p</code> 因子分解。例如，可取单元素集合 <code>()</code> 为 <em>c′</em>，并定义：</p><pre><code class="language-haskell">p' () = (0, 0)</code></pre>
+<p class="source-paragraph" data-source-paragraph="45">这是好锥，因为 <code>f (0,0)=g (0,0)</code>；但不泛，因为存在唯一经 <code>h</code> 的因子分解：</p><pre><code class="language-haskell">p' = p . h</code></pre><p class="source-paragraph" data-source-paragraph="46">其中：</p><pre><code class="language-haskell">h () = 0</code></pre><figure><div class="figure-frame"><img src="equilizerlimit.jpg" alt="等化子泛锥与单元素候选之间的唯一因子态射"></div></figure>
+<p class="source-paragraph" data-source-paragraph="47">因此等化子可用于求解 <em>f x = g x</em> 形式的方程；但它更一般，因为定义使用对象与态射，而非代数。</p>
+<p class="source-paragraph" data-source-paragraph="48">另一种极限——<em>拉回（pullback）</em>——体现更一般的解方程思想。仍有两支要令其相等的态射，但定义域不同。起点是形状为 <em>1→2←3</em> 的三对象范畴。对应图含对象 <em>a,b,c</em> 与态射：</p><pre><code class="language-haskell">f :: a -&gt; b
+g :: c -&gt; b</code></pre>
+<p class="source-paragraph" data-source-paragraph="49">这种图常称为<em>余跨度（cospan）</em>。</p>
+<p class="source-paragraph" data-source-paragraph="50">其上的锥包含锥顶 <em>d</em> 与三支态射：</p><pre><code class="language-haskell">p :: d -&gt; a
+q :: d -&gt; c
+r :: d -&gt; b</code></pre><figure><div class="figure-frame"><img src="pullbackcone.jpg" alt="余跨度之上的拉回候选锥"></div></figure>
+<p class="source-paragraph" data-source-paragraph="51">交换条件说明 <em>r</em> 完全由另两支态射决定，可从图中省略，只剩：</p><pre><code class="language-haskell">g . q = f . p</code></pre>
+<p class="source-paragraph" data-source-paragraph="52">这种形状的泛锥就是拉回。</p><figure><div class="figure-frame"><img src="pullbacklimit.jpg" alt="拉回作为余跨度上的泛锥"></div></figure>
+<p class="source-paragraph" data-source-paragraph="53">若限定在集合，<em>d</em> 可看作来自 <em>a</em>、<em>c</em> 的元素 pair 集合，且 <em>f</em> 作用于第一项等于 <em>g</em> 作用于第二项。更具体地，若 <em>g</em> 是常函数 <code>g _ = 1.23</code>（假设 <em>b</em> 是实数集合），就是求解：</p><pre><code class="language-haskell">f x = 1.23</code></pre>
+<p class="source-paragraph" data-source-paragraph="54">此时 <em>c</em> 的选择无关紧要（只要非空），可取单元素集合。若 <em>a</em> 是三维向量集合，<em>f</em> 是向量长度，则拉回是所有 pair <em>(v,())</em> 的集合，其中 <em>v</em> 长度为 1.23，也就是方程 √(x²+y²+z²)=1.23 的解，而 <code>()</code> 是单元素集合的占位元素。</p>
+<p class="source-paragraph" data-source-paragraph="55">拉回在编程中还有更一般的应用。例如，把 C++ 类看成范畴，态射从子类指向超类。把继承视为传递关系：若 C 继承 B，B 继承 A，就说 C 继承 A（期待 A 指针处可传 C 指针）。还假设 C 继承自身，于是每个类都有恒等箭头。这样子类关系与子类型关系一致。C++ 支持多继承，可以构造菱形图：B、C 继承 A，D 再同时继承 B、C。通常 D 会得到两份 A，这很少符合需要；虚继承可让 D 只保留一份 A。</p>
+<p class="source-paragraph" data-source-paragraph="56">让 D 成为该图的拉回意味着：任何同时继承 B、C 的类 E 也是 D 的子类。这在采用名义子类型的 C++ 中无法直接表达（编译器不会推断此类关系，需要“鸭子类型”）。但可以跳出子类型关系，询问从 E 转换到 D 是否安全。若 D 只是 B、C 的最小组合，没有额外数据也不覆写方法，转换就是安全的。当然，若 B、C 的某些方法名冲突，则不存在拉回。</p><figure><div class="figure-frame"><img src="classes.jpg" alt="C++ 菱形继承与作为拉回的类 D"></div></figure>
+<p class="source-paragraph" data-source-paragraph="57">拉回还高级地用于类型推断。经常需要<em>合一（unify）</em>两个表达式的类型。例如编译器推断函数：</p><pre><code class="language-haskell">twice f x = f (f x)</code></pre>
+<p class="source-paragraph" data-source-paragraph="58">它给所有变量与子表达式分配初步类型：</p><pre><code class="language-haskell">f       :: t0
+x       :: t1
+f x     :: t2
+f (f x) :: t3</code></pre>
+<p class="source-paragraph" data-source-paragraph="59">由此得到：</p><pre><code class="language-haskell">twice :: t0 -&gt; t1 -&gt; t3</code></pre>
+<p class="source-paragraph" data-source-paragraph="60">函数应用规则还产生约束：</p><pre><code class="language-haskell">t0 = t1 -&gt; t2 -- f 应用于 x
+t0 = t2 -&gt; t3 -- f 应用于 (f x)</code></pre>
+<p class="source-paragraph" data-source-paragraph="61">必须寻找一组类型或类型变量替换未知类型，使两个表达式得到相同类型。一种替换是：</p><pre><code class="language-haskell">t1 = t2 = t3 = Int
+twice :: (Int -&gt; Int) -&gt; Int -&gt; Int</code></pre>
+<p class="source-paragraph" data-source-paragraph="62">但显然不是最一般的。最一般替换通过拉回得到。细节超出本书范围，但结果应为：</p><pre><code class="language-haskell">twice :: (t -&gt; t) -&gt; t -&gt; t</code></pre>
+<p class="source-paragraph" data-source-paragraph="63">其中 <code>t</code> 是自由类型变量。</p></section>
+
+<section id="colimits"><h2>余极限</h2>
+<p class="source-paragraph" data-source-paragraph="64">和范畴论的所有构造一样，极限在对偶范畴中有镜像。反转锥的全部箭头得到<em>余锥（cocone）</em>，其中的泛对象称为<em>余极限（colimit）</em>。反转也影响因子态射：它现在从泛余锥流向任意其他余锥。</p><figure><div class="figure-frame"><img src="colimit.jpg" alt="两个余锥由从泛余锥出发的因子态射连接"></div></figure>
+<p class="source-paragraph" data-source-paragraph="65">余极限的典型例子是余积，对应范畴 2 所生成的图；这正是定义积时使用的范畴。</p><figure><div class="figure-frame"><img src="coproductranking.jpg" alt="余积候选及从泛余积到候选的因子态射"></div></figure>
+<p class="source-paragraph" data-source-paragraph="66">积与余积都以不同方式体现一对对象的本质。</p>
+<p class="source-paragraph" data-source-paragraph="67">正如终对象是极限，始对象是基于空范畴之图的余极限。</p>
+<p class="source-paragraph" data-source-paragraph="68">拉回的对偶称为<em>推出（pushout）</em>，基于称为<em>跨度（span）</em>的图，由形状 <em>1←2→3</em> 的范畴生成。</p></section>
+
+<section id="continuity"><h2>连续性</h2>
+<p class="source-paragraph" data-source-paragraph="69">此前说过，函子很接近范畴间连续映射：它从不切断既有连接（态射）。从 C 到 C′ 的<em>连续函子（continuous functor）</em> F 的实际定义，还要求函子保持极限。C 中每张图 D 都能通过复合函子映射成 C′ 中的图 F∘D。连续性条件说：若 D 有极限 lim D，则 F∘D 也有极限，而且等于 F(lim D)。</p><figure><div class="figure-frame"><img src="continuity.jpg" alt="连续函子把极限映射为像图的极限"></div></figure>
+<p class="source-paragraph" data-source-paragraph="70">函子把态射映射到态射、复合映射到复合，所以锥的像总是锥；交换三角形仍映射成交换三角形。因子态射也一样，其像仍是因子态射。因此每个函子都<em>几乎</em>连续。可能失败的是唯一性：C′ 中的因子态射也许不唯一；C′ 中也可能出现 C 中没有的其他“更好锥”。</p>
+<p class="source-paragraph" data-source-paragraph="71">Hom 函子是连续函子的例子。回忆 hom 函子 C(a,b) 在第一个变量上逆变、第二个变量上协变，即函子：</p><div class="math-display">C<sup>op</sup> × C → Set</div>
+<p class="source-paragraph" data-source-paragraph="72">固定第二个参数时，hom 集函子成为可表预层，把 C 中余极限映射成 Set 中极限；固定第一个参数时，则把极限映射成极限。</p>
+<p class="source-paragraph" data-source-paragraph="73">Haskell 中，hom 函子把任意两个类型映射到函数类型，也就是参数化函数类型。固定第二个参数为 <code>String</code>，得到逆变函子：</p><pre><code class="language-haskell">newtype ToString a = ToString (a -&gt; String)
+instance Contravariant ToString where
+    contramap f (ToString g) = ToString (g . f)</code></pre>
+<p class="source-paragraph" data-source-paragraph="74">连续性表示，当 <code>ToString</code> 应用于余极限，例如余积 <code>Either b c</code> 时，会产生极限；这里是两个函数类型的积：</p><pre><code class="language-haskell">ToString (Either b c) ~ (b -&gt; String, c -&gt; String)</code></pre>
+<p class="source-paragraph" data-source-paragraph="75">确实，任意从 <code>Either b c</code> 出发的函数，都实现为两个分支分别由一对函数处理的 case。</p>
+<p class="source-paragraph" data-source-paragraph="76">类似地，固定 hom 集的第一个参数，得到熟悉的 Reader 函子。其连续性表示，例如任何返回积的函数都等价于函数的积：</p><pre><code class="language-haskell">r -&gt; (a, b) ~ (r -&gt; a, r -&gt; b)</code></pre>
+<p class="source-paragraph" data-source-paragraph="77">我知道你在想什么：无需范畴论也能看出这些。你说得对！但我仍惊叹于这些结果能从第一原理推出，无需诉诸比特与字节、处理器架构、编译器技术，甚至 lambda 演算。</p>
+<p class="source-paragraph" data-source-paragraph="78">若好奇“极限”和“连续性”的名称来源，它们推广了微积分中的同名概念。微积分以开邻域定义极限与连续；定义拓扑的开集形成一个范畴（偏序集）。</p></section>
+
+<section id="challenges"><h2>习题</h2><ol class="challenges">
+<li>怎样描述 C++ 类范畴中的推出？<details class="exercise-answer"><summary>点击展开参考答案</summary><p>给定共同子类 A 以及继承箭头 <code>A→B</code>、<code>A→C</code>，推出是把 B、C 沿共同的 A 部分粘合得到的最小共同超类型 D。任何同时接收 B、C 且两条路径在 A 上一致的其他类型 E，都有唯一箭头 <code>D→E</code>。名义类型系统通常不会自动构造或识别它；结构化类型、接口组合或显式适配器更接近该泛性质。</p></details></li>
+<li>证明恒等函子 <em>Id:C→C</em> 的极限是始对象。<details class="exercise-answer"><summary>点击展开参考答案</summary><p>Id 的图包含 C 的全部对象与态射。以对象 <code>i</code> 为锥顶的锥，为每个对象 <code>a</code> 提供态射 <code>i→a</code>，并对 C 中全部态射自然。若 <code>i</code> 是始对象，这些态射唯一，自然性自动成立。任意其他锥顶 <code>c</code> 到 <code>i</code> 有唯一锥态射，因为该锥在对象 <code>i</code> 处已有分量 <code>c→i</code>，自然性迫使其他分量经它分解。因此该锥为终锥，锥顶是始对象。</p></details></li>
+<li>给定集合的子集以包含关系构成范畴。两个集合的拉回、推出、始对象、终对象分别是什么？<details class="exercise-answer"><summary>点击展开参考答案</summary><p>在这个偏序范畴中，拉回是最大下界，即交集；推出是最小上界，即并集。始对象是空集，终对象是给定全集本身。</p></details></li>
+<li>猜猜余等化子（coequalizer）是什么。<details class="exercise-answer"><summary>点击展开参考答案</summary><p>它是等化子的对偶。给定平行态射 <code>f,g:a→b</code>，余等化子是态射 <code>q:b→c</code>，满足 <code>q∘f=q∘g</code>，并且任何同样使二者相等的 <code>q′:b→c′</code> 都唯一经 <code>q</code> 因子分解。在 Set 中，它把 <code>f(x)</code> 与 <code>g(x)</code> 生成的等价关系取商。</p></details></li>
+<li>证明在有终对象的范畴中，指向终对象的拉回就是积。<details class="exercise-answer"><summary>点击展开参考答案</summary><p>给定对象 A、B，它们到终对象 1 各有唯一态射。其余跨度 <code>A→1←B</code> 上，任何候选对象 X 的两条腿 <code>X→A</code>、<code>X→B</code> 自动满足到 1 的交换条件，因为 <code>X→1</code> 唯一。因此该图的拉回泛性质恰好是积：对任意一对投影都有唯一态射进入拉回。</p></details></li>
+<li>类似地，证明从始对象出发的推出就是余积。<details class="exercise-answer"><summary>点击展开参考答案</summary><p>给定始对象 0 到 A、B 的唯一态射，跨度 <code>A←0→B</code> 上任意余锥的交换条件自动成立，因为从 0 出发的态射唯一。泛余锥要求从 A、B 的两支注入到任意其他注入对之间存在唯一因子态射，这正是余积的泛性质。</p></details></li>
+</ol></section>
+<nav class="chapter-switcher"><a href="../declarative-programming/">← 第 11 章：声明式编程</a><a href="../free-monoids/">第 13 章：自由幺半群 →</a></nav>
+</article><footer class="source-note"><p><strong>原文：</strong><a href="https://bartoszmilewski.com/2015/04/22/limits-and-colimits/">Limits and Colimits</a></p><p><strong>核对底稿：</strong>作者博客正文与开源英文 Markdown；正文、25 个原文代码块、公式、18 次插图引用和 6 道习题均已收录；参考答案属于本阅读器。</p><p><strong>许可：</strong>原作及本非官方中文译文依 <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> 署名—相同方式共享。</p></footer></main></body></html>

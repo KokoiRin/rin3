@@ -111,7 +111,15 @@ test("[RIN-DOC-001] 模型论 RIN 文档发布为同源文章和 Slides", async 
 
   assert.match(index, /ARTICLE \+ SLIDES/);
   assert.match(index, new RegExp(`href="${basePath}/mathematics/model-theory-for-software-engineering/"`));
-  assert.equal(index.match(/<li lang="zh-CN">/g)?.length, 1);
+  assert.equal(
+    index.match(
+      new RegExp(
+        `href="${basePath}/mathematics/model-theory-for-software-engineering/"`,
+        "g",
+      ),
+    )?.length,
+    1,
+  );
 
   assert.match(deck, /View document/);
   assert.match(deck, new RegExp(`href="${basePath}/mathematics/model-theory-for-software-engineering/"`));

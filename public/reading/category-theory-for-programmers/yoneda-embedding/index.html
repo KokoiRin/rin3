@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>第 16 章：Yoneda 嵌入｜程序员的范畴论｜RIN III</title><meta name="description" content="《程序员的范畴论》第 16 章完整中文翻译：Yoneda 嵌入、完全忠实函子、Haskell、预序与自然性"><link rel="stylesheet" href="../reader.css"></head>
+<body><nav class="site-nav"><a href="../../../mathematics/category-theory-for-programmers/">← 返回整本书学习记录</a><a href="../../../">RIN III</a></nav><main class="reader"><header><span class="chapter-kicker">第二部分 · 第 16 章 · 完整中文译文</span><h1>Yoneda 嵌入</h1><p class="byline">Bartosz Milewski</p><div class="title-rule"></div><p class="lead">Yoneda 嵌入（Yoneda embedding）把任意范畴放进 Set 值函子范畴，并以完全忠实（fully faithful）的方式保留对象之间的全部关系。</p><div class="translation-scope"><span class="scope-label">译文范围</span><p>完整翻译本章正文，保留全部 3 个原文代码块、2 幅插图、公式和 5 道习题；习题附可展开答案。</p></div><nav><ul class="chapter-nav"><li><a href="#construction">从 Hom 函子到嵌入</a></li><li><a href="#embedding">嵌入</a></li><li><a href="#haskell">Haskell 应用</a></li><li><a href="#preorder">预序示例</a></li><li><a href="#naturality">自然性</a></li><li><a href="#challenges">习题</a></li></ul></nav></header><article>
+
+<section id="construction"><p class="source-paragraph" data-source-paragraph="1">之前看到，在范畴 C 中固定对象 <em>a</em> 时，映射 C(a,-) 是从 C 到 Set 的（协变）函子：</p><div class="math-display">x ↦ C(a,x)</div><p class="source-paragraph" data-source-paragraph="2">（陪域是 Set，因为 Hom 集 C(a,x) 是一个<em>集合</em>。）我们称这个映射为 Hom 函子；此前也已经定义了它对态射的作用。</p>
+<p class="source-paragraph" data-source-paragraph="3">现在让映射中的 <em>a</em> 也变化。得到一个新映射，它给每个 <em>a</em> 分配 Hom <em>函子</em> C(a,-)：</p><div class="math-display">a ↦ C(a,-)</div><p class="source-paragraph" data-source-paragraph="4">这是从范畴 C 的对象到函子的映射，而函子是函子范畴中的<em>对象</em>（参见<a href="../natural-transformations/">《自然变换》中关于函子范畴的部分</a>）。用 [C,Set] 表示从 C 到 Set 的函子范畴。你可能还记得，Hom 函子是<a href="../representable-functors/">可表函子</a>的原型。</p>
+<p class="source-paragraph" data-source-paragraph="5">每当两个范畴之间存在对象映射，自然会问：它是否也是函子？换句话说，能否把一个范畴中的态射提升成另一个范畴中的态射。C 中的态射只是 C(a,b) 的元素，但函子范畴 [C,Set] 中的态射是自然变换。因此我们要寻找从态射到自然变换的映射。</p>
+<p class="source-paragraph" data-source-paragraph="6">看看能否找到与态射 <em>f:a→b</em> 对应的自然变换。先看 <em>a</em> 与 <em>b</em> 映射成什么：它们映射为两个函子 C(a,-) 与 C(b,-)。我们需要这两个函子之间的自然变换。</p>
+<p class="source-paragraph" data-source-paragraph="7">技巧就在这里：使用 Yoneda 引理：</p><div class="math-display">[C,Set](C(a,-),F) ≅ F a</div><p class="source-paragraph" data-source-paragraph="8">把一般的 <em>F</em> 替换为 Hom 函子 C(b,-)，得到：</p><div class="math-display">[C,Set](C(a,-),C(b,-)) ≅ C(b,a)</div>
+<figure><div class="figure-frame"><img src="yoneda-embedding.jpg" alt="Yoneda 引理把 Hom 函子间自然变换对应到反向态射"></div></figure>
+<p class="source-paragraph" data-source-paragraph="9">这正是我们寻找的两个 Hom 函子之间的自然变换，但有一个小转折：自然变换对应的是“反方向”的态射——C(b,a) 的元素。不过没关系，它只表示我们考察的函子是逆变的。</p>
+<figure><div class="figure-frame"><img src="yoneda-embedding-2.jpg" alt="从 C 的对偶范畴到 Set 值函子范畴的 Yoneda 嵌入"></div></figure>
+<p class="source-paragraph" data-source-paragraph="10">实际上，得到的比预期更多。从 C 到 [C,Set] 的映射不仅是逆变函子，还是<em>完全忠实函子（fully faithful functor）</em>。完全性与忠实性描述函子怎样映射 Hom 集。</p>
+<p class="source-paragraph" data-source-paragraph="11"><em>忠实函子（faithful functor）</em>在 Hom 集上是单射：它把不同态射映射成不同态射。换句话说，它不会把它们合并。</p>
+<p class="source-paragraph" data-source-paragraph="12"><em>完全函子（full functor）</em>在 Hom 集上是满射：它把一个 Hom 集映满另一个 Hom 集，完全覆盖后者。</p>
+<p class="source-paragraph" data-source-paragraph="13">完全忠实函子 <em>F</em> 在 Hom 集上是<em>双射（bijection）</em>——两个集合全部元素之间的一一配对。对源范畴 C 中每对对象 <em>a</em>、<em>b</em>，C(a,b) 与 D(Fa,Fb) 之间都存在双射，其中 D 是 <em>F</em> 的目标范畴（这里是函子范畴 [C,Set]）。注意，这不表示 <em>F</em> 在<em>对象</em>上也是双射。D 中可能存在不属于 <em>F</em> 之像的对象；对于这些对象的 Hom 集，我们不能作任何断言。</p></section>
+
+<section id="embedding"><h2>嵌入</h2>
+<p class="source-paragraph" data-source-paragraph="14">刚刚描述的（逆变）函子——把 C 中对象映射到 [C,Set] 中函子的函子：</p><div class="math-display">a ↦ C(a,-)</div><p class="source-paragraph" data-source-paragraph="15">定义了<em>Yoneda 嵌入（Yoneda embedding）</em>。它把范畴 C（严格说是 C<sup>op</sup>，因为具有逆变性）<em>嵌入</em>函子范畴 [C,Set]。它不仅把 C 中对象映射为函子，还忠实地保留对象之间的全部连接。</p>
+<p class="source-paragraph" data-source-paragraph="16">这是非常有用的结果，因为数学家非常了解函子范畴，尤其是陪域为 Set 的函子。把任意范畴 C 嵌入函子范畴，就能获得许多关于 C 的洞见。</p>
+<p class="source-paragraph" data-source-paragraph="17">当然，Yoneda 嵌入也有对偶版本，有时称为 co-Yoneda 嵌入。注意，也可以从固定每个 Hom 集的目标对象（而非源对象）C(-,a) 开始，由此得到逆变 Hom 函子。从 C 到 Set 的逆变函子，就是熟悉的<a href="../limits-and-colimits/">预层</a>。Co-Yoneda 嵌入把范畴 C 嵌入预层范畴（category of presheaves）。它对态射的作用由下式给出：</p><div class="math-display">[C<sup>op</sup>,Set](C(-,a),C(-,b)) ≅ C(a,b)</div>
+<p class="source-paragraph" data-source-paragraph="18">同样，数学家非常了解预层范畴，因此能把任意范畴嵌入其中，是一个巨大的收获。</p></section>
+
+<section id="haskell"><h2>Haskell 应用</h2>
+<p class="source-paragraph" data-source-paragraph="19">在 Haskell 中，Yoneda 嵌入可以表示为：一边是 Reader 函子之间的自然变换，另一边是反方向函数，二者同构：</p><pre><code class="language-haskell">forall x. (a -&gt; x) -&gt; (b -&gt; x) ≅ b -&gt; a</code></pre>
+<p class="source-paragraph" data-source-paragraph="20">（记住，Reader 函子等价于 <code>((-&gt;) a)</code>。）</p>
+<p class="source-paragraph" data-source-paragraph="21">这个恒等式左边是多态函数：给定从 <code>a</code> 到 <code>x</code> 的函数与类型 <code>b</code> 的值，它能产生类型 <code>x</code> 的值（这里把 <code>b→x</code> 反柯里化理解，也就是去掉其外围括号）。要对所有 <code>x</code> 都做到这一点，函数必须知道怎样把 <code>b</code> 转换成 <code>a</code>；它必然暗中持有一个 <code>b→a</code> 函数。</p>
+<p class="source-paragraph" data-source-paragraph="22">给定这样的转换器 <code>btoa</code>，可把左边定义为 <code>fromY</code>：</p><pre><code class="language-haskell">fromY :: (a -&gt; x) -&gt; b -&gt; x
+fromY f b = f (btoa b)</code></pre>
+<p class="source-paragraph" data-source-paragraph="23">反过来，给定函数 <code>fromY</code>，用恒等函数调用它即可恢复转换器：</p><pre><code class="language-haskell">fromY id :: b -&gt; a</code></pre>
+<p class="source-paragraph" data-source-paragraph="24">这就建立了 <code>fromY</code> 类型的函数与 <code>btoa</code> 之间的双射。</p>
+<p class="source-paragraph" data-source-paragraph="25">理解这个同构的另一种方式，是把它看成从 <code>b</code> 到 <code>a</code> 之函数的 CPS 编码。参数 <code>a→x</code> 是续延（处理器）；结果是从 <code>b</code> 到 <code>x</code> 的函数。用类型 <code>b</code> 的值调用它时，它会执行与被编码函数前复合的续延。</p>
+<p class="source-paragraph" data-source-paragraph="26">Yoneda 嵌入也解释了 Haskell 中数据结构的一些替代表示。特别是，它为 <code>Control.Lens</code> 库中的透镜提供了一种非常有用的<a href="https://bartoszmilewski.com/2015/07/13/from-lenses-to-yoneda-embedding/">表示</a>。</p></section>
+
+<section id="preorder"><h2>预序示例</h2>
+<p class="source-paragraph" data-source-paragraph="27">这个例子由 Robert Harper 建议。它把 Yoneda 嵌入应用于由预序定义的范畴。<em>预序（preorder）</em>是一个集合，其元素之间带有传统上写作 ≤（小于等于）的序关系。“预”字表示这里只要求关系具有传递性与自反性，而不一定反对称（所以可能存在环）。</p>
+<p class="source-paragraph" data-source-paragraph="28">带预序关系的集合会产生一个范畴。对象是集合的元素。若对象不可比较或 <em>a≤b</em> 不成立，就不存在从对象 <em>a</em> 到 <em>b</em> 的态射；若 <em>a≤b</em>，则存在一支从 <em>a</em> 指向 <em>b</em> 的态射。任意两个对象之间绝不会有多于一支态射。因此，这种范畴中的任何 Hom 集要么为空，要么只含一个元素。这样的范畴称为<em>薄范畴（thin category）</em>。</p>
+<p class="source-paragraph" data-source-paragraph="29">不难确信这个构造确实是范畴：箭头可复合，因为若 <em>a≤b</em> 且 <em>b≤c</em>，则 <em>a≤c</em>；复合也满足结合律。恒等箭头也存在，因为每个元素都（小于或）等于自身，这是底层关系的自反性。</p>
+<p class="source-paragraph" data-source-paragraph="30">现在可以把 co-Yoneda 嵌入应用于预序范畴。我们特别关心它对态射的作用：</p><div class="math-display">[C,Set](C(-,a),C(-,b)) ≅ C(a,b)</div>
+<p class="source-paragraph" data-source-paragraph="31">当且仅当 <em>a≤b</em> 时，右边的 Hom 集非空——此时它是单元素集合。因此，若 <em>a≤b</em>，左边存在唯一自然变换；否则不存在自然变换。</p>
+<p class="source-paragraph" data-source-paragraph="32">预序中 Hom 函子之间的自然变换是什么？它应当是集合 C(-,a) 与 C(-,b) 之间的一族函数。在预序中，每个集合要么为空集，要么是单元素集合。看看有哪些函数可用。</p>
+<p class="source-paragraph" data-source-paragraph="33">存在从空集到自身的函数（空集上的恒等函数）、从空集到单元素集合的函数 <code>absurd</code>（它什么也不做，因为只需为根本不存在的空集元素定义），以及从单元素集合到自身的函数（单元素集上的恒等函数）。唯一禁止的组合，是从单元素集合映射到空集：这个函数作用于唯一元素时，该返回什么？</p>
+<p class="source-paragraph" data-source-paragraph="34">因此，自然变换绝不会把单元素 Hom 集连接到空 Hom 集。换句话说，若 <em>x≤a</em>（Hom 集 C(x,a) 为单元素），C(x,b) 就不能为空。C(x,b) 非空意味着 <em>x≤b</em>。所以，该自然变换存在的条件是：对每个 <em>x</em>，若 <em>x≤a</em>，则 <em>x≤b</em>：</p><div class="math-display">对所有 x，x≤a ⇒ x≤b</div>
+<p class="source-paragraph" data-source-paragraph="35">另一方面，co-Yoneda 告诉我们，这个自然变换存在，等价于 C(a,b) 非空，也就是 <em>a≤b</em>。合在一起得到：</p><div class="math-display">a≤b 当且仅当对所有 x，x≤a ⇒ x≤b</div>
+<p class="source-paragraph" data-source-paragraph="36">当然，也可以直接得到这个结果。直觉是：若 <em>a≤b</em>，所有位于 <em>a</em> 下方的元素也必定位于 <em>b</em> 下方。反过来，在右边用 <em>a</em> 替换 <em>x</em>，就推出 <em>a≤b</em>。但你必须承认，通过 Yoneda 嵌入得出这个结果更令人兴奋。</p></section>
+
+<section id="naturality"><h2>自然性</h2>
+<p class="source-paragraph" data-source-paragraph="37">Yoneda 引理建立自然变换集合与 Set 中对象之间的同构。自然变换是函子范畴 [C,Set] 中的态射；任意两个函子之间的自然变换集合，就是该范畴中的 Hom 集。Yoneda 引理给出同构：</p><div class="math-display">[C,Set](C(a,-),F) ≅ F a</div>
+<p class="source-paragraph" data-source-paragraph="38">事实证明，这个同构在 <em>F</em> 与 <em>a</em> 上都自然。换句话说，它在 (<em>F</em>,<em>a</em>) 上自然，而这个二元组取自积范畴 [C,Set]×C。注意，现在把 <em>F</em> 当成函子范畴中的<em>对象</em>。</p>
+<p class="source-paragraph" data-source-paragraph="39">想一想这是什么意思。自然同构是两个函子之间可逆的<em>自然变换</em>。确实，同构右边是一个函子：它从 [C,Set]×C 到 Set，把二元组 (<em>F</em>,<em>a</em>) 映射成一个集合——函子 <em>F</em> 在对象 <em>a</em> 处求值的结果。这称为<em>求值函子（evaluation functor）</em>。</p>
+<p class="source-paragraph" data-source-paragraph="40">左边也是函子，它把 (<em>F</em>,<em>a</em>) 映射到自然变换集合 [C,Set](C(a,-),F)。</p>
+<p class="source-paragraph" data-source-paragraph="41">要说明它们确实是函子，还应定义它们对态射的作用。但二元组 (<em>F</em>,<em>a</em>) 与 (<em>G</em>,<em>b</em>) 之间的态射是什么？它是一对态射 (Φ,<em>f</em>)：第一个是函子之间的态射——自然变换，第二个是 C 中的普通态射。</p>
+<p class="source-paragraph" data-source-paragraph="42">求值函子把这一对 (Φ,<em>f</em>) 映射为集合 F a 与 G b 之间的函数。这个函数很容易由 Φ 在 <em>a</em> 处的分量（把 F a 映射到 G a）与经 G 提升后的态射 <em>f</em> 构成：</p><div class="math-display">(G f) ∘ Φ<sub>a</sub></div>
+<p class="source-paragraph" data-source-paragraph="43">注意，由于 Φ 的自然性，它等于：</p><div class="math-display">Φ<sub>b</sub> ∘ (F f)</div>
+<p class="source-paragraph" data-source-paragraph="44">我不打算证明整个同构的自然性——建立函子之后，证明只是机械操作。它来自这样一个事实：我们的同构由函子与自然变换组成，根本没有出错的余地。</p></section>
+
+<section id="challenges"><h2>习题</h2><ol class="challenges">
+<li>用 Haskell 表达 co-Yoneda 嵌入。<details class="exercise-answer"><summary>点击展开参考答案</summary><p>固定 Hom 的目标得到 <code>Op a x=x→a</code>。Co-Yoneda 嵌入可写为 <code>forall x. (x→a)→(x→b) ≅ a→b</code>。给定 <code>atob:a→b</code>，把 <code>h:x→a</code> 映射成 <code>atob . h</code>；反向用这个多态变换作用于 <code>id</code>，恢复 <code>a→b</code>。</p></details></li>
+<li>证明前面在 <code>fromY</code> 与 <code>btoa</code> 之间建立的双射是同构，即两个映射互为逆。<details class="exercise-answer"><summary>点击展开参考答案</summary><p>由 <code>btoa</code> 构造 <code>fromY f=f . btoa</code>，再取 <code>fromY id=id . btoa=btoa</code>。反向从多态 <code>fromY</code> 取 <code>btoa=fromY id</code>，重建得到 <code>f . fromY id</code>；由参数性对应的自然性，<code>fromY f=f . fromY id</code>，因此恢复原函数。</p></details></li>
+<li>推导幺半群的 Yoneda 嵌入。幺半群的唯一对象对应什么函子？幺半群态射对应什么自然变换？<details class="exercise-answer"><summary>点击展开参考答案</summary><p>把幺半群 M 看成单对象范畴。唯一对象映射到正则 Hom 函子；它在唯一对象处的值是底层集合 M，每个元素 <code>g</code> 的函子作用是左复合 <code>h↦g∘h</code>。由于源、目标对象相同，所有幺半群元素都嵌入为这个函子的自然自变换；元素 <code>f</code> 对应逐点右复合 <code>h↦h∘f</code>。逆变性体现为复合顺序反转。</p></details></li>
+<li>协变 Yoneda 嵌入应用于预序会得到什么？<details class="exercise-answer"><summary>点击展开参考答案</summary><p>它把对象 <code>a</code> 映射到预层 <code>C(-,a)</code>，也就是 <code>a</code> 的下集：对每个 <code>x</code>，当 <code>x≤a</code> 时取单元素集合，否则取空集。态射 <code>a≤b</code> 对应这些下集的包含；完全忠实性给出 <code>a≤b</code> 当且仅当对所有 <code>x</code>，<code>x≤a</code> 蕴含 <code>x≤b</code>。</p></details></li>
+<li>Yoneda 嵌入可把任意函子范畴 [C,D] 嵌入函子范畴 [[C,D],Set]。说明它怎样作用于态射（这里的态射是自然变换）。<details class="exercise-answer"><summary>点击展开参考答案</summary><p>把 [C,D] 本身当作一个范畴。对象函子 <code>F</code> 映射到 Hom 函子 <code>[C,D](F,-)</code>。自然变换 <code>η:F→G</code> 因逆变性映射为两个 Hom 函子之间的自然变换：其在任意 <code>H</code> 处把 <code>α:G→H</code> 映射成 <code>α∘η:F→H</code>。这就是用 <code>η</code> 前复合。</p></details></li>
+</ol></section>
+<nav class="chapter-switcher"><a href="../the-yoneda-lemma/">← 第 15 章：Yoneda 引理</a><a href="../its-all-about-morphisms/">第 17 章：一切皆态射 →</a></nav>
+</article><footer class="source-note"><p><strong>原文：</strong><a href="https://bartoszmilewski.com/2015/09/29/yoneda-embedding/">Yoneda Embedding</a></p><p><strong>核对底稿：</strong>作者博客正文与开源英文 Markdown；正文、3 个原文代码块、2 幅插图、公式和 5 道习题均已收录；参考答案属于本阅读器。</p><p><strong>许可：</strong>原作及本非官方中文译文依 <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> 署名—相同方式共享。</p></footer></main></body></html>

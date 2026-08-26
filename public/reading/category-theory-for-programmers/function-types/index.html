@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>第 9 章：函数类型｜程序员的范畴论｜RIN III</title><meta name="description" content="《程序员的范畴论》第 9 章完整中文翻译：函数对象、柯里化、指数对象、笛卡尔闭范畴与 Curry–Howard 同构"><link rel="stylesheet" href="../reader.css"></head>
+<body><nav class="site-nav"><a href="../../../mathematics/category-theory-for-programmers/">← 返回整本书学习记录</a><a href="../../../">RIN III</a></nav><main class="reader"><header><span class="chapter-kicker">第一部分 · 第 9 章 · 完整中文译文</span><h1>函数类型</h1><p class="byline">Bartosz Milewski</p><div class="title-rule"></div>
+<p class="lead">函数类型不只是“一组函数”。在合适的范畴中，它能由求值与泛性质定义成内部对象，并进一步连接柯里化、指数运算、笛卡尔闭范畴以及“程序即证明”。</p><div class="translation-scope"><span class="scope-label">译文范围</span><p>完整翻译本章正文，保留全部 20 个代码块、6 张插图、公式、脚注说明与参考资料；原章没有习题。</p></div>
+<nav><ul class="chapter-nav"><li><a href="#universal">泛构造</a></li><li><a href="#currying">柯里化</a></li><li><a href="#exponentials">指数对象</a></li><li><a href="#ccc">笛卡尔闭范畴</a></li><li><a href="#adt">指数与代数数据类型</a></li><li><a href="#curry-howard">Curry–Howard 同构</a></li></ul></nav></header><article>
+<section><p class="source-paragraph" data-source-paragraph="1">到目前为止，我一直略过函数类型的含义。函数类型与其他类型有所不同。</p>
+<p class="source-paragraph" data-source-paragraph="2">例如，<code>Integer</code> 只是整数集合，<code>Bool</code> 是二元素集合。但函数类型 <em>a→b</em> 不止如此：它是对象 <em>a</em> 与 <em>b</em> 之间的态射集合。任意范畴中两对象之间的态射集合称为 <em>hom 集（hom-set）</em>。碰巧在 Set 范畴中，每个 hom 集本身也是同一范畴里的对象——因为它终究是一个<em>集合</em>。</p>
+<figure><div class="figure-frame"><img src="set-hom-set.jpg" alt="Set 中的 hom 集本身也是集合"></div><figcaption>Set 中的 hom 集就是集合。</figcaption></figure>
+<p class="source-paragraph" data-source-paragraph="3">其他范畴并非如此，其中的 hom 集位于范畴之外，甚至就称为<em>外部 hom 集（external hom-set）</em>。</p>
+<figure><div class="figure-frame"><img src="hom-set.jpg" alt="范畴 C 的 hom 集是外部集合"></div><figcaption>范畴 C 中的 hom 集是外部集合。</figcaption></figure>
+<p class="source-paragraph" data-source-paragraph="4">Set 范畴的这种自指性质使函数类型显得特殊。不过，至少在某些范畴中，可以构造表示 hom 集的对象；这种对象称为<em>内部 hom 对象（internal hom-object）</em>。</p></section>
+
+<section id="universal"><h2>泛构造</h2>
+<p class="source-paragraph" data-source-paragraph="5">暂时忘掉函数类型是集合，尝试从零构造函数类型，或者更一般地构造内部 hom 对象。照例，我们从 Set 范畴获取启发，但小心避免使用集合的特殊性质，使构造自动适用于其他范畴。</p>
+<p class="source-paragraph" data-source-paragraph="6">函数类型与参数类型、结果类型存在关系，因此可以视为复合类型。我们已见过利用对象关系构造复合类型：用泛构造定义<a href="../products-and-coproducts/">积类型与余积类型</a>。定义函数类型也能使用同一技巧。所需模式包含三个对象：正在构造的函数类型、参数类型和结果类型。</p>
+<p class="source-paragraph" data-source-paragraph="7">连接这三个类型的显然模式称为<em>函数应用（function application）</em>或<em>求值（evaluation）</em>。给定函数类型的候选 <em>z</em>（若不在 Set 中，它只是与其他对象一样的对象）以及参数类型 <em>a</em>，应用把这对对象映射到结果类型 <em>b</em>。三个对象中，参数类型与结果类型已经固定。</p>
+<p class="source-paragraph" data-source-paragraph="8">我们还有一个映射——应用。怎样把它纳入模式？若允许观察对象内部，可以把函数 <em>f</em>（<em>z</em> 的元素）与参数 <em>x</em>（<em>a</em> 的元素）配对，映射到 <em>f x</em>（<em>f</em> 应用于 <em>x</em>，它是 <em>b</em> 的元素）。</p>
+<figure><div class="figure-frame"><img src="functionset.jpg" alt="在 Set 中从函数集合选出 f，从参数集合选出 x，求值得到 f x"></div></figure>
+<p class="source-paragraph" data-source-paragraph="9">但无需处理单个 pair <em>(f,x)</em>，也可以讨论函数类型 <em>z</em> 与参数类型 <em>a</em> 的整个<em>积</em>。积 <em>z×a</em> 是对象，可以选择从它到 <em>b</em> 的箭头 <em>g</em> 作为应用态射。在 Set 中，<em>g</em> 就是把每个 pair <em>(f,x)</em> 映射到 <em>f x</em> 的函数。</p>
+<p class="source-paragraph" data-source-paragraph="10">模式由此确定：两个对象 <em>z</em>、<em>a</em> 的积，通过态射 <em>g</em> 连接到另一个对象 <em>b</em>。</p>
+<figure><div class="figure-frame"><img src="functionpattern.jpg" alt="函数对象泛构造的候选模式"></div><figcaption>泛构造起点的对象与态射模式。</figcaption></figure>
+<p class="source-paragraph" data-source-paragraph="11">这个模式是否足够精确，能由泛构造挑出函数类型？并非在每个范畴中都能，但在我们关心的范畴中可以。另一个问题是：能否先不定义积，就定义函数对象？有些范畴没有积，或者并非每对对象都有积。答案是否定的：没有积类型，就没有函数类型。讨论指数对象时还会回到这一点。</p>
+<p class="source-paragraph" data-source-paragraph="12">回顾泛构造：先从对象与态射的模式开始。它像不精确的查询，通常产生大量匹配。尤其在 Set 中，几乎一切都与一切相连。可以任取对象 <em>z</em>，构造它与 <em>a</em> 的积，并且通常都有从积到 <em>b</em> 的函数（除非 <em>b</em> 是空集）。</p>
+<p class="source-paragraph" data-source-paragraph="13">此时使用秘密武器：排名。通常要求候选对象之间存在唯一映射，以某种方式对构造进行因子分解。这里规定：<em>z</em> 连同从 <em>z×a</em> 到 <em>b</em> 的态射 <em>g</em>，优于另一个带有应用 <em>g′</em> 的 <em>z′</em>，当且仅当存在从 <em>z′</em> 到 <em>z</em> 的唯一映射 <em>h</em>，使 <em>g′</em> 的应用经由 <em>g</em> 因子分解。（提示：看着图再读这句话。）</p>
+<figure><div class="figure-frame"><img src="functionranking.jpg" alt="函数对象候选之间通过 h 建立排名"></div><figcaption>为函数对象候选建立排名。</figcaption></figure>
+<p class="source-paragraph" data-source-paragraph="14">下面是棘手之处，也是我把这个泛构造推迟至今的主要原因。给定态射 <em>h: z′→z</em>，我们想补全那张同时含有 <em>z′×a</em> 与 <em>z×a</em> 的图。真正需要的是从 <em>z′×a</em> 到 <em>z×a</em> 的映射。讨论过<a href="../functoriality/">积的函子性</a>后，我们知道怎样构造它。因为积本身是函子（更准确说是自双函子），所以可以提升态射对；不仅能构造对象的积，也能构造态射的积。</p>
+<p class="source-paragraph" data-source-paragraph="15">积的第二项 <em>a</em> 不变，因此提升态射对 <em>(h,id)</em>，其中 <em>id</em> 是 <em>a</em> 上的恒等。</p>
+<p class="source-paragraph" data-source-paragraph="16">这样便能从另一个应用 <em>g′</em> 中因子分解出应用 <em>g</em>：</p><div class="math-display">g′ = g ∘ (h × id)</div>
+<p class="source-paragraph" data-source-paragraph="17">关键是积对态射的作用。</p>
+<p class="source-paragraph" data-source-paragraph="18">泛构造的第三部分，是选择普遍意义下最好的对象。把它称为 <em>a⇒b</em>（把它看作一个对象的符号名，不要与 Haskell 类型类约束混淆；稍后讨论其他命名方式）。该对象带有自己的应用——从 <em>(a⇒b)×a</em> 到 <em>b</em> 的态射，称为 <em>eval</em>。若任何其他函数对象候选都能唯一映射到它，并使候选应用态射 <em>g</em> 经由 <em>eval</em> 因子分解，那么 <em>a⇒b</em> 就是最好的对象。</p>
+<figure><div class="figure-frame"><img src="universalfunctionobject.jpg" alt="泛函数对象 a 到 b 及其 eval 态射"></div><figcaption>泛函数对象的定义；此时 <em>a⇒b</em> 具有泛性质。</figcaption></figure>
+<p class="source-paragraph" data-source-paragraph="19">形式化地说：</p><blockquote><p>从 <em>a</em> 到 <em>b</em> 的<strong>函数对象（function object）</strong>，是对象 <em>a⇒b</em> 以及态射 <em>eval: ((a⇒b)×a)→b</em>；对任何带有态射 <em>g: z×a→b</em> 的对象 <em>z</em>，都存在唯一态射 <em>h: z→(a⇒b)</em>，使 <em>g</em> 经由 <em>eval</em> 因子分解：<em>g = eval ∘ (h×id)</em>。</p></blockquote>
+<p class="source-paragraph" data-source-paragraph="20">当然，给定范畴中的任意对象 <em>a</em>、<em>b</em>，不保证这样的 <em>a⇒b</em> 都存在。但在 Set 中总是存在；而且在 Set 中，这个对象与 hom 集 Set(a,b) 同构。</p>
+<p class="source-paragraph" data-source-paragraph="21">因此在 Haskell 中，我们把函数类型 <code>a -&gt; b</code> 解释为范畴函数对象 <em>a⇒b</em>。</p></section>
+
+<section id="currying"><h2>柯里化</h2>
+<p class="source-paragraph" data-source-paragraph="22">再次观察函数对象的全部候选。这次把态射 <em>g</em> 看成 <em>z</em>、<em>a</em> 两个变量的函数：</p><div class="math-display">g: z × a → b</div>
+<p class="source-paragraph" data-source-paragraph="23">从积出发的态射，是最接近双变量函数的东西。尤其在 Set 中，<em>g</em> 是从一对值——分别来自集合 <em>z</em> 与 <em>a</em>——出发的函数。</p>
+<p class="source-paragraph" data-source-paragraph="24">另一方面，泛性质告诉我们，每个这样的 <em>g</em> 都对应唯一态射 <em>h</em>，把 <em>z</em> 映射到函数对象 <em>a⇒b</em>：</p><div class="math-display">h: z → (a ⇒ b)</div>
+<p class="source-paragraph" data-source-paragraph="25">在 Set 中，这表示 <em>h</em> 接受一个 <em>z</em> 类型变量，返回从 <em>a</em> 到 <em>b</em> 的函数，因此 <em>h</em> 是高阶函数。这个泛构造在双变量函数与返回函数的单变量函数之间建立一一对应，称为<em>柯里化（currying）</em>；<em>h</em> 称为 <em>g</em> 的柯里化版本。</p>
+<p class="source-paragraph" data-source-paragraph="26">对应是一一的：任意 <em>g</em> 都有唯一 <em>h</em>；给定任意 <em>h</em>，也总能用公式重新构造双参数函数 <em>g</em>：</p><div class="math-display">g = eval ∘ (h × id)</div>
+<p class="source-paragraph" data-source-paragraph="27"><em>g</em> 可称为 <em>h</em> 的<em>反柯里化（uncurried）</em>版本。</p>
+<p class="source-paragraph" data-source-paragraph="28">柯里化几乎内建于 Haskell 语法。返回函数的函数：</p><pre><code class="language-haskell">a -&gt; (b -&gt; c)</code></pre>
+<p class="source-paragraph" data-source-paragraph="29">常被理解为双变量函数。我们正是这样阅读不带括号的签名：</p><pre><code class="language-haskell">a -&gt; b -&gt; c</code></pre>
+<p class="source-paragraph" data-source-paragraph="30">这种解释也体现在多参数函数的定义方式中：</p><pre><code class="language-haskell">catstr :: String -&gt; String -&gt; String
+catstr s s' = s ++ s'</code></pre>
+<p class="source-paragraph" data-source-paragraph="31">同一个函数可以写成返回 lambda 的单参数函数：</p><pre><code class="language-haskell">catstr' s = \s' -&gt; s ++ s'</code></pre>
+<p class="source-paragraph" data-source-paragraph="32">两个定义等价，都能只应用一个参数，产生单参数函数：</p><pre><code class="language-haskell">greet :: String -&gt; String
+greet = catstr "Hello "</code></pre>
+<p class="source-paragraph" data-source-paragraph="33">严格说，真正的双变量函数接受一个 pair（积类型）：</p><pre><code class="language-haskell">(a, b) -&gt; c</code></pre>
+<p class="source-paragraph" data-source-paragraph="34">两种表示之间的转换很平凡，执行转换的两个高阶函数自然叫 <code>curry</code> 与 <code>uncurry</code>：</p><pre><code class="language-haskell">curry :: ((a, b) -&gt; c) -&gt; (a -&gt; b -&gt; c)
+curry f a b = f (a, b)</code></pre>
+<p class="source-paragraph" data-source-paragraph="35">以及：</p><pre><code class="language-haskell">uncurry :: (a -&gt; b -&gt; c) -&gt; ((a, b) -&gt; c)
+uncurry f (a, b) = f a b</code></pre>
+<p class="source-paragraph" data-source-paragraph="36">注意，<code>curry</code> 就是函数对象泛构造的<em>因子分解器（factorizer）</em>。改写成下面形式会更明显：</p><pre><code class="language-haskell">factorizer :: ((a, b) -&gt; c) -&gt; (a -&gt; (b -&gt; c))
+factorizer g = \a -&gt; (\b -&gt; g (a, b))</code></pre>
+<p class="source-paragraph" data-source-paragraph="37">（提醒一下：因子分解器从候选产生进行因子分解的函数。）</p>
+<p class="source-paragraph" data-source-paragraph="38">在 C++ 等非函数式语言中，柯里化可行但不平凡。可以把 C++ 多参数函数视为对应 Haskell 中接受元组的函数（更让人困惑的是，C++ 还能定义显式接受 <code>std::tuple</code> 的函数、可变参数函数和接受初始化列表的函数）。</p>
+<p class="source-paragraph" data-source-paragraph="39">可以用模板 <code>std::bind</code> 偏应用 C++ 函数。例如给定双字符串函数：</p><pre><code class="language-cpp">std::string catstr(std::string s1, std::string s2) {
+    return s1 + s2;
+}</code></pre>
+<p class="source-paragraph" data-source-paragraph="40">可定义单字符串函数：</p><pre><code class="language-cpp">using namespace std::placeholders;
+
+auto greet = std::bind(catstr, "Hello ", _1);
+std::cout &lt;&lt; greet("Haskell Curry");</code></pre>
+<p class="source-paragraph" data-source-paragraph="41">Scala 比 C++ 或 Java 更函数式，位置介于二者之间。若预期正在定义的函数会被偏应用，可以用多组参数列表定义：</p><pre><code class="language-scala">def catstr(s1: String)(s2: String) = s1 + s2</code></pre>
+<p class="source-paragraph" data-source-paragraph="42">当然，这要求库作者具有一定远见。</p></section>
+
+<section id="exponentials"><h2>指数对象</h2>
+<p class="source-paragraph" data-source-paragraph="43">数学文献中，两对象 <em>a</em>、<em>b</em> 之间的函数对象或内部 hom 对象，常称为<em>指数对象（exponential）</em>，记作 <em>b<sup>a</sup></em>。注意参数类型位于指数位置。起初这看起来奇怪，但只要思考函数与积的关系就很合理。内部 hom 对象的泛构造必须使用积，而联系还不止于此。</p>
+<p class="source-paragraph" data-source-paragraph="44">考察有限类型之间的函数最容易看清这一点。有限类型拥有有限个值，例如 <code>Bool</code>、<code>Char</code>，甚至 <code>Int</code> 或 <code>Double</code>。这种函数原则上能被完全记忆化，或转成供查询的数据结构。这正是“函数作为态射”与“函数类型作为对象”等价的本质。</p>
+<p class="source-paragraph" data-source-paragraph="45">例如，一个从 <code>Bool</code> 出发的纯函数完全由一对值确定：一个对应 <code>False</code>，一个对应 <code>True</code>。从 <code>Bool</code> 到 <code>Int</code> 的全部函数集合，就是所有 <code>Int</code> pair 的集合，等同于积 <code>Int×Int</code>，或者创造性地写作 <code>Int²</code>。</p>
+<p class="source-paragraph" data-source-paragraph="46">再看 C++ 的 <code>char</code>，它包含 256 个值（Haskell 的 <code>Char</code> 更大，因为使用 Unicode）。C++ 标准库的一部分函数通常以查表实现，例如 <code>isupper</code> 或 <code>isspace</code>；这些表等价于 256 个布尔值的元组。元组是积类型，所以这里是 256 个 <code>bool</code> 的积：<code>bool×bool×…×bool</code>。算术中，重复乘积定义幂。把 <code>bool</code> 自乘 256（或 <code>char</code>）次，就得到 <code>bool</code> 的 <code>char</code> 次幂，即 <code>bool<sup>char</sup></code>。</p>
+<p class="source-paragraph" data-source-paragraph="47">由 256 个 <code>bool</code> 构成的元组类型有多少个值？恰好是 2<sup>256</sup>。这也是从 <code>char</code> 到 <code>bool</code> 的不同函数数量，每个函数对应一个唯一的 256 元组。同理，从 <code>bool</code> 到 <code>char</code> 的函数有 256² 个，依此类推。函数类型的指数记法在这些例子中完全合理。</p>
+<p class="source-paragraph" data-source-paragraph="48">我们大概不会完全记忆化从 <code>int</code> 或 <code>double</code> 出发的函数。但函数与数据类型的等价仍然存在，只是不总具有实践意义。还有列表、字符串、树等无限类型；急切记忆化从这些类型出发的函数需要无限存储。不过 Haskell 是惰性语言，惰性求值的无限数据结构与函数之间界限模糊。这种函数—数据对偶解释了为何 Haskell 函数类型等同于范畴指数对象——后者更接近我们对<em>数据</em>的理解。</p></section>
+
+<section id="ccc"><h2>笛卡尔闭范畴</h2>
+<p class="source-paragraph" data-source-paragraph="49">虽然我会继续用集合范畴作为类型与函数的模型，但值得指出，还有更大一族范畴可用于此目的。它们称为<em>笛卡尔闭范畴（Cartesian closed category，CCC）</em>，Set 只是其中一例。</p>
+<p class="source-paragraph" data-source-paragraph="50">笛卡尔闭范畴必须包含：</p><ol><li>终对象；</li><li>任意一对对象的积；</li><li>任意一对对象的指数对象。</li></ol>
+<p class="source-paragraph" data-source-paragraph="51">若把指数看成重复积（可能无限次），可把笛卡尔闭范畴理解为支持任意元数的积。特别地，终对象可看成零个对象的积，或某对象的零次幂。</p>
+<p class="source-paragraph" data-source-paragraph="52">从计算机科学角度看，笛卡尔闭范畴有趣之处在于：它们提供了简单类型 lambda 演算的模型，而后者是所有有类型编程语言的基础。</p>
+<p class="source-paragraph" data-source-paragraph="53">终对象和积分别有对偶：始对象和余积。一个还支持这两者、并且积对余积分配的笛卡尔闭范畴：</p><div class="math-display">a×(b+c) = a×b + a×c<br>(b+c)×a = b×a + c×a</div>
+<p class="source-paragraph" data-source-paragraph="54">称为<em>双笛卡尔闭范畴（bicartesian closed category）</em>。下一节会看到，以 Set 为典型例子的双笛卡尔闭范畴具有一些有趣性质。</p></section>
+
+<section id="adt"><h2>指数与代数数据类型</h2>
+<p class="source-paragraph" data-source-paragraph="55">把函数类型解释为指数对象，与代数数据类型的体系非常契合。事实证明，高中代数中关于零、一、和、积、指数的所有基本恒等式，在任意双笛卡尔闭范畴里几乎原样成立；只需分别把它们理解为始对象、终对象、余积、积和指数。我们还没有证明所需的工具（如伴随或 Yoneda 引理），但仍可把这些等式列为宝贵直觉。</p>
+<h3>零次幂</h3><div class="math-display">a<sup>0</sup> = 1</div>
+<p class="source-paragraph" data-source-paragraph="56">范畴解释中，以始对象代替 0，以终对象代替 1，以同构代替相等，指数则是内部 hom 对象。这个指数表示从始对象到任意对象 <em>a</em> 的态射集合。按始对象定义，恰好存在一个这种态射，所以 hom 集 C(0,a) 是单元素集合。单元素集合是 Set 中的终对象，因此等式在 Set 中显然成立；而这里断言它在任意双笛卡尔闭范畴中都成立。</p>
+<p class="source-paragraph" data-source-paragraph="57">Haskell 中，以 <code>Void</code> 代替 0，以单位类型 <code>()</code> 代替 1，以函数类型代替指数。断言是：从 <code>Void</code> 到任意类型 <code>a</code> 的函数集合等价于单位类型——单元素集合。换言之，只存在一个 <code>Void -&gt; a</code> 函数，即此前见过的 <code>absurd</code>。</p>
+<p class="source-paragraph" data-source-paragraph="58">这稍显棘手，原因有二。首先，Haskell 中没有真正的空类型——每种类型都包含“永不结束的计算结果”即底。其次，所有 <code>absurd</code> 实现都等价，因为无论怎样实现，都没有人能执行它；不存在可传给 <code>absurd</code> 的值。（若成功传入永不结束的计算，它也永远不会返回。）</p>
+<h3>一的任意次幂</h3><div class="math-display">1<sup>a</sup> = 1</div>
+<p class="source-paragraph" data-source-paragraph="59">在 Set 中，这个等式重述终对象定义：从任意对象到终对象都有唯一态射。一般而言，从 <em>a</em> 到终对象的内部 hom 对象与终对象自身同构。</p>
+<p class="source-paragraph" data-source-paragraph="60">Haskell 中，从任意类型 <code>a</code> 到 unit 只有一个函数，就是前面见过的 <code>unit</code>。也可以把它看成 <code>const</code> 偏应用于 <code>()</code>。</p>
+<h3>一次幂</h3><div class="math-display">a<sup>1</sup> = a</div>
+<p class="source-paragraph" data-source-paragraph="61">这重述了从终对象出发的态射可以选出对象 <em>a</em> 的“元素”。这种态射的集合与对象自身同构。在 Set 和 Haskell 中，这就是集合 <code>a</code> 的元素与选出这些元素的函数 <code>() -&gt; a</code> 之间的同构。</p>
+<h3>和的指数</h3><div class="math-display">a<sup>b+c</sup> = a<sup>b</sup> × a<sup>c</sup></div>
+<p class="source-paragraph" data-source-paragraph="62">范畴上说，从两对象余积出发的指数，同构于两个指数之积。Haskell 中，这个代数等式有很实际的解释：从两种类型之和出发的函数，等价于分别从每种类型出发的一对函数。这就是在和类型上定义函数时使用的分支分析。与其用 <code>case</code> 子句写一个函数，通常会拆成两个（或更多）定义，分别处理每个类型构造器。例如从和类型 <code>Either Int Double</code> 出发的函数：</p><pre><code class="language-haskell">f :: Either Int Double -&gt; String</code></pre>
+<p class="source-paragraph" data-source-paragraph="63">可以定义成分别从 <code>Int</code> 与 <code>Double</code> 出发的一对函数：</p><pre><code class="language-haskell">f (Left n) =
+    if n &lt; 0
+        then "Negative int"
+        else "Positive int"
+f (Right x) =
+    if x &lt; 0.0
+        then "Negative double"
+        else "Positive double"</code></pre>
+<p class="source-paragraph" data-source-paragraph="64">这里 <code>n</code> 是 <code>Int</code>，<code>x</code> 是 <code>Double</code>。</p>
+<h3>指数的指数</h3><div class="math-display">(a<sup>b</sup>)<sup>c</sup> = a<sup>b×c</sup></div>
+<p class="source-paragraph" data-source-paragraph="65">这只是完全用指数对象表达柯里化：返回函数的函数，等价于从积出发的函数（双参数函数）。</p>
+<h3>积上的指数</h3><div class="math-display">(a×b)<sup>c</sup> = a<sup>c</sup> × b<sup>c</sup></div>
+<p class="source-paragraph" data-source-paragraph="66">Haskell 中，返回 pair 的函数等价于一对函数，每个函数产生 pair 的一个分量。</p>
+<p class="source-paragraph" data-source-paragraph="67">这些简单的高中代数恒等式竟能提升到范畴论，并在函数式编程中获得实际应用，实在不可思议。</p></section>
+
+<section id="curry-howard"><h2>Curry–Howard 同构</h2>
+<p class="source-paragraph" data-source-paragraph="68">我已提过逻辑与代数数据类型的对应：<code>Void</code> 与单位类型 <code>()</code> 分别对应假与真；积类型、和类型分别对应逻辑合取 ∧（AND）与析取 ∨（OR）。在这套体系中，刚定义的函数类型对应逻辑蕴含 ⇒。也就是说，类型 <code>a -&gt; b</code> 可读成“如果 a，那么 b”。</p>
+<p class="source-paragraph" data-source-paragraph="69">根据 <em>Curry–Howard 同构（Curry–Howard isomorphism）</em>，每种类型都能解释为命题——可能为真或为假的陈述或判断。类型有居民时命题为真，无居民时为假。尤其是，若对应的函数类型有居民，即存在该类型的函数，那么逻辑蕴含为真。因此函数实现就是定理证明；编写程序等价于证明定理。来看几个例子。</p>
+<p class="source-paragraph" data-source-paragraph="70">取函数对象定义中的 <code>eval</code>，其签名为：</p><pre><code class="language-haskell">eval :: ((a -&gt; b), a) -&gt; b</code></pre>
+<p class="source-paragraph" data-source-paragraph="71">它接受由函数及其参数组成的 pair，产生相应类型的结果。这是态射 <em>eval: (a⇒b)×a→b</em> 的 Haskell 实现，而该态射定义了函数类型 <em>a⇒b</em>（或指数对象 <em>b<sup>a</sup></em>）。借助 Curry–Howard 同构，把签名翻译成逻辑谓词：</p><div class="math-display">((a ⇒ b) ∧ a) ⇒ b</div>
+<p class="source-paragraph" data-source-paragraph="72">这句话读作：若从 <em>a</em> 可推出 <em>b</em> 为真，并且 <em>a</em> 为真，那么 <em>b</em> 必然为真。它符合直觉，自古就称为<em>肯定前件（modus ponens）</em>。可通过实现函数来证明：</p><pre><code class="language-haskell">eval :: ((a -&gt; b), a) -&gt; b
+eval (f, x) = f x</code></pre>
+<p class="source-paragraph" data-source-paragraph="73">若给我一个 pair，包含接受 <code>a</code> 返回 <code>b</code> 的函数 <code>f</code>，以及类型 <code>a</code> 的具体值 <code>x</code>，我只需把 <code>f</code> 应用于 <code>x</code>，就能产生类型 <code>b</code> 的具体值。实现这个函数便说明类型 <code>((a -&gt; b),a) -&gt; b</code> 有居民；在我们的逻辑中，肯定前件为真。</p>
+<p class="source-paragraph" data-source-paragraph="74">再看一个显然为假的谓词：若 <em>a</em> 或 <em>b</em> 为真，则 <em>a</em> 必为真：</p><div class="math-display">a ∨ b ⇒ a</div>
+<p class="source-paragraph" data-source-paragraph="75">这显然错误，因为可以选择假的 <em>a</em> 与真的 <em>b</em> 作为反例。</p>
+<p class="source-paragraph" data-source-paragraph="76">利用 Curry–Howard 同构把谓词映射成函数签名：</p><pre><code class="language-haskell">Either a b -&gt; a</code></pre>
+<p class="source-paragraph" data-source-paragraph="77">无论怎样尝试都无法实现这个函数：收到 <code>Right</code> 值时，无法产生类型 <code>a</code> 的值。（记住，这里讨论<em>纯</em>函数。）</p>
+<p class="source-paragraph" data-source-paragraph="78">最后看 <code>absurd</code> 的含义：</p><pre><code class="language-haskell">absurd :: Void -&gt; a</code></pre>
+<p class="source-paragraph" data-source-paragraph="79"><code>Void</code> 翻译成假，于是得到：</p><div class="math-display">false ⇒ a</div>
+<p class="source-paragraph" data-source-paragraph="80">从假可以推出任何命题（<em>ex falso quodlibet</em>）。下面是这个陈述（函数）的一种 Haskell 证明（实现）：</p><pre><code class="language-haskell">absurd (Void a) = absurd a</code></pre>
+<p class="source-paragraph" data-source-paragraph="81">其中 <code>Void</code> 定义为：</p><pre><code class="language-haskell">newtype Void = Void Void</code></pre>
+<p class="source-paragraph" data-source-paragraph="82">照例，<code>Void</code> 很棘手。这个定义使值无法构造，因为构造一个值之前必须先提供一个同类值。因此 <code>absurd</code> 永远无法调用。</p>
+<p class="source-paragraph" data-source-paragraph="83">这些例子很有趣，但 Curry–Howard 同构有实际用途吗？日常编程中大概不多。不过 Agda、Rocq（原名 Coq）等编程语言确实利用它来证明定理。</p>
+<p class="source-paragraph" data-source-paragraph="84">计算机不仅帮助数学家工作，也在变革数学的基础。这个领域当前的热门研究叫同伦类型论（Homotopy Type Theory），它由类型论发展而来，其中充满布尔值、整数、积与余积、函数类型等。仿佛为了消除一切怀疑，这套理论正在 Rocq 与 Agda 中形式化。计算机正以不止一种方式改变世界。</p></section>
+
+<section id="bibliography"><h2>参考资料</h2><ol><li>Ralf Hinze、Daniel W. H. James，<a href="http://www.cs.ox.ac.uk/ralf.hinze/publications/WGP10.pdf">Reason Isomorphically!</a>。该论文证明了本章提到的全部范畴论版高中代数恒等式。</li></ol></section>
+<nav class="chapter-switcher"><a href="../functoriality/">← 第 8 章：函子性</a><a href="../natural-transformations/">第 10 章：自然变换 →</a></nav>
+</article><footer class="source-note"><p><strong>原文：</strong><a href="https://bartoszmilewski.com/2015/03/13/function-types/">Function Types</a></p><p><strong>核对底稿：</strong>作者博客正文与开源英文 Markdown；正文、20 个代码块、公式、6 张插图、脚注说明和参考资料均已收录。原章没有习题。</p><p><strong>许可：</strong>原作及本非官方中文译文依 <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> 署名—相同方式共享。</p></footer></main></body></html>
