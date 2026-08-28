@@ -1,6 +1,6 @@
 ---
 name: publish-book-learning
-description: Translate user-provided book chapters into faithful, self-contained Chinese HTML readers with optional reading guidance, preserve a consistent reader UI across chapters, and optionally maintain one book-level learning record or publish to RIN III. Use when the user asks to translate or continue a book, preserve figures/formulas/footnotes, improve readability with side notes, keep later chapters visually consistent, or publish the result.
+description: Translate user-provided book chapters into faithful Chinese HTML readers with a local shared reading format and optional guidance, preserve figures/formulas/footnotes, and optionally maintain one book-level learning record or publish to RIN III. Use when the user asks to translate or continue a book, improve readability, keep later chapters visually consistent, or publish the result.
 ---
 
 # Publish Book Learning
@@ -19,9 +19,9 @@ description: Translate user-provided book chapters into faithful, self-contained
 - 讲解层帮助理解，但不替换原书内容。项目案例、类比和重写图示应明确属于扩展内容。
 - 若把原书例子改成用户项目示例，同时保留原始例子或明确说明改写；不要把“知识点没漏”表述成“逐段完整翻译”。
 
-### Use side notes as reading landmarks
+### Keep guidance optional and in the reading flow
 
-侧栏默认只做一件事：防止读者沉入细节后忘记主线。
+阅读器默认只呈现来源内容。只有用户明确需要讲解层时，才加入与正文视觉分离的行内提示，防止读者沉入细节后忘记主线。
 
 优先回答：
 
@@ -29,7 +29,7 @@ description: Translate user-provided book chapters into faithful, self-contained
 - 它在本章论证或流程中处于哪一步？
 - 它怎样承接前文、又怎样通向后文？
 
-“项目映射”“可优化点”和筛选分类都是可选项。只有用户需要、且有真实上下文时才加入。
+“项目映射”“可优化点”和筛选分类都是可选项。只有用户需要、且有真实上下文时才加入；不要为这些内容预留永久侧栏。
 
 ### Preserve the book's visual semantics
 
@@ -63,7 +63,7 @@ description: Translate user-provided book chapters into faithful, self-contained
 
 1. 阅读 [reader-ui.md](references/reader-ui.md)，沿用其中的视觉不变量和响应式边界。
 2. 优先从 [reader-shell.html](assets/reader-shell.html) 开始，而不是复制上一章全部内容。
-3. 复用设计 token、正文与侧栏网格、标题层级、图框、移动端行为和打印样式。
+3. 复用共享样式、单栏阅读几何、标题层级、图框、公式、移动端行为和打印样式。
 4. 为本章新增的图表创建局部组件样式，不修改全局阅读节奏。
 5. 若当前书已经有阅读器，以最新且已确认体验良好的章节作为视觉对照；模板只是基线。
 
@@ -82,7 +82,7 @@ description: Translate user-provided book chapters into faithful, self-contained
 - 原章节边界和下一章起点；
 - 标题、图、表、代码、公式、脚注、练习清单；
 - 每个原书例子是否仍在正文或被明确标记为改写；
-- 侧栏是否真的帮助回到主线；
+- 可选讲解是否真的帮助回到主线，并与来源正文明确分开；
 - 桌面、移动端和打印时是否仍可读；
 - 对“完整”“忠实”“已部署”的表述是否有对应证据。
 
