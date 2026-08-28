@@ -4,6 +4,7 @@ import path from "node:path";
 import test from "node:test";
 import matter from "gray-matter";
 import { parseRinDocument } from "@rin/document";
+import { validateCourseReaders } from "../scripts/check-course-readers.mjs";
 
 const contentRoot = path.resolve(import.meta.dirname, "../content");
 const knownSections = new Set([
@@ -69,6 +70,9 @@ test("[CONTENT-CONTRACT-001] 每个内容源在完整构建前通过快速契约
 
     requireString(data, "title", filePath);
     requireString(data, "summary", filePath);
+    if (data.tldr !== undefined) {
+      requireString(data, "tldr", filePath);
+    }
     requireString(data, "topic", filePath);
     requireValidDate(data, filePath);
     assert.ok(["en", "zh-CN"].includes(data.lang), `${filePath}: lang must be "en" or "zh-CN"`);
@@ -113,4 +117,9 @@ test("[CONTENT-CONTRACT-001] 全站派生 Slides 路由保持唯一", async () =
     );
     routes.set(slideRoute, filePath);
   }
+});
+
+// Kotlin 与 Android 学习页直接交付静态 HTML，因此必须在构建前检查共同的阅读契约。
+test("[COURSE-READER-001] 两套课程使用指定样式并保持完整导航", async () => {
+  assert.deepEqual(await validateCourseReaders(), []);
 });

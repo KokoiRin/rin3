@@ -87,7 +87,12 @@ before(async () => {
   const address = server.address();
   assert.ok(address && typeof address === "object");
   origin = `http://127.0.0.1:${address.port}`;
-  browser = await chromium.launch({ headless: true });
+  browser = await chromium.launch({
+    headless: true,
+    ...(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH
+      ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH }
+      : {}),
+  });
 });
 
 after(async () => {
@@ -217,6 +222,23 @@ test("renders Mermaid and deploy-safe images in the exported component guide", a
   ), true);
   assert.deepEqual(runtimeErrors, []);
   await page.close();
+});
+
+// 手机正文直接进入文章内容，桌面仍保留适合宽屏快速跳转的章节目录。
+test("[ARTICLE-MOBILE-TOC-001] 手机文章隐藏目录而桌面文章保留目录", async () => {
+  const articlePath = `${origin}${basePath}/software-engineering/why-client-automation-is-harder-than-web/`;
+  const desktop = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+  const mobile = await browser.newPage({ viewport: { width: 390, height: 844 }, isMobile: true });
+
+  try {
+    await desktop.goto(articlePath);
+    await mobile.goto(articlePath);
+    assert.equal(await desktop.locator(".article-toc").isVisible(), true);
+    assert.equal(await mobile.locator(".article-toc").isVisible(), false);
+  } finally {
+    await desktop.close();
+    await mobile.close();
+  }
 });
 
 // 真实 wheel 事件必须忽略纵向滚动，并在第三次独立横向手势后才解锁第四入口。
