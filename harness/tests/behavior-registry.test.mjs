@@ -1,10 +1,12 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  browserPreflightMessage,
   environmentForBehaviors,
   findBehaviors,
   loadRegistry,
   parseTestSummary,
+  resolveBrowserExecutable,
   validateRegistry,
 } from "../scripts/behavior.mjs";
 
@@ -44,4 +46,14 @@ test("[HARNESS-TRACE-001] 发布级行为执行时不会跳过公开发布门禁
 
   assert.equal(environment.PUBLIC_RELEASE, "true");
   assert.equal(environment.EXISTING_VALUE, "kept");
+});
+
+test("[HARNESS-TRACE-001] 浏览器缺失时在构建前给出正确安装命令", () => {
+  const message = browserPreflightMessage([
+    { tests: [{ level: "browser" }] },
+  ], "/definitely-missing/playwright-chromium");
+
+  assert.match(message, /npm --prefix harness run install:browser/);
+  assert.match(message, /不会执行生产构建/);
+  assert.equal(resolveBrowserExecutable("/missing", [process.execPath]), process.execPath);
 });

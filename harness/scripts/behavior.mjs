@@ -1,8 +1,10 @@
 import { execFileSync, spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { access, readFile } from "node:fs/promises";
+import { homedir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { chromium } from "playwright-chromium";
 import ts from "typescript";
 
 const harnessRoot = path.resolve(import.meta.dirname, "..");
@@ -320,6 +322,48 @@ export function environmentForBehaviors(behaviors, baseEnvironment = process.env
     : baseEnvironment;
 }
 
+function cachedChromiumCandidates() {
+  const cacheRoot = path.join(homedir(), "Library/Caches/ms-playwright");
+  let directories = [];
+  try {
+    directories = readdirSync(cacheRoot, { withFileTypes: true })
+      .filter((entry) => entry.isDirectory() && /^chromium(?:_headless_shell)?-\d+$/.test(entry.name))
+      .map((entry) => entry.name)
+      .sort((left, right) => Number(right.split("-").at(-1)) - Number(left.split("-").at(-1)));
+  } catch {
+    return [];
+  }
+
+  return directories.flatMap((directory) => [
+    path.join(cacheRoot, directory, "chrome-headless-shell-mac-arm64/chrome-headless-shell"),
+    path.join(cacheRoot, directory, "chrome-headless-shell-mac-x64/chrome-headless-shell"),
+    path.join(cacheRoot, directory, "chrome-headless-shell-linux64/chrome-headless-shell"),
+    path.join(cacheRoot, directory, "chrome-headless-shell-win64/chrome-headless-shell.exe"),
+    path.join(cacheRoot, directory, "chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing"),
+    path.join(cacheRoot, directory, "chrome-mac-x64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing"),
+    path.join(cacheRoot, directory, "chrome-linux64/chrome"),
+    path.join(cacheRoot, directory, "chrome-win64/chrome.exe"),
+  ]);
+}
+
+export function resolveBrowserExecutable(
+  preferredPath = chromium.executablePath(),
+  fallbackPaths = cachedChromiumCandidates(),
+) {
+  return [preferredPath, ...fallbackPaths].find((candidate) => candidate && existsSync(candidate)) ?? "";
+}
+
+export function browserPreflightMessage(behaviors, executablePath = resolveBrowserExecutable()) {
+  const needsBrowser = behaviors.some((behavior) =>
+    behavior.tests.some((testCase) => testCase.level === "browser"));
+  if (!needsBrowser || existsSync(executablePath)) return "";
+  return [
+    `Harness Chromium 不存在：${executablePath}`,
+    "请先运行：npm --prefix harness run install:browser",
+    "浏览器安装完成前不会执行生产构建。",
+  ].join("\n");
+}
+
 export function runBehaviors(registry, ids) {
   const startedAt = new Date().toISOString();
   const selected = ids.includes("all")
@@ -327,6 +371,21 @@ export function runBehaviors(registry, ids) {
     : ids.map((id) => registry.behaviors.find((behavior) => behavior.id === id));
   if (selected.some((behavior) => !behavior)) {
     throw new Error(`Unknown behavior id: ${ids.filter((id) => !registry.behaviors.some((behavior) => behavior.id === id)).join(", ")}`);
+  }
+
+  const preflightMessage = browserPreflightMessage(selected);
+  if (preflightMessage) {
+    process.stderr.write(`${preflightMessage}\n`);
+    if (selected.length === 1) {
+      writeRunResult({
+        behaviorId: selected[0].id,
+        startedAt,
+        status: "failed",
+        output: preflightMessage,
+        phase: "preflight",
+      });
+    }
+    return 1;
   }
 
   const needsBuild = selected.some((behavior) =>
@@ -355,7 +414,12 @@ export function runBehaviors(registry, ids) {
     {
       cwd: repositoryRoot,
       encoding: "utf8",
-      env: environmentForBehaviors(selected),
+      env: {
+        ...environmentForBehaviors(selected),
+        ...(selected.some((behavior) => behavior.tests.some((testCase) => testCase.level === "browser"))
+          ? { PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH: resolveBrowserExecutable() }
+          : {}),
+      },
     },
   );
   const output = `${result.stdout ?? ""}${result.stderr ?? ""}`;
@@ -378,7 +442,7 @@ function help() {
   process.stdout.write(`  npm --prefix harness run behavior -- list\n`);
   process.stdout.write(`  npm --prefix harness run behavior -- show <行为ID>\n`);
   process.stdout.write(`  npm --prefix harness run behavior -- impact <函数名或文件>\n`);
-  process.stdout.write(`  npm --prefix harness run behavior -- run <行为ID|all>\n`);
+  process.stdout.write(`  npm --prefix harness run behavior -- run <行为ID...|all>\n`);
   process.stdout.write(`  npm --prefix harness run check\n`);
 }
 

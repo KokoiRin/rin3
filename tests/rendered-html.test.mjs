@@ -57,6 +57,19 @@ test("exports each section index", async () => {
   }
 });
 
+// 只有作者明确给出核心结论时，文章封面才升级为 TL;DR；普通文章仍保留摘要。
+test("[ARTICLE-TLDR-001] 声明 TL;DR 的文章突出核心结论而其他文章保留普通摘要", async () => {
+  const withTldr = await readOutput("software-engineering/why-client-automation-is-harder-than-web/index.html");
+  const withoutTldr = await readOutput("software-engineering/domain-models-protect-valid-state/index.html");
+
+  assert.match(withTldr, /class="article-tldr"/);
+  assert.match(withTldr, />TL;DR</);
+  assert.match(withTldr, /可观察、可控制、可同步、可复位、可诊断/);
+  assert.match(withTldr, /从浏览器这套统一 Harness 出发/);
+  assert.doesNotMatch(withoutTldr, /class="article-tldr"/);
+  assert.match(withoutTldr, /从“给视频添加贴纸”这个小问题出发/);
+});
+
 test("renders the RIN component guide as a complete Markdown article", async () => {
   const html = await readOutput("me/component-guide/index.html");
 

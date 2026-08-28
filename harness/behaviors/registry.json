@@ -5,6 +5,7 @@
     "components",
     "lib",
     "packages/rin-document/src",
+    "scripts",
     "harness/scripts"
   ],
   "testRoots": [
@@ -15,11 +16,11 @@
   "behaviors": [
     {
       "id": "HOME-GATE-001",
-      "version": 2,
+      "version": 3,
       "status": "active",
       "nameZh": "第四入口手势解锁",
       "behaviorZh": "首页第四入口只有在满足端侧条件并完成第三次独立横向手势后才显示，纵向滚动不能推进解锁进度。",
-      "lastReviewedOn": "2026-08-11",
+      "lastReviewedOn": "2026-08-25",
       "code": [
         {
           "file": "app/edge-gesture.js",
@@ -84,7 +85,7 @@
     },
     {
       "id": "RIN-DOC-001",
-      "version": 2,
+      "version": 3,
       "status": "active",
       "nameZh": "RIN 文档生成双视图",
       "behaviorZh": "一份有效的 RIN Markdown 是文章和 Slides 的共同内容源，并通过公共编译入口生成两个可互相访问的视图。",
@@ -174,11 +175,11 @@
     },
     {
       "id": "SLIDES-RUNTIME-001",
-      "version": 1,
+      "version": 2,
       "status": "active",
       "nameZh": "Slides 播放器初始化与翻页",
       "behaviorZh": "导出的 Slides 在真实浏览器中只激活一页，用户翻到下一页时活动页和页码必须同步。",
-      "lastReviewedOn": "2026-08-10",
+      "lastReviewedOn": "2026-08-25",
       "code": [
         {
           "file": "components/slides/player.tsx",
@@ -197,11 +198,11 @@
     },
     {
       "id": "CONTENT-CONTRACT-001",
-      "version": 1,
+      "version": 3,
       "status": "active",
       "nameZh": "内容源快速契约检查",
-      "behaviorZh": "所有 Markdown 在完整构建前必须满足栏目、slug、元数据、RIN 结构和全局 Slides 路由唯一性约束。",
-      "lastReviewedOn": "2026-08-10",
+      "behaviorZh": "所有 Markdown 在完整构建前必须满足栏目、slug、基础元数据、可选 TL;DR、RIN 结构和全局 Slides 路由唯一性约束。",
+      "lastReviewedOn": "2026-08-25",
       "code": [
         {
           "file": "lib/content/catalog.ts",
@@ -219,13 +220,87 @@
           "file": "tests/content-contract.test.mjs",
           "name": "[CONTENT-CONTRACT-001] 每个内容源在完整构建前通过快速契约检查",
           "level": "unit",
-          "behaviorZh": "错误的栏目、slug、日期、语言、标签或 RIN 结构在快速检查阶段直接失败。"
+          "behaviorZh": "错误的栏目、slug、日期、语言、标签、可选 TL;DR 或 RIN 结构在快速检查阶段直接失败。"
         },
         {
           "file": "tests/content-contract.test.mjs",
           "name": "[CONTENT-CONTRACT-001] 全站派生 Slides 路由保持唯一",
           "level": "unit",
           "behaviorZh": "不同分区不能生成相同的全局 Slides 地址。"
+        }
+      ]
+    },
+    {
+      "id": "ARTICLE-TLDR-001",
+      "version": 1,
+      "status": "active",
+      "nameZh": "文章封面可选核心结论",
+      "behaviorZh": "文章可以声明独立于列表摘要的 TL;DR；声明后封面突出展示核心结论，未声明的文章继续展示普通摘要。",
+      "lastReviewedOn": "2026-08-25",
+      "code": [
+        {
+          "file": "lib/content/catalog.ts",
+          "symbol": "readArticleSource",
+          "roleZh": "读取并校验文章可选 TL;DR"
+        },
+        {
+          "file": "app/[section]/[slug]/page.tsx",
+          "symbol": "ArticlePage",
+          "roleZh": "按内容声明选择核心结论或普通摘要"
+        }
+      ],
+      "tests": [
+        {
+          "file": "tests/rendered-html.test.mjs",
+          "name": "[ARTICLE-TLDR-001] 声明 TL;DR 的文章突出核心结论而其他文章保留普通摘要",
+          "level": "static",
+          "behaviorZh": "有核心结论的文章在封面突出展示它，其他文章仍然显示原有摘要。"
+        }
+      ]
+    },
+    {
+      "id": "ARTICLE-MOBILE-TOC-001",
+      "version": 1,
+      "status": "active",
+      "nameZh": "文章目录按屏幕空间展示",
+      "behaviorZh": "手机文章不展示占据正文入口的章节目录，桌面文章继续保留适合宽屏快速跳转的右侧目录。",
+      "lastReviewedOn": "2026-08-25",
+      "code": [
+        {
+          "file": "app/[section]/[slug]/page.tsx",
+          "symbol": "ArticlePage",
+          "roleZh": "为有标题的文章提供桌面目录结构"
+        }
+      ],
+      "tests": [
+        {
+          "file": "harness/tests/browser-runtime.test.mjs",
+          "name": "[ARTICLE-MOBILE-TOC-001] 手机文章隐藏目录而桌面文章保留目录",
+          "level": "browser",
+          "behaviorZh": "手机读者从封面直接进入正文，桌面读者仍能使用右侧章节目录。"
+        }
+      ]
+    },
+    {
+      "id": "COURSE-READER-001",
+      "version": 2,
+      "status": "active",
+      "nameZh": "课程阅读器结构契约",
+      "behaviorZh": "每套课程明确使用共享或课程独立的阅读样式，同时保持完整章节目录、前后导航，并且正文不残留未渲染的 Markdown 格式。",
+      "lastReviewedOn": "2026-08-29",
+      "code": [
+        {
+          "file": "scripts/check-course-readers.mjs",
+          "symbol": "validateCourseReaders",
+          "roleZh": "按课程配置检查共享或独立样式引用、章节目录、导航链接和正文格式"
+        }
+      ],
+      "tests": [
+        {
+          "file": "tests/content-contract.test.mjs",
+          "name": "[COURSE-READER-001] 两套课程使用指定样式并保持完整导航",
+          "level": "unit",
+          "behaviorZh": "Kotlin 使用全局共享样式、Android 使用课程独立样式，两套课程都拒绝内嵌样式、断裂导航、遗漏章节和未渲染的 Markdown 代码格式。"
         }
       ]
     },
@@ -266,11 +341,11 @@
     },
     {
       "id": "HARNESS-TRACE-001",
-      "version": 4,
+      "version": 5,
       "status": "active",
       "nameZh": "业务行为追踪与执行",
-      "behaviorZh": "独立 Harness 可以从函数反查业务与测试、校验映射完整性、按行为运行测试，并把结果和证据保留在产品之外。",
-      "lastReviewedOn": "2026-08-11",
+      "behaviorZh": "独立 Harness 可以从函数反查业务与测试、批量运行受影响行为、在构建前检查浏览器依赖，并把结果和证据保留在产品之外。",
+      "lastReviewedOn": "2026-08-29",
       "code": [
         {
           "file": "harness/scripts/behavior.mjs",
@@ -285,7 +360,17 @@
         {
           "file": "harness/scripts/behavior.mjs",
           "symbol": "runBehaviors",
-          "roleZh": "运行一个或全部业务行为对应的测试"
+          "roleZh": "一次运行一个、多个或全部业务行为对应的测试，并共享必要的生产构建"
+        },
+        {
+          "file": "harness/scripts/behavior.mjs",
+          "symbol": "browserPreflightMessage",
+          "roleZh": "在昂贵构建之前检查浏览器依赖并给出唯一安装入口"
+        },
+        {
+          "file": "harness/scripts/behavior.mjs",
+          "symbol": "resolveBrowserExecutable",
+          "roleZh": "优先使用精确版本浏览器，并在本机已有兼容 Chromium 时复用缓存"
         },
         {
           "file": "harness/scripts/behavior.mjs",
@@ -316,6 +401,12 @@
           "name": "[HARNESS-TRACE-001] 发布级行为执行时不会跳过公开发布门禁",
           "level": "unit",
           "behaviorZh": "执行包含发布级测试的行为时必须启用公开发布检查模式。"
+        },
+        {
+          "file": "harness/tests/behavior-registry.test.mjs",
+          "name": "[HARNESS-TRACE-001] 浏览器缺失时在构建前给出正确安装命令",
+          "level": "unit",
+          "behaviorZh": "缺少 Harness 对应浏览器时立即停止并提示正确安装命令，不先浪费一次生产构建。"
         },
         {
           "file": "harness/tests/ci-workflows.test.mjs",
