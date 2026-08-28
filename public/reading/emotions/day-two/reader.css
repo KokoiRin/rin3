@@ -27,7 +27,7 @@ button { font:inherit; }
 .protocol-strip { align-items:center; background:var(--ink); color:#fff; display:flex; gap:30px; margin:0 auto; max-width:1440px; padding:24px clamp(24px,7vw,110px); }
 .protocol-strip b { color:#f3b39f; white-space:nowrap; }
 .protocol-strip span { color:#d4d8d5; font-size:12px; line-height:1.7; }
-.roadmap-section,.reader-section,.emotion-section,.comparison-section,.sadness-section,.quiz-section,.transfer-section,.effect-section,.research-section { margin:0 auto; max-width:1440px; padding:100px clamp(24px,7vw,110px); }
+.roadmap-section,.reader-section,.emotion-section,.comparison-section,.case-atlas-section,.sadness-section,.quiz-section,.transfer-section,.effect-section,.research-section { margin:0 auto; max-width:1440px; padding:100px clamp(24px,7vw,110px); }
 .roadmap-section { background:var(--paper); }
 .day-grid { border-left:1px solid var(--line); border-top:1px solid var(--line); display:grid; grid-template-columns:repeat(5,1fr); }
 .day-card { border-bottom:1px solid var(--line); border-right:1px solid var(--line); min-height:270px; padding:22px; }
@@ -73,13 +73,19 @@ button { font:inherit; }
 .cue-list p { font-size:12px; line-height:1.65; margin:0; }
 .example-list { margin-top:28px; }
 .example-list b { font-size:11px; }
-.example-list ul { color:var(--muted); font-size:12px; line-height:1.8; padding-left:18px; }
+.example-list ul { color:var(--muted); display:grid; font-size:12px; gap:8px 24px; grid-template-columns:repeat(2,minmax(0,1fr)); line-height:1.7; padding-left:18px; }
+.example-list strong { color:var(--ink); }
 .emotion-chapter blockquote { border-left:3px solid var(--coral); font-family:"Noto Serif SC","Songti SC","STSong",serif; font-size:18px; margin:26px 0 0; padding:8px 0 8px 18px; }
 .contrast-note { background:var(--paper-deep); margin-top:24px; padding:18px 20px; }
 .contrast-note b { color:var(--coral); font-size:10px; letter-spacing:.06em; }
 .contrast-note p { color:var(--muted); font-size:11px; line-height:1.75; margin:9px 0 0; }
 .chapter-visual { align-self:center; margin:0; }
 .chapter-visual img { display:block; height:auto; width:100%; }
+.scene-caption-grid { background:var(--ink); color:#d4d8d5; display:grid; grid-template-columns:repeat(3,1fr); }
+.scene-caption-grid>div { border-right:1px solid rgba(255,255,255,.15); padding:14px 16px; }
+.scene-caption-grid>div:last-child { border-right:0; }
+.scene-caption-grid b { color:#f3b39f; display:block; font-size:10px; margin-bottom:5px; }
+.scene-caption-grid span { font-size:10px; line-height:1.55; }
 .chapter-visual figcaption { background:var(--ink); color:#d4d8d5; font-size:11px; line-height:1.7; padding:16px 20px; }
 .comparison-section { background:var(--ink); color:#fff; }
 .comparison-section .section-heading h2 { color:#fff; }
@@ -88,6 +94,16 @@ button { font:inherit; }
 .comparison-table strong { color:#f3b39f; font-family:"Noto Serif SC","Songti SC","STSong",serif; font-size:26px; }
 .comparison-table p { font-family:"Noto Serif SC","Songti SC","STSong",serif; font-size:18px; line-height:1.6; }
 .comparison-table span { color:#aeb8b7; font-size:11px; }
+.case-atlas-section { background:var(--paper); }
+.case-atlas-grid { border-left:1px solid var(--line); border-top:1px solid var(--line); display:grid; grid-template-columns:repeat(3,1fr); }
+.case-atlas-grid>article { border-bottom:1px solid var(--line); border-right:1px solid var(--line); padding:26px; }
+.case-atlas-title { align-items:baseline; display:flex; gap:14px; }
+.case-atlas-title span { color:var(--coral); font-family:"Noto Serif SC","Songti SC","STSong",serif; font-size:24px; }
+.case-atlas-title h3 { font-family:"Noto Serif SC","Songti SC","STSong",serif; font-size:20px; margin:0; }
+.case-atlas-grid ul { list-style:none; margin:28px 0 0; padding:0; }
+.case-atlas-grid li { border-top:1px solid var(--line); display:grid; gap:10px; grid-template-columns:46px 1fr; padding:13px 0; }
+.case-atlas-grid li b { color:var(--coral); font-size:10px; }
+.case-atlas-grid li span { color:var(--muted); font-size:11px; line-height:1.65; }
 .sadness-section { background:var(--white); }
 .sadness-grid { border-left:1px solid var(--line); border-top:1px solid var(--line); display:grid; grid-template-columns:repeat(3,1fr); }
 .sadness-grid article { border-bottom:1px solid var(--line); border-right:1px solid var(--line); min-height:190px; padding:24px; }
@@ -150,6 +166,6 @@ button { font:inherit; }
 .boundary-note p { color:var(--muted); font-size:11px; line-height:1.8; margin:0; }
 footer { border-top:1px solid var(--line); display:flex; font-size:11px; justify-content:space-between; margin:0 auto; max-width:1440px; padding:30px clamp(24px,5vw,72px); }
 @media (max-width:1100px) { .day-grid { grid-template-columns:repeat(3,1fr); } }
-@media (max-width:900px) { .hero,.emotion-chapter,.mixed-section,.effect-section { grid-template-columns:1fr; } .method-card { max-width:520px; } .thought-grid { grid-template-columns:1fr; } .thought-card h3 { min-height:auto; } .section-heading { align-items:start; flex-direction:column; } }
-@media (max-width:620px) { .site-header { padding-inline:18px; } .brand span,.site-header nav { display:none; } .evidence-pill { font-size:9px; } .hero { padding-inline:20px; padding-top:58px; } .hero h1 { font-size:43px; } .protocol-strip,.followup-band { align-items:start; flex-direction:column; gap:8px; } .roadmap-section,.reader-section,.emotion-section,.comparison-section,.sadness-section,.quiz-section,.transfer-section,.effect-section,.research-section { padding:72px 20px; } .day-grid,.quiz-grid { grid-template-columns:1fr; } .day-card { min-height:auto; } .emotion-chapter { gap:30px; padding:52px 0; } .comparison-table,.sadness-grid { grid-template-columns:1fr; } .reader-callout,.effect-grid>div { grid-template-columns:1fr; } .mixed-copy,.mixed-analysis { padding:64px 20px; } .rating-row { grid-template-columns:1fr; } .transfer-steps>article { grid-template-columns:1fr; } .closing-section { padding-inline:20px; } }
+@media (max-width:900px) { .hero,.emotion-chapter,.mixed-section,.effect-section { grid-template-columns:1fr; } .method-card { max-width:520px; } .thought-grid,.case-atlas-grid { grid-template-columns:1fr; } .thought-card h3 { min-height:auto; } .section-heading { align-items:start; flex-direction:column; } }
+@media (max-width:620px) { .site-header { padding-inline:18px; } .brand span,.site-header nav { display:none; } .evidence-pill { font-size:9px; } .hero { padding-inline:20px; padding-top:58px; } .hero h1 { font-size:43px; } .protocol-strip,.followup-band { align-items:start; flex-direction:column; gap:8px; } .roadmap-section,.reader-section,.emotion-section,.comparison-section,.case-atlas-section,.sadness-section,.quiz-section,.transfer-section,.effect-section,.research-section { padding:72px 20px; } .day-grid,.quiz-grid { grid-template-columns:1fr; } .day-card { min-height:auto; } .emotion-chapter { gap:30px; padding:52px 0; } .comparison-table,.sadness-grid { grid-template-columns:1fr; } .example-list ul { grid-template-columns:1fr; } .scene-caption-grid { grid-template-columns:1fr; } .scene-caption-grid>div { border-bottom:1px solid rgba(255,255,255,.15); border-right:0; } .reader-callout,.effect-grid>div { grid-template-columns:1fr; } .mixed-copy,.mixed-analysis { padding:64px 20px; } .rating-row { grid-template-columns:1fr; } .transfer-steps>article { grid-template-columns:1fr; } .closing-section { padding-inline:20px; } }
 @media (prefers-reduced-motion:reduce) { html { scroll-behavior:auto; } }
