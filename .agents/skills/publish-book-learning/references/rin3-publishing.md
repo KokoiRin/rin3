@@ -6,6 +6,8 @@
 
 - 整书学习记录：`content/<section>/<book-slug>.md`
 - 分章阅读器：`public/reading/<book-slug>/<chapter-slug>/index.html`
+- 统一阅读样式：`public/reading/reader.css`
+- 本地公式资源：`public/reading/_shared/katex/`
 - 静态导出：Next.js
 - 线上 base path：`/rin3`
 - 部署：推送 `main` 后由 `.github/workflows/deploy-pages.yml` 发布
@@ -49,6 +51,7 @@
 - 分区首页只出现一个整书入口；
 - 整书文章链接到所有已发布章节；
 - 每个章节阅读器回到整书文章；
+- 每个章节阅读器引用统一的 `/reading/reader.css`，不再复制整套页面样式；
 - 旧 URL 若承诺兼容，确实指向新入口；
 - `/rin3` 前缀下静态资源和链接可达。
 
