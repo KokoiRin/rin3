@@ -15,7 +15,7 @@
 ## 业务行为数据库强制约束
 
 - `harness/` 是独立验收 package，只能单向读取、构建和测试项目；`app/`、`components/`、`lib/`、产品 `package.json` 和公开静态产物不得反向依赖 Harness。
-- `harness/behaviors/registry.json` 是业务行为、关键函数和测试关系的结构化事实源；现有 `openspec/` 只作为待迁移的遗留资料，不再创建新的 OpenSpec change。
+- `harness/behaviors/registry.json` 是业务行为、关键函数和测试关系的结构化事实源；长期架构约束写入 `docs/architecture.md` 或 ADR，不再使用 OpenSpec change。
 - 修改 `app/`、`components/`、`lib/`、`packages/rin-document/src/` 或 `harness/scripts/` 下的代码前，先运行 `npm --prefix harness run behavior -- impact <函数名或文件>` 查看受影响业务；查不到时必须判断是新增行为、遗漏映射还是纯基础设施。
 - 每次修改代码后必须同步更新受影响行为：提升 `version`、更新 `lastReviewedOn`，并复核中文业务描述、代码符号和测试映射；新增可观察行为必须创建新的稳定 ID。
 - 纳入数据库的测试名称必须使用 `[行为ID] 中文业务结果`，并在数据库中为每个测试保留一句非技术化的中文业务行为说明。

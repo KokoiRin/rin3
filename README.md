@@ -77,6 +77,8 @@ app/ + components/slides/    静态路由、文章页面与 Reveal 播放器
 
 `@rin/document` 不依赖 Next.js、React、Reveal、网站 URL 或文件系统；其他消费者可以通过它的公共入口复用 RIN 文档编译能力。
 
+长期架构约束见 [`docs/architecture.md`](docs/architecture.md)；独立 HTML 阅读器和共享样式的现状见 [`docs/reader-inventory.md`](docs/reader-inventory.md)。
+
 ## 构建与发布
 
 ```bash

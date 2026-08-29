@@ -120,7 +120,7 @@ npm --prefix harness run verify
 
 ## 内容生产链的长期方向
 
-当前 Markdown/RIN 文档已经拥有统一解析和双视图编译链；`public/reading/` 下的章节阅读器仍主要是直接维护的 HTML。
+当前 Markdown/RIN 文档已经拥有统一解析和双视图编译链；`public/reading/` 下的章节阅读器仍主要是直接维护的 HTML。当前页面数量、样式归属和迁移顺序见 [`reader-inventory.md`](reader-inventory.md)。
 
 随着章节增加，应逐步把阅读器改为“结构化源文件 → 统一生成 HTML”。迁移前至少为每本书维护章节清单，并用通用结构、链接和资源规则替代不断增长的正文硬编码断言。
 
