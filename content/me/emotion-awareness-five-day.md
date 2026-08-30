@@ -1,6 +1,6 @@
 ---
-title: 五天情绪识别练习：从十二种情绪到真实判断
-summary: 一套把恐惧、愤怒、悲伤等十二种情绪放回真实事件的五天阅读练习，重点训练评价对象、时间位置与行动倾向的辨析。
+title: 情绪识别练习：五天主线与随手选读
+summary: 先用五天主线把十二种情绪放回真实事件，再通过四篇无进度压力的选读页认识注意、比较、落差与超越自我的情绪。
 date: 2026-08-29
 lang: zh-CN
 topic: Emotional Awareness
@@ -27,6 +27,21 @@ order: 30
    区分重要关系的亲近与关怀、好事正在发生，以及期待或标准得到满足。
 5. [第五天：十二种情绪的集中辨析](../../reading/emotions/day-five/index.html)
    不再背十二个定义，而是在新情境与混合情境里练习独立判断。
+
+## 闲下来时，再看看别的情绪
+
+下面四页不是“第六天到第九天”，也不进入训练进度。它们更像一组可以随手翻阅的情绪图鉴：每页从三个相近事件出发，说明这些情绪分别在评价什么。
+
+1. [兴趣、期待与无聊](../../reading/emotions/explore/interest-anticipation-boredom/index.html)
+   看注意力是在靠近现在的未知、等待未来的结果，还是暂时找不到值得投入的对象。
+2. [羡慕、嫉妒与骄傲](../../reading/emotions/explore/envy-jealousy-pride/index.html)
+   区分想要他人的优势、担心关系位置被取代，以及确认自己的贡献。
+3. [失望、后悔与遗憾](../../reading/emotions/explore/disappointment-regret-wistfulness/index.html)
+   区分期待落空、自己的选择看似可以改写，以及珍视的可能性已经过去。
+4. [感激、感动与敬畏](../../reading/emotions/explore/gratitude-moved-awe/index.html)
+   区分具体受益、联结突然增强，以及面对巨大事物时原有理解框架被扩展。
+
+不必按顺序，也不必一次读完。哪一个词在真实生活里突然变得有点模糊，再回来打开对应页面就够了。
 
 ## 一套可以反复使用的判断顺序
 
