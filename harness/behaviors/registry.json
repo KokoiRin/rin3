@@ -305,6 +305,29 @@
       ]
     },
     {
+      "id": "EMOTION-READER-ASSETS-001",
+      "version": 1,
+      "status": "active",
+      "nameZh": "情绪系列素材与样式一致",
+      "behaviorZh": "五天主线与四个选读页只引用集中存放的二十八张规范三联画和共享样式；含评分的五天主线共用内存评分脚本，页面不保留旧副本、重复内容、无引用素材或断裂图片。",
+      "lastReviewedOn": "2026-08-31",
+      "code": [
+        {
+          "file": "scripts/check-emotion-readers.mjs",
+          "symbol": "validateEmotionReaders",
+          "roleZh": "检查九个页面的规范图片、共享资源和素材引用完整性"
+        }
+      ],
+      "tests": [
+        {
+          "file": "tests/emotion-reader-assets.test.mjs",
+          "name": "[EMOTION-READER-ASSETS-001] 情绪系列九页复用集中素材与共享样式",
+          "level": "unit",
+          "behaviorZh": "九个页面只引用集中存放的二十八张 1536×1024 JPEG 并共用样式；含评分的页面共用脚本，且不存在重复、错放、断裂或无引用素材。"
+        }
+      ]
+    },
+    {
       "id": "PUBLISH-SAFETY-001",
       "version": 2,
       "status": "active",
