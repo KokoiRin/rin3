@@ -68,6 +68,7 @@ RIN 只保留一个系列级入口：`content/me/emotion-awareness-five-day.md`�
 
 - `public/reading/emotions/shared/reader.css`
 - `public/reading/emotions/shared/rating.js`
+- `public/reading/emotions/assets/`：五天主线和四个选读页的二十八张规范三联画，所有图片集中存放，每张只保留一份。
 
 视觉基线：
 
@@ -76,6 +77,8 @@ RIN 只保留一个系列级入口：`content/me/emotion-awareness-five-day.md`�
 - 依靠排版、留白、细分隔线和整块底色建立层级；默认无阴影、无悬浮卡片感、少用圆角。
 - 桌面最大宽度 1440px；主要正文约 1100px；手机在 620px 以下收为单栏并隐藏长导航。
 - 新页面不得复制并私改一份 CSS。确需新增组件时，先判断能否服务后续页面，再更新共享样式。
+- 第 1～4 天正文和第 5 天视觉图谱直接引用同一份主线图片，不再为第 5 天维护另一套缩略图。替换主线图片后必须运行 `npm run check:emotion-readers`。
+- 四个选读页也只引用系列级 `assets/`，不再维护页面级图片目录；全部图片统一为 1536×1024 JPEG。
 
 ## 五、三联画约束
 
@@ -101,6 +104,7 @@ RIN 只保留一个系列级入口：`content/me/emotion-awareness-five-day.md`�
 - [ ] 每页三张专属图片均为 1536×1024；选读页如含比较图则共四张，文件名、`alt` 和图注一致；
 - [ ] 不读人物表情也能在 5 秒内说清每一格发生了什么；
 - [ ] 复用共享 CSS 与评分脚本；
+- [ ] 九个阅读页只引用 `public/reading/emotions/assets/` 中的二十八张 1536×1024 JPEG，目录中没有重复、错放或无引用素材；
 - [ ] 桌面 1280px 和手机 390px 无横向溢出；
 - [ ] 内容契约、公开安全检查和生产构建通过；
 - [ ] 页面入口与完整阅读页都能打开。
