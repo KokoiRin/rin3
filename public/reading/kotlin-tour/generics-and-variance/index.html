@@ -1,69 +1,325 @@
 <!doctype html>
 <html lang="zh-CN">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="泛型是在不丢失类型信息的前提下复用规则；in 与 out 则说明一个边界消费什么、生产什么。">
-  <title>泛型与型变｜Kotlin 项目实战篇｜RIN III</title>
-  <link rel="stylesheet" href="../../reader.css">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="理解泛型、型变、类型投影、星投影、泛型约束与类型擦除。">
+<title>泛型与型变｜Kotlin 项目实战篇｜RIN III</title>
+<link rel="stylesheet" href="../../reader.css">
 </head>
 <body>
-  <nav class="site-nav" aria-label="站点导航"><a href="../index.html">← Kotlin 中文学习版</a><a href="../../../computer-science/kotlin-tour/">RIN III 学习记录</a></nav>
-  <main class="reader project-reader">
-    <header class="chapter-header">
-      <span class="chapter-kicker">项目实战篇 · 第 3 章</span>
-      <h1>泛型与型变</h1>
-      <p class="lead">泛型是在不丢失类型信息的前提下复用规则；in 与 out 则说明一个边界消费什么、生产什么。</p>
-      <div class="title-rule"></div>
-      <aside class="compression-note"><strong>阅读约定</strong><p>本章是基于 Kotlin 官方资料整理翻译的结构化精读，不是逐段完整翻译。保留项目阅读所需的核心概念、关键边界和代表性代码，暂缓与当前学习目标关系较弱的高级细节。</p></aside>
-      <aside class="learning-note"><strong>本章主线</strong><p>遇到复杂泛型先找 T 从哪里进入、从哪里出去。生产者用 out，消费者用 in，同时读写则通常保持不变。</p></aside>
-      <nav class="chapter-switcher" aria-label="章节导航"><a href="../collection-pipelines/index.html">← 集合式数据处理</a><a class="course-home" href="../index.html">全部章节</a><a href="../coroutines/index.html">协程与结构化并发 →</a></nav>
-    </header>
-    <article class="translated-article">
-      <h2>1. 泛型保留了调用方的类型</h2>
-      <pre><code>class ResultBox&lt;T&gt;(val value: T)
+<nav class="site-nav" aria-label="站点导航"><a href="../index.html">← Kotlin 中文学习版</a><a href="../../../computer-science/kotlin-tour/">RIN III 学习记录</a></nav><main class="reader project-reader"><header class="chapter-header"><span class="chapter-kicker">项目实战篇 · 第 3 章</span><h1>泛型与型变</h1>
+<p class="lead">理解泛型、型变、类型投影、星投影、泛型约束与类型擦除。</p>
+<div class="title-rule"></div>
+<nav class="prerequisite-nav" aria-label="前置概念"><span>前置概念</span><a href="../classes-and-interfaces/index.html">类与接口</a><a href="../functions/index.html">函数</a><a href="../advanced-null-safety/index.html">进阶空安全</a></nav><nav class="chapter-switcher" aria-label="章节导航"><a href="../collection-pipelines/index.html">← 集合式数据处理</a><a href="../index.html" class="course-home">全部章节</a><a href="../coroutines/index.html">协程与结构化并发 →</a></nav></header><article class="translated-article"><section class="source-document" id="source-generics"><h2>泛型：in、out 与 where</h2>
+<p id="generics-wskrib_2" class="source-paragraph" data-source-paragraph="1">Kotlin 中的<a href="../classes-and-interfaces/index.html" class="concept-ref" data-concept="类与接口" title="前置概念：类与接口">类</a>可以拥有类型参数，就像在 Java 中一样：</p>
+<pre class="source-code"><code class="language-kotlin">
+class Box&lt;T&gt;(t: T) {
+    var value = t
+}</code></pre>
+<p id="generics-wskrib_4" class="source-paragraph" data-source-paragraph="2">要创建此类类的实例，只需提供类型参数：</p>
+<pre class="source-code"><code class="language-kotlin">
+val box: Box&lt;Int&gt; = Box&lt;Int&gt;(1)</code></pre>
+<p id="generics-wskrib_6" class="source-paragraph" data-source-paragraph="3">如果编译器能够<a href="../basic-types/index.html" class="concept-ref" data-concept="类型推断" title="前置概念：基本类型与类型推断">推断出类型参数</a>（例如，通过构造函数的参数），则无需显式指定它们：</p>
+<pre class="source-code"><code class="language-kotlin">
+val box = Box(1) // 1 的类型是 Int，因此编译器推断出它是 Box&lt;Int&gt;</code></pre>
+<section class="chapter"><h3 id="generics-variance" data-toc="variance">型变</h3>
+<p id="generics-wskrib_15" class="source-paragraph" data-source-paragraph="4">Java 类型系统中最棘手的一个方面是通配符类型（参见 <a href="http://www.angelikalanger.com/GenericsFAQ/JavaGenericsFAQ.html" id="generics-wskrib_18" data-external="true" rel="noopener noreferrer">Java 泛型常见问题解答</a>）。Kotlin 没有通配符类型；取而代之的是声明处型变和类型投影。</p>
+<section class="chapter"><h4 id="generics-variance-and-wildcards-in-java" data-toc="variance-and-wildcards-in-java">Java 中的型变与通配符</h4>
+<p id="generics-wskrib_19" class="source-paragraph" data-source-paragraph="5">让我们思考一下，Java 为什么需要这些神秘的通配符。首先，Java 中的泛型是不变型的，这意味着 <code class="code" id="generics-wskrib_35">List&lt;String&gt;</code> 不是 <code class="code" id="generics-wskrib_37">List&lt;Object&gt;</code> 的子类型。如果 <code class="code" id="generics-wskrib_38">List</code> 不是不变型的，那它就和 Java 的数组没什么两样，因为以下代码虽然能编译通过，但在运行时会引发异常：</p>
+<pre class="source-code"><code class="language-java">
+// Java
+List&lt;String&gt; strs = new ArrayList&lt;String&gt;();
 
-fun &lt;T&gt; firstOrNull(items: List&lt;T&gt;): T? = items.firstOrNull()</code></pre>
-      <p><code>T</code> 是一个类型参数：调用者传入 <code>List&lt;User&gt;</code>，返回值就是 <code>User?</code>。如果这里改成 <code>Any?</code>，虽然“什么都能放”，调用者却失去了具体类型信息。</p>
-      <h2>2. 为什么泛型默认不变</h2>
-      <p>即使 <code>Cat</code> 是 <code>Animal</code>，<code>MutableList&lt;Cat&gt;</code> 也不能当作 <code>MutableList&lt;Animal&gt;</code>。否则另一个调用者就可以向其中加入 Dog，破坏原列表只含 Cat 的承诺。</p>
-      <h2>3. Producer out，Consumer in</h2>
-      <pre><code>interface Source&lt;out T&gt; {
-    fun load(): T
+// Java 会在编译时在此处报告类型不匹配。
+List&lt;Object&gt; objs = strs;
+
+// 如果它没有报告呢？
+// 那么我们就能将一个 Integer 放入一个 String 列表中。
+objs.add(1);
+
+// 然后在运行时，Java 会抛出
+// 一个 ClassCastException：Integer 无法转换为 String
+String s = strs.get(0); </code></pre>
+<p id="generics-wskrib_21" class="source-paragraph" data-source-paragraph="6">Java 禁止此类操作，以确保运行时安全。但这会带来一些影响。例如，考虑 <code class="code" id="generics-wskrib_41">Collection</code> 接口中的 <code class="code" id="generics-wskrib_40">addAll()</code> 方法。该方法的签名是什么？直观来看，你会这样写：</p>
+<pre class="source-code"><code class="language-java">
+// Java
+interface Collection&lt;E&gt; ... {
+    void addAll(Collection&lt;E&gt; items);
+}</code></pre>
+<p id="generics-wskrib_23" class="source-paragraph" data-source-paragraph="7">那样的话，你就无法执行以下操作（而这完全是安全的）：</p>
+<pre class="source-code"><code class="language-java">
+// Java
+
+// 如果采用对 addAll 的简单声明，以下代码将无法编译：
+// Collection&lt;String&gt; 不是 Collection&lt;Object&gt; 的子类型
+void copyAll(Collection&lt;Object&gt; to, Collection&lt;String&gt; from) {
+    to.addAll(from);
+}</code></pre>
+<p id="generics-wskrib_25" class="source-paragraph" data-source-paragraph="8">正因如此，<code class="code" id="generics-wskrib_42">addAll()</code> 的实际签名如下：</p>
+<pre class="source-code"><code class="language-java">
+// Java
+interface Collection&lt;E&gt; ... {
+    void addAll(Collection&lt;? extends E&gt; items);
+}</code></pre>
+<p id="generics-wskrib_27" class="source-paragraph" data-source-paragraph="9">通配符类型参数 <code class="code" id="generics-wskrib_44">? extends E</code> 表示该方法接受由 <code class="code" id="generics-wskrib_45">E</code> 或 <code class="code" id="generics-wskrib_47">E</code> 的子类型对象组成的集合，而不仅仅是 <code class="code" id="generics-wskrib_48">E</code> 本身。这意味着你可以安全地从 items 中读取 <code class="code" id="generics-wskrib_50">E</code>（该集合的元素是 E 的子类的实例），但无法向其中写入，因为你不知道哪些对象符合 <code class="code" id="generics-wskrib_52">E</code> 的那个未知子类型。作为这一限制的回报，你将获得期望的行为：<code class="code" id="generics-wskrib_53">Collection&lt;String&gt;</code> 是 <code class="code" id="generics-wskrib_55">Collection&lt;? extends Object&gt;</code> 的子类型。换言之，带有 extends 上界的通配符会使类型变为协变。</p>
+<p id="generics-wskrib_28" class="source-paragraph" data-source-paragraph="10">理解其工作原理的关键其实很简单：如果你只能从一个集合中取出元素，那么使用一个由 <code class="code" id="generics-wskrib_60">String</code> 组成的集合并从中读取 <code class="code" id="generics-wskrib_61">Object</code> 是完全没问题的。反之，如果你只能向集合中添加元素，那么取一个由 <code class="code" id="generics-wskrib_63">Object</code> 组成的集合并向其中添加 <code class="code" id="generics-wskrib_64">String</code> 也是可以的：在 Java 中有 <code class="code" id="generics-wskrib_65">List&lt;? super String&gt;</code> 类型，它接受 <code class="code" id="generics-wskrib_66">String</code> 或其任何超类型。</p>
+<p id="generics-wskrib_29" class="source-paragraph" data-source-paragraph="11">后者被称为逆变性，你只能在 <code class="code" id="generics-wskrib_69">List&lt;? super String&gt;</code> 上调用那些以 <code class="code" id="generics-wskrib_68">String</code> 为参数的方法（例如，你可以调用 <code class="code" id="generics-wskrib_70">add(String)</code> 或 <code class="code" id="generics-wskrib_71">set(int, String)</code>）。如果你在 <code class="code" id="generics-wskrib_73">List&lt;T&gt;</code> 中调用某个返回 <code class="code" id="generics-wskrib_72">T</code> 的方法，你得到的不是 <code class="code" id="generics-wskrib_74">String</code>，而是 <code class="code" id="generics-wskrib_75">Object</code>。</p>
+<p id="generics-wskrib_30" class="source-paragraph" data-source-paragraph="12">约书亚·布洛赫（Joshua Bloch）在其著作<a href="http://www.oracle.com/technetwork/java/effectivejava-136174.html" id="generics-wskrib_76" data-external="true" rel="noopener noreferrer">《高效Java编程（第3版）》</a>中对此问题进行了很好的阐述（第31条：“使用有界通配符来提高API的灵活性”）。他将仅用于读取的对象称为“生产者”（Producers），将仅用于写入的对象称为“消费者”（Consumers）。他建议：</p>
+<aside class="source-note" data-type="tip" data-title="" id="generics-wskrib_31"><p id="generics-wskrib_81" class="source-paragraph" data-source-paragraph="13">“为了获得最大的灵活性，请在表示生产者或消费者的输入参数上使用通配符类型。”</p></aside><p id="generics-wskrib_32" class="source-paragraph" data-source-paragraph="14">随后，他提出了以下记忆法：PECS 分别代表“生产者继承（Producer-Extends）”和“消费者超类（Consumer-Super）”。</p>
+<aside class="source-note" data-type="note" data-title="" id="generics-wskrib_33"><p id="generics-wskrib_84" class="source-paragraph" data-source-paragraph="15">如果你使用一个生产者对象，例如 <code class="code" id="generics-wskrib_86">List&lt;? extends Foo&gt;</code>，则不允许对该对象调用 <code class="code" id="generics-wskrib_87">add()</code> 或 <code class="code" id="generics-wskrib_88">set()</code>，但这并不意味着它是不可变的：例如，没有任何东西能阻止你调用 <code class="code" id="generics-wskrib_90">clear()</code> 来移除列表中的所有项，因为 <code class="code" id="generics-wskrib_91">clear()</code> 根本不接受任何参数。</p>
+<p id="generics-wskrib_85" class="source-paragraph" data-source-paragraph="16">通配符（或其他类型的型变）唯一能保证的是类型安全。不可变性则是完全另一回事。</p></aside></section><section class="chapter"><h4 id="generics-declaration-site-variance" data-toc="declaration-site-variance">声明处型变</h4>
+<p id="generics-wskrib_93" class="source-paragraph" data-source-paragraph="17">假设有一个泛型接口 <code class="code" id="generics-wskrib_107">Source&lt;T&gt;</code>，它不包含任何以 <code class="code" id="generics-wskrib_108">T</code> 为参数的方法，只有返回 <code class="code" id="generics-wskrib_109">T</code> 的方法：</p>
+<pre class="source-code"><code class="language-java">
+// Java
+interface Source&lt;T&gt; {
+    T nextT();
+}</code></pre>
+<p id="generics-wskrib_95" class="source-paragraph" data-source-paragraph="18">那么，将 <code class="code" id="generics-wskrib_110">Source&lt;String&gt;</code> 实例的引用存储在类型为 <code class="code" id="generics-wskrib_111">Source&lt;Object&gt;</code> 的变量中是完全安全的——因为没有需要调用的消费者方法。但 Java 并不知道这一点，仍然禁止这样做：</p>
+<pre class="source-code"><code class="language-java">
+// Java
+void demo(Source&lt;String&gt; strs) {
+    Source&lt;Object&gt; objects = strs; // !!! 在 Java 中不允许
+    // ...
+}</code></pre>
+<p id="generics-wskrib_97" class="source-paragraph" data-source-paragraph="19">要解决这个问题，你应该声明类型为 <code class="code" id="generics-wskrib_112">Source&lt;? extends Object&gt;</code> 的对象。这样做毫无意义，因为你可以像之前一样在这样的变量上调用所有相同的方法，因此更复杂的类型并没有带来任何额外价值。但编译器并不知道这一点。</p>
+<p id="generics-wskrib_98" class="source-paragraph" data-source-paragraph="20">在 Kotlin 中，有一种方法可以向编译器说明这种情况。这被称为“声明处型变”：你可以对 <code class="code" id="generics-wskrib_116">Source</code> 的类型参数 <code class="code" id="generics-wskrib_115">T</code> 添加注解，以确保它仅由 <code class="code" id="generics-wskrib_118">Source&lt;T&gt;</code> 的成员返回（生成），且绝不会被消耗。要实现这一点，请使用 <code class="code" id="generics-wskrib_119">out</code> 修饰符：</p>
+<pre class="source-code"><code class="language-kotlin">
+interface Source&lt;out T&gt; {
+    fun nextT(): T
 }
 
-interface Sink&lt;in T&gt; {
-    fun save(value: T)
+fun demo(strs: Source&lt;String&gt;) {
+    val objects: Source&lt;Any&gt; = strs // 这没问题，因为 T 是一个输出参数
+    // ...
 }</code></pre>
-      <div class="table-wrapper"><table><thead><tr><th>声明</th><th>T 的角色</th><th>你可以怎样理解</th></tr></thead><tbody>
-      <tr><td><code>out T</code></td><td>只生产 T</td><td>可以从边界安全地读出 T</td></tr>
-      <tr><td><code>in T</code></td><td>只消费 T</td><td>可以向边界安全地写入 T</td></tr>
-      <tr><td><code>T</code></td><td>既生产又消费</td><td>保持不变，防止错误替换</td></tr>
-      </tbody></table></div>
-      <p>例如 <code>Source&lt;Cat&gt;</code> 可以交给需要 <code>Source&lt;Animal&gt;</code> 的地方，因为它生产出的 Cat 一定也是 Animal。反过来，能够保存任意 Animal 的 <code>Sink&lt;Animal&gt;</code>，当然也能承担只保存 Cat 的工作。</p>
-      <h2>4. 使用处投影与星投影</h2>
-      <pre><code>fun copy(from: Array&lt;out Any&gt;, to: Array&lt;Any&gt;) { /* 只从 from 读取 */ }
-fun describe(box: ResultBox&lt;*&gt;): String = box.value.toString()</code></pre>
-      <p>当类型本身既读又写、无法在声明处标为 <code>out</code> 或 <code>in</code> 时，可以在某次使用处限制能力。<code>*</code> 表示具体参数未知，只使用编译器仍能保证安全的部分。</p>
-      <h2>5. 约束表达算法真正需要的能力</h2>
-      <pre><code>fun &lt;T&gt; maxOf(items: List&lt;T&gt;): T
-    where T : Comparable&lt;T&gt; = items.max()</code></pre>
-      <p><code>where</code> 不是装饰：它告诉调用者，算法并不接受任意 T，而是需要 T 能够相互比较。</p>
-      <aside class="boundary-note warning"><strong>容易误用</strong><ul><li>把 <code>out</code> 理解成“不可变”；型变只保证类型安全，不保证对象不会变化。</li><li>为了消除编译错误随手写 <code>*</code> 或强制转换，掩盖了边界职责不清。</li><li>把泛型加到只服务一种业务类型的 API 上，得到没有真实复用价值的抽象。</li></ul></aside>
-      <section class="project-lab">
-        <span class="note-kind">下周项目对照</span>
-        <h2>不要另写玩具代码，直接在项目里取证</h2>
-        <p><strong>先搜索：</strong><code>&lt;T&gt;</code>、<code>out</code>、<code>in</code>、<code>where</code>、<code>&lt;*&gt;</code></p>
-        <ol><li>选一个真实文件，用一句话写出它在业务流程中的职责。</li><li>圈出本章概念的一个真实用法，写清输入、输出与所有者。</li><li>沿调用方向再追一层，确认它的生命周期或依赖边界。</li><li>找一条对应测试；如果没有，写下最值得补的可观察行为。</li></ol>
-      </section>
-    </article>
-    <section class="recall" aria-labelledby="recall-title">
-      <span class="note-kind">读完自测</span>
-      <h2 id="recall-title">合上正文，回答这三个问题</h2>
-      <ol><li>本章最重要的边界是什么？</li><li>项目里哪个类型或文件最能体现这个边界？</li><li>如果把这个边界拿掉，最可能出现什么错误？</li></ol>
-    </section>
-    <nav class="chapter-switcher" aria-label="章节导航"><a href="../collection-pipelines/index.html">← 集合式数据处理</a><a class="course-home" href="../index.html">全部章节</a><a href="../coroutines/index.html">协程与结构化并发 →</a></nav>
-    <footer class="license-note"><p>本章是项目导向的结构化精读，不是官方文档的逐段完整翻译。主要依据：<a href="https://kotlinlang.org/docs/generics.html">泛型：in、out、where</a>。原始内容由 JetBrains 与 Kotlin 贡献者维护，采用 <a href="https://github.com/JetBrains/kotlin-web-site/blob/master/LICENSE">Apache License 2.0</a>；版本差异以官方原文为准。</p></footer>
-  </main>
+<p id="generics-wskrib_100" class="source-paragraph" data-source-paragraph="21">一般规则如下：当类 <code class="code" id="generics-wskrib_121">C</code> 的类型参数 <code class="code" id="generics-wskrib_120">T</code> 被声明为 <code class="code" id="generics-wskrib_122">out</code> 时，它只能出现在 <code class="code" id="generics-wskrib_124">C</code> 的成员中的输出位置，但返回类型 <code class="code" id="generics-wskrib_125">C&lt;Base&gt;</code> 可以安全地是 <code class="code" id="generics-wskrib_126">C&lt;Derived&gt;</code> 的超类型。</p>
+<p id="generics-wskrib_101" class="source-paragraph" data-source-paragraph="22">换言之，可以说类 <code class="code" id="generics-wskrib_127">C</code> 在参数 <code class="code" id="generics-wskrib_129">T</code> 上是协变的，或者说 <code class="code" id="generics-wskrib_130">T</code> 是一个协变的类型参数。你可以将 <code class="code" id="generics-wskrib_132">C</code> 视为 <code class="code" id="generics-wskrib_134">T</code> 的生产者，而非 <code class="code" id="generics-wskrib_136">T</code> 的消费者。</p>
+<p id="generics-wskrib_102" class="source-paragraph" data-source-paragraph="23"><code class="code" id="generics-wskrib_137">out</code> 修饰符被称为“型变注解”，由于它在类型参数声明处提供，因此属于“声明处型变”。这与 Java 的“使用处型变”形成对比——在 Java 中，类型使用处的通配符会使类型具有协变性。</p>
+<p id="generics-wskrib_103" class="source-paragraph" data-source-paragraph="24">除了 <code class="code" id="generics-wskrib_141">out</code> 之外，Kotlin 还提供了一个互补的型变注解：<code class="code" id="generics-wskrib_142">in</code>。它使类型参数变为逆变，这意味着该类型只能被消耗，而永远不会被生成。逆变类型的典型示例是 <code class="code" id="generics-wskrib_144">Comparable</code>：</p>
+<pre class="source-code"><code class="language-kotlin">
+interface Comparable&lt;in T&gt; {
+    operator fun compareTo(other: T): Int
+}
+
+fun demo(x: Comparable&lt;Number&gt;) {
+    x.compareTo(1.0) // 1.0 的类型是 Double，它是 Number 的子类型
+    // 因此，你可以将 x 赋值给一个类型为 Comparable&lt;Double&gt; 的变量
+    val y: Comparable&lt;Double&gt; = x // 好的！
+}</code></pre>
+<p id="generics-wskrib_105" class="source-paragraph" data-source-paragraph="25">“in”和“out”这两个词似乎不言自明（因为它们在 C# 中已经成功使用了一段时间），因此上述助记词其实并不必要。事实上，它可以以更高的抽象层次重新表述：</p>
+<p id="generics-wskrib_106" class="source-paragraph" data-source-paragraph="26"><a href="https://en.wikipedia.org/wiki/Existentialism" id="generics-wskrib_148" data-external="true" rel="noopener noreferrer">存在式</a> 转换：in 表示消费者，out 表示生产者！:-)</p></section></section><section class="chapter"><h3 id="generics-type-projections" data-toc="type-projections">类型投影</h3>
+<section class="chapter"><h4 id="generics-use-site-variance-type-projections" data-toc="use-site-variance-type-projections">使用处型变: 类型投影</h4>
+<p id="generics-wskrib_152" class="source-paragraph" data-source-paragraph="27">虽然将类型参数 <code class="code" id="generics-wskrib_165">T</code> 声明为 <code class="code" id="generics-wskrib_166">out</code> 并避免在使用处出现子类型问题非常简单，但有些类实际上无法被限制为仅返回 <code class="code" id="generics-wskrib_168">T</code>！<code class="code" id="generics-wskrib_169">Array</code> 就是一个很好的例子：</p>
+<pre class="source-code"><code class="language-kotlin">
+class Array&lt;T&gt;(val size: Int) {
+    operator fun get(index: Int): T { ... }
+    operator fun set(index: Int, value: T) { ... }
+}</code></pre>
+<p id="generics-wskrib_154" class="source-paragraph" data-source-paragraph="28">该类在 <code class="code" id="generics-wskrib_170">T</code> 上的变体既不能是协变的，也不能是逆变的。这会带来一定的灵活性限制。考虑以下函数：</p>
+<pre class="source-code"><code class="language-kotlin">
+fun copy(from: Array&lt;Any&gt;, to: Array&lt;Any&gt;) {
+    assert(from.size == to.size)
+    for (i in from.indices)
+        to[i] = from[i]
+}</code></pre>
+<p id="generics-wskrib_156" class="source-paragraph" data-source-paragraph="29">该函数旨在将一个数组中的元素复制到另一个数组中。让我们尝试在实际中应用它：</p>
+<pre class="source-code"><code class="language-kotlin">
+val ints: Array&lt;Int&gt; = arrayOf(1, 2, 3)
+val any = Array&lt;Any&gt;(3) { "" }
+copy(ints, any)
+// ^ 类型为 Array&lt;Int&gt;，但预期为 Array&lt;Any&gt;</code></pre>
+<p id="generics-wskrib_158" class="source-paragraph" data-source-paragraph="30">这里你会遇到同样熟悉的问题：<code class="code" id="generics-wskrib_171">Array&lt;T&gt;</code> 在 <code class="code" id="generics-wskrib_173">T</code> 中是不变型的，因此 <code class="code" id="generics-wskrib_174">Array&lt;Int&gt;</code> 和 <code class="code" id="generics-wskrib_175">Array&lt;Any&gt;</code> 彼此都不是对方的子类型。为什么不行？原因依然在于 <code class="code" id="generics-wskrib_176">copy</code> 可能会产生意料之外的行为，例如，它可能会尝试将 <code class="code" id="generics-wskrib_177">String</code> 写入 <code class="code" id="generics-wskrib_178">from</code>，而如果你实际传入了一个 <code class="code" id="generics-wskrib_179">Int</code> 的数组，稍后就会抛出 <code class="code" id="generics-wskrib_180">ClassCastException</code> 异常。</p>
+<p id="generics-wskrib_159" class="source-paragraph" data-source-paragraph="31">要禁止 <code class="code" id="generics-wskrib_181">copy</code> 函数向 <code class="code" id="generics-wskrib_183">from</code> 写入数据，你可以这样做：</p>
+<pre class="source-code"><code class="language-kotlin">
+fun copy(from: Array&lt;out Any&gt;, to: Array&lt;Any&gt;) { ... }</code></pre>
+<p id="generics-wskrib_161" class="source-paragraph" data-source-paragraph="32">这是类型投影，这意味着 <code class="code" id="generics-wskrib_185">from</code> 并非一个简单的数组，而是一个受限（投影）的数组。你只能调用返回类型参数 <code class="code" id="generics-wskrib_187">T</code> 的方法，在本例中，这意味着你只能调用 <code class="code" id="generics-wskrib_188">get()</code>。这是我们实现协变的方法，它与 Java 的 <code class="code" id="generics-wskrib_190">Array&lt;? extends Object&gt;</code> 对应，但略微简单一些。</p>
+<p id="generics-wskrib_162" class="source-paragraph" data-source-paragraph="33">你也可以使用 <code class="code" id="generics-wskrib_191">in</code> 对类型进行投影：</p>
+<pre class="source-code"><code class="language-kotlin">
+fun fill(dest: Array&lt;in String&gt;, value: String) { ... }</code></pre>
+<p id="generics-wskrib_164" class="source-paragraph" data-source-paragraph="34"><code class="code" id="generics-wskrib_192">Array&lt;in String&gt;</code> 对应于 Java 中的 <code class="code" id="generics-wskrib_193">Array&lt;? super String&gt;</code>。这意味着你可以将 <code class="code" id="generics-wskrib_194">String</code>、<code class="code" id="generics-wskrib_195">CharSequence</code> 或 <code class="code" id="generics-wskrib_196">Object</code> 的数组传递给 <code class="code" id="generics-wskrib_197">fill()</code> 函数。</p></section><section class="chapter"><h4 id="generics-star-projections" data-toc="star-projections">星投影</h4>
+<p id="generics-wskrib_198" class="source-paragraph" data-source-paragraph="35">有时你可能希望表明自己对类型参数一无所知，但仍希望以安全的方式使用它。这里所说的安全方式，是指定义该泛型类型的投影，使得该泛型类型的每个具体实例化都是该投影的子类型。</p>
+<p id="generics-wskrib_199" class="source-paragraph" data-source-paragraph="36">Kotlin 为此提供了所谓的星号投影语法：</p>
+<ul class="list _bullet" id="generics-wskrib_200">
+<li class="list__item" id="generics-wskrib_205"><p id="generics-wskrib_208" class="source-paragraph" data-source-paragraph="37">对于 <code class="code" id="generics-wskrib_209">Foo&lt;out T : TUpper&gt;</code>，其中 <code class="code" id="generics-wskrib_210">T</code> 是具有上界 <code class="code" id="generics-wskrib_211">TUpper</code> 的协变类型参数，<code class="code" id="generics-wskrib_212">Foo&lt;*&gt;</code> 等同于 <code class="code" id="generics-wskrib_213">Foo&lt;out TUpper&gt;</code>。这意味着当 <code class="code" id="generics-wskrib_214">T</code> 未知时，你可以安全地从 <code class="code" id="generics-wskrib_217">Foo&lt;*&gt;</code> 中读取 <code class="code" id="generics-wskrib_216">TUpper</code> 的值。</p></li>
+<li class="list__item" id="generics-wskrib_206"><p id="generics-wskrib_218" class="source-paragraph" data-source-paragraph="38">对于 <code class="code" id="generics-wskrib_219">Foo&lt;in T&gt;</code>，其中 <code class="code" id="generics-wskrib_220">T</code> 是具有上界 <code class="code" id="generics-wskrib_221">Foo&lt;*&gt;</code> 的协变类型参数，<code class="code" id="generics-wskrib_222">Foo&lt;in Nothing&gt;</code> 等同于 <code class="code" id="generics-wskrib_224">Foo&lt;*&gt;</code>。这意味着当 <code class="code" id="generics-wskrib_225">T</code> 未知时，无法以安全的方式向 <code class="code" id="generics-wskrib_224-2">Foo&lt;*&gt;</code> 写入任何内容。</p></li>
+<li class="list__item" id="generics-wskrib_207"><p id="generics-wskrib_226" class="source-paragraph" data-source-paragraph="39">对于 <code class="code" id="generics-wskrib_227">Foo&lt;T : TUpper&gt;</code>，其中 <code class="code" id="generics-wskrib_228">T</code> 是一个上界为 <code class="code" id="generics-wskrib_229">TUpper</code> 的不变类型参数，<code class="code" id="generics-wskrib_230">Foo&lt;*&gt;</code> 在读取值时等同于 <code class="code" id="generics-wskrib_231">Foo&lt;out TUpper&gt;</code>，在写入值时等同于 <code class="code" id="generics-wskrib_232">Foo&lt;in Nothing&gt;</code>。</p></li>
+</ul>
+<p id="generics-wskrib_201" class="source-paragraph" data-source-paragraph="40">如果一个泛型类型有多个类型参数，则每个类型参数都可以独立进行投影。例如，如果类型声明为 <code class="code" id="generics-wskrib_233">interface Function&lt;in T, out U&gt;</code>，你可以使用以下星投影：</p>
+<ul class="list _bullet" id="generics-wskrib_202">
+<li class="list__item" id="generics-wskrib_234"><p id="generics-wskrib_237" class="source-paragraph" data-source-paragraph="41"><code class="code" id="generics-wskrib_238">Function&lt;*, String&gt;</code> 表示 <code class="code" id="generics-wskrib_239">Function&lt;in Nothing, String&gt;</code>。</p></li>
+<li class="list__item" id="generics-wskrib_235"><p id="generics-wskrib_240" class="source-paragraph" data-source-paragraph="42"><code class="code" id="generics-wskrib_241">Function&lt;Int, *&gt;</code> 表示 <code class="code" id="generics-wskrib_242">Function&lt;Int, out Any?&gt;</code>。</p></li>
+<li class="list__item" id="generics-wskrib_236"><p id="generics-wskrib_243" class="source-paragraph" data-source-paragraph="43"><code class="code" id="generics-wskrib_244">Function&lt;*, *&gt;</code> 表示 <code class="code" id="generics-wskrib_245">Function&lt;in Nothing, out Any?&gt;</code>。</p></li>
+</ul>
+<aside class="source-note" data-type="note" data-title="" id="generics-wskrib_203"><p id="generics-wskrib_246" class="source-paragraph" data-source-paragraph="44">星投影与 Java 的原始类型非常相似，但更加安全。</p></aside></section><section class="chapter"><h4 id="generics-captured-types" data-toc="captured-types">捕获类型</h4>
+<p id="generics-wskrib_247" class="source-paragraph" data-source-paragraph="45">当你使用类型投影（如 <code class="code" id="generics-wskrib_254">out T</code> 或 <code class="code" id="generics-wskrib_255">in T</code>）时，编译器会在内部将未知具体类型表示为 <a href="https://kotlinlang.org/spec/type-system.html#type-capturing" id="generics-wskrib_256" data-external="true" rel="noopener noreferrer">捕获类型</a>。捕获类型是一种已知上下界但具体类型未知的类型。</p>
+<p id="generics-wskrib_248" class="source-paragraph" data-source-paragraph="46">捕获类型是不可指称的，因此你不能直接在 Kotlin 代码中写出它们。相反，你最常在编译器诊断信息中看到捕获类型，例如 <code class="code" id="generics-wskrib_258">CapturedType(out X)</code>。例如，以下类型不匹配的诊断信息中就包含一个捕获类型：</p>
+<pre class="source-code"><code class="language-kotlin">
+val array: Array&lt;out CharSequence&gt; = arrayOf("str")
+val item: Int = array.get(0)
+// 初始化器类型不匹配：预期为 'Int'，实际为 'CapturedType(out CharSequence)'</code></pre>
+<p id="generics-wskrib_250" class="source-paragraph" data-source-paragraph="47">编译器在读取操作中使用捕获类型的上界，在写入操作中使用其下界来确定哪些值是类型安全的：</p>
+<pre class="source-code"><code class="language-kotlin">
+// 投影类型为 Array&lt;out CharSequence&gt;
+val array: Array&lt;out CharSequence&gt; = arrayOf("Kotlin")
+
+// get() 读取操作使用了捕获类型的上界 CharSequence
+val item = array.get(0)
+
+// set() 写入操作使用了捕获类型的上界 CharSequence，
+// 这将导致错误
+array.set(0, "New value")
+// 接收者类型 'Array&lt;out CharSequence&gt;' 包含 out 投影
+// 这禁止使用 'fun set(index: Int, value: T): Unit'</code></pre>
+<p id="generics-wskrib_252" class="source-paragraph" data-source-paragraph="48">在此示例中：</p>
+<ul class="list _bullet" id="generics-wskrib_253">
+<li class="list__item" id="generics-wskrib_259"><p id="generics-wskrib_262" class="source-paragraph" data-source-paragraph="49">变量 <code class="code" id="generics-wskrib_263">array</code> 的投影类型为 <code class="code" id="generics-wskrib_264">Array&lt;out CharSequence&gt;</code>。编译器将投影类型参数 <code class="code" id="generics-wskrib_265">out CharSequence</code> 表示为一个捕获类型，其上界为 <code class="code" id="generics-wskrib_266">CharSequence</code>，下界为 <code class="code" id="generics-wskrib_267">Nothing</code>。</p></li>
+<li class="list__item" id="generics-wskrib_260"><p id="generics-wskrib_268" class="source-paragraph" data-source-paragraph="50">对于 <code class="code" id="generics-wskrib_269">get()</code> 操作，编译器将捕获类型近似为其上界 <code class="code" id="generics-wskrib_270">CharSequence</code>，并推断 <code class="code" id="generics-wskrib_271">CharSequence</code> 为 <code class="code" id="generics-wskrib_272">item</code> 的类型。</p></li>
+<li class="list__item" id="generics-wskrib_261"><p id="generics-wskrib_273" class="source-paragraph" data-source-paragraph="51">对于 <code class="code" id="generics-wskrib_274">set()</code> 操作，捕获类型的下界为 <code class="code" id="generics-wskrib_275">Nothing</code>。由于 <code class="code" id="generics-wskrib_276">Nothing</code> 没有实例，将值赋给投影类型是不类型安全的，会导致错误。</p></li>
+</ul></section></section><section class="chapter"><h3 id="generics-generic-functions" data-toc="generic-functions">泛型函数</h3>
+<p id="generics-wskrib_277" class="source-paragraph" data-source-paragraph="52">不仅类可以包含类型参数。函数也可以。类型参数位于函数名之前：</p>
+<pre class="source-code"><code class="language-kotlin">
+fun &lt;T&gt; singletonList(item: T): List&lt;T&gt; {
+    // ...
+}
+
+fun &lt;T&gt; T.basicToString(): String { // 扩展函数
+    // ...
+}</code></pre>
+<p id="generics-wskrib_279" class="source-paragraph" data-source-paragraph="53">要调用泛型函数，请在调用位置的函数名后指定类型参数：</p>
+<pre class="source-code"><code class="language-kotlin">
+val l = singletonList&lt;Int&gt;(1)</code></pre>
+<p id="generics-wskrib_281" class="source-paragraph" data-source-paragraph="54">如果类型参数可以从上下文中推断出来，则可以省略，因此以下示例同样有效：</p>
+<pre class="source-code"><code class="language-kotlin">
+val l = singletonList(1)</code></pre></section><section class="chapter"><h3 id="generics-generic-constraints" data-toc="generic-constraints">泛型约束</h3>
+<p id="generics-wskrib_285" class="source-paragraph" data-source-paragraph="55">可以替换给定类型参数的所有可能类型的集合可能会受到泛型约束的限制。</p>
+<section class="chapter"><h4 id="generics-upper-bounds" data-toc="upper-bounds">上界</h4>
+<p id="generics-wskrib_288" class="source-paragraph" data-source-paragraph="56">最常见的约束类型是上界，它对应于 Java 中的 <code class="code" id="generics-wskrib_296">extends</code> 关键字：</p>
+<pre class="source-code"><code class="language-kotlin">
+fun &lt;T : Comparable&lt;T&gt;&gt; sort(list: List&lt;T&gt;) {  ... }</code></pre>
+<p id="generics-wskrib_290" class="source-paragraph" data-source-paragraph="57">冒号后指定的类型是上界，表示只有 <code class="code" id="generics-wskrib_298">Comparable&lt;T&gt;</code> 的子类型才能替换 <code class="code" id="generics-wskrib_299">T</code>。例如：</p>
+<pre class="source-code"><code class="language-kotlin">
+sort(listOf(1, 2, 3)) // 好的。Int 是 Comparable&lt;Int&gt; 的子类型
+sort(listOf(HashMap&lt;Int, String&gt;())) // 错误：HashMap&lt;Int, String&gt; 不是 Comparable&lt;HashMap&lt;Int, String&gt;&gt; 的子类型</code></pre>
+<p id="generics-wskrib_292" class="source-paragraph" data-source-paragraph="58">默认的上界（如果未指定）是 <code class="code" id="generics-wskrib_300">Any?</code>。尖括号内只能指定一个上界。如果同一个类型参数需要多个上界，则需要单独的 where 子句：</p>
+<pre class="source-code"><code class="language-kotlin">
+fun &lt;T&gt; copyWhenGreater(list: List&lt;T&gt;, threshold: T): List&lt;String&gt;
+    where T : CharSequence,
+          T : Comparable&lt;T&gt; {
+    return list.filter { it &gt; threshold }.map { it.toString() }
+}</code></pre>
+<p id="generics-wskrib_294" class="source-paragraph" data-source-paragraph="59">传入的类型必须同时满足 <code class="code" id="generics-wskrib_302">where</code> 子句的所有条件。在上例中，<code class="code" id="generics-wskrib_303">T</code> 类型必须同时实现 <code class="code" id="generics-wskrib_305">CharSequence</code> 和 <code class="code" id="generics-wskrib_306">Comparable</code>。</p></section></section><section class="chapter"><h3 id="generics-definitely-non-nullable-types" data-toc="definitely-non-nullable-types">绝对不可为空的类型</h3>
+<p id="generics-wskrib_307" class="source-paragraph" data-source-paragraph="60">为了更方便地与泛型 Java 类和接口进行互操作，Kotlin 支持将泛型类型参数声明为“绝对不可空”。</p>
+<p id="generics-wskrib_308" class="source-paragraph" data-source-paragraph="61">要将泛型类型 <code class="code" id="generics-wskrib_316">T</code> 声明为“绝对不可空”，请使用 <code class="code" id="generics-wskrib_317">&amp; Any</code> 声明该类型。例如：<code class="code" id="generics-wskrib_318">T &amp; Any</code>。</p>
+<p id="generics-wskrib_309" class="source-paragraph" data-source-paragraph="62">一个绝对不可空的类型必须包含一个可空的 <a href="#generics-upper-bounds" id="generics-wskrib_319">上界</a>。</p>
+<p id="generics-wskrib_310" class="source-paragraph" data-source-paragraph="63">声明绝对不可空类型最常见的用例是，当你想要重写一个包含 <code class="code" id="generics-wskrib_320">@NotNull</code> 作为参数的 Java 方法时。例如，考虑 <code class="code" id="generics-wskrib_321">load()</code> 方法：</p>
+<pre class="source-code"><code class="language-java">
+import org.jetbrains.annotations.*;
+
+public interface Game&lt;T&gt; {
+    public T save(T x) {}
+    @NotNull
+    public T load(@NotNull T x) {}
+}</code></pre>
+<p id="generics-wskrib_312" class="source-paragraph" data-source-paragraph="64">要成功在 Kotlin 中重写 <code class="code" id="generics-wskrib_322">load()</code> 方法，需要将 <code class="code" id="generics-wskrib_323">T1</code> 声明为绝对不可空类型：</p>
+<pre class="source-code"><code class="language-kotlin">
+interface ArcadeGame&lt;T1&gt; : Game&lt;T1&gt; {
+    override fun save(x: T1): T1
+    // T1 绝对是非空的
+    override fun load(x: T1 &amp; Any): T1 &amp; Any
+}</code></pre>
+<p id="generics-wskrib_314" class="source-paragraph" data-source-paragraph="65">仅使用 Kotlin 时，你通常无需显式声明绝对不可空的类型，因为 Kotlin 的类型推断会自动为你处理这一点。</p></section><section class="chapter"><h3 id="generics-type-erasure" data-toc="type-erasure">类型擦除</h3>
+<p id="generics-wskrib_324" class="source-paragraph" data-source-paragraph="66">Kotlin 对泛型声明用法进行的类型安全检查是在编译时完成的。在运行时，泛型类型的实例不保留任何关于其实际类型参数的信息。这种类型信息被称为“被擦除”。例如，<code class="code" id="generics-wskrib_328">Foo&lt;Bar&gt;</code> 和 <code class="code" id="generics-wskrib_329">Foo&lt;Baz?&gt;</code> 的实例会被擦除为仅 <code class="code" id="generics-wskrib_330">Foo&lt;*&gt;</code>。</p>
+<section class="chapter"><h4 id="generics-generics-type-checks-and-casts" data-toc="generics-type-checks-and-casts">泛型类型检查与强制类型转换</h4>
+<p id="generics-wskrib_331" class="source-paragraph" data-source-paragraph="67">由于类型擦除，在运行时无法通过通用方法检查泛型类型的实例是否是使用特定的类型参数创建的，且编译器禁止进行诸如 <code class="code" id="generics-wskrib_339">ints is List&lt;Int&gt;</code> 或 <code class="code" id="generics-wskrib_340">list is T</code>（类型形参）之类的 <code class="code" id="generics-wskrib_338">is</code> 检查。不过，你可以通过星号投影类型来检查实例：</p>
+<pre class="source-code"><code class="language-kotlin">
+if (something is List&lt;*&gt;) {
+    something.forEach { println(it) } // 这些项的类型为 `Any?`
+}</code></pre>
+<p id="generics-wskrib_333" class="source-paragraph" data-source-paragraph="68">同样地，当你已经对实例的类型参数进行了静态检查（在编译时）时，你可以进行 <code class="code" id="generics-wskrib_341">is</code> 检查或涉及类型中非泛型部分的类型转换。请注意，这种情况下省略了尖括号：</p>
+<pre class="source-code"><code class="language-kotlin">
+fun handleStrings(list: MutableList&lt;String&gt;) {
+    if (list is ArrayList) {
+        // `list` 被智能转换为 `ArrayList&lt;String&gt;`
+    }
+}</code></pre>
+<p id="generics-wskrib_335" class="source-paragraph" data-source-paragraph="69">对于不考虑类型参数的强制类型转换，可以使用相同的语法但省略类型参数：<code class="code" id="generics-wskrib_342">list as ArrayList</code>。</p>
+<p id="generics-wskrib_336" class="source-paragraph" data-source-paragraph="70">泛型函数调用的类型实参同样仅在编译时进行检查。在函数体内部，类型形参不能用于类型检查，且对类型形参（<code class="code" id="generics-wskrib_343">foo as T</code>）的类型转换不会被检查。唯一的例外是带有 <a href="https://kotlinlang.org/docs/inline-functions.html#reified-type-parameters" id="generics-wskrib_344">具型参数</a> 的内联函数，其实际类型实参会在每个调用位置被内联。这使得对类型形参的类型检查和强制类型转换成为可能。但是，对于在检查或强制类型转换中使用的泛型类型的实例，上述限制仍然适用。例如，在类型检查 <code class="code" id="generics-wskrib_345">arg is T</code> 中，如果 <code class="code" id="generics-wskrib_346">arg</code> 本身是泛型类型的实例，则其类型实参仍会被擦除。</p>
+<pre class="source-code"><code class="language-kotlin">
+//sampleStart
+inline fun &lt;reified A, reified B&gt; Pair&lt;*, *&gt;.asPairOf(): Pair&lt;A, B&gt;? {
+    if (first !is A || second !is B) return null
+    return first as A to second as B
+}
+
+val somePair: Pair&lt;Any?, Any?&gt; = "items" to listOf(1, 2, 3)
+
+
+val stringToSomething = somePair.asPairOf&lt;String, Any&gt;()
+val stringToInt = somePair.asPairOf&lt;String, Int&gt;()
+val stringToList = somePair.asPairOf&lt;String, List&lt;*&gt;&gt;()
+val stringToStringList = somePair.asPairOf&lt;String, List&lt;String&gt;&gt;() // 虽然能编译通过，但破坏了类型安全！
+// 展开示例以查看更多详细信息
+
+//sampleEnd
+
+fun main() {
+    println("stringToSomething = " + stringToSomething)
+    println("stringToInt = " + stringToInt)
+    println("stringToList = " + stringToList)
+    println("stringToStringList = " + stringToStringList)
+    //println(stringToStringList?.second?.forEach() {it.length}) // 由于列表项不是 String 类型，这将抛出 ClassCastException
+}</code></pre></section><section class="chapter"><h4 id="generics-unchecked-casts" data-toc="unchecked-casts">未检查的强制类型转换</h4>
+<p id="generics-wskrib_347" class="source-paragraph" data-source-paragraph="71">向带有具体类型参数（如 <code class="code" id="generics-wskrib_355">foo as List&lt;String&gt;</code>）的泛型类型进行的类型转换无法在运行时进行检查。<br> 当类型安全性由高级程序逻辑隐含保证，但编译器无法直接推断出来时，可以使用这些未经检查的类型转换。请参见下面的示例。</p>
+<pre class="source-code"><code class="language-kotlin">
+fun readDictionary(file: File): Map&lt;String, *&gt; = file.inputStream().use {
+    TODO("Read a mapping of strings to arbitrary elements.")
+}
+
+// 我们将一个包含 `Int` 的 Map 保存到了此文件中
+val intsFile = File("ints.dictionary")
+
+// 警告：未检查的类型转换：将 `Map&lt;String, *&gt;` 转换为 `Map&lt;String, Int&gt;`
+val intsDictionary: Map&lt;String, Int&gt; = readDictionary(intsFile) as Map&lt;String, Int&gt;</code></pre>
+<p id="generics-wskrib_349" class="source-paragraph" data-source-paragraph="72">最后一行中的强制类型转换会触发警告。编译器无法在运行时对其进行完全检查，也无法保证映射中的值是 <code class="code" id="generics-wskrib_357">Int</code>。</p>
+<p id="generics-wskrib_350" class="source-paragraph" data-source-paragraph="73">为了避免未检查的强制类型转换，可以重新设计程序结构。在上例中，可以使用 <code class="code" id="generics-wskrib_358">DictionaryReader&lt;T&gt;</code> 和 <code class="code" id="generics-wskrib_359">DictionaryWriter&lt;T&gt;</code> 接口，并针对不同类型提供类型安全的实现。可以通过引入合理的抽象，将未检查的强制类型转换从调用点转移到实现细节中。正确使用 <a href="#generics-variance" id="generics-wskrib_360">泛型 型变</a> 也有帮助。</p>
+<p id="generics-wskrib_351" class="source-paragraph" data-source-paragraph="74">对于泛型函数，使用 <a href="https://kotlinlang.org/docs/inline-functions.html#reified-type-parameters" id="generics-wskrib_361">具型参数</a> 会使类似 <code class="code" id="generics-wskrib_362">arg as T</code> 的类型转换被检查，除非 <code class="code" id="generics-wskrib_363">arg</code> 的类型本身具有会被擦除的类型参数。</p>
+<p id="generics-wskrib_352" class="source-paragraph" data-source-paragraph="75">可以通过 <code class="code" id="generics-wskrib_366">@Suppress("UNCHECKED_CAST")</code> <a href="https://kotlinlang.org/docs/annotations.html" id="generics-wskrib_365">注解</a>出现警告的语句或声明，来抑制未检查的强制类型转换警告：</p>
+<pre class="source-code"><code class="language-kotlin">
+inline fun &lt;reified T&gt; List&lt;*&gt;.asListOfType(): List&lt;T&gt;? =
+    if (all { it is T })
+        @Suppress("UNCHECKED_CAST")
+        this as List&lt;T&gt; else
+        null</code></pre>
+<aside class="source-note" data-type="note" data-title="" id="generics-wskrib_354"><p id="generics-wskrib_367" class="source-paragraph" data-source-paragraph="76">在 JVM 上：<a href="https://kotlinlang.org/docs/arrays.html" id="generics-wskrib_369">数组类型</a> (<code class="code" id="generics-wskrib_370">Array&lt;Foo&gt;</code>) 会保留其元素被擦除类型的相关信息，且向数组类型的类型转换会进行部分检查：元素类型的可空性及其实际类型参数仍会被擦除。例如，如果 <code class="code" id="generics-wskrib_372">foo</code> 是一个包含任意 <code class="code" id="generics-wskrib_373">List&lt;*&gt;</code> 的数组（无论该类型是否可空），则类型转换 <code class="code" id="generics-wskrib_371">foo as Array&lt;List&lt;String&gt;?&gt;</code> 将成功。</p></aside></section></section><section class="chapter"><h3 id="generics-underscore-operator-for-type-arguments" data-toc="underscore-operator-for-type-arguments">类型实参的下划线操作符</h3>
+<p id="generics-wskrib_374" class="source-paragraph" data-source-paragraph="77">下划线操作符 <code class="code" id="generics-wskrib_376">_</code> 可用于类型实参。显式指定其他类型时，可以用它让编译器自动推断相应类型：</p>
+<pre class="source-code"><code class="language-kotlin">
+abstract class SomeClass&lt;T&gt; {
+    abstract fun execute() : T
+}
+
+class SomeImplementation : SomeClass&lt;String&gt;() {
+    override fun execute(): String = "Test"
+}
+
+class OtherImplementation : SomeClass&lt;Int&gt;() {
+    override fun execute(): Int = 42
+}
+
+object Runner {
+    inline fun &lt;reified S: SomeClass&lt;T&gt;, T&gt; run() : T {
+        return S::class.java.getDeclaredConstructor().newInstance().execute()
+    }
+}
+
+fun main() {
+    // 由于 SomeImplementation 继承自 SomeClass&lt;String&gt;，因此 T 被推断为 String
+    val s = Runner.run&lt;SomeImplementation, _&gt;()
+    assert(s == "Test")
+
+    // 由于 OtherImplementation 继承自 SomeClass&lt;Int&gt;，因此 T 被推断为 Int
+    val n = Runner.run&lt;OtherImplementation, _&gt;()
+    assert(n == 42)
+}</code></pre></section></section></article><nav class="chapter-switcher" aria-label="章节导航"><a href="../collection-pipelines/index.html">← 集合式数据处理</a><a href="../index.html" class="course-home">全部章节</a><a href="../coroutines/index.html">协程与结构化并发 →</a></nav><footer class="license-note"><p>内容依据 Kotlin 官方资料整理。原始资料由 JetBrains 与 Kotlin 贡献者维护，并采用 <a href="https://github.com/JetBrains/kotlin-web-site/blob/master/LICENSE">Apache License 2.0</a>；遇到版本差异时，以官方文档为准。</p></footer></main>
 </body>
 </html>
