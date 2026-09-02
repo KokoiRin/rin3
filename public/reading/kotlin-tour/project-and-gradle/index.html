@@ -1,74 +1,405 @@
 <!doctype html>
 <html lang="zh-CN">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="先读懂构建脚本、模块、目标与源码集，再进入业务代码；目录位置本身就是一条编译规则。">
-  <title>Kotlin 项目与 Gradle｜Kotlin 项目实战篇｜RIN III</title>
-  <link rel="stylesheet" href="../../reader.css">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="理解 Kotlin Multiplatform 的目标、源码集、平台边界、依赖配置与测试集成。">
+<title>Kotlin 项目与 Gradle｜Kotlin 项目实战篇｜RIN III</title>
+<link rel="stylesheet" href="../../reader.css">
 </head>
 <body>
-  <nav class="site-nav" aria-label="站点导航"><a href="../index.html">← Kotlin 中文学习版</a><a href="../../../computer-science/kotlin-tour/">RIN III 学习记录</a></nav>
-  <main class="reader project-reader">
-    <header class="chapter-header">
-      <span class="chapter-kicker">项目实战篇 · 第 1 章</span>
-      <h1>Kotlin 项目与 Gradle</h1>
-      <p class="lead">先读懂构建脚本、模块、目标与源码集，再进入业务代码；目录位置本身就是一条编译规则。</p>
-      <div class="title-rule"></div>
-      <aside class="compression-note"><strong>阅读约定</strong><p>本章是基于 Kotlin 官方资料整理翻译的结构化精读，不是逐段完整翻译。保留项目阅读所需的核心概念、关键边界和代表性代码，暂缓与当前学习目标关系较弱的高级细节。</p></aside>
-      <aside class="learning-note"><strong>本章主线</strong><p>一个 Kotlin 文件能使用哪些 API、会编译到哪些平台，不只由代码决定，还由它所在的模块、源码集和依赖配置决定。</p></aside>
-      <nav class="chapter-switcher" aria-label="章节导航"><a href="../libraries-and-apis/index.html">← 库与 API</a><a class="course-home" href="../index.html">全部章节</a><a href="../collection-pipelines/index.html">集合式数据处理 →</a></nav>
-    </header>
-    <article class="translated-article">
-      <h2>1. 先建立项目地图</h2>
-      <p>真实项目的第一层语言不是 Kotlin 语法，而是构建结构。通常先找 <code>settings.gradle.kts</code>，确认项目包含哪些模块；再看各模块的 <code>build.gradle.kts</code>，确认插件、目标、源码集和依赖。</p>
-      <div class="concept-grid">
-        <section><h3>模块</h3><p>独立构建和依赖的边界，例如应用、共享业务模块、基础库。</p></section>
-        <section><h3>目标（target）</h3><p>代码要编译到哪里，例如 JVM、Android、iOS 或 JS。</p></section>
-        <section><h3>源码集（source set）</h3><p>一组拥有相同目标、依赖与编译选项的源码。</p></section>
-        <section><h3>依赖</h3><p>决定当前源码集能看见哪些库和 API。</p></section>
-      </div>
-      <h2>2. 读懂一段 KMP 构建脚本</h2>
-      <pre><code>kotlin {
-    androidTarget()
-    iosArm64()
-    iosSimulatorArm64()
+<nav class="site-nav" aria-label="站点导航"><a href="../index.html">← Kotlin 中文学习版</a><a href="../../../computer-science/kotlin-tour/">RIN III 学习记录</a></nav><main class="reader project-reader"><header class="chapter-header"><span class="chapter-kicker">项目实战篇 · 第 1 章</span><h1>Kotlin 项目与 Gradle</h1>
+<p class="lead">理解 Kotlin Multiplatform 的目标、源码集、平台边界、依赖配置与测试集成。</p>
+<div class="title-rule"></div>
+<nav class="prerequisite-nav" aria-label="前置概念"><span>前置概念</span><a href="../libraries-and-apis/index.html">库与 API</a><a href="../classes-and-interfaces/index.html">类与接口</a><a href="../properties/index.html">属性</a></nav><nav class="chapter-switcher" aria-label="章节导航"><a href="../libraries-and-apis/index.html">← 库与 API</a><a href="../index.html" class="course-home">全部章节</a><a href="../collection-pipelines/index.html">集合式数据处理 →</a></nav></header><article class="translated-article"><section class="source-document" id="source-project-structure"><h2>Kotlin Multiplatform 项目结构基础</h2>
+<p id="project-structure--3x0gdx_2" class="source-paragraph" data-source-paragraph="1">借助 Kotlin Multiplatform，您可以在不同平台之间共享代码。本文将介绍共享代码的限制条件、如何区分代码中的共享部分和平台特定部分，以及如何指定该共享代码适用的平台。</p>
+<p id="project-structure--3x0gdx_3" class="source-paragraph" data-source-paragraph="2">您还将学习 Kotlin Multiplatform 项目配置的核心概念，例如 共享代码、目标、平台特定代码和 中间源码集，以及测试集成。这将有助于您今后配置多平台项目。</p>
+<p id="project-structure--3x0gdx_4" class="source-paragraph" data-source-paragraph="3">本文介绍的模型与 Kotlin 实际使用的模型相比有所简化。不过，对于大多数情况而言，这个基本模型已经足够。</p>
+<section class="chapter"><h3 id="project-structure-common-code" data-toc="common-code">共享代码</h3>
+<p id="project-structure--3x0gdx_10" class="source-paragraph" data-source-paragraph="4">共享代码是指在不同平台之间共享的 Kotlin 代码。</p>
+<p id="project-structure--3x0gdx_11" class="source-paragraph" data-source-paragraph="5">考虑一个简单的“Hello, World”示例：</p>
+<pre class="source-code"><code class="language-kotlin">
+fun greeting() {
+    println("Hello, Kotlin Multiplatform!")
+}</code></pre>
+<p id="project-structure--3x0gdx_13" class="source-paragraph" data-source-paragraph="6">跨平台共用的 Kotlin 代码通常位于 <code class="code" id="project-structure--3x0gdx_23">commonMain</code> 目录中。代码文件的位置非常重要，因为它会影响该代码被编译的目标平台列表。</p>
+<p id="project-structure--3x0gdx_14" class="source-paragraph" data-source-paragraph="7">Kotlin 编译器以源代码作为输入，并生成一组特定于平台的二进制文件作为输出。在编译多平台项目时，它可以从同一份代码生成多个二进制文件。例如，编译器可以从同一个 Kotlin 文件生成 JVM <code class="code" id="project-structure--3x0gdx_24">.class</code> 文件和本机可执行文件：</p>
+<figure id="project-structure--3x0gdx_15"><img alt="通用代码" src="./assets/project-structure/common-code-diagram.svg" title="通用代码" width="700" height="263"></figure><p id="project-structure--3x0gdx_16" class="source-paragraph" data-source-paragraph="8">并非每一段 Kotlin 代码都能编译到所有平台。如果某段代码无法编译到其他平台，Kotlin 编译器会阻止你在共享代码中使用特定于该平台的<a href="../functions/index.html" class="concept-ref" data-concept="函数" title="前置概念：函数">函数</a>或<a href="../classes-and-interfaces/index.html" class="concept-ref" data-concept="类与接口" title="前置概念：类与接口">类</a>。</p>
+<p id="project-structure--3x0gdx_17" class="source-paragraph" data-source-paragraph="9">例如，你不能在共享代码中使用 <code class="code" id="project-structure--3x0gdx_25">java.io.File</code> 依赖项。它是 JDK 的一部分，而共享代码也会被编译为原生代码，在原生代码环境中无法使用 JDK 类：</p>
+<figure id="project-structure--3x0gdx_18"><img alt="未解析的 Java 引用" src="./assets/project-structure/unresolved-java-reference.png" title="未解析的 Java 引用" width="500" height="128"></figure><p id="project-structure--3x0gdx_19" class="source-paragraph" data-source-paragraph="10">在共享代码中，你可以使用 Kotlin 多平台库。这些库提供了一个通用的 API，该 API 在不同平台上可以有不同的实现。在这种情况下，特定于平台的 API 作为附加部分存在，若尝试在共享代码中使用此类 API，将会引发错误。</p>
+<p id="project-structure--3x0gdx_20" class="source-paragraph" data-source-paragraph="11">例如，<code class="code" id="project-structure--3x0gdx_26">kotlinx.coroutines</code> 是一个支持所有目标平台的 Kotlin 多平台库，但它还包含一个特定于平台的部分，用于将 <code class="code" id="project-structure--3x0gdx_27">kotlinx.coroutines</code> 并发原语转换为 JDK 并发原语，例如 <code class="code" id="project-structure--3x0gdx_28">fun CoroutinesDispatcher.asExecutor(): Executor</code>。API 的这一附加部分在 <code class="code" id="project-structure--3x0gdx_29">commonMain</code> 中不可用。</p>
+<p id="project-structure--3x0gdx_21" class="source-paragraph" data-source-paragraph="12">要了解可用的 Kotlin 多平台库，请参阅 <a href="https://klibs.io" id="project-structure--3x0gdx_30" data-external="true" rel="noopener noreferrer">klibs.io</a>。</p></section><section class="chapter"><h3 id="project-structure-targets" data-toc="targets">目标</h3>
+<p id="project-structure--3x0gdx_31" class="source-paragraph" data-source-paragraph="13">目标定义了 Kotlin 将共享代码编译到的平台。这些平台可以是 JVM、JS、Android、iOS 或 Linux 等。前面的示例将共享代码编译到了 JVM 和原生目标。</p>
+<p id="project-structure--3x0gdx_32" class="source-paragraph" data-source-paragraph="14">Kotlin 目标是一个用于描述编译目标的标识符。它定义了生成的二进制文件的格式、可用的语言结构以及允许的依赖项。</p>
+<aside class="source-note" data-type="note" data-title="" id="project-structure--3x0gdx_33"><p id="project-structure--3x0gdx_45" class="source-paragraph" data-source-paragraph="15">目标（Targets）也可称为平台（platforms）。请参阅完整的 <a href="https://kotlinlang.org/docs/multiplatform/multiplatform-dsl-reference.html#targets" id="project-structure--3x0gdx_46">支持的目标列表</a>。</p></aside><p id="project-structure--3x0gdx_34" class="source-paragraph" data-source-paragraph="16">你应首先声明一个目标，以指示 Kotlin 为该特定目标编译代码。在 Gradle 中，你可以在 <code class="code" id="project-structure--3x0gdx_48">kotlin {}</code> 代码块内使用预定义的 DSL 调用来声明目标：</p>
+<pre class="source-code"><code class="language-kotlin">
+kotlin {
+    jvm() // 声明一个 JVM 目标
+    iosArm64() // 声明一个对应于 64 位 iPhone 的目标
+}</code></pre>
+<p id="project-structure--3x0gdx_36" class="source-paragraph" data-source-paragraph="17">通过这种方式，每个多平台项目都会定义一组支持的目标。请参阅 <a href="https://kotlinlang.org/docs/multiplatform/multiplatform-hierarchy.html" id="project-structure--3x0gdx_49">分层项目结构</a> 部分，了解有关在构建脚本中声明目标的更多信息。</p>
+<p id="project-structure--3x0gdx_37" class="source-paragraph" data-source-paragraph="18">声明 <code class="code" id="project-structure--3x0gdx_50">jvm</code> 和 <code class="code" id="project-structure--3x0gdx_51">iosArm64</code> 目标后，<code class="code" id="project-structure--3x0gdx_52">commonMain</code> 中的共享代码将被编译为这些目标：</p>
+<figure id="project-structure--3x0gdx_38"><img alt="目标" src="./assets/project-structure/target-diagram.svg" title="目标" width="700" height="270"></figure><p id="project-structure--3x0gdx_39" class="source-paragraph" data-source-paragraph="19">要了解哪些代码将被编译为特定的目标，你可以将目标视为附加在 Kotlin 源文件上的标签。Kotlin 利用这些标签来确定如何编译你的代码、生成哪些二进制文件，以及该代码中允许使用哪些语言结构和依赖项。</p>
+<aside class="source-note" data-type="note" data-title="" id="project-structure--3x0gdx_40"><p id="project-structure--3x0gdx_53" class="source-paragraph" data-source-paragraph="20">如果你的项目只有一个目标（例如 JVM），你可以从共享代码中访问具有适当可见性的目标特定符号。但是，一旦添加了第二个目标，目标特定符号在共享代码中将不可用。在迁移和其他项目过渡阶段，请务必牢记这一限制。</p></aside><p id="project-structure--3x0gdx_41" class="source-paragraph" data-source-paragraph="21">如果你还想将 <code class="code" id="project-structure--3x0gdx_54">greeting.kt</code> 文件编译为 <code class="code" id="project-structure--3x0gdx_55">.js</code>，只需声明 JS 目标即可。此时，<code class="code" id="project-structure--3x0gdx_56">commonMain</code> 中的代码会获得一个额外的 <code class="code" id="project-structure--3x0gdx_57">js</code> 标签，该标签对应于 JS 目标，用于指示 Kotlin 生成 <code class="code" id="project-structure--3x0gdx_58">.js</code> 文件：</p>
+<figure id="project-structure--3x0gdx_42"><img alt="目标标签" src="./assets/project-structure/target-labels-diagram.svg" title="目标标签" width="700" height="291"></figure><p id="project-structure--3x0gdx_43" class="source-paragraph" data-source-paragraph="22">这就是 Kotlin 编译器处理共享代码的方式，这些代码会被编译为所有已声明的目标。请参阅 <a href="#project-structure-source-sets" id="project-structure--3x0gdx_59">源码集</a> 以了解如何编写特定于平台的代码。</p></section><section class="chapter"><h3 id="project-structure-source-sets" data-toc="source-sets">源码集</h3>
+<p id="project-structure--3x0gdx_60" class="source-paragraph" data-source-paragraph="23">Kotlin 源码集是一组具有独立目标、依赖关系和编译器选项的源文件集合。这是在多平台项目中共享代码的主要方式。</p>
+<p id="project-structure--3x0gdx_61" class="source-paragraph" data-source-paragraph="24">多平台项目中的每个源码集：</p>
+<ul class="list _bullet" id="project-structure--3x0gdx_62">
+<li class="list__item" id="project-structure--3x0gdx_73"><p id="project-structure--3x0gdx_77" class="source-paragraph" data-source-paragraph="25">在给定项目中具有唯一的名称。</p></li>
+<li class="list__item" id="project-structure--3x0gdx_74"><p id="project-structure--3x0gdx_78" class="source-paragraph" data-source-paragraph="26">包含一组源文件和资源，通常存储在与源码集同名的目录中。</p></li>
+<li class="list__item" id="project-structure--3x0gdx_75"><p id="project-structure--3x0gdx_79" class="source-paragraph" data-source-paragraph="27">指定本源码集中的代码将编译成的目标集。这些目标会影响本源码集中可用的语言结构和依赖项。</p></li>
+<li class="list__item" id="project-structure--3x0gdx_76"><p id="project-structure--3x0gdx_80" class="source-paragraph" data-source-paragraph="28">定义其自身的依赖项和编译器选项。</p></li>
+</ul>
+<p id="project-structure--3x0gdx_63" class="source-paragraph" data-source-paragraph="29">Kotlin 提供了一系列预定义的源码集。其中之一是 <code class="code" id="project-structure--3x0gdx_81">commonMain</code>，它存在于所有多平台项目中，并编译为所有声明的目标。</p>
+<p id="project-structure--3x0gdx_64" class="source-paragraph" data-source-paragraph="30">在 Kotlin 多平台项目中，您将源码集视为 <code class="code" id="project-structure--3x0gdx_82">src</code> 内的目录进行操作。例如，一个包含 <code class="code" id="project-structure--3x0gdx_83">commonMain</code>、<code class="code" id="project-structure--3x0gdx_84">iosMain</code> 和 <code class="code" id="project-structure--3x0gdx_85">jvmMain</code> 源码集的项目具有以下结构：</p>
+<figure id="project-structure--3x0gdx_65"><img alt="共享资源" src="./assets/project-structure/src-directory-diagram.png" title="共享资源" width="350" height="234"></figure><p id="project-structure--3x0gdx_66" class="source-paragraph" data-source-paragraph="31">在 Gradle 脚本中，您可以在 <code class="code" id="project-structure--3x0gdx_86">kotlin.sourceSets {}</code> 块内通过名称访问源码集：</p>
+<pre class="source-code"><code class="language-kotlin">
+kotlin {
+    // 目标声明：
+    // …
 
+    // 源码集声明：
     sourceSets {
-        commonMain.dependencies {
-            implementation(libs.kotlinx.coroutines.core)
-        }
-        androidMain.dependencies {
-            implementation(libs.androidx.lifecycle.runtime)
-        }
-        commonTest.dependencies {
-            implementation(kotlin("test"))
+        commonMain {
+            // 配置 commonMain 源码集
         }
     }
 }</code></pre>
-      <p>这段配置可以按三个问题阅读：</p>
-      <ol><li><strong>编译到哪里？</strong> Android、iPhone 真机和 iOS 模拟器。</li><li><strong>什么代码共享？</strong> <code>commonMain</code> 会编译到所有已声明目标。</li><li><strong>能力从哪里来？</strong> 协程是跨平台依赖；Android 生命周期库只属于 <code>androidMain</code>。</li></ol>
-      <aside class="boundary-note"><strong>关键方向</strong><p>平台源码集可以使用 <code>commonMain</code> 的声明；<code>commonMain</code> 不能反向使用平台源码集的声明。这个单向关系是理解 KMP 边界的起点。</p></aside>
-      <h2>3. 目录位置就是能力范围</h2>
-      <p><code>commonMain</code> 中的代码必须能在全部目标上成立，因此不能直接使用 <code>java.io.File</code>、Android Context 或 Apple Foundation 等单平台 API。平台能力应留在对应源码集，再通过接口或 <code>expect</code>/<code>actual</code> 接到共享代码。</p>
-      <p>中间源码集（例如 <code>iosMain</code>、<code>appleMain</code>）用于“只在一组平台之间共享”。先理解默认层级，不必一开始手工搭复杂的源码集树。</p>
-      <h2>4. 不要把 Gradle 当作依赖清单</h2>
-      <p>构建脚本同时表达架构：哪些模块允许互相引用、哪些能力可以跨平台、测试会在哪些目标运行。遇到某个符号“明明存在却引用不到”，先检查模块和源码集可见性，再怀疑 import。</p>
-      <aside class="boundary-note warning"><strong>容易误用</strong><ul><li>看到新版本就盲目升级插件；Kotlin、Gradle、AGP 和 IDE 存在兼容关系。</li><li>把平台库加到 <code>commonMain</code>，然后试图用条件分支绕过编译限制。</li><li>为了“整洁”过早自定义源码集层级，增加理解和维护成本。</li></ul></aside>
-      <section class="project-lab">
-        <span class="note-kind">下周项目对照</span>
-        <h2>不要另写玩具代码，直接在项目里取证</h2>
-        <p><strong>先搜索：</strong><code>settings.gradle.kts</code>、<code>build.gradle.kts</code>、<code>sourceSets</code>、<code>commonMain</code>、<code>implementation</code></p>
-        <ol><li>选一个真实文件，用一句话写出它在业务流程中的职责。</li><li>圈出本章概念的一个真实用法，写清输入、输出与所有者。</li><li>沿调用方向再追一层，确认它的生命周期或依赖边界。</li><li>找一条对应测试；如果没有，写下最值得补的可观察行为。</li></ol>
-      </section>
-    </article>
-    <section class="recall" aria-labelledby="recall-title">
-      <span class="note-kind">读完自测</span>
-      <h2 id="recall-title">合上正文，回答这三个问题</h2>
-      <ol><li>本章最重要的边界是什么？</li><li>项目里哪个类型或文件最能体现这个边界？</li><li>如果把这个边界拿掉，最可能出现什么错误？</li></ol>
-    </section>
-    <nav class="chapter-switcher" aria-label="章节导航"><a href="../libraries-and-apis/index.html">← 库与 API</a><a class="course-home" href="../index.html">全部章节</a><a href="../collection-pipelines/index.html">集合式数据处理 →</a></nav>
-    <footer class="license-note"><p>本章是项目导向的结构化精读，不是官方文档的逐段完整翻译。主要依据：<a href="https://kotlinlang.org/docs/multiplatform/multiplatform-discover-project.html">KMP 项目结构基础</a>、<a href="https://kotlinlang.org/docs/multiplatform/multiplatform-add-dependencies.html">添加 KMP 依赖</a>。原始内容由 JetBrains 与 Kotlin 贡献者维护，采用 <a href="https://github.com/JetBrains/kotlin-web-site/blob/master/LICENSE">Apache License 2.0</a>；版本差异以官方原文为准。</p></footer>
-  </main>
+<p id="project-structure--3x0gdx_68" class="source-paragraph" data-source-paragraph="32">除 <code class="code" id="project-structure--3x0gdx_87">commonMain</code> 之外，其他源码集可以是特定于某个平台或中间源码集。</p>
+<section class="chapter"><h4 id="project-structure-platform-specific-source-sets" data-toc="platform-specific-source-sets">平台专用源码集</h4>
+<p id="project-structure--3x0gdx_88" class="source-paragraph" data-source-paragraph="33">虽然仅使用共享代码很方便，但这并非总是可行。<code class="code" id="project-structure--3x0gdx_93">commonMain</code> 中的代码会编译为所有已声明的目标，且 Kotlin 不允许你在其中使用任何平台特定的 API。</p>
+<p id="project-structure--3x0gdx_89" class="source-paragraph" data-source-paragraph="34">在包含原生和 JS 目标的多平台项目中，<code class="code" id="project-structure--3x0gdx_94">commonMain</code> 中的以下代码无法编译：</p>
+<pre class="source-code"><code class="language-kotlin">
+// commonMain/kotlin/common.kt
+// 在通用代码中无法编译
+fun greeting() {
+    java.io.File("greeting.txt").writeText("Hello, Multiplatform!")
+}</code></pre>
+<p id="project-structure--3x0gdx_91" class="source-paragraph" data-source-paragraph="35">作为解决方案，Kotlin 会创建平台专用源码集，也称为平台源码集。每个目标都有一个对应的平台源码集，该源码集仅针对该目标进行编译。例如，<code class="code" id="project-structure--3x0gdx_95">jvm</code> 目标有一个对应的 <code class="code" id="project-structure--3x0gdx_96">jvmMain</code> 源码集，该源码集仅编译为 JVM 格式。Kotlin 允许在这些源码集中使用平台专用的依赖项，例如 <code class="code" id="project-structure--3x0gdx_97">jvmMain</code> 中的 JDK：</p>
+<pre class="source-code"><code class="language-kotlin">
+// jvmMain/kotlin/jvm.kt
+// 你可以在 `jvmMain` 源代码集中使用 Java 依赖项
+fun jvmGreeting() {
+    java.io.File("greeting.txt").writeText("Hello, Multiplatform!")
+}</code></pre></section><section class="chapter"><h4 id="project-structure-compilation-to-a-specific-target" data-toc="compilation-to-a-specific-target">编译到特定目标</h4>
+<p id="project-structure--3x0gdx_98" class="source-paragraph" data-source-paragraph="36">针对特定目标的编译支持多个源码集。当 Kotlin 将多平台项目编译为特定目标时，它会收集所有标记为该目标的源码集，并据此生成二进制文件。</p>
+<p id="project-structure--3x0gdx_99" class="source-paragraph" data-source-paragraph="37">考虑一个包含 <code class="code" id="project-structure--3x0gdx_106">jvm</code>、<code class="code" id="project-structure--3x0gdx_107">iosArm64</code> 和 <code class="code" id="project-structure--3x0gdx_108">js</code> 目标的示例。Kotlin 会为共享代码创建 <code class="code" id="project-structure--3x0gdx_109">commonMain</code> 源码集，并为特定目标创建相应的 <code class="code" id="project-structure--3x0gdx_110">jvmMain</code>、<code class="code" id="project-structure--3x0gdx_111">iosArm64Main</code> 和 <code class="code" id="project-structure--3x0gdx_112">jsMain</code> 源码集：</p>
+<figure id="project-structure--3x0gdx_100"><img alt="编译到特定目标" src="./assets/project-structure/specific-target-diagram.svg" title="编译到特定目标" width="700" height="289"></figure><p id="project-structure--3x0gdx_101" class="source-paragraph" data-source-paragraph="38">在编译为 JVM 时，Kotlin 会选择所有标记为“JVM”的源码集，即 <code class="code" id="project-structure--3x0gdx_113">jvmMain</code> 和 <code class="code" id="project-structure--3x0gdx_114">commonMain</code>。然后将它们合并编译为 JVM 类文件：</p>
+<figure id="project-structure--3x0gdx_102"><img alt="编译为 JVM" src="./assets/project-structure/compilation-jvm-diagram.svg" title="编译为 JVM" width="700" height="352"></figure><p id="project-structure--3x0gdx_103" class="source-paragraph" data-source-paragraph="39">由于 Kotlin 将 <code class="code" id="project-structure--3x0gdx_115">commonMain</code> 和 <code class="code" id="project-structure--3x0gdx_116">jvmMain</code> 合并编译，生成的二进制文件中包含来自 <code class="code" id="project-structure--3x0gdx_117">commonMain</code> 和 <code class="code" id="project-structure--3x0gdx_118">jvmMain</code> 的声明。</p>
+<p id="project-structure--3x0gdx_104" class="source-paragraph" data-source-paragraph="40">在处理多平台项目时，请记住：</p>
+<ul class="list _bullet" id="project-structure--3x0gdx_105">
+<li class="list__item" id="project-structure--3x0gdx_119"><p id="project-structure--3x0gdx_123" class="source-paragraph" data-source-paragraph="41">若希望 Kotlin 将代码编译为特定平台，请声明相应的目标。</p></li>
+<li class="list__item" id="project-structure--3x0gdx_120">
+<p id="project-structure--3x0gdx_124" class="source-paragraph" data-source-paragraph="42">要选择用于存储代码的目录或源文件，首先需确定希望在哪些目标之间共享该代码：</p>
+<ul class="list _bullet" id="project-structure--3x0gdx_125">
+<li class="list__item" id="project-structure--3x0gdx_126"><p id="project-structure--3x0gdx_128" class="source-paragraph" data-source-paragraph="43">若代码在所有目标之间共享，则应在 <code class="code" id="project-structure--3x0gdx_129">commonMain</code> 中声明。</p></li>
+<li class="list__item" id="project-structure--3x0gdx_127"><p id="project-structure--3x0gdx_130" class="source-paragraph" data-source-paragraph="44">如果代码仅用于一个目标，则应将其定义在该目标的 平台专用源码集 中（例如，JVM 的 <code class="code" id="project-structure--3x0gdx_131">jvmMain</code>）。</p></li>
+</ul>
+</li>
+<li class="list__item" id="project-structure--3x0gdx_121"><p id="project-structure--3x0gdx_132" class="source-paragraph" data-source-paragraph="45">在平台专用源码集中编写的代码可以访问通用源码集中的声明。例如，<code class="code" id="project-structure--3x0gdx_133">jvmMain</code> 中的代码可以使用 <code class="code" id="project-structure--3x0gdx_134">commonMain</code> 中的代码。但是，反之则不成立：<code class="code" id="project-structure--3x0gdx_135">commonMain</code> 无法使用 <code class="code" id="project-structure--3x0gdx_136">jvmMain</code> 中的代码。</p></li>
+<li class="list__item" id="project-structure--3x0gdx_122"><p id="project-structure--3x0gdx_137" class="source-paragraph" data-source-paragraph="46">在平台专用源码集中编写的代码可以使用相应的平台依赖项。例如，<code class="code" id="project-structure--3x0gdx_138">jvmMain</code> 中的代码可以使用仅限 Java 的库，如 <a href="https://github.com/google/guava" id="project-structure--3x0gdx_139" data-external="true" rel="noopener noreferrer">Guava</a> 或 <a href="https://spring.io/" id="project-structure--3x0gdx_140" data-external="true" rel="noopener noreferrer">Spring</a>。</p></li>
+</ul></section><section class="chapter"><h4 id="project-structure-intermediate-source-sets" data-toc="intermediate-source-sets">中间源码集</h4>
+<p id="project-structure--3x0gdx_141" class="source-paragraph" data-source-paragraph="47">简单的多平台项目通常仅包含通用代码和平台专用代码。<code class="code" id="project-structure--3x0gdx_159">commonMain</code> 源码集代表所有声明的目标之间共享的代码。平台专用源码集（如 <code class="code" id="project-structure--3x0gdx_160">jvmMain</code>）则代表仅编译到相应目标的平台专用代码。</p>
+<p id="project-structure--3x0gdx_142" class="source-paragraph" data-source-paragraph="48">在实际应用中，通常需要更细粒度的代码共享。</p>
+<p id="project-structure--3x0gdx_143" class="source-paragraph" data-source-paragraph="49">假设你需要支持所有现代 Apple 设备和 Android 设备：</p>
+<pre class="source-code"><code class="language-kotlin">
+kotlin {
+    android()
+    iosArm64()   // 64 位 iPhone 设备
+    macosArm64() // 基于 Apple Silicon 的最新款 Mac
+    watchosArm64() // 最新款 64 位 Apple Watch 设备
+    tvosArm64()  // 最新款 Apple TV 设备
+}</code></pre>
+<p id="project-structure--3x0gdx_145" class="source-paragraph" data-source-paragraph="50">并且你需要一个源码集来添加一个函数，该函数为所有 Apple 设备生成一个 UUID：</p>
+<pre class="source-code"><code class="language-kotlin">
+import platform.Foundation.NSUUID
+
+fun randomUuidString(): String {
+    // 您想调用苹果专有的 API
+    return NSUUID().UUIDString()
+}</code></pre>
+<p id="project-structure--3x0gdx_147" class="source-paragraph" data-source-paragraph="51">你无法将此函数添加到 <code class="code" id="project-structure--3x0gdx_161">commonMain</code> 中。<code class="code" id="project-structure--3x0gdx_162">commonMain</code> 会被编译到所有声明的目标中，包括 Android，但 <code class="code" id="project-structure--3x0gdx_163">platform.Foundation.NSUUID</code> 是 Apple 专有的 API，在 Android 上不可用。如果你尝试在 <code class="code" id="project-structure--3x0gdx_165">commonMain</code> 中引用 <code class="code" id="project-structure--3x0gdx_164">NSUUID</code>，Kotlin 会报错。</p>
+<p id="project-structure--3x0gdx_148" class="source-paragraph" data-source-paragraph="52">你可以将这段代码复制并粘贴到每个 Apple 专用的源码集：<code class="code" id="project-structure--3x0gdx_166">iosArm64Main</code>、<code class="code" id="project-structure--3x0gdx_167">macosArm64Main</code>、<code class="code" id="project-structure--3x0gdx_168">watchosArm64Main</code> 和 <code class="code" id="project-structure--3x0gdx_169">tvosArm64Main</code> 中。但不建议采用这种方法，因为此类代码复制容易导致错误。</p>
+<p id="project-structure--3x0gdx_149" class="source-paragraph" data-source-paragraph="53">要解决这个问题，可以使用中间源码集。中间源码集是一种 Kotlin 源码集，它会编译成项目中部分（但并非全部）的目标。中间源码集有时也被称为分层源码集，或简称为分层结构。</p>
+<p id="project-structure--3x0gdx_150" class="source-paragraph" data-source-paragraph="54">Kotlin 默认会生成一些中间源码集。在此特定情况下，生成的项目结构将如下所示：</p>
+<figure id="project-structure--3x0gdx_151"><img alt="中间源码集" src="./assets/project-structure/intermediate-source-sets-diagram.svg" title="中间源码集" width="700" height="394"></figure><p id="project-structure--3x0gdx_152" class="source-paragraph" data-source-paragraph="55">此处底部的彩色代码块是 平台专用源码集。为清晰起见，已省略目标标签。</p>
+<p id="project-structure--3x0gdx_153" class="source-paragraph" data-source-paragraph="56"><code class="code" id="project-structure--3x0gdx_171">appleMain</code> 代码块是由 Kotlin 生成的 中间源码集，用于共享编译为 Apple 专用目标的代码。<code class="code" id="project-structure--3x0gdx_172">appleMain</code> 源码集仅编译为 Apple 目标。因此，Kotlin 允许在 <code class="code" id="project-structure--3x0gdx_173">appleMain</code> 中使用 Apple 专有 API，并且您可以在此处添加 <code class="code" id="project-structure--3x0gdx_174">randomUUID()</code> 函数。</p>
+<aside class="source-note" data-type="tip" data-title="" id="project-structure--3x0gdx_154"><p id="project-structure--3x0gdx_175" class="source-paragraph" data-source-paragraph="57">请参阅 <a href="https://kotlinlang.org/docs/multiplatform/multiplatform-hierarchy.html" id="project-structure--3x0gdx_176">分层项目结构</a> 以查找 Kotlin 默认创建和配置的所有 中间源码集，并了解如果 Kotlin 默认未提供您所需的中间源码集时应如何处理。</p></aside><p id="project-structure--3x0gdx_155" class="source-paragraph" data-source-paragraph="58">在编译为特定目标时，Kotlin 会获取所有标记为此目标的源码集，包括中间源码集。因此，在编译为 <code class="code" id="project-structure--3x0gdx_180">iosArm64</code> 平台目标时，<code class="code" id="project-structure--3x0gdx_177">commonMain</code>、<code class="code" id="project-structure--3x0gdx_178">appleMain</code> 和 <code class="code" id="project-structure--3x0gdx_179">iosArm64Main</code> 源码集中编写的全部代码都会被合并：</p>
+<figure id="project-structure--3x0gdx_156"><img alt="本机可执行文件" src="./assets/project-structure/multiplatform-executables-diagram.svg" title="本机可执行文件" width="700" height="382"></figure><aside class="source-note" data-type="tip" data-title="" id="project-structure--3x0gdx_157"><p id="project-structure--3x0gdx_181" class="source-paragraph" data-source-paragraph="59">部分源码集没有源代码也是可以的。例如，在 iOS 开发中，通常无需提供仅适用于 iOS 设备、但不适用于 iOS 模拟器的代码。因此，<code class="code" id="project-structure--3x0gdx_182">iosArm64Main</code> 很少被使用。</p></aside><section class="chapter"><details class="source-details"><summary>Apple 设备和模拟器目标</summary><p id="project-structure--3x0gdx_183" class="source-paragraph" data-source-paragraph="60">使用 Kotlin Multiplatform 开发 iOS 移动应用时，通常会使用 <code class="code" id="project-structure--3x0gdx_188">iosMain</code> 源码集。虽然你可能会认为这是针对 <code class="code" id="project-structure--3x0gdx_189">ios</code> 目标的 <code class="code" id="project-structure--3x0gdx_190">ios</code> 源码集，但实际上并不存在单一的 <code class="code" id="project-structure--3x0gdx_190-2">ios</code> 目标。大多数移动项目至少需要两个目标：</p>
+<ul class="list _bullet" id="project-structure--3x0gdx_184">
+<li class="list__item" id="project-structure--3x0gdx_191"><p id="project-structure--3x0gdx_193" class="source-paragraph" data-source-paragraph="61">设备目标用于生成可在 iOS 设备上执行的二进制文件。目前 iOS 只有一个设备目标：<code class="code" id="project-structure--3x0gdx_195">iosArm64</code>。</p></li>
+<li class="list__item" id="project-structure--3x0gdx_192"><p id="project-structure--3x0gdx_196" class="source-paragraph" data-source-paragraph="62">模拟器目标用于生成在您的机器上启动的 iOS 模拟器所用的二进制文件。如果您拥有 Apple silicon 架构的 Mac 电脑，请选择 <code class="code" id="project-structure--3x0gdx_198">iosSimulatorArm64</code> 作为模拟器目标。</p></li>
+</ul>
+<p id="project-structure--3x0gdx_185" class="source-paragraph" data-source-paragraph="63">如果你只声明了 <code class="code" id="project-structure--3x0gdx_199">iosArm64</code> 设备目标，就无法在本地机器上运行和调试你的应用程序及测试。</p>
+<p id="project-structure--3x0gdx_186" class="source-paragraph" data-source-paragraph="64">像 <code class="code" id="project-structure--3x0gdx_200">iosArm64Main</code> 和 <code class="code" id="project-structure--3x0gdx_201">iosSimulatorArm64Main</code> 这样的平台专用源码集通常为空，因为 iOS 设备和模拟器的 Kotlin 代码通常是相同的。您可以仅使用 <code class="code" id="project-structure--3x0gdx_202">iosMain</code> 中间源码集在所有平台之间共享代码。</p>
+<p id="project-structure--3x0gdx_187" class="source-paragraph" data-source-paragraph="65">这同样适用于其他非 Mac 的 Apple 目标。例如，如果你有针对 Apple TV 的 <code class="code" id="project-structure--3x0gdx_203">tvosArm64</code> 设备目标，以及针对 Apple 硅设备上 Apple TV 模拟器的 <code class="code" id="project-structure--3x0gdx_204">tvosSimulatorArm64</code> 模拟器目标，你可以为所有这些目标使用 <code class="code" id="project-structure--3x0gdx_205">tvosMain</code> 中间源码集。</p></details></section></section></section><section class="chapter"><h3 id="project-structure-integration-with-tests" data-toc="integration-with-tests">与测试的集成</h3>
+<p id="project-structure--3x0gdx_206" class="source-paragraph" data-source-paragraph="66">实际项目中，除了主生产代码外，还需要测试代码。这就是为什么默认创建的所有源码集都带有 <code class="code" id="project-structure--3x0gdx_211">Main</code> 和 <code class="code" id="project-structure--3x0gdx_212">Test</code> 后缀。<code class="code" id="project-structure--3x0gdx_213">Main</code> 包含生产代码，而 <code class="code" id="project-structure--3x0gdx_214">Test</code> 包含针对该代码的测试。它们之间的关联会自动建立，测试无需额外配置即可使用 <code class="code" id="project-structure--3x0gdx_215">Main</code> 代码提供的 API。</p>
+<p id="project-structure--3x0gdx_207" class="source-paragraph" data-source-paragraph="67"><code class="code" id="project-structure--3x0gdx_216">Test</code> 的对应项也是与 <code class="code" id="project-structure--3x0gdx_217">Main</code> 类似的源码集。例如，<code class="code" id="project-structure--3x0gdx_218">commonTest</code> 是 <code class="code" id="project-structure--3x0gdx_219">commonMain</code> 的对应项，它会编译为所有声明的目标，从而允许您编写通用测试。平台特定的测试源码集（如 <code class="code" id="project-structure--3x0gdx_220">jvmTest</code>）用于编写平台特定的测试，例如 JVM 特定的测试或需要使用 JVM API 的测试。</p>
+<p id="project-structure--3x0gdx_208" class="source-paragraph" data-source-paragraph="68">除了需要一个源码集来编写通用测试外，你还需要一个多平台测试框架。Kotlin 提供了一个默认的 <a href="https://kotlinlang.org/api/latest/kotlin.test/" id="project-structure--3x0gdx_221" data-external="true" rel="noopener noreferrer"><code class="code" id="project-structure--3x0gdx_225">kotlin.test</code></a> 库，其中包含 <code class="code" id="project-structure--3x0gdx_222">@kotlin.Test</code> 注解以及 <code class="code" id="project-structure--3x0gdx_223">assertEquals</code> 和 <code class="code" id="project-structure--3x0gdx_224">assertTrue</code> 等各种断言方法。</p>
+<p id="project-structure--3x0gdx_209" class="source-paragraph" data-source-paragraph="69">你可以像编写常规测试一样，在各个平台的源码集中编写针对该平台的测试。与主代码类似，你可以为每个源码集配置平台特定的依赖项，例如 JVM 平台使用 <code class="code" id="project-structure--3x0gdx_226">JUnit</code>，iOS 平台使用 <code class="code" id="project-structure--3x0gdx_227">XCTest</code>。要运行针对特定目标的测试，请使用 <code class="code" id="project-structure--3x0gdx_228">&lt;targetName&gt;Test</code> 任务。</p>
+<p id="project-structure--3x0gdx_210" class="source-paragraph" data-source-paragraph="70">在 <a href="../kmp-boundaries-and-testing/index.html#source-kmp-tests" id="project-structure--3x0gdx_229">测试多平台应用教程</a> 中了解如何创建和运行多平台测试。</p></section><section class="chapter"><h3 id="project-structure-what-s-next" data-toc="what-s-next">接下来该做什么？</h3>
+<ul class="list _bullet" id="project-structure--3x0gdx_230">
+<li class="list__item" id="project-structure--3x0gdx_231"><p id="project-structure--3x0gdx_234" class="source-paragraph" data-source-paragraph="71"><a href="https://kotlinlang.org/docs/multiplatform/multiplatform-hierarchy.html" id="project-structure--3x0gdx_235">了解有关在 Gradle 脚本中声明和使用预定义 源码集 的更多信息</a></p></li>
+<li class="list__item" id="project-structure--3x0gdx_232"><p id="project-structure--3x0gdx_236" class="source-paragraph" data-source-paragraph="72"><a href="https://kotlinlang.org/docs/multiplatform/multiplatform-advanced-project-structure.html" id="project-structure--3x0gdx_237">探索多平台项目结构的高级概念</a></p></li>
+<li class="list__item" id="project-structure--3x0gdx_233"><p id="project-structure--3x0gdx_238" class="source-paragraph" data-source-paragraph="73"><a href="https://kotlinlang.org/docs/multiplatform/multiplatform-configure-compilations.html" id="project-structure--3x0gdx_239">深入了解目标编译和创建自定义编译</a></p></li>
+</ul></section></section><section class="source-document" id="source-project-dependencies"><h2>添加 Kotlin Multiplatform 库依赖</h2>
+<p id="project-dependencies-rdno17_2" class="source-paragraph" data-source-paragraph="1">每个程序都需要一组库才能正常运行。Kotlin 多平台项目可以依赖适用于所有目标平台的多平台库、特定于某个平台的库以及其他多平台项目。</p>
+<p id="project-dependencies-rdno17_3" class="source-paragraph" data-source-paragraph="2">要添加对某个库的依赖，请更新项目中包含共享代码的目录下的 <code class="code" id="project-dependencies-rdno17_9">build.gradle(.kts)</code> 文件。在 <a href="https://kotlinlang.org/docs/multiplatform/multiplatform-dsl-reference.html#dependencies" id="project-dependencies-rdno17_12"><code class="code" id="project-dependencies-rdno17_13">dependencies {}</code></a> 代码块中设置所需 <a href="https://kotlinlang.org/docs/gradle-configure-project.html#dependency-types" id="project-dependencies-rdno17_10" data-external="true" rel="noopener noreferrer">类型</a>（例如 <code class="code" id="project-dependencies-rdno17_11">implementation</code>）的依赖：</p>
+<div class="source-tabs" id="project-dependencies-rdno17_4" data-group="build-script" data-anchors="[rdno17_14,rdno17_15]">
+<div class="tabs__content" data-gtm="tab" id="project-dependencies-rdno17_14" data-sync-tabs="kotlin" data-title="Kotlin">
+<h4 class="source-tab-title">Kotlin</h4>
+<pre class="source-code"><code class="language-kotlin">
+kotlin {
+    //...
+    sourceSets {
+        commonMain.dependencies {
+            implementation("com.example:my-library:1.0") // 所有源码集共用的库
+        }
+    }
+}</code></pre>
+</div>
+<div class="tabs__content" data-gtm="tab" id="project-dependencies-rdno17_15" data-sync-tabs="groovy" data-title="Groovy">
+<h4 class="source-tab-title">Groovy</h4>
+<pre class="source-code"><code class="language-groovy">
+kotlin {
+    //...
+    sourceSets {
+        commonMain {
+            dependencies {
+                implementation 'com.example:my-library:1.0'
+            }
+        }
+    }
+}</code></pre>
+</div>
+</div>
+<section class="chapter"><h3 id="project-dependencies-dependency-on-a-kotlin-library" data-toc="dependency-on-a-kotlin-library">对 Kotlin 库的依赖</h3>
+<section class="chapter"><h4 id="project-dependencies-standard-library" data-toc="standard-library">标准库</h4>
+<p id="project-dependencies-rdno17_21" class="source-paragraph" data-source-paragraph="3">每个源码集中的标准库（<code class="code" id="project-dependencies-rdno17_24">stdlib</code>）依赖会自动添加。标准库的版本与 <code class="code" id="project-dependencies-rdno17_25">kotlin-multiplatform</code> 插件的版本相同。</p>
+<p id="project-dependencies-rdno17_22" class="source-paragraph" data-source-paragraph="4">对于平台专用源码集，将使用该库对应的特定平台变体，而其余情况则会添加一个通用的标准库。Kotlin Gradle 插件将根据您的 Gradle 构建脚本中的 <code class="code" id="project-dependencies-rdno17_26">compilerOptions.jvmTarget</code> <a href="https://kotlinlang.org/docs/gradle-compiler-options.html" id="project-dependencies-rdno17_27" data-external="true" rel="noopener noreferrer">编译器选项</a> 选择合适的 JVM 标准库。</p>
+<p id="project-dependencies-rdno17_23" class="source-paragraph" data-source-paragraph="5">了解如何 <a href="https://kotlinlang.org/docs/gradle-configure-project.html#dependency-on-the-standard-library" id="project-dependencies-rdno17_28" data-external="true" rel="noopener noreferrer">更改默认行为</a>。</p></section><section class="chapter"><h4 id="project-dependencies-test-libraries" data-toc="test-libraries">测试库</h4>
+<p id="project-dependencies-rdno17_29" class="source-paragraph" data-source-paragraph="6">对于多平台测试，可使用 <a href="https://kotlinlang.org/api/latest/kotlin.test/" id="project-dependencies-rdno17_31" data-external="true" rel="noopener noreferrer"><code class="code" id="project-dependencies-rdno17_33">kotlin.test</code></a> API。创建多平台项目时，您可以在 <code class="code" id="project-dependencies-rdno17_32">commonTest</code> 中添加单个依赖项，将其添加到所有源码集中：</p>
+<div class="source-tabs" id="project-dependencies-rdno17_30" data-group="build-script" data-anchors="[rdno17_34,rdno17_35]">
+<div class="tabs__content" data-gtm="tab" id="project-dependencies-rdno17_34" data-sync-tabs="kotlin" data-title="Kotlin">
+<h4 class="source-tab-title">Kotlin</h4>
+<pre class="source-code"><code class="language-kotlin">
+kotlin {
+    //...
+    sourceSets {
+        commonTest.dependencies {
+            implementation(kotlin("test")) // 自动引入所有平台依赖项
+        }
+    }
+}</code></pre>
+</div>
+<div class="tabs__content" data-gtm="tab" id="project-dependencies-rdno17_35" data-sync-tabs="groovy" data-title="Groovy">
+<h4 class="source-tab-title">Groovy</h4>
+<pre class="source-code"><code class="language-groovy">
+kotlin {
+    //...
+    sourceSets {
+        commonTest {
+            dependencies {
+                implementation kotlin("test") // 自动引入所有平台依赖项
+            }
+        }
+    }
+}</code></pre>
+</div>
+</div></section><section class="chapter"><h4 id="project-dependencies-kotlinx-libraries" data-toc="kotlinx-libraries">kotlinx 库</h4>
+<p id="project-dependencies-rdno17_38" class="source-paragraph" data-source-paragraph="7">如果您使用多平台库且需要 <a href="#project-dependencies-library-shared-for-all-source-sets" id="project-dependencies-rdno17_42">依赖共享代码</a>，只需在共享源码集中设置一次依赖项。请使用库的基础工件名称，例如 <code class="code" id="project-dependencies-rdno17_43">kotlinx-coroutines-core</code>：</p>
+<div class="source-tabs" id="project-dependencies-rdno17_39" data-group="build-script" data-anchors="[rdno17_44,rdno17_45]">
+<div class="tabs__content" data-gtm="tab" id="project-dependencies-rdno17_44" data-sync-tabs="kotlin" data-title="Kotlin">
+<h4 class="source-tab-title">Kotlin</h4>
+<pre class="source-code"><code class="language-kotlin">
+kotlin {
+    //...
+    sourceSets {
+        commonMain.dependencies {
+            implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.11.0")
+        }
+    }
+}</code></pre>
+</div>
+<div class="tabs__content" data-gtm="tab" id="project-dependencies-rdno17_45" data-sync-tabs="groovy" data-title="Groovy">
+<h4 class="source-tab-title">Groovy</h4>
+<pre class="source-code"><code class="language-groovy">
+kotlin {
+    //...
+    sourceSets {
+        commonMain {
+            dependencies {
+                implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-core:1.11.0'
+            }
+        }
+    }
+}</code></pre>
+</div>
+</div>
+<p id="project-dependencies-rdno17_40" class="source-paragraph" data-source-paragraph="8">如果您需要用于 <a href="#project-dependencies-library-used-in-specific-source-sets" id="project-dependencies-rdno17_48">平台特定依赖</a> 的 kotlinx 库，仍可在相应平台的源码集中使用该库的基础工件名称：</p>
+<div class="source-tabs" id="project-dependencies-rdno17_41" data-group="build-script" data-anchors="[rdno17_49,rdno17_50]">
+<div class="tabs__content" data-gtm="tab" id="project-dependencies-rdno17_49" data-sync-tabs="kotlin" data-title="Kotlin">
+<h4 class="source-tab-title">Kotlin</h4>
+<pre class="source-code"><code class="language-kotlin">
+kotlin {
+    //...
+    sourceSets {
+        jvmMain.dependencies {
+            implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.11.0")
+        }
+    }
+}</code></pre>
+</div>
+<div class="tabs__content" data-gtm="tab" id="project-dependencies-rdno17_50" data-sync-tabs="groovy" data-title="Groovy">
+<h4 class="source-tab-title">Groovy</h4>
+<pre class="source-code"><code class="language-groovy">
+kotlin {
+    //...
+    sourceSets {
+        jvmMain {
+            dependencies {
+                implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-core:1.11.0'
+            }
+        }
+    }
+}</code></pre>
+</div>
+</div></section></section><section class="chapter"><h3 id="project-dependencies-dependency-on-kotlin-multiplatform-libraries" data-toc="dependency-on-kotlin-multiplatform-libraries">对 Kotlin 多平台库的依赖</h3>
+<p id="project-dependencies-rdno17_53" class="source-paragraph" data-source-paragraph="9">您可以添加对已采用 Kotlin 多平台技术的库的依赖，例如 <a href="https://github.com/cashapp/sqldelight" id="project-dependencies-rdno17_57" data-external="true" rel="noopener noreferrer">SQLDelight</a>。这些库的作者通常会提供将依赖项添加到您项目中的指南。</p>
+<aside class="source-note" data-type="tip" data-title="" id="project-dependencies-rdno17_54"><p id="project-dependencies-rdno17_58" class="source-paragraph" data-source-paragraph="10">在 <a href="https://klibs.io/" id="project-dependencies-rdno17_59" data-external="true" rel="noopener noreferrer">klibs.io</a> 上探索可用的 Kotlin 多平台库。</p></aside><section class="chapter"><h4 id="project-dependencies-library-shared-for-all-source-sets" data-toc="library-shared-for-all-source-sets">所有源码集共用的库</h4>
+<p id="project-dependencies-rdno17_60" class="source-paragraph" data-source-paragraph="11">若要使用来自所有源码集的库，只需将其添加到“common”源码集中即可。Kotlin Multiplatform Gradle 插件会自动将相应部分添加到其他任何源码集中。</p>
+<aside class="source-note" data-type="warning" data-title="" id="project-dependencies-rdno17_61"><p id="project-dependencies-rdno17_64" class="source-paragraph" data-source-paragraph="12">您不能在“common”源码集中设置对特定平台库的依赖。</p></aside><div class="source-tabs" id="project-dependencies-rdno17_62" data-group="build-script" data-anchors="[rdno17_65,rdno17_66]">
+<div class="tabs__content" data-gtm="tab" id="project-dependencies-rdno17_65" data-sync-tabs="kotlin" data-title="Kotlin">
+<h4 class="source-tab-title">Kotlin</h4>
+<pre class="source-code"><code class="language-kotlin">
+kotlin {
+    //...
+    sourceSets {
+        commonMain.dependencies {
+            implementation("io.ktor:ktor-client-core:3.5.2")
+        }
+        androidMain.dependencies {
+            // 依赖项
+        }
+    }
+}</code></pre>
+</div>
+<div class="tabs__content" data-gtm="tab" id="project-dependencies-rdno17_66" data-sync-tabs="groovy" data-title="Groovy">
+<h4 class="source-tab-title">Groovy</h4>
+<pre class="source-code"><code class="language-groovy">
+kotlin {
+    //...
+    sourceSets {
+        commonMain {
+            dependencies {
+                implementation 'io.ktor:ktor-client-core:3.5.2'
+            }
+        }
+        androidMain {
+            dependencies {
+                // 对 ktor-client 平台部分的依赖
+            }
+        }
+    }
+}</code></pre>
+</div>
+</div>
+<aside class="source-note" data-type="tip" data-title="" id="project-dependencies-rdno17_63"><p id="project-dependencies-rdno17_69" class="source-paragraph" data-source-paragraph="13">您还可以在顶级 <code class="code" id="project-dependencies-rdno17_70">dependencies {}</code> 代码块中配置通用库。请参阅 <a href="https://kotlinlang.org/docs/multiplatform/multiplatform-dsl-reference.html#configure-dependencies-at-the-top-level" id="project-dependencies-rdno17_71">在顶级配置依赖项</a>。</p></aside></section><section class="chapter"><h4 id="project-dependencies-library-used-in-specific-source-sets" data-toc="library-used-in-specific-source-sets">在特定源码集中使用的库</h4>
+<p id="project-dependencies-rdno17_72" class="source-paragraph" data-source-paragraph="14">若只想在特定源码集中使用某个多平台库，可将其仅添加到这些源码集中。这样，指定的库声明将仅在这些源码集中可用。</p>
+<aside class="source-note" data-type="note" data-title="" id="project-dependencies-rdno17_73"><p id="project-dependencies-rdno17_75" class="source-paragraph" data-source-paragraph="15">在此类情况下，请使用通用的库名称，而非特定于某个平台的名称。例如，如下面的示例中所示，应使用 <code class="code" id="project-dependencies-rdno17_76">native-driver</code>，而非 <code class="code" id="project-dependencies-rdno17_77">native-driver-iosx64</code>。请在库的文档中查找确切的名称。</p></aside><div class="source-tabs" id="project-dependencies-rdno17_74" data-group="build-script" data-anchors="[rdno17_78,rdno17_79]">
+<div class="tabs__content" data-gtm="tab" id="project-dependencies-rdno17_78" data-sync-tabs="kotlin" data-title="Kotlin">
+<h4 class="source-tab-title">Kotlin</h4>
+<pre class="source-code"><code class="language-kotlin">
+kotlin {
+    //...
+    sourceSets {
+        commonMain.dependencies {
+            // kotlinx.coroutines 将包含在所有源代码集中
+            implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.11.0")
+        }
+        androidMain.dependencies {
+
+        }
+        iosMain.dependencies {
+            // SQLDelight 仅包含在 iOS 源代码集中，但不会包含在 Android 或 common 源代码集中
+            implementation("com.squareup.sqldelight:native-driver:2.3.2")
+        }
+        wasmJsMain.dependencies {
+
+        }
+    }
+}</code></pre>
+</div>
+<div class="tabs__content" data-gtm="tab" id="project-dependencies-rdno17_79" data-sync-tabs="groovy" data-title="Groovy">
+<h4 class="source-tab-title">Groovy</h4>
+<pre class="source-code"><code class="language-groovy">
+kotlin {
+    //...
+    sourceSets {
+        commonMain {
+            dependencies {
+                // kotlinx.coroutines 将包含在所有源代码集中
+                implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-core:1.11.0'
+            }
+        }
+        androidMain {
+            dependencies {}
+        }
+        iosMain {
+            dependencies {
+                // SQLDelight 仅包含在 iOS 源代码集中，但不会包含在 Android 或 common 源代码集中
+                implementation 'com.squareup.sqldelight:native-driver:2.3.2'
+            }
+        }
+        wasmJsMain {
+            dependencies {}
+        }
+    }
+}</code></pre>
+</div>
+</div></section></section><section class="chapter"><h3 id="project-dependencies-dependency-on-another-multiplatform-project" data-toc="dependency-on-another-multiplatform-project">对另一个多平台项目的依赖</h3>
+<p id="project-dependencies-rdno17_82" class="source-paragraph" data-source-paragraph="16">您可以将一个多平台项目作为依赖项连接到另一个项目。要实现这一点，只需将项目依赖项添加到需要它的源码集即可。如果您希望在所有源码集中使用该依赖项，请将其添加到公共源码集中。在这种情况下，其他源码集将自动获取相应的版本。</p>
+<div class="source-tabs" id="project-dependencies-rdno17_83" data-group="build-script" data-anchors="[rdno17_84,rdno17_85]">
+<div class="tabs__content" data-gtm="tab" id="project-dependencies-rdno17_84" data-sync-tabs="kotlin" data-title="Kotlin">
+<h4 class="source-tab-title">Kotlin</h4>
+<pre class="source-code"><code class="language-kotlin">
+kotlin {
+    //...
+    sourceSets {
+        commonMain.dependencies {
+            implementation(project(":some-other-multiplatform-module"))
+        }
+        androidMain.dependencies {
+            // 属于：some-other-multiplatform-module 的平台部分将被自动添加
+        }
+    }
+}</code></pre>
+</div>
+<div class="tabs__content" data-gtm="tab" id="project-dependencies-rdno17_85" data-sync-tabs="groovy" data-title="Groovy">
+<h4 class="source-tab-title">Groovy</h4>
+<pre class="source-code"><code class="language-groovy">
+kotlin {
+    //...
+    sourceSets {
+        commonMain {
+            dependencies {
+                implementation project(':some-other-multiplatform-module')
+            }
+        }
+        androidMain {
+            dependencies {
+                // 属于：some-other-multiplatform-module 的平台部分将被自动添加
+            }
+        }
+    }
+}</code></pre>
+</div>
+</div></section><section class="chapter"><h3 id="project-dependencies-what-s-next" data-toc="what-s-next">接下来该做什么？</h3>
+<p id="project-dependencies-rdno17_88" class="source-paragraph" data-source-paragraph="17">请查阅有关在多平台项目中添加依赖项的其他资源，并进一步了解：</p>
+<ul class="list _bullet" id="project-dependencies-rdno17_89">
+<li class="list__item" id="project-dependencies-rdno17_90"><p id="project-dependencies-rdno17_93" class="source-paragraph" data-source-paragraph="18"><a href="https://kotlinlang.org/docs/multiplatform/multiplatform-android-dependencies.html" id="project-dependencies-rdno17_94">添加 Android 依赖项</a></p></li>
+<li class="list__item" id="project-dependencies-rdno17_91"><p id="project-dependencies-rdno17_95" class="source-paragraph" data-source-paragraph="19"><a href="https://kotlinlang.org/docs/multiplatform/multiplatform-ios-dependencies.html" id="project-dependencies-rdno17_96">添加 iOS 依赖项</a></p></li>
+<li class="list__item" id="project-dependencies-rdno17_92"><p id="project-dependencies-rdno17_97" class="source-paragraph" data-source-paragraph="20"><a href="https://kotlinlang.org/docs/multiplatform/compose-multiplatform-modify-project.html#add-a-new-dependency" id="project-dependencies-rdno17_98">在面向 iOS、Android、桌面和 Web 的 Compose 多平台项目中添加依赖项</a></p></li>
+</ul></section></section></article><nav class="chapter-switcher" aria-label="章节导航"><a href="../libraries-and-apis/index.html">← 库与 API</a><a href="../index.html" class="course-home">全部章节</a><a href="../collection-pipelines/index.html">集合式数据处理 →</a></nav><footer class="license-note"><p>内容依据 Kotlin 官方资料整理。原始资料由 JetBrains 与 Kotlin 贡献者维护，并采用 <a href="https://github.com/JetBrains/kotlin-web-site/blob/master/LICENSE">Apache License 2.0</a>；遇到版本差异时，以官方文档为准。</p></footer></main>
 </body>
 </html>

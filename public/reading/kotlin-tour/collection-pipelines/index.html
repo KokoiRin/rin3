@@ -1,67 +1,363 @@
 <!doctype html>
 <html lang="zh-CN">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="把 map、filter、associate、groupBy 和 fold 看成数据形状的连续变换，而不是一串炫技调用。">
-  <title>集合式数据处理｜Kotlin 项目实战篇｜RIN III</title>
-  <link rel="stylesheet" href="../../reader.css">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="系统学习集合操作、集合转换与 Sequence，比较不同数据处理方式的执行过程与适用边界。">
+<title>集合式数据处理｜Kotlin 项目实战篇｜RIN III</title>
+<link rel="stylesheet" href="../../reader.css">
 </head>
 <body>
-  <nav class="site-nav" aria-label="站点导航"><a href="../index.html">← Kotlin 中文学习版</a><a href="../../../computer-science/kotlin-tour/">RIN III 学习记录</a></nav>
-  <main class="reader project-reader">
-    <header class="chapter-header">
-      <span class="chapter-kicker">项目实战篇 · 第 2 章</span>
-      <h1>集合式数据处理</h1>
-      <p class="lead">把 map、filter、associate、groupBy 和 fold 看成数据形状的连续变换，而不是一串炫技调用。</p>
-      <div class="title-rule"></div>
-      <aside class="compression-note"><strong>阅读约定</strong><p>本章是基于 Kotlin 官方资料整理翻译的结构化精读，不是逐段完整翻译。保留项目阅读所需的核心概念、关键边界和代表性代码，暂缓与当前学习目标关系较弱的高级细节。</p></aside>
-      <aside class="learning-note"><strong>本章主线</strong><p>读集合链时，每一步都问“输入是什么、输出变成什么、原集合有没有被修改”，长链就会重新变得可读。</p></aside>
-      <nav class="chapter-switcher" aria-label="章节导航"><a href="../project-and-gradle/index.html">← Kotlin 项目与 Gradle</a><a class="course-home" href="../index.html">全部章节</a><a href="../generics-and-variance/index.html">泛型与型变 →</a></nav>
-    </header>
-    <article class="translated-article">
-      <h2>1. 先看数据形状，不要先看函数名</h2>
-      <pre><code>val cardsByOwner: Map&lt;UserId, List&lt;Card&gt;&gt; = cards
-    .filter { it.isVisible }
-    .sortedByDescending { it.updatedAt }
-    .groupBy { it.ownerId }</code></pre>
-      <p>这段代码的主线是：<code>List&lt;Card&gt;</code> → 过滤后仍是列表 → 排序后仍是列表 → 按 owner 分组后成为 <code>Map&lt;UserId, List&lt;Card&gt;&gt;</code>。只要写出中间类型，链条的意图就清楚了。</p>
-      <div class="table-wrapper"><table><thead><tr><th>操作</th><th>问题</th><th>典型结果</th></tr></thead><tbody>
-      <tr><td><code>map</code></td><td>每个元素要变成什么？</td><td>元素类型可能改变，数量通常不变</td></tr>
-      <tr><td><code>filter</code></td><td>哪些元素留下？</td><td>类型不变，数量可能减少</td></tr>
-      <tr><td><code>associateBy</code></td><td>用什么作为唯一键？</td><td><code>Map&lt;K, V&gt;</code></td></tr>
-      <tr><td><code>groupBy</code></td><td>按什么把多个元素归组？</td><td><code>Map&lt;K, List&lt;V&gt;&gt;</code></td></tr>
-      <tr><td><code>fold</code></td><td>如何从初始值累计？</td><td>任意累积结果</td></tr>
-      </tbody></table></div>
-      <h2>2. 返回新集合，还是原地修改</h2>
-      <p>多数常用集合操作返回结果而不修改原集合。<code>filter()</code> 的结果如果既不保存也不继续传递，就会丢失。可变集合才有写操作；还要区分 <code>sorted()</code>（返回新列表）与 <code>sort()</code>（原地修改）。</p>
-      <pre><code>val source = mutableListOf(3, 1, 2)
-val copy = source.sorted() // source 仍是 3, 1, 2
-source.sort()              // source 变成 1, 2, 3</code></pre>
-      <h2>3. List 与 Sequence 的执行方式</h2>
-      <p>集合链通常逐步产生中间集合；<code>Sequence</code> 延迟执行，并按元素穿过整条流水线。数据量小、步骤少时直接用集合更清楚；链很长、数据量大或需要尽早停止时，再评估 <code>asSequence()</code>。</p>
-      <pre><code>val firstMatch = records
-    .asSequence()
-    .map(::parse)
-    .filter { it.isValid }
-    .firstOrNull()</code></pre>
-      <aside class="boundary-note warning"><strong>容易误用</strong><ul><li>默认把所有链都改成 Sequence；额外抽象并不保证更快。</li><li>在 <code>map</code> 里偷偷修改外部状态，让流水线难以推理。</li><li>十几步链条仍不命名中间概念；此时拆成有业务含义的函数通常更好。</li></ul></aside>
-      <h2>4. 从语法读回业务</h2>
-      <p>最终不要只说“这里用了 <code>groupBy</code>”，而要说“这里把可见卡片按所有者归组，供下一步逐个所有者展示”。函数是手段，数据形状变化才是业务叙事。</p>
-      <section class="project-lab">
-        <span class="note-kind">下周项目对照</span>
-        <h2>不要另写玩具代码，直接在项目里取证</h2>
-        <p><strong>先搜索：</strong><code>.map</code>、<code>.filter</code>、<code>.associate</code>、<code>.groupBy</code>、<code>.fold</code>、<code>asSequence</code></p>
-        <ol><li>选一个真实文件，用一句话写出它在业务流程中的职责。</li><li>圈出本章概念的一个真实用法，写清输入、输出与所有者。</li><li>沿调用方向再追一层，确认它的生命周期或依赖边界。</li><li>找一条对应测试；如果没有，写下最值得补的可观察行为。</li></ol>
-      </section>
-    </article>
-    <section class="recall" aria-labelledby="recall-title">
-      <span class="note-kind">读完自测</span>
-      <h2 id="recall-title">合上正文，回答这三个问题</h2>
-      <ol><li>本章最重要的边界是什么？</li><li>项目里哪个类型或文件最能体现这个边界？</li><li>如果把这个边界拿掉，最可能出现什么错误？</li></ol>
-    </section>
-    <nav class="chapter-switcher" aria-label="章节导航"><a href="../project-and-gradle/index.html">← Kotlin 项目与 Gradle</a><a class="course-home" href="../index.html">全部章节</a><a href="../generics-and-variance/index.html">泛型与型变 →</a></nav>
-    <footer class="license-note"><p>本章是项目导向的结构化精读，不是官方文档的逐段完整翻译。主要依据：<a href="https://kotlinlang.org/docs/collection-operations.html">集合操作总览</a>、<a href="https://kotlinlang.org/docs/collection-transformations.html">集合转换</a>、<a href="https://kotlinlang.org/docs/sequences.html">序列</a>。原始内容由 JetBrains 与 Kotlin 贡献者维护，采用 <a href="https://github.com/JetBrains/kotlin-web-site/blob/master/LICENSE">Apache License 2.0</a>；版本差异以官方原文为准。</p></footer>
-  </main>
+<nav class="site-nav" aria-label="站点导航"><a href="../index.html">← Kotlin 中文学习版</a><a href="../../../computer-science/kotlin-tour/">RIN III 学习记录</a></nav><main class="reader project-reader"><header class="chapter-header"><span class="chapter-kicker">项目实战篇 · 第 2 章</span><h1>集合式数据处理</h1>
+<p class="lead">系统学习集合操作、集合转换与 Sequence，比较不同数据处理方式的执行过程与适用边界。</p>
+<div class="title-rule"></div>
+<nav class="prerequisite-nav" aria-label="前置概念"><span>前置概念</span><a href="../collections/index.html">集合</a><a href="../functions/index.html">函数与 lambda</a><a href="../extension-functions/index.html">扩展函数</a></nav><nav class="chapter-switcher" aria-label="章节导航"><a href="../project-and-gradle/index.html">← Kotlin 项目与 Gradle</a><a href="../index.html" class="course-home">全部章节</a><a href="../generics-and-variance/index.html">泛型与型变 →</a></nav></header><article class="translated-article"><section class="source-document" id="source-collection-operations"><h2>集合操作概览</h2>
+<p id="collection-operations-ujq52o_2" class="source-paragraph" data-source-paragraph="1">Kotlin 标准库提供了丰富多样的函数，用于对集合进行操作。其中包括获取或添加元素等简单操作，以及搜索、排序、过滤、转换等更复杂的操作。</p>
+<section class="chapter"><h3 id="collection-operations-extension-and-member-functions" data-toc="extension-and-member-functions">扩展函数和成员函数</h3>
+<p id="collection-operations-ujq52o_6" class="source-paragraph" data-source-paragraph="2">集合操作在标准库中以两种方式声明：集合接口的<a href="../classes/index.html" id="collection-operations-ujq52o_10" class="concept-ref" data-concept="类" title="前置概念：类">成员函数</a>，以及<a href="../extension-functions/index.html#extension-functions" id="collection-operations-ujq52o_11" class="concept-ref" data-concept="扩展函数" title="前置概念：扩展函数">扩展函数</a>。</p>
+<p id="collection-operations-ujq52o_7" class="source-paragraph" data-source-paragraph="3">成员函数定义了对集合类型至关重要的操作。例如，<a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/-collection/index.html" id="collection-operations-ujq52o_12" data-external="true" rel="noopener noreferrer"><code class="code" id="collection-operations-ujq52o_16">Collection</code></a> 包含用于检查其是否为空的函数 <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/-collection/is-empty.html" id="collection-operations-ujq52o_13" data-external="true" rel="noopener noreferrer"><code class="code" id="collection-operations-ujq52o_17">isEmpty()</code></a>；<a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/-list/index.html" id="collection-operations-ujq52o_14" data-external="true" rel="noopener noreferrer"><code class="code" id="collection-operations-ujq52o_18">List</code></a> 包含用于按索引访问元素的函数 <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/-list/get.html" id="collection-operations-ujq52o_15" data-external="true" rel="noopener noreferrer"><code class="code" id="collection-operations-ujq52o_19">get()</code></a>，以此类推。</p>
+<p id="collection-operations-ujq52o_8" class="source-paragraph" data-source-paragraph="4">当你实现集合接口时，必须实现其成员函数。为了更方便地创建新的实现，请使用标准库中提供的集合接口的骨架实现：<a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/-abstract-collection/index.html" id="collection-operations-ujq52o_20" data-external="true" rel="noopener noreferrer"><code class="code" id="collection-operations-ujq52o_24">AbstractCollection</code></a>、<a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/-abstract-list/index.html" id="collection-operations-ujq52o_21" data-external="true" rel="noopener noreferrer"><code class="code" id="collection-operations-ujq52o_25">AbstractList</code></a>、<a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/-abstract-set/index.html" id="collection-operations-ujq52o_22" data-external="true" rel="noopener noreferrer"><code class="code" id="collection-operations-ujq52o_26">AbstractSet</code></a>、<a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/-abstract-map/index.html" id="collection-operations-ujq52o_23" data-external="true" rel="noopener noreferrer"><code class="code" id="collection-operations-ujq52o_27">AbstractMap</code></a> 及其可变版本。</p>
+<p id="collection-operations-ujq52o_9" class="source-paragraph" data-source-paragraph="5">其他集合操作被声明为扩展函数。这些包括过滤、转换、排序以及其他集合处理函数。</p></section><section class="chapter"><h3 id="collection-operations-common-operations" data-toc="common-operations">常用操作</h3>
+<p id="collection-operations-ujq52o_28" class="source-paragraph" data-source-paragraph="6"><a href="../collections/index.html" id="collection-operations-ujq52o_37" class="concept-ref" data-concept="集合" title="前置概念：集合">只读和可变集合</a> 均支持常用操作。常用操作可分为以下几类：</p>
+<ul class="list _bullet" id="collection-operations-ujq52o_29">
+<li class="list__item" id="collection-operations-ujq52o_38"><p id="collection-operations-ujq52o_46" class="source-paragraph" data-source-paragraph="7"><a href="../collection-pipelines/index.html#source-collection-transformations" id="collection-operations-ujq52o_47">转换</a></p></li>
+<li class="list__item" id="collection-operations-ujq52o_39"><p id="collection-operations-ujq52o_48" class="source-paragraph" data-source-paragraph="8"><a href="https://kotlinlang.org/docs/collection-filtering.html" id="collection-operations-ujq52o_49">过滤</a></p></li>
+<li class="list__item" id="collection-operations-ujq52o_40"><p id="collection-operations-ujq52o_50" class="source-paragraph" data-source-paragraph="9"><a href="https://kotlinlang.org/docs/collection-plus-minus.html" id="collection-operations-ujq52o_51"><code class="code" id="collection-operations-ujq52o_52">plus</code> 与 <code class="code" id="collection-operations-ujq52o_53">minus</code> 操作符</a></p></li>
+<li class="list__item" id="collection-operations-ujq52o_41"><p id="collection-operations-ujq52o_54" class="source-paragraph" data-source-paragraph="10"><a href="https://kotlinlang.org/docs/collection-grouping.html" id="collection-operations-ujq52o_55">分组</a></p></li>
+<li class="list__item" id="collection-operations-ujq52o_42"><p id="collection-operations-ujq52o_56" class="source-paragraph" data-source-paragraph="11"><a href="https://kotlinlang.org/docs/collection-parts.html" id="collection-operations-ujq52o_57">获取集合的子集</a></p></li>
+<li class="list__item" id="collection-operations-ujq52o_43"><p id="collection-operations-ujq52o_58" class="source-paragraph" data-source-paragraph="12"><a href="https://kotlinlang.org/docs/collection-elements.html" id="collection-operations-ujq52o_59">检索单个元素</a></p></li>
+<li class="list__item" id="collection-operations-ujq52o_44"><p id="collection-operations-ujq52o_60" class="source-paragraph" data-source-paragraph="13"><a href="https://kotlinlang.org/docs/collection-ordering.html" id="collection-operations-ujq52o_61">排序</a></p></li>
+<li class="list__item" id="collection-operations-ujq52o_45"><p id="collection-operations-ujq52o_62" class="source-paragraph" data-source-paragraph="14"><a href="https://kotlinlang.org/docs/collection-aggregate.html" id="collection-operations-ujq52o_63">聚合操作</a></p></li>
+</ul>
+<p id="collection-operations-ujq52o_30" class="source-paragraph" data-source-paragraph="15">本页所述的操作会返回结果，且不会影响原始集合。例如，过滤操作会生成一个新集合，其中包含所有符合过滤谓词的元素。此类操作的结果应存储在变量中，或以其他方式使用，例如传递给其他函数。</p>
+<pre class="source-code"><code class="language-kotlin">
+
+fun main() {
+//sampleStart
+    val numbers = listOf("one", "two", "three", "four")
+    numbers.filter { it.length &gt; 3 }  // `numbers` 没有任何变化，结果丢失
+    println("numbers are still $numbers")
+    val longerThan3 = numbers.filter { it.length &gt; 3 } // 结果存储在 `longerThan3` 中
+    println("numbers longer than 3 chars are $longerThan3")
+//sampleEnd
+}</code></pre>
+<p id="collection-operations-ujq52o_32" class="source-paragraph" data-source-paragraph="16">对于某些集合操作，可以指定目标对象。目标是一个可变集合，函数会将操作结果追加到该集合中，而不是将其作为新对象返回。对于需要指定目标的操作，有专门的函数，其名称带有 <code class="code" id="collection-operations-ujq52o_66">To</code> 后缀，例如 <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/filter-to.html" id="collection-operations-ujq52o_67" data-external="true" rel="noopener noreferrer"><code class="code" id="collection-operations-ujq52o_71">filterTo()</code></a> 代替 <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/filter.html" id="collection-operations-ujq52o_68" data-external="true" rel="noopener noreferrer"><code class="code" id="collection-operations-ujq52o_72">filter()</code></a> 或 <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/associate-to.html" id="collection-operations-ujq52o_69" data-external="true" rel="noopener noreferrer"><code class="code" id="collection-operations-ujq52o_73">associateTo()</code></a> 代替 <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/associate.html" id="collection-operations-ujq52o_70" data-external="true" rel="noopener noreferrer"><code class="code" id="collection-operations-ujq52o_74">associate()</code></a>。这些函数将目标集合作为额外参数传入。</p>
+<pre class="source-code"><code class="language-kotlin">
+
+fun main() {
+//sampleStart
+    val numbers = listOf("one", "two", "three", "four")
+    val filterResults = mutableListOf&lt;String&gt;()  //目标对象
+    numbers.filterTo(filterResults) { it.length &gt; 3 }
+    numbers.filterIndexedTo(filterResults) { index, _ -&gt; index == 0 }
+    println(filterResults) // 包含这两项运算的结果
+//sampleEnd
+}
+</code></pre>
+<p id="collection-operations-ujq52o_34" class="source-paragraph" data-source-paragraph="17">为了方便起见，这些函数会将目标集合直接返回，因此您可以在函数调用的相应参数中直接创建该集合：</p>
+<pre class="source-code"><code class="language-kotlin">
+
+fun main() {
+    val numbers = listOf("one", "two", "three", "four")
+//sampleStart
+    // 将数字直接过滤到一个新的哈希集合中，
+    // 从而消除结果中的重复项
+    val result = numbers.mapTo(HashSet()) { it.length }
+    println("distinct item lengths are $result")
+//sampleEnd
+}</code></pre>
+<p id="collection-operations-ujq52o_36" class="source-paragraph" data-source-paragraph="18">具有目标参数的函数可用于过滤、关联、分组、展平及其他操作。有关目标操作的完整列表，请参阅 <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/index.html" id="collection-operations-ujq52o_75" data-external="true" rel="noopener noreferrer">Kotlin 集合参考</a>。</p></section><section class="chapter"><h3 id="collection-operations-write-operations" data-toc="write-operations">写入操作</h3>
+<p id="collection-operations-ujq52o_76" class="source-paragraph" data-source-paragraph="19">对于可变集合，还存在会改变集合状态的写入操作。此类操作包括添加、删除和更新元素。写入操作列于<a href="https://kotlinlang.org/docs/collection-write.html" id="collection-operations-ujq52o_80">写入操作</a>以及<a href="https://kotlinlang.org/docs/list-operations.html#list-write-operations" id="collection-operations-ujq52o_81">列表特有的操作</a>和<a href="https://kotlinlang.org/docs/map-operations.html#map-write-operations" id="collection-operations-ujq52o_82">映射特定操作</a>的相应章节中。</p>
+<p id="collection-operations-ujq52o_77" class="source-paragraph" data-source-paragraph="20">对于某些操作，存在一对用于执行相同操作的函数：一个函数就地应用该操作，另一个则将结果作为独立的集合返回。例如，<a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/sort.html" id="collection-operations-ujq52o_83" data-external="true" rel="noopener noreferrer"><code class="code" id="collection-operations-ujq52o_85">sort()</code></a> 就地对可变集合进行排序，因此其状态会发生变化；<a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/sorted.html" id="collection-operations-ujq52o_84" data-external="true" rel="noopener noreferrer"><code class="code" id="collection-operations-ujq52o_86">sorted()</code></a> 则创建一个新集合，其中包含按排序顺序排列的相同元素。</p>
+<pre class="source-code"><code class="language-kotlin">
+
+fun main() {
+//sampleStart
+    val numbers = mutableListOf("one", "two", "three", "four")
+    val sortedNumbers = numbers.sorted()
+    println(numbers == sortedNumbers)  // false
+    numbers.sort()
+    println(numbers == sortedNumbers)  // true
+//sampleEnd
+}</code></pre></section></section><section class="source-document" id="source-collection-transformations"><h2>集合转换操作</h2>
+<p id="collection-transformations-z945z7o_2" class="source-paragraph" data-source-paragraph="1">Kotlin 标准库提供了一组用于集合变换的扩展函数。这些函数根据给定的变换规则，基于现有集合构建新的集合。在本页中，我们将概述可用的集合变换函数。</p>
+<section class="chapter"><h3 id="collection-transformations-map" data-toc="map">Map</h3>
+<p id="collection-transformations-z945z7o_9" class="source-paragraph" data-source-paragraph="2">映射转换会根据对另一个集合中元素应用函数的结果来创建一个集合。基本的映射函数是 <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/map.html" id="collection-transformations-z945z7o_16" data-external="true" rel="noopener noreferrer"><code class="code" id="collection-transformations-z945z7o_18">map()</code></a>。它将给定的 lambda 函数应用于后续的每个元素，并返回 lambda 结果的列表。结果的顺序与原始元素的顺序相同。若要应用一种额外将元素索引作为参数的转换，请使用 <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/map-indexed.html" id="collection-transformations-z945z7o_17" data-external="true" rel="noopener noreferrer"><code class="code" id="collection-transformations-z945z7o_19">mapIndexed()</code></a>。</p>
+<pre class="source-code"><code class="language-kotlin">
+
+fun main() {
+//sampleStart
+    val numbers = setOf(1, 2, 3)
+    println(numbers.map { it * 3 })
+    println(numbers.mapIndexed { idx, value -&gt; value * idx })
+//sampleEnd
+}</code></pre>
+<p id="collection-transformations-z945z7o_11" class="source-paragraph" data-source-paragraph="3">如果变换对某些元素的结果为 <code class="code" id="collection-transformations-z945z7o_20">null</code>，你可以通过调用 <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/map-not-null.html" id="collection-transformations-z945z7o_22" data-external="true" rel="noopener noreferrer"><code class="code" id="collection-transformations-z945z7o_26">mapNotNull()</code></a> 函数代替 <code class="code" id="collection-transformations-z945z7o_23">map()</code>，或者调用 <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/map-indexed-not-null.html" id="collection-transformations-z945z7o_24" data-external="true" rel="noopener noreferrer"><code class="code" id="collection-transformations-z945z7o_27">mapIndexedNotNull()</code></a> 代替 <code class="code" id="collection-transformations-z945z7o_25">mapIndexed()</code>，从而从结果集合中过滤掉 <code class="code" id="collection-transformations-z945z7o_21">null</code>。</p>
+<pre class="source-code"><code class="language-kotlin">
+
+fun main() {
+//sampleStart
+    val numbers = setOf(1, 2, 3)
+    println(numbers.mapNotNull { if ( it == 2) null else it * 3 })
+    println(numbers.mapIndexedNotNull { idx, value -&gt; if (idx == 0) null else value * idx })
+//sampleEnd
+}</code></pre>
+<p id="collection-transformations-z945z7o_13" class="source-paragraph" data-source-paragraph="4">转换映射时，你有两种选择：转换键值而不改变值，或者反之。要对键应用给定的转换，请使用 <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/map-keys.html" id="collection-transformations-z945z7o_28" data-external="true" rel="noopener noreferrer"><code class="code" id="collection-transformations-z945z7o_30">mapKeys()</code></a>；而 <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/map-values.html" id="collection-transformations-z945z7o_29" data-external="true" rel="noopener noreferrer"><code class="code" id="collection-transformations-z945z7o_31">mapValues()</code></a> 则用于转换值。这两个函数都使用以映射条目为参数的转换，因此你可以同时操作其键和值。</p>
+<pre class="source-code"><code class="language-kotlin">
+
+fun main() {
+//sampleStart
+    val numbersMap = mapOf("key1" to 1, "key2" to 2, "key3" to 3, "key11" to 11)
+    println(numbersMap.mapKeys { it.key.uppercase() })
+    println(numbersMap.mapValues { it.value + it.key.length })
+//sampleEnd
+}</code></pre></section><section class="chapter"><h3 id="collection-transformations-zip" data-toc="zip">Zip</h3>
+<p id="collection-transformations-z945z7o_32" class="source-paragraph" data-source-paragraph="5">拉链变换是将两个集合中位置相同的元素配对。在 Kotlin 标准库中，这是通过 <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/zip.html" id="collection-transformations-z945z7o_44" data-external="true" rel="noopener noreferrer"><code class="code" id="collection-transformations-z945z7o_45">zip()</code></a> 扩展函数实现的。</p>
+<p id="collection-transformations-z945z7o_33" class="source-paragraph" data-source-paragraph="6">当在集合或数组上调用 <code class="code" id="collection-transformations-z945z7o_46">zip()</code> 方法，且将另一个集合（或数组）作为参数时，<code class="code" id="collection-transformations-z945z7o_46-2">zip()</code> 返回 <code class="code" id="collection-transformations-z945z7o_47">List</code> 个 <code class="code" id="collection-transformations-z945z7o_48">Pair</code> 对象。接收者集合的元素是这些成对对象中的第一个元素。</p>
+<p id="collection-transformations-z945z7o_34" class="source-paragraph" data-source-paragraph="7">如果两个集合的大小不同，<code class="code" id="collection-transformations-z945z7o_49">zip()</code> 的结果将取较小那个集合的大小；较大集合的最后几个元素不会被包含在结果中。</p>
+<p id="collection-transformations-z945z7o_35" class="source-paragraph" data-source-paragraph="8"><code class="code" id="collection-transformations-z945z7o_50">zip()</code> 也可以采用中缀形式 <code class="code" id="collection-transformations-z945z7o_51">a zip b</code> 调用。</p>
+<pre class="source-code"><code class="language-kotlin">
+
+fun main() {
+//sampleStart
+    val colors = listOf("red", "brown", "grey")
+    val animals = listOf("fox", "bear", "wolf")
+    println(colors zip animals)
+
+    val twoAnimals = listOf("fox", "bear")
+    println(colors.zip(twoAnimals))
+//sampleEnd
+}</code></pre>
+<p id="collection-transformations-z945z7o_37" class="source-paragraph" data-source-paragraph="9">你还可以使用一个接受两个参数（接收者元素和参数元素）的转换函数来调用 <code class="code" id="collection-transformations-z945z7o_52">zip()</code>。在这种情况下，结果 <code class="code" id="collection-transformations-z945z7o_53">List</code> 包含对接收者和参数元素中位置相同的元素对调用该转换函数后得到的返回值。</p>
+<pre class="source-code"><code class="language-kotlin">
+
+fun main() {
+//sampleStart
+    val colors = listOf("red", "brown", "grey")
+    val animals = listOf("fox", "bear", "wolf")
+
+    println(colors.zip(animals) { color, animal -&gt; "The ${animal.replaceFirstChar { it.uppercase() }} is $color"})
+//sampleEnd
+}</code></pre>
+<p id="collection-transformations-z945z7o_39" class="source-paragraph" data-source-paragraph="10">当你对 <code class="code" id="collection-transformations-z945z7o_55">Pair</code> 应用 <code class="code" id="collection-transformations-z945z7o_54">List</code> 后，可以执行反向转换——解压——将这些配对元素拆分为两个列表：</p>
+<ul class="list _bullet" id="collection-transformations-z945z7o_40">
+<li class="list__item" id="collection-transformations-z945z7o_57"><p id="collection-transformations-z945z7o_59" class="source-paragraph" data-source-paragraph="11">第一个列表包含原始列表中每个 <code class="code" id="collection-transformations-z945z7o_60">Pair</code> 的第一个元素。</p></li>
+<li class="list__item" id="collection-transformations-z945z7o_58"><p id="collection-transformations-z945z7o_61" class="source-paragraph" data-source-paragraph="12">第二个列表包含第二个元素。</p></li>
+</ul>
+<p id="collection-transformations-z945z7o_41" class="source-paragraph" data-source-paragraph="13">要解压一个成对元素列表，请调用 <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/unzip.html" id="collection-transformations-z945z7o_62" data-external="true" rel="noopener noreferrer"><code class="code" id="collection-transformations-z945z7o_63">unzip()</code></a>。</p>
+<pre class="source-code"><code class="language-kotlin">
+
+fun main() {
+//sampleStart
+    val numberPairs = listOf("one" to 1, "two" to 2, "three" to 3, "four" to 4)
+    println(numberPairs.unzip())
+//sampleEnd
+}</code></pre></section><section class="chapter"><h3 id="collection-transformations-associate" data-toc="associate">关联</h3>
+<p id="collection-transformations-z945z7o_64" class="source-paragraph" data-source-paragraph="14">关联转换允许根据集合元素及其关联的特定值构建映射。在不同的关联类型中，元素可以是关联映射中的键，也可以是值。</p>
+<p id="collection-transformations-z945z7o_65" class="source-paragraph" data-source-paragraph="15">基本关联函数 <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/associate-with.html" id="collection-transformations-z945z7o_76" data-external="true" rel="noopener noreferrer"><code class="code" id="collection-transformations-z945z7o_78">associateWith()</code></a> 会生成一个 <code class="code" id="collection-transformations-z945z7o_77">Map</code>，其中原始集合的元素作为键，值则由给定的转换函数根据这些键生成。如果两个元素相等，则映射中仅保留最后一个。</p>
+<pre class="source-code"><code class="language-kotlin">
+
+fun main() {
+//sampleStart
+    val numbers = listOf("one", "two", "three", "four")
+    println(numbers.associateWith { it.length })
+//sampleEnd
+}</code></pre>
+<p id="collection-transformations-z945z7o_67" class="source-paragraph" data-source-paragraph="16">若要构建以集合元素作为值的映射，可使用函数 <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/associate-by.html" id="collection-transformations-z945z7o_79" data-external="true" rel="noopener noreferrer"><code class="code" id="collection-transformations-z945z7o_80">associateBy()</code></a>。该函数接受一个基于元素值返回键的函数。若两个元素的键相等，则仅保留最后一个元素在映射中。</p>
+<p id="collection-transformations-z945z7o_68" class="source-paragraph" data-source-paragraph="17">也可以通过一个值转换函数来调用 <code class="code" id="collection-transformations-z945z7o_81">associateBy()</code>。</p>
+<pre class="source-code"><code class="language-kotlin">
+
+fun main() {
+//sampleStart
+    val numbers = listOf("one", "two", "three", "four")
+
+    println(numbers.associateBy { it.first().uppercaseChar() })
+    println(numbers.associateBy(keySelector = { it.first().uppercaseChar() }, valueTransform = { it.length }))
+//sampleEnd
+}</code></pre>
+<p id="collection-transformations-z945z7o_70" class="source-paragraph" data-source-paragraph="18">另一种构建映射的方法是使用函数 <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/associate.html" id="collection-transformations-z945z7o_82" data-external="true" rel="noopener noreferrer"><code class="code" id="collection-transformations-z945z7o_84">associate()</code></a>，其中键和值都是以某种方式从集合元素生成的。它接受一个 lambda 函数，该函数返回一个 <code class="code" id="collection-transformations-z945z7o_83">Pair</code>：即对应映射条目的键和值。</p>
+<p id="collection-transformations-z945z7o_71" class="source-paragraph" data-source-paragraph="19">请注意，<code class="code" id="collection-transformations-z945z7o_85">associate()</code> 会生成短暂存在的 <code class="code" id="collection-transformations-z945z7o_86">Pair</code> 对象，这可能会影响性能。因此，当性能不是关键因素，或者 <code class="code" id="collection-transformations-z945z7o_87">associate()</code> 比其他选项更合适时，应使用 <code class="code" id="collection-transformations-z945z7o_87-2">associate()</code>。</p>
+<p id="collection-transformations-z945z7o_72" class="source-paragraph" data-source-paragraph="20">后者的一个示例是：从一个元素中同时生成键和对应的值。</p>
+<pre class="source-code"><code class="language-kotlin">
+
+fun main() {
+data class FullName (val firstName: String, val lastName: String)
+
+fun parseFullName(fullName: String): FullName {
+    val nameParts = fullName.split(" ")
+    if (nameParts.size == 2) {
+        return FullName(nameParts[0], nameParts[1])
+    } else throw Exception("Wrong name format")
+}
+
+//sampleStart
+    val names = listOf("Alice Adams", "Brian Brown", "Clara Campbell")
+    println(names.associate { name -&gt; parseFullName(name).let { it.lastName to it.firstName } })
+//sampleEnd
+}</code></pre>
+<p id="collection-transformations-z945z7o_74" class="source-paragraph" data-source-paragraph="21">这里，我们先对一个元素调用一个转换函数，然后根据该函数结果的属性构建一个元组。</p></section><section class="chapter"><h3 id="collection-transformations-flatten" data-toc="flatten">展平</h3>
+<p id="collection-transformations-z945z7o_88" class="source-paragraph" data-source-paragraph="22">如果你需要操作嵌套集合，可能会发现标准库中那些提供对嵌套集合元素进行展平访问的函数非常有用。</p>
+<p id="collection-transformations-z945z7o_89" class="source-paragraph" data-source-paragraph="23">第一个函数是 <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/flatten.html" id="collection-transformations-z945z7o_93" data-external="true" rel="noopener noreferrer"><code class="code" id="collection-transformations-z945z7o_97">flatten()</code></a>。你可以将其应用于集合的集合，例如，一个由 <code class="code" id="collection-transformations-z945z7o_95">Set</code> 组成的 <code class="code" id="collection-transformations-z945z7o_94">List</code>。该函数返回一个包含所有嵌套集合元素的单一 <code class="code" id="collection-transformations-z945z7o_96">List</code>。</p>
+<pre class="source-code"><code class="language-kotlin">
+
+fun main() {
+//sampleStart
+    val numberSets = listOf(setOf(1, 2, 3), setOf(4, 5, 6), setOf(1, 2))
+    println(numberSets.flatten())
+//sampleEnd
+}</code></pre>
+<p id="collection-transformations-z945z7o_91" class="source-paragraph" data-source-paragraph="24">另一个函数——<a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/flat-map.html" id="collection-transformations-z945z7o_98" data-external="true" rel="noopener noreferrer"><code class="code" id="collection-transformations-z945z7o_103">flatMap()</code></a> 提供了一种处理嵌套集合的灵活方式。它接受一个将集合元素映射到另一个集合的函数。因此，<code class="code" id="collection-transformations-z945z7o_99">flatMap()</code> 会返回一个包含所有元素映射结果的单一列表。所以，<code class="code" id="collection-transformations-z945z7o_100">flatMap()</code> 的行为相当于依次调用 <code class="code" id="collection-transformations-z945z7o_101">map()</code>（将集合作为映射结果）和 <code class="code" id="collection-transformations-z945z7o_102">flatten()</code>。</p>
+<pre class="source-code"><code class="language-kotlin">
+
+data class StringContainer(val values: List&lt;String&gt;)
+
+fun main() {
+//sampleStart
+    val containers = listOf(
+        StringContainer(listOf("one", "two", "three")),
+        StringContainer(listOf("four", "five", "six")),
+        StringContainer(listOf("seven", "eight"))
+    )
+    println(containers.flatMap { it.values })
+//sampleEnd
+}
+</code></pre></section><section class="chapter"><h3 id="collection-transformations-string-representation" data-toc="string-representation">字符串表示</h3>
+<p id="collection-transformations-z945z7o_104" class="source-paragraph" data-source-paragraph="25">若需以可读格式获取集合内容，请使用将集合转换为字符串的函数：<a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/join-to-string.html" id="collection-transformations-z945z7o_114" data-external="true" rel="noopener noreferrer"><code class="code" id="collection-transformations-z945z7o_116">joinToString()</code></a> 和 <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/join-to.html" id="collection-transformations-z945z7o_115" data-external="true" rel="noopener noreferrer"><code class="code" id="collection-transformations-z945z7o_117">joinTo()</code></a>。</p>
+<p id="collection-transformations-z945z7o_105" class="source-paragraph" data-source-paragraph="26"><code class="code" id="collection-transformations-z945z7o_118">joinToString()</code> 根据提供的参数，从集合的元素中构建一个 <code class="code" id="collection-transformations-z945z7o_119">String</code>。<code class="code" id="collection-transformations-z945z7o_120">joinTo()</code> 的操作与之相同，但会将结果追加到给定的 <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.text/-appendable/index.html" id="collection-transformations-z945z7o_121" data-external="true" rel="noopener noreferrer"><code class="code" id="collection-transformations-z945z7o_122">Appendable</code></a> 对象中。</p>
+<p id="collection-transformations-z945z7o_106" class="source-paragraph" data-source-paragraph="27">当使用参数的默认值调用这些函数时，其返回结果与在集合上调用 <code class="code" id="collection-transformations-z945z7o_123">toString()</code> 类似：一个由元素的字符串表示形式组成的 <code class="code" id="collection-transformations-z945z7o_124">String</code>，这些表示形式以逗号和空格分隔。</p>
+<pre class="source-code"><code class="language-kotlin">
+
+fun main() {
+//sampleStart
+    val numbers = listOf("one", "two", "three", "four")
+
+    println(numbers)
+    println(numbers.joinToString())
+
+    val listString = StringBuffer("The list of numbers: ")
+    numbers.joinTo(listString)
+    println(listString)
+//sampleEnd
+}</code></pre>
+<p id="collection-transformations-z945z7o_108" class="source-paragraph" data-source-paragraph="28">要构建自定义字符串表示形式，可以在函数参数 <code class="code" id="collection-transformations-z945z7o_125">separator</code>、<code class="code" id="collection-transformations-z945z7o_126">prefix</code> 和 <code class="code" id="collection-transformations-z945z7o_127">postfix</code> 中指定其参数。生成的字符串将以 <code class="code" id="collection-transformations-z945z7o_128">prefix</code> 开头，以 <code class="code" id="collection-transformations-z945z7o_129">postfix</code> 结尾。除最后一个元素外，每个元素之后都会跟一个 <code class="code" id="collection-transformations-z945z7o_130">separator</code>。</p>
+<pre class="source-code"><code class="language-kotlin">
+
+fun main() {
+//sampleStart
+    val numbers = listOf("one", "two", "three", "four")
+    println(numbers.joinToString(separator = " | ", prefix = "start: ", postfix = ": end"))
+//sampleEnd
+}</code></pre>
+<p id="collection-transformations-z945z7o_110" class="source-paragraph" data-source-paragraph="29">对于较大的集合，您可能需要指定 <code class="code" id="collection-transformations-z945z7o_131">limit</code>——即要包含在结果中的元素个数。如果集合大小超过 <code class="code" id="collection-transformations-z945z7o_132">limit</code>，则其余所有元素都将被 <code class="code" id="collection-transformations-z945z7o_133">truncated</code> 参数的单一值替换。</p>
+<pre class="source-code"><code class="language-kotlin">
+
+fun main() {
+//sampleStart
+    val numbers = (1..100).toList()
+    println(numbers.joinToString(limit = 10, truncated = "&lt;...&gt;"))
+//sampleEnd
+}</code></pre>
+<p id="collection-transformations-z945z7o_112" class="source-paragraph" data-source-paragraph="30">最后，若要自定义元素本身的表示形式，请提供 <code class="code" id="collection-transformations-z945z7o_134">transform</code> 函数。</p>
+<pre class="source-code"><code class="language-kotlin">
+
+fun main() {
+//sampleStart
+    val numbers = listOf("one", "two", "three", "four")
+    println(numbers.joinToString { "Element: ${it.uppercase()}"})
+//sampleEnd
+}</code></pre></section></section><section class="source-document" id="source-sequences"><h2>Sequence</h2>
+<p id="sequences--verl3b_2" class="source-paragraph" data-source-paragraph="1">除了集合之外，Kotlin 标准库还包含另一种类型——序列（Sequence）（<a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.sequences/-sequence/index.html" id="sequences--verl3b_10" data-external="true" rel="noopener noreferrer"><code class="code" id="sequences--verl3b_12">Sequence&lt;T&gt;</code></a>）。与集合不同，序列本身不包含元素，而是在迭代过程中生成元素。序列提供了与 <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/-iterable/index.html" id="sequences--verl3b_11" data-external="true" rel="noopener noreferrer"><code class="code" id="sequences--verl3b_13">Iterable</code></a> 相同的功能，但对多步集合处理采用了另一种实现方式。</p>
+<p id="sequences--verl3b_3" class="source-paragraph" data-source-paragraph="2">当对 <code class="code" id="sequences--verl3b_14">Iterable</code> 的处理包含多个步骤时，这些步骤会立即执行：每个处理步骤完成后都会返回其结果——一个中间集合。后续步骤则基于该集合执行。相比之下，Sequence 的多步处理在可能的情况下会延迟执行：只有在请求整个处理链的结果时，才会进行实际计算。</p>
+<p id="sequences--verl3b_4" class="source-paragraph" data-source-paragraph="3">运算执行的顺序也不同：<code class="code" id="sequences--verl3b_15">Sequence</code> 会对每个元素依次执行所有处理步骤。而 <code class="code" id="sequences--verl3b_16">Iterable</code> 则是先对整个集合完成每个步骤，然后再进行下一步。</p>
+<p id="sequences--verl3b_5" class="source-paragraph" data-source-paragraph="4">因此，Sequence 让你无需构建中间步骤的结果，从而提升了整个集合处理链的性能。然而，Sequence 的惰性特性会带来一些开销，在处理较小的集合或进行较简单的计算时，这种开销可能相当显著。因此，你应综合考虑 <code class="code" id="sequences--verl3b_17">Sequence</code> 和 <code class="code" id="sequences--verl3b_18">Iterable</code>，并根据具体情况决定哪种方式更合适。</p>
+<section class="chapter"><h3 id="sequences-construct" data-toc="construct">构造</h3>
+<section class="chapter"><h4 id="sequences-from-elements" data-toc="from-elements">基于元素</h4>
+<p id="sequences--verl3b_23" class="source-paragraph" data-source-paragraph="5">要创建一个 Sequence，请调用 <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.sequences/sequence-of.html" id="sequences--verl3b_25" data-external="true" rel="noopener noreferrer"><code class="code" id="sequences--verl3b_26">sequenceOf()</code></a> 函数，并将元素作为其参数传入。</p>
+<pre class="source-code"><code class="language-kotlin">
+val numbersSequence = sequenceOf("four", "three", "two", "one")</code></pre></section><section class="chapter"><h4 id="sequences-from-an-iterable" data-toc="from-an-iterable">来自可迭代对象</h4>
+<p id="sequences--verl3b_27" class="source-paragraph" data-source-paragraph="6">如果你已经有一个 <code class="code" id="sequences--verl3b_29">Iterable</code> 对象（例如 <code class="code" id="sequences--verl3b_30">List</code> 或 <code class="code" id="sequences--verl3b_31">Set</code>），可以通过调用 <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/as-sequence.html" id="sequences--verl3b_32" data-external="true" rel="noopener noreferrer"><code class="code" id="sequences--verl3b_33">asSequence()</code></a> 从中创建一个序列。</p>
+<pre class="source-code"><code class="language-kotlin">
+val numbers = listOf("one", "two", "three", "four")
+val numbersSequence = numbers.asSequence()
+</code></pre></section><section class="chapter"><h4 id="sequences-from-a-function" data-toc="from-a-function">来自函数</h4>
+<p id="sequences--verl3b_34" class="source-paragraph" data-source-paragraph="7">创建序列的另一种方法是使用一个计算其元素的函数来构建它。要基于一个函数构建序列，请将该函数作为参数调用 <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.sequences/generate-sequence.html" id="sequences--verl3b_38" data-external="true" rel="noopener noreferrer"><code class="code" id="sequences--verl3b_40">generateSequence()</code></a>。可选地，你可以将第一个元素指定为显式值或函数调用的结果。当提供的函数返回 <code class="code" id="sequences--verl3b_39">null</code> 时，序列的生成将停止。因此，下例中的序列是无限的。</p>
+<pre class="source-code"><code class="language-kotlin">
+
+fun main() {
+//sampleStart
+    val oddNumbers = generateSequence(1) { it + 2 } // `it` 是前一个元素
+    println(oddNumbers.take(5).toList())
+    //println(oddNumbers.count())     // 错误：该序列是无穷的
+//sampleEnd
+}</code></pre>
+<p id="sequences--verl3b_36" class="source-paragraph" data-source-paragraph="8">要使用 <code class="code" id="sequences--verl3b_41">generateSequence()</code> 创建一个有限序列，请提供一个在返回你需要的最后一个元素后返回 <code class="code" id="sequences--verl3b_42">null</code> 的函数。</p>
+<pre class="source-code"><code class="language-kotlin">
+
+fun main() {
+//sampleStart
+    val oddNumbersLessThan10 = generateSequence(1) { if (it &lt; 8) it + 2 else null }
+    println(oddNumbersLessThan10.count())
+//sampleEnd
+}</code></pre></section><section class="chapter"><h4 id="sequences-from-chunks" data-toc="from-chunks">基于片段</h4>
+<p id="sequences--verl3b_43" class="source-paragraph" data-source-paragraph="9">最后，有一个函数可以让你逐个生成 Sequence 元素，或者以任意大小的块为单位生成——即 <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.sequences/sequence.html" id="sequences--verl3b_45" data-external="true" rel="noopener noreferrer"><code class="code" id="sequences--verl3b_56">sequence()</code></a> 函数。该函数接受一个包含 <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.sequences/-sequence-scope/yield.html" id="sequences--verl3b_46" data-external="true" rel="noopener noreferrer"><code class="code" id="sequences--verl3b_57">yield()</code></a> 和 <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.sequences/-sequence-scope/yield-all.html" id="sequences--verl3b_47" data-external="true" rel="noopener noreferrer"><code class="code" id="sequences--verl3b_58">yieldAll()</code></a> 函数调用的 lambda 表达式。这些函数会向 Sequence 消费者返回一个元素，并暂停 <code class="code" id="sequences--verl3b_48">sequence()</code> 的执行，直到消费者请求下一个元素为止。<code class="code" id="sequences--verl3b_49">yield()</code> 接受单个元素作为参数；<code class="code" id="sequences--verl3b_50">yieldAll()</code> 可以接受一个 <code class="code" id="sequences--verl3b_51">Iterable</code> 对象、一个 <code class="code" id="sequences--verl3b_52">Iterator</code> 或另一个 <code class="code" id="sequences--verl3b_53">Sequence</code>。<code class="code" id="sequences--verl3b_55">yieldAll()</code> 的 <code class="code" id="sequences--verl3b_54">Sequence</code> 参数可以是无限的。但是，此类调用必须是最后一个：所有后续调用都不会被执行。</p>
+<pre class="source-code"><code class="language-kotlin">
+
+fun main() {
+//sampleStart
+    val oddNumbers = sequence {
+        yield(1)
+        yieldAll(listOf(3, 5))
+        yieldAll(generateSequence(7) { it + 2 })
+    }
+    println(oddNumbers.take(5).toList())
+//sampleEnd
+}</code></pre></section></section><section class="chapter"><h3 id="sequences-sequence-operations" data-toc="sequence-operations">序列操作</h3>
+<p id="sequences--verl3b_59" class="source-paragraph" data-source-paragraph="10">根据其状态要求，序列操作可分为以下几类：</p>
+<ul class="list _bullet" id="sequences--verl3b_60">
+<li class="list__item" id="sequences--verl3b_63"><p id="sequences--verl3b_65" class="source-paragraph" data-source-paragraph="11">无状态操作无需状态，并独立处理每个元素，例如 <a href="../collection-pipelines/index.html#source-collection-transformations" id="sequences--verl3b_67"><code class="code" id="sequences--verl3b_70">map()</code></a> 或 <a href="https://kotlinlang.org/docs/collection-filtering.html" id="sequences--verl3b_68"><code class="code" id="sequences--verl3b_71">filter()</code></a>。无状态操作也可能需要少量恒定的状态来处理一个元素，例如 <a href="https://kotlinlang.org/docs/collection-parts.html" id="sequences--verl3b_69"><code class="code" id="sequences--verl3b_72">take()</code> 或 <code class="code" id="sequences--verl3b_73">drop()</code></a>。</p></li>
+<li class="list__item" id="sequences--verl3b_64"><p id="sequences--verl3b_74" class="source-paragraph" data-source-paragraph="12">有状态操作需要大量状态，通常与 Sequence 中的元素数量成正比。</p></li>
+</ul>
+<p id="sequences--verl3b_61" class="source-paragraph" data-source-paragraph="13">如果一个序列操作返回另一个序列，且该序列是惰性生成的，则该操作称为中间操作。否则，该操作称为终结操作。终结操作的示例包括 <a href="https://kotlinlang.org/docs/constructing-collections.html#copy" id="sequences--verl3b_78"><code class="code" id="sequences--verl3b_80">toList()</code></a> 或 <a href="https://kotlinlang.org/docs/collection-aggregate.html" id="sequences--verl3b_79"><code class="code" id="sequences--verl3b_81">sum()</code></a>。序列元素只能通过终结操作获取。</p>
+<p id="sequences--verl3b_62" class="source-paragraph" data-source-paragraph="14">序列可以被多次迭代；不过，某些序列的实现可能会限制自身只能被迭代一次。这一点会在其文档中明确说明。</p></section><section class="chapter"><h3 id="sequences-sequence-processing-example" data-toc="sequence-processing-example">序列处理示例</h3>
+<p id="sequences--verl3b_82" class="source-paragraph" data-source-paragraph="15">让我们通过一个示例来看看 <code class="code" id="sequences--verl3b_85">Iterable</code> 和 <code class="code" id="sequences--verl3b_86">Sequence</code> 之间的区别。</p>
+<section class="chapter"><h4 id="sequences-iterable" data-toc="iterable">可迭代对象</h4>
+<p id="sequences--verl3b_87" class="source-paragraph" data-source-paragraph="16">假设你有一个单词列表。下面的代码会过滤出长度超过三个字符的单词，并打印出其中前四个单词的长度。</p>
+<pre class="source-code"><code class="language-kotlin">
+
+fun main() {
+//sampleStart
+    val words = "The quick brown fox jumps over the lazy dog".split(" ")
+    val lengthsList = words.filter { println("filter: $it"); it.length &gt; 3 }
+        .map { println("length: ${it.length}"); it.length }
+        .take(4)
+
+    println("Lengths of first 4 words longer than 3 chars:")
+    println(lengthsList)
+//sampleEnd
+}</code></pre>
+<p id="sequences--verl3b_89" class="source-paragraph" data-source-paragraph="17">运行此代码时，你会发现 <code class="code" id="sequences--verl3b_92">filter()</code> 和 <code class="code" id="sequences--verl3b_93">map()</code> 函数的执行顺序与它们在代码中的出现顺序一致。首先，你会看到针对所有元素的 <code class="code" id="sequences--verl3b_94">filter:</code>，接着是针对过滤后剩余元素的 <code class="code" id="sequences--verl3b_95">length:</code>，最后是最后两行的输出。</p>
+<p id="sequences--verl3b_90" class="source-paragraph" data-source-paragraph="18">列表处理的过程如下：</p>
+<figure id="sequences--verl3b_91"><img alt="列表处理" src="./assets/sequences/list-processing.svg" title="列表处理" width="706" height="444"></figure></section><section class="chapter"><h4 id="sequences-sequence" data-toc="sequence">Sequence</h4>
+<p id="sequences--verl3b_96" class="source-paragraph" data-source-paragraph="19">现在让我们用 Sequence 重写相同的代码：</p>
+<pre class="source-code"><code class="language-kotlin">
+
+fun main() {
+//sampleStart
+    val words = "The quick brown fox jumps over the lazy dog".split(" ")
+    //将列表转换为序列
+    val wordsSequence = words.asSequence()
+
+    val lengthsSequence = wordsSequence.filter { println("filter: $it"); it.length &gt; 3 }
+        .map { println("length: ${it.length}"); it.length }
+        .take(4)
+
+    println("Lengths of first 4 words longer than 3 chars")
+    // 终结操作：将结果作为列表获取
+    println(lengthsSequence.toList())
+//sampleEnd
+}</code></pre>
+<p id="sequences--verl3b_98" class="source-paragraph" data-source-paragraph="20">该代码的输出结果表明，<code class="code" id="sequences--verl3b_102">filter()</code> 和 <code class="code" id="sequences--verl3b_103">map()</code> 函数仅在构建结果列表时才会被调用。因此，你首先会看到文本行 <code class="code" id="sequences--verl3b_104">"Lengths of.."</code>，随后 Sequence 的处理才会开始。请注意，对于过滤后剩余的元素，在过滤下一个元素之前会先执行 map 操作。当结果大小达到 4 时，处理会停止，因为这是 <code class="code" id="sequences--verl3b_105">take(4)</code> 可能返回的最大值。</p>
+<p id="sequences--verl3b_99" class="source-paragraph" data-source-paragraph="21">序列处理过程如下：</p>
+<figure id="sequences--verl3b_100"><img alt="序列处理" src="./assets/sequences/sequence-processing.svg" title="序列处理" width="700" height="440"></figure><p id="sequences--verl3b_101" class="source-paragraph" data-source-paragraph="22">在此示例中，元素的惰性处理以及在找到四个项目后停止处理，与使用列表方法相比，减少了操作次数。</p></section></section></section></article><nav class="chapter-switcher" aria-label="章节导航"><a href="../project-and-gradle/index.html">← Kotlin 项目与 Gradle</a><a href="../index.html" class="course-home">全部章节</a><a href="../generics-and-variance/index.html">泛型与型变 →</a></nav><footer class="license-note"><p>内容依据 Kotlin 官方资料整理。原始资料由 JetBrains 与 Kotlin 贡献者维护，并采用 <a href="https://github.com/JetBrains/kotlin-web-site/blob/master/LICENSE">Apache License 2.0</a>；遇到版本差异时，以官方文档为准。</p></footer></main>
 </body>
 </html>

@@ -1,84 +1,631 @@
 <!doctype html>
 <html lang="zh-CN">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="共享的是能跨平台成立的业务决策、状态与不变量；平台层提供平台能力和事实，测试也沿同一边界分层。">
-  <title>KMP 边界与测试｜Kotlin 项目实战篇｜RIN III</title>
-  <link rel="stylesheet" href="../../reader.css">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="学习 KMP 测试组织、平台测试、expect/actual 边界与平台能力接入方式。">
+<title>KMP 边界与测试｜Kotlin 项目实战篇｜RIN III</title>
+<link rel="stylesheet" href="../../reader.css">
 </head>
 <body>
-  <nav class="site-nav" aria-label="站点导航"><a href="../index.html">← Kotlin 中文学习版</a><a href="../../../computer-science/kotlin-tour/">RIN III 学习记录</a></nav>
-  <main class="reader project-reader">
-    <header class="chapter-header">
-      <span class="chapter-kicker">项目实战篇 · 第 6 章</span>
-      <h1>KMP 边界与测试</h1>
-      <p class="lead">共享的是能跨平台成立的业务决策、状态与不变量；平台层提供平台能力和事实，测试也沿同一边界分层。</p>
-      <div class="title-rule"></div>
-      <aside class="compression-note"><strong>阅读约定</strong><p>本章是基于 Kotlin 官方资料整理翻译的结构化精读，不是逐段完整翻译。保留项目阅读所需的核心概念、关键边界和代表性代码，暂缓与当前学习目标关系较弱的高级细节。</p></aside>
-      <aside class="learning-note"><strong>本章主线</strong><p>迁移到 commonMain 的单位不是零散函数，而是一个业务闭环：决策、状态变化、规则与验证应尽量留在一起。</p></aside>
-      <nav class="chapter-switcher" aria-label="章节导航"><a href="../flow-and-state/index.html">← Flow 与状态</a><a class="course-home" href="../index.html">全部章节</a><span></span></nav>
-    </header>
-    <article class="translated-article">
-      <h2>1. commonMain 应拥有业务决策</h2>
-      <pre><code>// commonMain
-class RefreshPolicy {
-    fun decide(cache: CacheState, network: NetworkState): RefreshDecision =
-        when {
-            cache.isFresh -&gt; RefreshDecision.UseCache
-            network.isAvailable -&gt; RefreshDecision.Fetch
-            else -&gt; RefreshDecision.ShowOffline
-        }
+<nav class="site-nav" aria-label="站点导航"><a href="../index.html">← Kotlin 中文学习版</a><a href="../../../computer-science/kotlin-tour/">RIN III 学习记录</a></nav><main class="reader project-reader"><header class="chapter-header"><span class="chapter-kicker">项目实战篇 · 第 6 章</span><h1>KMP 边界与测试</h1>
+<p class="lead">学习 KMP 测试组织、平台测试、expect/actual 边界与平台能力接入方式。</p>
+<div class="title-rule"></div>
+<nav class="prerequisite-nav" aria-label="前置概念"><span>前置概念</span><a href="../functions/index.html">函数</a><a href="../classes-and-interfaces/index.html">类与接口</a><a href="../properties/index.html">属性</a><a href="../objects/index.html">对象</a><a href="../libraries-and-apis/index.html">库与 API</a></nav><nav class="chapter-switcher" aria-label="章节导航"><a href="../flow-and-state/index.html">← Flow 与状态</a><a href="../index.html" class="course-home">全部章节</a><span></span></nav></header><article class="translated-article"><section class="source-document" id="source-kmp-tests"><h2>测试你的 Kotlin Multiplatform 应用</h2>
+<aside class="source-note"><p id="-x19a9h_14" class="source-paragraph" data-source-paragraph="1">本教程使用 IntelliJ IDEA，但您也可以在 Android Studio 中按照本教程操作——这两款 IDE 具有相同的核心功能，并都支持 Kotlin Multiplatform。</p></aside><p id="kmp-tests--x19a9h_5" class="source-paragraph" data-source-paragraph="2">在本教程中，您将学习如何在 Kotlin 多平台应用中创建、配置和运行测试。</p>
+<p id="kmp-tests--x19a9h_6" class="source-paragraph" data-source-paragraph="3">多平台项目的测试可分为两类：</p>
+<ul class="list _bullet" id="kmp-tests--x19a9h_7">
+<li class="list__item" id="kmp-tests--x19a9h_15"><p id="kmp-tests--x19a9h_17" class="source-paragraph" data-source-paragraph="4">共享代码的测试。这些测试可以在任何平台上使用任何受支持的框架进行运行。</p></li>
+<li class="list__item" id="kmp-tests--x19a9h_16"><p id="kmp-tests--x19a9h_18" class="source-paragraph" data-source-paragraph="5">针对平台特定代码的测试。这些测试对于验证平台特定逻辑至关重要。它们使用平台特定的框架，并能利用该框架的附加功能，例如更丰富的 API 和更广泛的断言选项。</p></li>
+</ul>
+<p id="kmp-tests--x19a9h_8" class="source-paragraph" data-source-paragraph="6">多平台项目同时支持这两类代码。本教程将首先向您展示如何在一个简单的 Kotlin 多平台项目中为“共享代码”设置、创建和运行单元测试。随后，您将通过一个更复杂的示例进行实践，该示例需要同时对通用代码和平台特定代码进行测试。</p>
+<aside class="source-note" data-type="tip" data-title="" id="kmp-tests--x19a9h_9"><p id="kmp-tests--x19a9h_19" class="source-paragraph" data-source-paragraph="7">本教程假设您熟悉以下内容：</p>
+<ul class="list _bullet" id="kmp-tests--x19a9h_20">
+<li class="list__item" id="kmp-tests--x19a9h_21"><p id="kmp-tests--x19a9h_23" class="source-paragraph" data-source-paragraph="8">Kotlin Multiplatform 项目的布局。如果情况并非如此，请在开始之前完成 <a href="https://kotlinlang.org/docs/multiplatform/multiplatform-create-first-app.html" id="kmp-tests--x19a9h_24">本教程</a>。</p></li>
+<li class="list__item" id="kmp-tests--x19a9h_22"><p id="kmp-tests--x19a9h_25" class="source-paragraph" data-source-paragraph="9">常用单元测试框架的基础知识，例如 <a href="https://junit.org/junit5/" id="kmp-tests--x19a9h_26" data-external="true" rel="noopener noreferrer">JUnit</a>。</p></li>
+</ul></aside><section class="chapter"><h3 id="kmp-tests-test-a-simple-multiplatform-project" data-toc="test-a-simple-multiplatform-project">测试一个简单的多平台项目</h3>
+<section class="chapter"><h4 id="kmp-tests-create-a-project" data-toc="create-a-project">创建一个项目</h4>
+<ol class="list _decimal" id="kmp-tests--x19a9h_31" type="1">
+<li class="list__item" id="kmp-tests--x19a9h_32"><p id="kmp-tests--x19a9h_38" class="source-paragraph" data-source-paragraph="10">在 <a href="https://kotlinlang.org/docs/multiplatform/quickstart.html" id="kmp-tests--x19a9h_39">快速入门</a> 中，按照说明完成 <a href="https://kotlinlang.org/docs/multiplatform/quickstart.html#set-up-the-environment" id="kmp-tests--x19a9h_40">配置 Kotlin 多平台开发环境</a>。</p></li>
+<li class="list__item" id="kmp-tests--x19a9h_33"><p id="kmp-tests--x19a9h_41" class="source-paragraph" data-source-paragraph="11">在 IntelliJ IDEA 中，选择“文件” | “新建” | “项目”。</p></li>
+<li class="list__item" id="kmp-tests--x19a9h_34"><p id="kmp-tests--x19a9h_45" class="source-paragraph" data-source-paragraph="12">在左侧面板中，选择“Kotlin Multiplatform”。</p></li>
+<li class="list__item" id="kmp-tests--x19a9h_35">
+<p id="kmp-tests--x19a9h_47" class="source-paragraph" data-source-paragraph="13">在“新建项目”窗口中填写以下字段：</p>
+<ul class="list _bullet" id="kmp-tests--x19a9h_48">
+<li class="list__item" id="kmp-tests--x19a9h_50"><p id="kmp-tests--x19a9h_52" class="source-paragraph" data-source-paragraph="14">名称：KMP testing</p></li>
+<li class="list__item" id="kmp-tests--x19a9h_51"><p id="kmp-tests--x19a9h_54" class="source-paragraph" data-source-paragraph="15">项目 ID：kmp.project.testing</p></li>
+</ul>
+</li>
+<li class="list__item" id="kmp-tests--x19a9h_36"><p id="kmp-tests--x19a9h_56" class="source-paragraph" data-source-paragraph="16">选择 Android 目标。如果您使用的是 Mac，请同时选择 iOS。请务必选中“不共享 UI”选项。</p></li>
+<li class="list__item" id="kmp-tests--x19a9h_37">
+<p id="kmp-tests--x19a9h_60" class="source-paragraph" data-source-paragraph="17">取消选中“包含测试”，然后单击“创建”。</p>
+<figure id="kmp-tests--x19a9h_61"><img alt="创建简单的多平台项目" src="./assets/kmp-tests/create-test-multiplatform-project.png" title="创建简单的多平台项目" width="800" height="886"></figure>
+</li>
+</ol></section><section class="chapter"><h4 id="kmp-tests-write-code" data-toc="write-code">编写代码</h4>
+<p id="kmp-tests--x19a9h_64" class="source-paragraph" data-source-paragraph="18">在 <code class="code" id="kmp-tests--x19a9h_67">sharedLogic/src/commonMain/kotlin</code> 目录下，创建一个新的 <code class="code" id="kmp-tests--x19a9h_68">common.example.search</code> 包。在此包中，创建一个名为 <code class="code" id="kmp-tests--x19a9h_69">Grep.kt</code> 的 Kotlin 文件，其中包含以下函数：</p>
+<pre class="source-code"><code class="language-kotlin">
+fun grep(lines: List&lt;String&gt;, pattern: String, action: (String) -&gt; Unit) {
+    val regex = pattern.toRegex()
+    lines.filter(regex::containsMatchIn)
+        .forEach(action)
 }</code></pre>
-      <p>这段规则不依赖 Android 或 iOS，且它决定产品行为，适合放在 <code>commonMain</code>。共享层最有价值的部分不是“能编译过去的工具函数”，而是跨平台必须保持一致的决策、状态机和不变量。</p>
-      <h2>2. 平台层提供能力与事实</h2>
-      <pre><code>// commonMain
-interface NetworkStatus {
-    fun isAvailable(): Boolean
-}
+<p id="kmp-tests--x19a9h_66" class="source-paragraph" data-source-paragraph="19">该函数的设计旨在模仿 <a href="https://en.wikipedia.org/wiki/Grep" id="kmp-tests--x19a9h_70" data-external="true" rel="noopener noreferrer">UNIX <code class="code" id="kmp-tests--x19a9h_71">grep</code> command</a>。在此，该函数接受多行文本、一个用作正则表达式的模式，以及一个在每行匹配该模式时被调用的函数。</p></section><section class="chapter"><h4 id="kmp-tests-add-tests" data-toc="add-tests">添加测试</h4>
+<p id="kmp-tests--x19a9h_72" class="source-paragraph" data-source-paragraph="20">现在，让我们测试一下共享代码。其中一个关键部分是用于通用测试的源码集，它将 <a href="https://kotlinlang.org/api/latest/kotlin.test/" id="kmp-tests--x19a9h_76" data-external="true" rel="noopener noreferrer"><code class="code" id="kmp-tests--x19a9h_77">kotlin.test</code></a> API 库作为依赖项。</p>
+<ol class="list _decimal" id="kmp-tests--x19a9h_73" type="1">
+<li class="list__item" id="kmp-tests--x19a9h_78">
+<p id="kmp-tests--x19a9h_82" class="source-paragraph" data-source-paragraph="21">在 <code class="code" id="kmp-tests--x19a9h_84">sharedLogic/build.gradle.kts</code> 文件中，请确认是否存在对 <code class="code" id="kmp-tests--x19a9h_85">kotlin.test</code> 库的依赖：</p>
+<pre class="source-code"><code class="language-kotlin">
+sourceSets {
+   //...
+   commonTest.dependencies {
+       implementation(libs.kotlin.test)
+   }
+}</code></pre>
+</li>
+<li class="list__item" id="kmp-tests--x19a9h_79">
+<p id="kmp-tests--x19a9h_86" class="source-paragraph" data-source-paragraph="22"><code class="code" id="kmp-tests--x19a9h_89">commonTest</code> 源码集存储了所有常见的测试。你需要在项目中创建一个同名的目录：</p>
+<ol class="list _decimal" id="kmp-tests--x19a9h_87" type="1">
+<li class="list__item" id="kmp-tests--x19a9h_90"><p id="kmp-tests--x19a9h_92" class="source-paragraph" data-source-paragraph="23">右键单击 <code class="code" id="kmp-tests--x19a9h_93">sharedLogic/src</code> 目录，然后选择“新建 | 目录”。IDE 将显示一组选项。</p></li>
+<li class="list__item" id="kmp-tests--x19a9h_91"><p id="kmp-tests--x19a9h_95" class="source-paragraph" data-source-paragraph="24">开始输入 <code class="code" id="kmp-tests--x19a9h_96">commonTest/kotlin</code> 路径以缩小选择范围，然后从列表中选择它：</p></li>
+</ol>
+<figure id="kmp-tests--x19a9h_88"><img alt="创建公共测试目录" src="./assets/kmp-tests/create-common-test-dir.png" title="创建公共测试目录" width="350" height="208"></figure>
+</li>
+<li class="list__item" id="kmp-tests--x19a9h_80"><p id="kmp-tests--x19a9h_97" class="source-paragraph" data-source-paragraph="25">在 <code class="code" id="kmp-tests--x19a9h_98">commonTest/kotlin</code> 目录下，创建一个新的 <code class="code" id="kmp-tests--x19a9h_99">common.example.search</code> 包。</p></li>
+<li class="list__item" id="kmp-tests--x19a9h_81">
+<p id="kmp-tests--x19a9h_100" class="source-paragraph" data-source-paragraph="26">在该包中，创建 <code class="code" id="kmp-tests--x19a9h_102">Grep.kt</code> 文件，并将其更新为以下单元测试：</p>
+<pre class="source-code"><code class="language-kotlin">
+import kotlin.test.Test
+import kotlin.test.assertContains
+import kotlin.test.assertEquals
 
-// androidMain / iosMain 分别实现
-class PlatformNetworkStatus : NetworkStatus {
-    override fun isAvailable(): Boolean = platformCheck()
-}</code></pre>
-      <p>“网络是否可用”依赖平台 API，是平台事实；“离线时展示什么”是业务决策。接口让依赖方向保持为：共享业务规则依赖抽象，平台实现提供能力。</p>
-      <h2>3. 接口还是 expect/actual</h2>
-      <div class="table-wrapper"><table><thead><tr><th>方式</th><th>适合</th><th>代价</th></tr></thead><tbody>
-      <tr><td>公共接口 + 平台实现</td><td>需要替换实现、注入测试替身，或能力本身是业务依赖</td><td>需要在组合入口装配</td></tr>
-      <tr><td><code>expect</code>/<code>actual</code></td><td>小而稳定、天然按平台存在的声明</td><td>平台实现与声明在编译期绑定</td></tr>
-      </tbody></table></div>
-      <p>不要为了使用 KMP 而给每个类都做 <code>expect</code>/<code>actual</code>。先问是否真的存在平台差异，再选择最小边界。</p>
-      <h2>4. 测试沿生产边界放置</h2>
-      <pre><code>// commonTest
-class RefreshPolicyTest {
-    @Test
-    fun freshCacheDoesNotRequestNetwork() {
-        val decision = RefreshPolicy().decide(
-            cache = CacheState(isFresh = true),
-            network = NetworkState(isAvailable = true)
+class GrepTest {
+    companion object {
+        val sampleData = listOf(
+            "123 abc",
+            "abc 123",
+            "123 ABC",
+            "ABC 123"
         )
-        assertEquals(RefreshDecision.UseCache, decision)
+    }
+
+    @Test
+    fun shouldFindMatches() {
+        val results = mutableListOf&lt;String&gt;()
+        grep(sampleData, "[a-z]+") {
+            results.add(it)
+        }
+
+        assertEquals(2, results.size)
+        for (result in results) {
+            assertContains(result, "abc")
+        }
     }
 }</code></pre>
-      <p><code>commonTest</code> 用 <code>kotlin.test</code> 验证共享业务行为，并在配置的多个目标上运行。依赖 Android、JVM 或 iOS API 的行为放到对应平台测试源码集；不要用 JVM 测试假装已经验证 iOS 平台能力。</p>
-      <h2>5. 用业务闭环判断迁移范围</h2>
-      <ol><li>找出谁做决定，而不只是找“纯函数”。</li><li>列出决定依赖的状态、输入事实和不变量。</li><li>把平台事实收敛为窄接口，留在平台实现。</li><li>把共享决策及其测试一起移入 commonMain/commonTest。</li><li>在各平台组合入口装配，并补平台特有验证。</li></ol>
-      <aside class="boundary-note warning"><strong>容易误用</strong><ul><li>只抽一个接口、移动几个函数，就宣称完成共享；状态和规则仍散落在平台层。</li><li>把数据库、系统时间、权限状态等平台事实伪装成共享实现。</li><li>只测工具函数，不测试用户可观察到的业务结果。</li><li>为了追求最高共享率，牺牲清楚的平台边界。</li></ul></aside>
-      <p><strong>最后的判断：</strong>共享率不是目标，一致的业务行为和清楚的变化边界才是目标。</p>
-      <section class="project-lab">
-        <span class="note-kind">下周项目对照</span>
-        <h2>不要另写玩具代码，直接在项目里取证</h2>
-        <p><strong>先搜索：</strong><code>commonMain</code>、<code>commonTest</code>、<code>expect</code>、<code>actual</code>、平台源码集、<code>kotlin.test</code></p>
-        <ol><li>选一个真实文件，用一句话写出它在业务流程中的职责。</li><li>圈出本章概念的一个真实用法，写清输入、输出与所有者。</li><li>沿调用方向再追一层，确认它的生命周期或依赖边界。</li><li>找一条对应测试；如果没有，写下最值得补的可观察行为。</li></ol>
-      </section>
-    </article>
-    <section class="recall" aria-labelledby="recall-title">
-      <span class="note-kind">读完自测</span>
-      <h2 id="recall-title">合上正文，回答这三个问题</h2>
-      <ol><li>本章最重要的边界是什么？</li><li>项目里哪个类型或文件最能体现这个边界？</li><li>如果把这个边界拿掉，最可能出现什么错误？</li></ol>
-    </section>
-    <nav class="chapter-switcher" aria-label="章节导航"><a href="../flow-and-state/index.html">← Flow 与状态</a><a class="course-home" href="../index.html">全部章节</a><span></span></nav>
-    <footer class="license-note"><p>本章是项目导向的结构化精读，不是官方文档的逐段完整翻译。主要依据：<a href="https://kotlinlang.org/docs/multiplatform/multiplatform-discover-project.html">KMP 项目结构基础</a>、<a href="https://kotlinlang.org/docs/multiplatform/multiplatform-run-tests.html">测试 KMP 应用</a>、<a href="https://kotlinlang.org/docs/multiplatform/multiplatform-expect-actual.html">expect 与 actual</a>。原始内容由 JetBrains 与 Kotlin 贡献者维护，采用 <a href="https://github.com/JetBrains/kotlin-web-site/blob/master/LICENSE">Apache License 2.0</a>；版本差异以官方原文为准。</p></footer>
-  </main>
+</li>
+</ol>
+<p id="kmp-tests--x19a9h_74" class="source-paragraph" data-source-paragraph="27">如您所见，导入的注解和断言既不依赖于特定平台，也不依赖于特定框架。稍后运行此测试时，特定于平台的框架将提供测试运行器。</p>
+<section class="chapter"><details class="source-details"><summary>探索 Kotlin.test API</summary><p id="kmp-tests--x19a9h_104" class="source-paragraph" data-source-paragraph="28"><a href="https://kotlinlang.org/api/latest/kotlin.test/" id="kmp-tests--x19a9h_108" data-external="true" rel="noopener noreferrer"><code class="code" id="kmp-tests--x19a9h_110">kotlin.test</code></a> 库提供了与平台无关的注解和断言，供您在测试中使用。诸如 <code class="code" id="kmp-tests--x19a9h_109">Test</code> 之类的注解，会映射到所选框架提供的注解或其最接近的等效注解。</p>
+<p id="kmp-tests--x19a9h_105" class="source-paragraph" data-source-paragraph="29">断言是通过 <a href="https://kotlinlang.org/api/latest/kotlin.test/kotlin.test/-asserter/" id="kmp-tests--x19a9h_111" data-external="true" rel="noopener noreferrer"><code class="code" id="kmp-tests--x19a9h_112">Asserter</code> interface</a> 的实现来执行的。该接口定义了测试中常执行的各种检查。该 API 提供了一个默认实现，但通常你会使用特定框架的实现。</p>
+<p id="kmp-tests--x19a9h_106" class="source-paragraph" data-source-paragraph="30">例如，JVM 支持 JUnit 4、JUnit 5 和 TestNG 框架。在 Android 平台上，对 <code class="code" id="kmp-tests--x19a9h_113">assertEquals()</code> 的调用可能会导致对 <code class="code" id="kmp-tests--x19a9h_114">asserter.assertEquals()</code> 的调用，其中 <code class="code" id="kmp-tests--x19a9h_115">asserter</code> 对象是 <code class="code" id="kmp-tests--x19a9h_116">JUnit4Asserter</code> 的实例。在 iOS 平台上，<code class="code" id="kmp-tests--x19a9h_117">Asserter</code> 类型的默认实现会与 Kotlin/Native 测试运行器配合使用。</p></details></section></section><section class="chapter"><h4 id="kmp-tests-run-tests" data-toc="run-tests">运行测试</h4>
+<p id="kmp-tests--x19a9h_118" class="source-paragraph" data-source-paragraph="31">您可以通过以下方式执行测试：</p>
+<ul class="list _bullet" id="kmp-tests--x19a9h_119">
+<li class="list__item" id="kmp-tests--x19a9h_125"><p id="kmp-tests--x19a9h_128" class="source-paragraph" data-source-paragraph="32">通过边栏中的“运行”图标运行 <code class="code" id="kmp-tests--x19a9h_129">shouldFindMatches()</code> 测试函数。</p></li>
+<li class="list__item" id="kmp-tests--x19a9h_126"><p id="kmp-tests--x19a9h_131" class="source-paragraph" data-source-paragraph="33">通过右键菜单运行测试文件。</p></li>
+<li class="list__item" id="kmp-tests--x19a9h_127"><p id="kmp-tests--x19a9h_132" class="source-paragraph" data-source-paragraph="34">通过边栏中的“运行”图标运行 <code class="code" id="kmp-tests--x19a9h_133">GrepTest</code> 测试类。</p></li>
+</ul>
+<p id="kmp-tests--x19a9h_120" class="source-paragraph" data-source-paragraph="35">还有一个便捷的 <kbd class="keystroke" id="kmp-tests--x19a9h_135" data-bypass="true"><span class="keystroke__value">⌃ ⇧ F10</span></kbd>/<kbd class="keystroke" id="kmp-tests--x19a9h_136" data-bypass="true"><span class="keystroke__value">Ctrl+Shift+F10</span></kbd> 快捷键。无论选择哪种选项，你都会看到一个用于运行测试的目标列表：</p>
+<figure id="kmp-tests--x19a9h_121"><img alt="运行测试任务" src="./assets/kmp-tests/run-test-tasks.png" title="运行测试任务" width="300" height="151"></figure><p id="kmp-tests--x19a9h_122" class="source-paragraph" data-source-paragraph="36">对于 <code class="code" id="kmp-tests--x19a9h_137">android</code> 选项，测试将使用 JUnit 4 运行。对于 <code class="code" id="kmp-tests--x19a9h_138">iosSimulatorArm64</code>，Kotlin 编译器会检测测试注解，并生成一个测试二进制文件，该文件由 Kotlin/Native 自带的测试运行器执行。</p>
+<p id="kmp-tests--x19a9h_123" class="source-paragraph" data-source-paragraph="37">以下是一个测试运行成功的输出示例：</p>
+<figure id="kmp-tests--x19a9h_124"><img alt="测试输出" src="./assets/kmp-tests/run-test-results.png" title="测试输出" width="700" height="449"></figure></section></section><section class="chapter"><h3 id="kmp-tests-work-with-more-complex-projects" data-toc="work-with-more-complex-projects">处理更复杂的项目</h3>
+<section class="chapter"><h4 id="kmp-tests-write-tests-for-common-code" data-toc="write-tests-for-common-code">为共享代码编写测试</h4>
+<p id="kmp-tests--x19a9h_143" class="source-paragraph" data-source-paragraph="38">你已经使用 <code class="code" id="kmp-tests--x19a9h_147">grep()</code> 函数为“共享代码”创建了一个测试。现在，让我们考虑一个更高级的“共享代码”测试，使用 <code class="code" id="kmp-tests--x19a9h_148">CurrentRuntime</code> 类。该类包含代码执行所在平台的详细信息。例如，对于在本地 JVM 上运行的 Android 单元测试，它可能包含“OpenJDK”和“17.0”这两个值。</p>
+<p id="kmp-tests--x19a9h_144" class="source-paragraph" data-source-paragraph="39">应创建一个 <code class="code" id="kmp-tests--x19a9h_149">CurrentRuntime</code> 实例，其名称和版本均为字符串，其中版本为可选参数。当包含版本时，只需使用字符串开头的数字（如有）。</p>
+<ol class="list _decimal" id="kmp-tests--x19a9h_145" type="1">
+<li class="list__item" id="kmp-tests--x19a9h_150"><p id="kmp-tests--x19a9h_154" class="source-paragraph" data-source-paragraph="40">在 <code class="code" id="kmp-tests--x19a9h_155">commonMain/kotlin</code> 目录下，创建一个新的 <code class="code" id="kmp-tests--x19a9h_156">org.kmp.testing</code> 包。</p></li>
+<li class="list__item" id="kmp-tests--x19a9h_151">
+<p id="kmp-tests--x19a9h_157" class="source-paragraph" data-source-paragraph="41">在该包中，创建 <code class="code" id="kmp-tests--x19a9h_159">CurrentRuntime.kt</code> 文件，并将其更新为以下实现：</p>
+<pre class="source-code"><code class="language-kotlin">
+class CurrentRuntime(val name: String, rawVersion: String?) {
+    companion object {
+        val versionRegex = Regex("^[0-9]+(\\.[0-9]+)?")
+    }
+
+    val version = parseVersion(rawVersion)
+
+    override fun toString() = "$name version $version"
+
+    private fun parseVersion(rawVersion: String?): String {
+        val result = rawVersion?.let { versionRegex.find(it) }
+        return result?.value ?: "unknown"
+    }
+}</code></pre>
+</li>
+<li class="list__item" id="kmp-tests--x19a9h_152"><p id="kmp-tests--x19a9h_160" class="source-paragraph" data-source-paragraph="42">在 <code class="code" id="kmp-tests--x19a9h_161">commonTest/kotlin</code> 目录下，创建一个新的 <code class="code" id="kmp-tests--x19a9h_162">org.kmp.testing</code> 包。</p></li>
+<li class="list__item" id="kmp-tests--x19a9h_153">
+<p id="kmp-tests--x19a9h_163" class="source-paragraph" data-source-paragraph="43">在此包中，创建 <code class="code" id="kmp-tests--x19a9h_165">CurrentRuntimeTest.kt</code> 文件，并用以下与平台和框架无关的测试对其进行更新：</p>
+<pre class="source-code"><code class="language-kotlin">
+import kotlin.test.Test
+import kotlin.test.assertEquals
+
+class CurrentRuntimeTest {
+    @Test
+    fun shouldDisplayDetails() {
+        val runtime = CurrentRuntime("MyRuntime", "1.1")
+        assertEquals("MyRuntime version 1.1", runtime.toString())
+    }
+
+    @Test
+    fun shouldHandleNullVersion() {
+        val runtime = CurrentRuntime("MyRuntime", null)
+        assertEquals("MyRuntime version unknown", runtime.toString())
+    }
+
+    @Test
+    fun shouldParseNumberFromVersionString() {
+        val runtime = CurrentRuntime("MyRuntime", "1.2 Alpha Experimental")
+        assertEquals("MyRuntime version 1.2", runtime.toString())
+    }
+
+    @Test
+    fun shouldHandleMissingVersion() {
+        val runtime = CurrentRuntime("MyRuntime", "Alpha Experimental")
+        assertEquals("MyRuntime version unknown", runtime.toString())
+    }
+}</code></pre>
+</li>
+</ol>
+<p id="kmp-tests--x19a9h_146" class="source-paragraph" data-source-paragraph="44">你可以通过任何 <a href="#kmp-tests-run-tests" id="kmp-tests--x19a9h_166">在 IDE 中可用</a> 方式运行此测试。</p></section><section class="chapter"><h4 id="kmp-tests-add-platform-specific-tests" data-toc="add-platform-specific-tests">添加特定于平台的测试</h4>
+<aside class="source-note" data-type="note" data-title="" id="kmp-tests--x19a9h_167"><p id="kmp-tests--x19a9h_174" class="source-paragraph" data-source-paragraph="45">此处使用 <a href="https://kotlinlang.org/docs/multiplatform/multiplatform-connect-to-apis.html" id="kmp-tests--x19a9h_175">预期值与实际值的声明机制</a> 是为了简洁和简单。在更复杂的代码中，更好的做法是使用接口和工厂函数。</p></aside><p id="kmp-tests--x19a9h_168" class="source-paragraph" data-source-paragraph="46">现在你已经掌握了为共享代码编写测试的经验，让我们来探索如何为 Android 和 iOS 编写特定于平台的测试。</p>
+<p id="kmp-tests--x19a9h_169" class="source-paragraph" data-source-paragraph="47">要创建 <code class="code" id="kmp-tests--x19a9h_176">CurrentRuntime</code> 的实例，请在公共 <code class="code" id="kmp-tests--x19a9h_177">CurrentRuntime.kt</code> 文件中按如下方式声明一个函数：</p>
+<pre class="source-code"><code class="language-kotlin">
+expect fun determineCurrentRuntime(): CurrentRuntime</code></pre>
+<p id="kmp-tests--x19a9h_171" class="source-paragraph" data-source-paragraph="48">该函数应针对每个支持的平台分别实现。否则，构建将失败。除了在每个平台上实现该函数外，你还应提供测试用例。让我们为 Android 和 iOS 创建测试用例。</p>
+<section class="chapter"><h5 id="kmp-tests-for-android" data-toc="for-android">对于 Android</h5>
+<ol class="list _decimal" id="kmp-tests--x19a9h_178" type="1">
+<li class="list__item" id="kmp-tests--x19a9h_181"><p id="kmp-tests--x19a9h_186" class="source-paragraph" data-source-paragraph="49">在 <code class="code" id="kmp-tests--x19a9h_187">androidMain/kotlin</code> 目录下，创建一个新的 <code class="code" id="kmp-tests--x19a9h_188">org.kmp.testing</code> 包。</p></li>
+<li class="list__item" id="kmp-tests--x19a9h_182">
+<p id="kmp-tests--x19a9h_189" class="source-paragraph" data-source-paragraph="50">在该包中，创建 <code class="code" id="kmp-tests--x19a9h_191">AndroidRuntime.kt</code> 文件，并将其更新为预期 <code class="code" id="kmp-tests--x19a9h_192">determineCurrentRuntime()</code> 函数的实际实现：</p>
+<pre class="source-code"><code class="language-kotlin">
+actual fun determineCurrentRuntime(): CurrentRuntime {
+    val name = System.getProperty("java.vm.name") ?: "Android"
+
+    val version = System.getProperty("java.version")
+
+    return CurrentRuntime(name, version)
+}</code></pre>
+</li>
+<li class="list__item" id="kmp-tests--x19a9h_183">
+<p id="kmp-tests--x19a9h_193" class="source-paragraph" data-source-paragraph="51">在 <code class="code" id="kmp-tests--x19a9h_195">sharedLogic/src</code> 目录内创建一个用于测试的目录：</p>
+<ol class="list _decimal" id="kmp-tests--x19a9h_194" type="1">
+<li class="list__item" id="kmp-tests--x19a9h_196"><p id="kmp-tests--x19a9h_198" class="source-paragraph" data-source-paragraph="52">右键单击 <code class="code" id="kmp-tests--x19a9h_199">sharedLogic/src</code> 目录，然后选择“新建 | 目录”。IDE 将显示一组选项。</p></li>
+<li class="list__item" id="kmp-tests--x19a9h_197">
+<p id="kmp-tests--x19a9h_201" class="source-paragraph" data-source-paragraph="53">开始输入 <code class="code" id="kmp-tests--x19a9h_203">androidHostTest/kotlin</code> 路径以缩小选择范围，然后从列表中选择它：</p>
+<figure id="kmp-tests--x19a9h_202"><img alt="创建 Android 测试目录" src="./assets/kmp-tests/create-android-test-dir.png" title="创建 Android 测试目录" width="350" height="210"></figure>
+</li>
+</ol>
+</li>
+<li class="list__item" id="kmp-tests--x19a9h_184"><p id="kmp-tests--x19a9h_204" class="source-paragraph" data-source-paragraph="54">在 <code class="code" id="kmp-tests--x19a9h_205">androidHostTest/kotlin</code> 目录下，创建一个新的 <code class="code" id="kmp-tests--x19a9h_206">org.kmp.testing</code> 包。</p></li>
+<li class="list__item" id="kmp-tests--x19a9h_185">
+<p id="kmp-tests--x19a9h_207" class="source-paragraph" data-source-paragraph="55">在该包中，创建 <code class="code" id="kmp-tests--x19a9h_209">AndroidRuntimeTest.kt</code> 文件，并将其更新为以下 Android 测试。为了使测试通过，请确保设置运行时的实际名称和版本（不过观察测试失败的情况也很有帮助）：</p>
+<pre class="source-code"><code class="language-kotlin">
+import kotlin.test.Test
+import kotlin.test.assertContains
+import kotlin.test.assertEquals
+
+class AndroidRuntimeTest {
+    @Test
+    fun shouldDetectAndroid() {
+        val runtime = determineCurrentRuntime()
+        assertContains(runtime.name, "OpenJDK")
+        assertEquals(runtime.version, "21.0")
+    }
+}</code></pre>
+</li>
+</ol>
+<p id="kmp-tests--x19a9h_179" class="source-paragraph" data-source-paragraph="56">在本地 JVM 上运行一个 Android 专用的测试可能看起来有些奇怪。这是因为这些测试作为本地单元测试在当前机器上运行。正如 <a href="https://developer.android.com/studio/test/test-in-android-studio" id="kmp-tests--x19a9h_210" data-external="true" rel="noopener noreferrer">Android Studio 文档</a> 中所述，这些测试与在设备或模拟器上运行的仪器化测试不同。</p>
+<p id="kmp-tests--x19a9h_180" class="source-paragraph" data-source-paragraph="57">您可以向项目中添加其他类型的测试。要了解仪器化测试，请参阅此 <a href="https://touchlab.co/understanding-and-configuring-your-kmm-test-suite/" id="kmp-tests--x19a9h_211" data-external="true" rel="noopener noreferrer">Touchlab 指南</a>。</p></section><section class="chapter"><h5 id="kmp-tests-for-ios" data-toc="for-ios">对于 iOS</h5>
+<ol class="list _decimal" id="kmp-tests--x19a9h_212" type="1">
+<li class="list__item" id="kmp-tests--x19a9h_213"><p id="kmp-tests--x19a9h_218" class="source-paragraph" data-source-paragraph="58">在 <code class="code" id="kmp-tests--x19a9h_219">iosMain/kotlin</code> 目录中，创建一个新的 <code class="code" id="kmp-tests--x19a9h_220">org.kmp.testing</code> 目录。</p></li>
+<li class="list__item" id="kmp-tests--x19a9h_214">
+<p id="kmp-tests--x19a9h_221" class="source-paragraph" data-source-paragraph="59">在此目录下，创建 <code class="code" id="kmp-tests--x19a9h_223">IOSRuntime.kt</code> 文件，并将其更新为预期 <code class="code" id="kmp-tests--x19a9h_224">determineCurrentRuntime()</code> 函数的实际实现：</p>
+<pre class="source-code"><code class="language-kotlin">
+import kotlin.experimental.ExperimentalNativeApi
+import kotlin.native.Platform
+
+@OptIn(ExperimentalNativeApi::class)
+actual fun determineCurrentRuntime(): CurrentRuntime {
+    val name = Platform.osFamily.name.lowercase()
+    return CurrentRuntime(name, null)
+}</code></pre>
+</li>
+<li class="list__item" id="kmp-tests--x19a9h_215">
+<p id="kmp-tests--x19a9h_225" class="source-paragraph" data-source-paragraph="60">在 <code class="code" id="kmp-tests--x19a9h_227">sharedLogic/src</code> 目录下创建一个新目录：</p>
+<ol class="list _decimal" id="kmp-tests--x19a9h_226" type="1">
+<li class="list__item" id="kmp-tests--x19a9h_228"><p id="kmp-tests--x19a9h_230" class="source-paragraph" data-source-paragraph="61">右键单击 <code class="code" id="kmp-tests--x19a9h_231">sharedLogic/src</code> 目录，然后选择“新建 | 目录”。IDE 将显示一组选项。</p></li>
+<li class="list__item" id="kmp-tests--x19a9h_229"><p id="kmp-tests--x19a9h_233" class="source-paragraph" data-source-paragraph="62">开始输入 <code class="code" id="kmp-tests--x19a9h_234">iosTest/kotlin</code> 路径以缩小选择范围，然后从列表中选择它：</p></li>
+</ol>
+</li>
+<li class="list__item" id="kmp-tests--x19a9h_216"><p id="kmp-tests--x19a9h_235" class="source-paragraph" data-source-paragraph="63">在 <code class="code" id="kmp-tests--x19a9h_236">iosTest/kotlin</code> 目录中，创建一个新的 <code class="code" id="kmp-tests--x19a9h_237">org.kmp.testing</code> 目录。</p></li>
+<li class="list__item" id="kmp-tests--x19a9h_217">
+<p id="kmp-tests--x19a9h_238" class="source-paragraph" data-source-paragraph="64">在该目录中创建 <code class="code" id="kmp-tests--x19a9h_240">IOSRuntimeTest.kt</code> 文件，并将其更新为以下 iOS 测试：</p>
+<pre class="source-code"><code class="language-kotlin">
+import kotlin.test.Test
+import kotlin.test.assertEquals
+
+class IOSRuntimeTest {
+    @Test
+    fun shouldDetectOS() {
+        val runtime = determineCurrentRuntime()
+        assertEquals(runtime.name, "ios")
+        assertEquals(runtime.version, "unknown")
+    }
+}</code></pre>
+</li>
+</ol></section></section><section class="chapter"><h4 id="kmp-tests-run-multiple-tests-and-analyze-reports" data-toc="run-multiple-tests-and-analyze-reports">运行多个测试并分析报告</h4>
+<p id="kmp-tests--x19a9h_241" class="source-paragraph" data-source-paragraph="65">至此，您已拥有通用、Android 和 iOS 实现的代码及其测试用例。项目的目录结构应大致如下所示：</p>
+<figure id="kmp-tests--x19a9h_242"><img alt="整个项目结构" src="./assets/kmp-tests/code-and-test-structure.png" title="整个项目结构" width="300" height="747"></figure><p id="kmp-tests--x19a9h_243" class="source-paragraph" data-source-paragraph="66">您可以通过右键菜单或使用快捷键运行单个测试。另一种方法是使用 Gradle 任务。例如，如果你运行 <code class="code" id="kmp-tests--x19a9h_250">allTests</code> Gradle 任务，项目中的每个测试都将通过相应的测试运行器执行：</p>
+<figure id="kmp-tests--x19a9h_244"><img alt="Gradle 测试任务" src="./assets/kmp-tests/gradle-alltests.png" title="Gradle 测试任务" width="700" height="633"></figure><p id="kmp-tests--x19a9h_245" class="source-paragraph" data-source-paragraph="67">运行测试时，除了 IDE 中的输出结果外，还会生成 HTML 报告。你可以在 <code class="code" id="kmp-tests--x19a9h_251">sharedLogic/build/reports/tests</code> 目录中找到这些报告：</p>
+<figure id="kmp-tests--x19a9h_246"><img alt="多平台测试的 HTML 报告" src="./assets/kmp-tests/shared-tests-folder-reports.png" title="多平台测试的 HTML 报告" width="300" height="328"></figure><p id="kmp-tests--x19a9h_247" class="source-paragraph" data-source-paragraph="68">运行 <code class="code" id="kmp-tests--x19a9h_252">allTests</code> 任务并查看其生成的报告：</p>
+<ul class="list _bullet" id="kmp-tests--x19a9h_248">
+<li class="list__item" id="kmp-tests--x19a9h_253"><p id="kmp-tests--x19a9h_255" class="source-paragraph" data-source-paragraph="69"><code class="code" id="kmp-tests--x19a9h_256">allTests/index.html</code> 文件包含通用测试和 iOS 测试的合并报告（iOS 测试依赖于通用测试，并在通用测试之后运行）。</p></li>
+<li class="list__item" id="kmp-tests--x19a9h_254"><p id="kmp-tests--x19a9h_257" class="source-paragraph" data-source-paragraph="70"><code class="code" id="kmp-tests--x19a9h_258">testDebugUnitTest</code> 和 <code class="code" id="kmp-tests--x19a9h_259">testReleaseUnitTest</code> 文件夹中包含两个默认 Android 构建版本的报告。（目前，Android 测试报告不会自动与 <code class="code" id="kmp-tests--x19a9h_260">allTests</code> 报告合并。）</p></li>
+</ul>
+<figure id="kmp-tests--x19a9h_249"><img alt="多平台测试的 HTML 报告" src="./assets/kmp-tests/multiplatform-test-report.png" title="多平台测试的 HTML 报告" width="700" height="361"></figure></section></section><section class="chapter"><h3 id="kmp-tests-rules-for-using-tests-in-multiplatform-projects" data-toc="rules-for-using-tests-in-multiplatform-projects">多平台项目中使用测试的规则</h3>
+<p id="kmp-tests--x19a9h_261" class="source-paragraph" data-source-paragraph="71">至此，您已在 Kotlin 多平台应用中创建、配置并执行了测试。在今后的项目中处理测试时，请记住：</p>
+<ul class="list _bullet" id="kmp-tests--x19a9h_262">
+<li class="list__item" id="kmp-tests--x19a9h_263"><p id="kmp-tests--x19a9h_271" class="source-paragraph" data-source-paragraph="72">为共享代码编写测试时，请仅使用多平台库，例如 <a href="https://kotlinlang.org/api/latest/kotlin.test/" id="kmp-tests--x19a9h_272" data-external="true" rel="noopener noreferrer">Kotlin.test</a>。将依赖项添加到 <code class="code" id="kmp-tests--x19a9h_273">commonTest</code> 源码集。</p></li>
+<li class="list__item" id="kmp-tests--x19a9h_264"><p id="kmp-tests--x19a9h_274" class="source-paragraph" data-source-paragraph="73">应仅间接使用来自 <code class="code" id="kmp-tests--x19a9h_276">kotlin.test</code> API 的 <code class="code" id="kmp-tests--x19a9h_275">Asserter</code> 类型。尽管 <code class="code" id="kmp-tests--x19a9h_277">Asserter</code> 实例是可见的，但您无需在测试中使用它。</p></li>
+<li class="list__item" id="kmp-tests--x19a9h_265"><p id="kmp-tests--x19a9h_278" class="source-paragraph" data-source-paragraph="74">请始终在测试库的 API 范围内进行操作。幸运的是，编译器和 IDE 会阻止你使用特定于框架的功能。</p></li>
+<li class="list__item" id="kmp-tests--x19a9h_266"><p id="kmp-tests--x19a9h_279" class="source-paragraph" data-source-paragraph="75">虽然在 <code class="code" id="kmp-tests--x19a9h_280">commonTest</code> 中使用哪个框架运行测试并不重要，但建议你使用计划采用的每个框架分别运行测试，以验证开发环境是否配置正确。</p></li>
+<li class="list__item" id="kmp-tests--x19a9h_267"><p id="kmp-tests--x19a9h_281" class="source-paragraph" data-source-paragraph="76">请考虑物理特性上的差异。例如，滚动惯性和摩擦值会因平台和设备而异，因此设置相同的滚动速度可能会导致不同的滚动位置。请务必在目标平台上测试组件，以确保其行为符合预期。</p></li>
+<li class="list__item" id="kmp-tests--x19a9h_268"><p id="kmp-tests--x19a9h_282" class="source-paragraph" data-source-paragraph="77">为平台特定代码编写测试时，您可以使用相应框架的功能，例如注解和扩展。</p></li>
+<li class="list__item" id="kmp-tests--x19a9h_269"><p id="kmp-tests--x19a9h_283" class="source-paragraph" data-source-paragraph="78">您既可以通过 IDE 运行测试，也可以使用 Gradle 任务运行测试。</p></li>
+<li class="list__item" id="kmp-tests--x19a9h_270"><p id="kmp-tests--x19a9h_284" class="source-paragraph" data-source-paragraph="79">运行测试时，系统会自动生成 HTML 格式的测试报告。</p></li>
+</ul></section><section class="chapter"><h3 id="kmp-tests-what-s-next" data-toc="what-s-next">接下来该做什么？</h3>
+<ul class="list _bullet" id="kmp-tests--x19a9h_285">
+<li class="list__item" id="kmp-tests--x19a9h_286"><p id="kmp-tests--x19a9h_288" class="source-paragraph" data-source-paragraph="80">请在 <a href="../project-and-gradle/index.html#source-project-structure" id="kmp-tests--x19a9h_289">了解多平台项目结构</a> 中了解多平台项目的结构。</p></li>
+<li class="list__item" id="kmp-tests--x19a9h_287"><p id="kmp-tests--x19a9h_290" class="source-paragraph" data-source-paragraph="81">请查看 <a href="https://kotest.io/" id="kmp-tests--x19a9h_291" data-external="true" rel="noopener noreferrer">Kotest</a>，这是 Kotlin 生态系统提供的另一个多平台测试框架。Kotest 允许采用多种风格编写测试，并支持常规测试的补充方法，其中包括 <a href="https://kotest.io/docs/framework/datatesting/data-driven-testing.html" id="kmp-tests--x19a9h_292" data-external="true" rel="noopener noreferrer">数据驱动</a> 和 <a href="https://kotest.io/docs/proptest/property-based-testing.html" id="kmp-tests--x19a9h_293" data-external="true" rel="noopener noreferrer">基于属性的</a> 测试。</p></li>
+</ul></section></section><section class="source-document" id="source-expect-actual"><h2>expect 与 actual 声明</h2>
+<p id="expect-actual-k0zr60_2" class="source-paragraph" data-source-paragraph="1">expect 与 actual 声明允许你从 Kotlin Multiplatform 模块访问平台专用 API，同时在共享代码中提供与平台无关的 API。</p>
+<aside class="source-note" data-type="tip" data-title="" id="expect-actual-k0zr60_3"><p id="expect-actual-k0zr60_8" class="source-paragraph" data-source-paragraph="2">本文介绍 expect 与 actual 声明的语言机制。有关使用平台专用 API 的不同方式及一般建议，请参阅 <a href="https://kotlinlang.org/docs/multiplatform/multiplatform-connect-to-apis.html" id="expect-actual-k0zr60_9">使用平台专用 API</a>。</p></aside><section class="chapter"><h3 id="expect-actual-rules-for-expected-and-actual-declarations" data-toc="rules-for-expected-and-actual-declarations">expect 与 actual 声明的规则</h3>
+<p id="expect-actual-k0zr60_10" class="source-paragraph" data-source-paragraph="3">要定义 expect 与 actual 声明，请遵循以下规则：</p>
+<ol class="list _decimal" id="expect-actual-k0zr60_11" type="1">
+<li class="list__item" id="expect-actual-k0zr60_20"><p id="expect-actual-k0zr60_23" class="source-paragraph" data-source-paragraph="4">在通用源码集中，声明一个标准的 Kotlin 构造。这可以是函数、属性、类、接口、枚举或注解。</p></li>
+<li class="list__item" id="expect-actual-k0zr60_21"><p id="expect-actual-k0zr60_24" class="source-paragraph" data-source-paragraph="5">使用 <code class="code" id="expect-actual-k0zr60_25">expect</code> 关键字标记该构造。这就是你的声明。这些声明可在共享代码中使用，但不应包含任何实现。相反，具体实现由平台专用代码提供。</p></li>
+<li class="list__item" id="expect-actual-k0zr60_22"><p id="expect-actual-k0zr60_27" class="source-paragraph" data-source-paragraph="6">在每个平台专用源码集中，在同一包中声明相同的构造，并使用 <code class="code" id="expect-actual-k0zr60_28">actual</code> 关键字进行标记。这是你的 actual 声明，通常包含使用平台专用库的实现。</p></li>
+</ol>
+<p id="expect-actual-k0zr60_12" class="source-paragraph" data-source-paragraph="7">在针对特定目标进行编译时，编译器会尝试将找到的每个 actual 声明与共享代码中的相应 expect 声明进行匹配。编译器确保：</p>
+<ul class="list _bullet" id="expect-actual-k0zr60_13">
+<li class="list__item" id="expect-actual-k0zr60_32"><p id="expect-actual-k0zr60_35" class="source-paragraph" data-source-paragraph="8">公共源码集中的每个 expect 声明，在每个平台专用源码集中都有一个匹配的 actual 声明。</p></li>
+<li class="list__item" id="expect-actual-k0zr60_33"><p id="expect-actual-k0zr60_36" class="source-paragraph" data-source-paragraph="9">expect 声明不包含任何实现。</p></li>
+<li class="list__item" id="expect-actual-k0zr60_34"><p id="expect-actual-k0zr60_37" class="source-paragraph" data-source-paragraph="10">每个 actual 声明都与相应的 expect 声明共享同一个包，例如 <code class="code" id="expect-actual-k0zr60_38">org.mygroup.myapp.MyType</code>。</p></li>
+</ul>
+<p id="expect-actual-k0zr60_14" class="source-paragraph" data-source-paragraph="11">在为不同平台生成目标代码时，Kotlin 编译器会合并相互对应的 expect 声明和 actual 声明。它会为每个平台生成一个包含其实际实现的声明。在共享代码中对 expect 声明的每次调用，都会在生成的平台代码中调用正确的 actual 声明。</p>
+<p id="expect-actual-k0zr60_15" class="source-paragraph" data-source-paragraph="12">当使用不同目标平台之间共享的中间源码集时，您可以声明 actual 声明。例如，将 <code class="code" id="expect-actual-k0zr60_39">iosMain</code> 视为 <code class="code" id="expect-actual-k0zr60_40">iosArm64Main</code> 和 <code class="code" id="expect-actual-k0zr60_41">iosSimulatorArm64Main</code> 平台源码集之间共享的中间源码集。通常只有 <code class="code" id="expect-actual-k0zr60_42">iosMain</code> 包含 actual 声明，而平台源码集则不包含。随后，Kotlin 编译器将利用这些 actual 声明，为相应的平台生成目标代码。</p>
+<p id="expect-actual-k0zr60_16" class="source-paragraph" data-source-paragraph="13">IDE 可协助处理常见问题，包括：</p>
+<ul class="list _bullet" id="expect-actual-k0zr60_17">
+<li class="list__item" id="expect-actual-k0zr60_43"><p id="expect-actual-k0zr60_47" class="source-paragraph" data-source-paragraph="14">缺失的声明</p></li>
+<li class="list__item" id="expect-actual-k0zr60_44"><p id="expect-actual-k0zr60_48" class="source-paragraph" data-source-paragraph="15">包含实现的 expect 声明</p></li>
+<li class="list__item" id="expect-actual-k0zr60_45"><p id="expect-actual-k0zr60_49" class="source-paragraph" data-source-paragraph="16">声明签名不匹配</p></li>
+<li class="list__item" id="expect-actual-k0zr60_46"><p id="expect-actual-k0zr60_50" class="source-paragraph" data-source-paragraph="17">位于不同包中的声明</p></li>
+</ul>
+<p id="expect-actual-k0zr60_18" class="source-paragraph" data-source-paragraph="18">您还可以使用 IDE 从 expect 声明导航至 actual 声明。选择边栏图标查看 actual 声明，或使用 <a href="https://www.jetbrains.com/help/idea/navigating-through-the-source-code.html#go_to_implementation" id="expect-actual-k0zr60_51" data-external="true" rel="noopener noreferrer">快捷方式</a>。</p>
+<figure id="expect-actual-k0zr60_19"><img alt="IDE 导航：从 expect 声明到 actual 声明" src="./assets/expect-actual/expect-actual-gutter.png" title="IDE 导航：从 expect 声明到 actual 声明" width="500" height="102"></figure></section><section class="chapter"><h3 id="expect-actual-different-approaches-for-using-expected-and-actual-declarations" data-toc="different-approaches-for-using-expected-and-actual-declarations">使用 expect 与 actual 声明的不同方式</h3>
+<p id="expect-actual-k0zr60_52" class="source-paragraph" data-source-paragraph="19">让我们探索使用 expect/actual 机制的不同选项，以解决访问平台 API 的问题，同时仍能在共享代码中使用这些 API。</p>
+<p id="expect-actual-k0zr60_53" class="source-paragraph" data-source-paragraph="20">假设有一个 Kotlin Multiplatform 项目，你需要实现 <code class="code" id="expect-actual-k0zr60_57">Identity</code> 类型，该类型应包含用户的登录名和当前进程 ID。该项目包含 <code class="code" id="expect-actual-k0zr60_58">commonMain</code>、<code class="code" id="expect-actual-k0zr60_59">jvmMain</code> 和 <code class="code" id="expect-actual-k0zr60_60">nativeMain</code> 源码集，以确保应用程序既能在 JVM 上运行，也能在 iOS 等原生环境中运行。</p>
+<section class="chapter"><h4 id="expect-actual-expected-and-actual-functions" data-toc="expected-and-actual-functions">expect 与 actual 函数</h4>
+<p id="expect-actual-k0zr60_61" class="source-paragraph" data-source-paragraph="21">你可以定义一个 <code class="code" id="expect-actual-k0zr60_65">Identity</code> 类型和一个工厂函数 <code class="code" id="expect-actual-k0zr60_66">buildIdentity()</code>，该函数在通用源码集中声明，并在各平台源码集中以不同方式实现：</p>
+<ol class="list _decimal" id="expect-actual-k0zr60_62" type="1">
+<li class="list__item" id="expect-actual-k0zr60_67">
+<p id="expect-actual-k0zr60_70" class="source-paragraph" data-source-paragraph="22">在 <code class="code" id="expect-actual-k0zr60_72">commonMain</code> 中，声明一个简单类型和一个 expect 工厂函数：</p>
+<pre class="source-code"><code class="language-kotlin">
+package identity
+
+class Identity(val userName: String, val processID: Long)
+
+expect fun buildIdentity(): Identity</code></pre>
+</li>
+<li class="list__item" id="expect-actual-k0zr60_68">
+<p id="expect-actual-k0zr60_73" class="source-paragraph" data-source-paragraph="23">在 <code class="code" id="expect-actual-k0zr60_75">jvmMain</code> 源码集中，使用标准 Java 库实现解决方案：</p>
+<pre class="source-code"><code class="language-kotlin">
+package identity
+
+import java.lang.System
+import java.lang.ProcessHandle
+
+actual fun buildIdentity() = Identity(
+    System.getProperty("user.name") ?: "None",
+    ProcessHandle.current().pid()
+)</code></pre>
+</li>
+<li class="list__item" id="expect-actual-k0zr60_69">
+<p id="expect-actual-k0zr60_76" class="source-paragraph" data-source-paragraph="24">在 <code class="code" id="expect-actual-k0zr60_78">nativeMain</code> 源码集中，使用 <a href="https://en.wikipedia.org/wiki/POSIX" id="expect-actual-k0zr60_79" data-external="true" rel="noopener noreferrer">POSIX</a> 并借助原生依赖项实现解决方案：</p>
+<pre class="source-code"><code class="language-kotlin">
+package identity
+
+import kotlinx.cinterop.toKString
+import platform.posix.getlogin
+import platform.posix.getpid
+
+actual fun buildIdentity() = Identity(
+    getlogin()?.toKString() ?: "None",
+    getpid().toLong()
+)</code></pre>
+</li>
+</ol>
+<p id="expect-actual-k0zr60_63" class="source-paragraph" data-source-paragraph="25">在此处，平台函数会返回特定于该平台的 <code class="code" id="expect-actual-k0zr60_80">Identity</code> 实例。</p>
+<aside class="source-note" data-type="note" data-title="" id="expect-actual-k0zr60_64"><p id="expect-actual-k0zr60_81" class="source-paragraph" data-source-paragraph="26">从 Kotlin 1.9.0 开始，使用 <code class="code" id="expect-actual-k0zr60_82">getlogin()</code> 和 <code class="code" id="expect-actual-k0zr60_83">getpid()</code> 函数需要添加 <code class="code" id="expect-actual-k0zr60_84">@OptIn</code> 注解。</p></aside></section><section class="chapter"><h4 id="expect-actual-interfaces-with-expected-and-actual-functions" data-toc="interfaces-with-expected-and-actual-functions">包含expect 函数和 actual 函数的接口</h4>
+<p id="expect-actual-k0zr60_85" class="source-paragraph" data-source-paragraph="27">如果工厂函数变得过于庞大，请考虑使用一个通用的 <code class="code" id="expect-actual-k0zr60_92">Identity</code> 接口，并在不同平台上以不同的方式实现它。</p>
+<p id="expect-actual-k0zr60_86" class="source-paragraph" data-source-paragraph="28">一个 <code class="code" id="expect-actual-k0zr60_93">buildIdentity()</code> 工厂函数应返回 <code class="code" id="expect-actual-k0zr60_94">Identity</code>，但这次返回的是一个实现通用接口的对象：</p>
+<ol class="list _decimal" id="expect-actual-k0zr60_87" type="1">
+<li class="list__item" id="expect-actual-k0zr60_95">
+<p id="expect-actual-k0zr60_97" class="source-paragraph" data-source-paragraph="29">在 <code class="code" id="expect-actual-k0zr60_99">commonMain</code> 中，定义 <code class="code" id="expect-actual-k0zr60_100">Identity</code> 接口和 <code class="code" id="expect-actual-k0zr60_101">buildIdentity()</code> 工厂函数：</p>
+<pre class="source-code"><code class="language-kotlin">
+// 在 commonMain 源代码集中：
+expect fun buildIdentity(): Identity
+
+interface Identity {
+    val userName: String
+    val processID: Long
+}</code></pre>
+</li>
+<li class="list__item" id="expect-actual-k0zr60_96">
+<p id="expect-actual-k0zr60_102" class="source-paragraph" data-source-paragraph="30">创建该接口的特定于平台的实现，无需额外使用 expect 和 actual 声明：</p>
+<pre class="source-code"><code class="language-kotlin">
+// 在 jvmMain 源代码集中：
+actual fun buildIdentity(): Identity = JVMIdentity()
+
+class JVMIdentity(
+    override val userName: String = System.getProperty("user.name") ?: "none",
+    override val processID: Long = ProcessHandle.current().pid()
+) : Identity</code></pre>
+<pre class="source-code"><code class="language-kotlin">
+// 在 nativeMain 源代码集中：
+actual fun buildIdentity(): Identity = NativeIdentity()
+
+class NativeIdentity(
+    override val userName: String = getlogin()?.toKString() ?: "None",
+    override val processID: Long = getpid().toLong()
+) : Identity</code></pre>
+</li>
+</ol>
+<p id="expect-actual-k0zr60_88" class="source-paragraph" data-source-paragraph="31">这些平台函数返回特定于平台的 <code class="code" id="expect-actual-k0zr60_105">Identity</code> 实例，这些实例由 <code class="code" id="expect-actual-k0zr60_106">JVMIdentity</code> 和 <code class="code" id="expect-actual-k0zr60_107">NativeIdentity</code> 平台类型实现。</p>
+<section class="chapter"><h5 id="expect-actual-expected-and-actual-properties" data-toc="expected-and-actual-properties">expect 属性与 actual 属性</h5>
+<p id="expect-actual-k0zr60_108" class="source-paragraph" data-source-paragraph="32">你可以修改前面的示例，并期望 <code class="code" id="expect-actual-k0zr60_113">val</code> 属性存储一个 <code class="code" id="expect-actual-k0zr60_114">Identity</code>。</p>
+<p id="expect-actual-k0zr60_109" class="source-paragraph" data-source-paragraph="33">将此属性标记为 <code class="code" id="expect-actual-k0zr60_115">expect val</code>，然后在平台源码集中实现它：</p>
+<pre class="source-code"><code class="language-kotlin">
+//在 commonMain 源码集：
+expect val identity: Identity
+
+interface Identity {
+    val userName: String
+    val processID: Long
+}</code></pre>
+<pre class="source-code"><code class="language-kotlin">
+//在 jvmMain 源代码集中：
+actual val identity: Identity = JVMIdentity()
+
+class JVMIdentity(
+    override val userName: String = System.getProperty("user.name") ?: "none",
+    override val processID: Long = ProcessHandle.current().pid()
+) : Identity</code></pre>
+<pre class="source-code"><code class="language-kotlin">
+//在 nativeMain 源代码集中：
+actual val identity: Identity = NativeIdentity()
+
+class NativeIdentity(
+    override val userName: String = getlogin()?.toKString() ?: "None",
+    override val processID: Long = getpid().toLong()
+) : Identity</code></pre></section><section class="chapter"><h5 id="expect-actual-expected-and-actual-objects" data-toc="expected-and-actual-objects">expect 对象与 actual 对象</h5>
+<p id="expect-actual-k0zr60_116" class="source-paragraph" data-source-paragraph="34">如果希望 <code class="code" id="expect-actual-k0zr60_120">IdentityBuilder</code> 在每个平台上都是单例，可以将它定义为 expect 对象，并让各平台提供具体实现：</p>
+<pre class="source-code"><code class="language-kotlin">
+// 在 commonMain 源代码集中：
+expect object IdentityBuilder {
+    fun build(): Identity
+}
+
+class Identity(
+    val userName: String,
+    val processID: Long
+)</code></pre>
+<pre class="source-code"><code class="language-kotlin">
+// 在 jvmMain 源代码集中：
+actual object IdentityBuilder {
+    actual fun build() = Identity(
+        System.getProperty("user.name") ?: "none",
+        ProcessHandle.current().pid()
+    )
+}</code></pre>
+<pre class="source-code"><code class="language-kotlin">
+// 在 nativeMain 源代码集中：
+actual object IdentityBuilder {
+    actual fun build() = Identity(
+        getlogin()?.toKString() ?: "None",
+        getpid().toLong()
+    )
+}</code></pre></section><section class="chapter"><h5 id="expect-actual-recommendations-on-dependency-injection" data-toc="recommendations-on-dependency-injection">关于依赖注入的建议</h5>
+<p id="expect-actual-k0zr60_121" class="source-paragraph" data-source-paragraph="35">为了构建松耦合架构，许多 Kotlin 项目采用了依赖注入（DI）框架。DI 框架允许根据当前环境将依赖项注入到组件中。</p>
+<p id="expect-actual-k0zr60_122" class="source-paragraph" data-source-paragraph="36">例如，在测试环境和生产环境中，或者在部署到云端时与本地托管时，你可能会注入不同的依赖项。只要依赖项通过接口进行定义，无论是在编译时还是运行时，都可以注入任意数量的不同实现。</p>
+<p id="expect-actual-k0zr60_123" class="source-paragraph" data-source-paragraph="37">当依赖关系与平台相关时，同样的原理也适用。在共享代码中，组件可以使用常规的 <a href="../classes-and-interfaces/index.html" id="expect-actual-k0zr60_126" data-external="true" rel="noopener noreferrer" class="concept-ref" data-concept="类与接口" title="前置概念：类与接口">Kotlin 接口</a> 来表达其依赖关系。随后，可以配置依赖注入（DI）框架，使其注入平台特定的实现，例如来自 JVM 或 iOS 模块的实现。</p>
+<p id="expect-actual-k0zr60_124" class="source-paragraph" data-source-paragraph="38">这意味着，expect 与 actual 声明仅需在 DI 框架的配置中出现。示例请参见 <a href="https://kotlinlang.org/docs/multiplatform/multiplatform-connect-to-apis.html#dependency-injection-framework" id="expect-actual-k0zr60_127">使用平台特定的 API</a>。</p>
+<p id="expect-actual-k0zr60_125" class="source-paragraph" data-source-paragraph="39">采用这种方法，您只需使用接口和工厂函数即可轻松采用 Kotlin Multiplatform。如果您已经在项目中使用依赖注入框架来管理依赖项，我们建议采用相同的方法来管理平台依赖项。</p></section></section><section class="chapter"><h4 id="expect-actual-expected-and-actual-classes" data-toc="expected-and-actual-classes">expect 类和 actual 类</h4>
+<aside class="source-note" data-type="warning" data-title="" id="expect-actual-k0zr60_128"><p id="expect-actual-k0zr60_140" class="source-paragraph" data-source-paragraph="40">expect 类和 actual 类位于 <a href="https://kotlinlang.org/docs/multiplatform/supported-platforms.html#general-kotlin-stability-levels" id="expect-actual-k0zr60_141">Beta</a> 中。它们目前基本稳定，但未来可能需要进行迁移操作。我们将尽最大努力，尽量减少您需要进行的后续更改。</p></aside><p id="expect-actual-k0zr60_129" class="source-paragraph" data-source-paragraph="41">您可以使用 expect 类和 actual 类来实现相同的解决方案：</p>
+<pre class="source-code"><code class="language-kotlin">
+// 在 commonMain 源代码集中：
+expect class Identity() {
+    val userName: String
+    val processID: Int
+}</code></pre>
+<pre class="source-code"><code class="language-kotlin">
+// 在 jvmMain 源代码集中：
+actual class Identity {
+    actual val userName: String = System.getProperty("user.name") ?: "None"
+    actual val processID: Long = ProcessHandle.current().pid()
+}</code></pre>
+<pre class="source-code"><code class="language-kotlin">
+// 在 nativeMain 源代码集中：
+actual class Identity {
+    actual val userName: String = getlogin()?.toKString() ?: "None"
+    actual val processID: Long = getpid().toLong()
+}</code></pre>
+<p id="expect-actual-k0zr60_133" class="source-paragraph" data-source-paragraph="42">您可能已经在演示材料中见过这种做法。但是，在仅需接口即可满足需求的简单情况下使用类是不推荐的。</p>
+<p id="expect-actual-k0zr60_134" class="source-paragraph" data-source-paragraph="43">使用接口时，您的设计不会被限制为每个目标平台仅有一种实现。此外，在测试中替换为模拟实现，或在单一平台上提供多种实现，都会容易得多。</p>
+<p id="expect-actual-k0zr60_135" class="source-paragraph" data-source-paragraph="44">通常情况下，应尽可能使用标准语言结构，而不是使用 expect 和 actual 声明。</p>
+<p id="expect-actual-k0zr60_136" class="source-paragraph" data-source-paragraph="45">如果您决定使用 expect 和 actual 类，Kotlin 编译器会就该功能的 Beta 状态向您发出警告。要抑制此警告，请在 Gradle 构建文件中添加以下编译器选项：</p>
+<pre class="source-code"><code class="language-kotlin">
+kotlin {
+    compilerOptions {
+        // 应用于所有 Kotlin 源代码集的通用编译器选项
+        freeCompilerArgs.add("-Xexpect-actual-classes")
+    }
+}</code></pre>
+<section class="chapter"><h5 id="expect-actual-inheritance-from-platform-classes" data-toc="inheritance-from-platform-classes">继承平台类</h5>
+<p id="expect-actual-k0zr60_143" class="source-paragraph" data-source-paragraph="46">在某些特殊情况下，在类中使用 <code class="code" id="expect-actual-k0zr60_148">expect</code> 关键字可能是最佳方案。假设 <code class="code" id="expect-actual-k0zr60_149">Identity</code> 类型在 JVM 上已经存在：</p>
+<pre class="source-code"><code class="language-kotlin">
+open class Identity {
+    val login: String = System.getProperty("user.name") ?: "none"
+    val pid: Long = ProcessHandle.current().pid()
+}</code></pre>
+<p id="expect-actual-k0zr60_145" class="source-paragraph" data-source-paragraph="47">为了使其与现有的代码库和框架兼容，您对 <code class="code" id="expect-actual-k0zr60_150">Identity</code> 类型的实现可以继承该类型并复用其功能：</p>
+<ol class="list _decimal" id="expect-actual-k0zr60_146" type="1">
+<li class="list__item" id="expect-actual-k0zr60_151">
+<p id="expect-actual-k0zr60_154" class="source-paragraph" data-source-paragraph="48">为了解决这个问题，请在 <code class="code" id="expect-actual-k0zr60_156">commonMain</code> 中使用 <code class="code" id="expect-actual-k0zr60_157">expect</code> 关键字声明一个类：</p>
+<pre class="source-code"><code class="language-kotlin">
+expect class CommonIdentity() {
+    val userName: String
+    val processID: Long
+}</code></pre>
+</li>
+<li class="list__item" id="expect-actual-k0zr60_152">
+<p id="expect-actual-k0zr60_158" class="source-paragraph" data-source-paragraph="49">在 <code class="code" id="expect-actual-k0zr60_160">nativeMain</code> 中，提供一个实现该功能的actual 声明：</p>
+<pre class="source-code"><code class="language-kotlin">
+actual class CommonIdentity {
+    actual val userName = getlogin()?.toKString() ?: "None"
+    actual val processID = getpid().toLong()
+}</code></pre>
+</li>
+<li class="list__item" id="expect-actual-k0zr60_153">
+<p id="expect-actual-k0zr60_161" class="source-paragraph" data-source-paragraph="50">在 <code class="code" id="expect-actual-k0zr60_163">jvmMain</code> 中，提供一个从特定于平台的基类继承而来的actual 声明：</p>
+<pre class="source-code"><code class="language-kotlin">
+actual class CommonIdentity : Identity() {
+    actual val userName = login
+    actual val processID = pid
+}</code></pre>
+</li>
+</ol>
+<p id="expect-actual-k0zr60_147" class="source-paragraph" data-source-paragraph="51">这样，<code class="code" id="expect-actual-k0zr60_164">CommonIdentity</code> 类型既与您的设计兼容，又能充分利用 JVM 上的现有类型。</p></section><section class="chapter"><h5 id="expect-actual-application-in-frameworks" data-toc="application-in-frameworks">在框架中的应用</h5>
+<p id="expect-actual-k0zr60_165" class="source-paragraph" data-source-paragraph="52">作为框架作者，您也会发现expect 声明和 actual 声明对您的框架很有用。</p>
+<p id="expect-actual-k0zr60_166" class="source-paragraph" data-source-paragraph="53">如果上面的示例属于某个框架的一部分，用户必须从 <code class="code" id="expect-actual-k0zr60_174">CommonIdentity</code> 派生一个类型来提供显示名称。</p>
+<p id="expect-actual-k0zr60_167" class="source-paragraph" data-source-paragraph="54">在这种情况下，expect 声明是抽象的，并声明了一个抽象方法：</p>
+<pre class="source-code"><code class="language-kotlin">
+// 在框架代码库的 commonMain 中：
+expect abstract class CommonIdentity() {
+    val userName: String
+    val processID: Long
+    abstract val displayName: String
+}</code></pre>
+<p id="expect-actual-k0zr60_169" class="source-paragraph" data-source-paragraph="55">同样地，实际实现是抽象的，并声明 <code class="code" id="expect-actual-k0zr60_175">displayName</code> 方法：</p>
+<pre class="source-code"><code class="language-kotlin">
+// 在框架代码库的 nativeMain 中：
+actual abstract class CommonIdentity {
+    actual val userName = getlogin()?.toKString() ?: "None"
+    actual val processID = getpid().toLong()
+    actual abstract val displayName: String
+}</code></pre>
+<pre class="source-code"><code class="language-kotlin">
+// 在框架代码库的 jvmMain 中：
+actual abstract class CommonIdentity : Identity() {
+    actual val userName = login
+    actual val processID = pid
+    actual abstract val displayName: String
+}</code></pre>
+<p id="expect-actual-k0zr60_172" class="source-paragraph" data-source-paragraph="56">框架用户需要编写继承自expect 声明的共享代码，并自行实现缺失的方法：</p>
+<pre class="source-code"><code class="language-kotlin">
+// 在用户代码库的 commonMain 中：
+class MyCommonIdentity : CommonIdentity() {
+    override val displayName = "Admin"
+}</code></pre></section></section></section><section class="chapter"><h3 id="expect-actual-advanced-use-cases" data-toc="advanced-use-cases">高级用例</h3>
+<p id="expect-actual-k0zr60_176" class="source-paragraph" data-source-paragraph="57">关于expect 声明和 actual 声明，存在一些特殊情况。</p>
+<section class="chapter"><h4 id="expect-actual-using-type-aliases-to-satisfy-actual-declarations" data-toc="using-type-aliases-to-satisfy-actual-declarations">使用类型别名来满足 actual 声明</h4>
+<p id="expect-actual-k0zr60_181" class="source-paragraph" data-source-paragraph="58">实际的 声明 实现并不一定需要从头编写。它可以是现有的类型，例如第三方库提供的类。</p>
+<p id="expect-actual-k0zr60_182" class="source-paragraph" data-source-paragraph="59">只要该类型满足与expect 声明相关的所有要求，即可使用。例如，考虑以下两个expect 声明：</p>
+<pre class="source-code"><code class="language-kotlin">
+expect enum class Month {
+    JANUARY, FEBRUARY, MARCH, APRIL, MAY, JUNE, JULY,
+    AUGUST, SEPTEMBER, OCTOBER, NOVEMBER, DECEMBER
+}
+
+expect class MyDate {
+    fun getYear(): Int
+    fun getMonth(): Month
+    fun getDayOfMonth(): Int
+}</code></pre>
+<p id="expect-actual-k0zr60_184" class="source-paragraph" data-source-paragraph="60">在 JVM 模块中，可以使用 <code class="code" id="expect-actual-k0zr60_189">java.time.Month</code> 枚举来实现第一个 expect 声明，使用 <code class="code" id="expect-actual-k0zr60_190">java.time.LocalDate</code> 类来实现第二个。但是，无法将 <code class="code" id="expect-actual-k0zr60_191">actual</code> 关键字直接添加到这些类型上。</p>
+<p id="expect-actual-k0zr60_185" class="source-paragraph" data-source-paragraph="61">作为替代方案，你可以使用 <a href="https://kotlinlang.org/docs/type-aliases.html" id="expect-actual-k0zr60_192" data-external="true" rel="noopener noreferrer">类型别名</a> 来连接 expect 声明和特定于平台的类型：</p>
+<pre class="source-code"><code class="language-kotlin">
+actual typealias Month = java.time.Month
+actual typealias MyDate = java.time.LocalDate</code></pre>
+<p id="expect-actual-k0zr60_187" class="source-paragraph" data-source-paragraph="62">在这种情况下，应将 <code class="code" id="expect-actual-k0zr60_193">typealias</code> 声明定义在与 expect 声明相同的包中，并在其他位置创建被引用的类。</p>
+<aside class="source-note" data-type="note" data-title="" id="expect-actual-k0zr60_188"><p id="expect-actual-k0zr60_194" class="source-paragraph" data-source-paragraph="63">由于 <code class="code" id="expect-actual-k0zr60_195">LocalDate</code> 类型使用了 <code class="code" id="expect-actual-k0zr60_196">Month</code> 枚举，你需要在共享代码中将它们都声明为expect 类。</p></aside></section><section class="chapter"><h4 id="expect-actual-expanded-visibility-in-actual-declarations" data-toc="expanded-visibility-in-actual-declarations">actual 声明中的扩展可见性</h4>
+<p id="expect-actual-k0zr60_197" class="source-paragraph" data-source-paragraph="64">您可以让实际实现的可见性高于相应的 expect 声明。如果您不希望向普通客户端公开 API，此功能非常有用。</p>
+<p id="expect-actual-k0zr60_198" class="source-paragraph" data-source-paragraph="65">目前，如果可见性发生变化，Kotlin 编译器会报错。你可以通过在实际类型别名声明中应用 <code class="code" id="expect-actual-k0zr60_204">@Suppress("ACTUAL_WITHOUT_EXPECT")</code> 来抑制此错误。从 Kotlin 2.0 开始，这一限制将不再适用。</p>
+<p id="expect-actual-k0zr60_199" class="source-paragraph" data-source-paragraph="66">例如，如果您在公共源码集中声明了以下expect 声明：</p>
+<pre class="source-code"><code class="language-kotlin">
+internal expect class Messenger {
+    fun sendMessage(message: String)
+}</code></pre>
+<p id="expect-actual-k0zr60_201" class="source-paragraph" data-source-paragraph="67">你也可以在平台专用源码集中使用以下实际实现：</p>
+<pre class="source-code"><code class="language-kotlin">
+@Suppress("ACTUAL_WITHOUT_EXPECT")
+public actual typealias Messenger = MyMessenger</code></pre>
+<p id="expect-actual-k0zr60_203" class="source-paragraph" data-source-paragraph="68">这里，一个内部的 expect 类通过类型别名拥有一个实际实现，该实现包含现有的 public <code class="code" id="expect-actual-k0zr60_205">MyMessenger</code>。</p></section><section class="chapter"><h4 id="expect-actual-additional-enumeration-entries-on-actualization" data-toc="additional-enumeration-entries-on-actualization">实际实现中的额外枚举项</h4>
+<p id="expect-actual-k0zr60_206" class="source-paragraph" data-source-paragraph="69">当在通用源码集中使用 <code class="code" id="expect-actual-k0zr60_215">expect</code> 声明枚举时，每个平台模块都应包含相应的 <code class="code" id="expect-actual-k0zr60_216">actual</code> 声明。这些声明必须包含相同的枚举常量，但也可以包含额外的常量。</p>
+<p id="expect-actual-k0zr60_207" class="source-paragraph" data-source-paragraph="70">当你使用现有的平台枚举来实现预期的枚举时，这非常有用。例如，考虑以下位于公共源码集中的枚举：</p>
+<pre class="source-code"><code class="language-kotlin">
+// 在 commonMain 源代码集中：
+expect enum class Department { IT, HR, Sales }</code></pre>
+<p id="expect-actual-k0zr60_209" class="source-paragraph" data-source-paragraph="71">当你在平台源码集中为 <code class="code" id="expect-actual-k0zr60_217">Department</code> 提供 actual 声明时，可以添加额外的常量：</p>
+<pre class="source-code"><code class="language-kotlin">
+// 在 jvmMain 源代码集中：
+actual enum class Department { IT, HR, Sales, Legal }</code></pre>
+<pre class="source-code"><code class="language-kotlin">
+// 在 nativeMain 源代码集中：
+actual enum class Department { IT, HR, Sales, Marketing }</code></pre>
+<p id="expect-actual-k0zr60_212" class="source-paragraph" data-source-paragraph="72">然而，在这种情况下，平台源码集中的这些额外常量将与共享代码中的常量不匹配。因此，编译器要求您处理所有额外的情况。</p>
+<p id="expect-actual-k0zr60_213" class="source-paragraph" data-source-paragraph="73">实现 <code class="code" id="expect-actual-k0zr60_219">Department</code> 上 <code class="code" id="expect-actual-k0zr60_218">when</code> 构造的函数需要一个 <code class="code" id="expect-actual-k0zr60_220">else</code> 子句：</p>
+<pre class="source-code"><code class="language-kotlin">
+// 必须包含else子句：
+fun matchOnDepartment(dept: Department) {
+    when (dept) {
+        Department.IT -&gt; println("The IT Department")
+        Department.HR -&gt; println("The HR Department")
+        Department.Sales -&gt; println("The Sales Department")
+        else -&gt; println("Some other department")
+    }
+}</code></pre></section><section class="chapter"><h4 id="expect-actual-expected-annotation-classes" data-toc="expected-annotation-classes">expect 注解类</h4>
+<p id="expect-actual-k0zr60_221" class="source-paragraph" data-source-paragraph="74">expect 声明和 actual 声明均可与注解配合使用。例如，您可以声明一个 <code class="code" id="expect-actual-k0zr60_230">@XmlSerializable</code> 注解，该注解必须在每个平台源码集中都有相应的actual 声明：</p>
+<pre class="source-code"><code class="language-kotlin">
+@Target(AnnotationTarget.CLASS)
+@Retention(AnnotationRetention.RUNTIME)
+expect annotation class XmlSerializable()
+
+@XmlSerializable
+class Person(val name: String, val age: Int)</code></pre>
+<p id="expect-actual-k0zr60_223" class="source-paragraph" data-source-paragraph="75">在特定平台上复用现有类型可能会很有帮助。例如，在 JVM 上，您可以使用 <a href="https://javaee.github.io/jaxb-v2/" id="expect-actual-k0zr60_231" data-external="true" rel="noopener noreferrer">JAXB 规范</a> 中的现有类型来定义注解：</p>
+<pre class="source-code"><code class="language-kotlin">
+import javax.xml.bind.annotation.XmlRootElement
+
+actual typealias XmlSerializable = XmlRootElement</code></pre>
+<p id="expect-actual-k0zr60_225" class="source-paragraph" data-source-paragraph="76">在将 <code class="code" id="expect-actual-k0zr60_232">expect</code> 与注解类结合使用时，还有一点需要考虑。注解用于向代码附加元数据，在签名中不会作为类型出现。在从未要求注解必须具有实际类的平台上，预期注解是否具有实际类并不重要。</p>
+<p id="expect-actual-k0zr60_226" class="source-paragraph" data-source-paragraph="77">您只需在使用该注解的平台上提供 <code class="code" id="expect-actual-k0zr60_233">actual</code> 声明。此行为默认未启用，且要求该类型被标记为 <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-optional-expectation/" id="expect-actual-k0zr60_234" data-external="true" rel="noopener noreferrer"><code class="code" id="expect-actual-k0zr60_235">OptionalExpectation</code></a>。</p>
+<p id="expect-actual-k0zr60_227" class="source-paragraph" data-source-paragraph="78">取上文声明的 <code class="code" id="expect-actual-k0zr60_236">@XmlSerializable</code> 注解并添加 <code class="code" id="expect-actual-k0zr60_237">OptionalExpectation</code>：</p>
+<pre class="source-code"><code class="language-kotlin">
+@OptIn(ExperimentalMultiplatform::class)
+@Target(AnnotationTarget.CLASS)
+@Retention(AnnotationRetention.RUNTIME)
+@OptionalExpectation
+expect annotation class XmlSerializable()</code></pre>
+<p id="expect-actual-k0zr60_229" class="source-paragraph" data-source-paragraph="79">如果在某个平台上未声明实际类，而该平台又不需要该类，编译器将不会报错。</p></section></section><section class="chapter"><h3 id="expect-actual-what-s-next" data-toc="what-s-next">接下来该做什么？</h3>
+<p id="expect-actual-k0zr60_238" class="source-paragraph" data-source-paragraph="80">有关使用平台特定 API 的各种方法的一般性建议，请参阅 <a href="https://kotlinlang.org/docs/multiplatform/multiplatform-connect-to-apis.html" id="expect-actual-k0zr60_239">使用平台特定的 API</a>。</p></section></section></article><nav class="chapter-switcher" aria-label="章节导航"><a href="../flow-and-state/index.html">← Flow 与状态</a><a href="../index.html" class="course-home">全部章节</a><span></span></nav><footer class="license-note"><p>内容依据 Kotlin 官方资料整理。原始资料由 JetBrains 与 Kotlin 贡献者维护，并采用 <a href="https://github.com/JetBrains/kotlin-web-site/blob/master/LICENSE">Apache License 2.0</a>；遇到版本差异时，以官方文档为准。</p></footer></main>
 </body>
 </html>

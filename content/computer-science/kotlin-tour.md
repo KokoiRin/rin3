@@ -1,6 +1,6 @@
 ---
 title: Kotlin Tour 中文学习版
-summary: Kotlin 官方 Tour 初学者与中级 16 章完整中文阅读器，加上面向真实项目的 6 章结构化精读，覆盖 Gradle、集合、泛型、协程、Flow 与 KMP 边界。
+summary: 从 Kotlin 基础语法一路学到集合、泛型、协程、Flow 与 KMP 工程边界，并在项目实战篇随时返回对应的初级或中级概念。
 date: 2026-08-15
 lang: zh-CN
 topic: Programming Languages / Kotlin
@@ -14,7 +14,7 @@ order: 30
 
 > **[打开 Kotlin Tour 中文学习网页 →](../../reading/kotlin-tour/index.html)**
 >
-> 前 16 章完整保留 Kotlin Tour 的正文、代码、练习和参考答案；后 6 章根据官方专题文档整理翻译，专门用来对照真实项目代码学习。
+> 从基础语法开始，依次学习集合、类型系统、协程、Flow 与 KMP 工程边界；项目实战篇遇到前置概念时，可以直接返回对应的初级或中级章节。
 
 ## 学习路线
 
@@ -40,7 +40,7 @@ order: 30
 8. [进阶空安全](../../reading/kotlin-tour/advanced-null-safety/index.html)
 9. [库与 API](../../reading/kotlin-tour/libraries-and-apis/index.html)
 
-项目实战篇不是逐段完整翻译，而是从多篇官方资料中提取项目阅读所需的主线、边界和代表性代码：
+项目实战篇把前面学过的语法放进实际工程场景，并把涉及的前置概念链接回初级或中级章节：
 
 1. [Kotlin 项目与 Gradle](../../reading/kotlin-tour/project-and-gradle/index.html)
 2. [集合式数据处理](../../reading/kotlin-tour/collection-pipelines/index.html)
@@ -51,10 +51,10 @@ order: 30
 
 ## 每章怎么学
 
-学习 Tour 时，先读页面顶部的“学习主线”，代码尽量自己敲一遍，练习先独立完成再展开答案。进入项目实战篇后，不再另写玩具项目：按每章底部的“下周项目对照”清单，直接在真实代码里搜索、追踪调用并寻找测试证据。
+学习 Tour 时，先读页面顶部的“学习主线”，代码尽量自己敲一遍，练习先独立完成再展开答案。进入项目实战篇后，可以连续阅读逐段译文；碰到前置概念时，点击页首或正文里的“前置”链接返回对应章节。
 
 这套内容可以与[《读懂一段 Kotlin 代码》](../reading-kotlin-code/)配合：Tour 负责系统补齐语言知识，原有文章负责把语法放回真实代码中阅读。
 
 ## 来源与许可
 
-前 16 章的课程结构与正文来自 [Kotlin 官方 Tour](https://kotlinlang.org/docs/kotlin-tour-welcome.html)；项目实战篇依据 Kotlin 与 Kotlin Multiplatform 官方专题文档结构化整理。这是个人学习使用的非官方中文阅读版；原始文档由 JetBrains 与 Kotlin 贡献者维护，并采用 Apache License 2.0。遇到版本差异时，以官方英文原文为准。
+课程内容依据 [Kotlin](https://kotlinlang.org/docs/kotlin-tour-welcome.html) 与 Kotlin Multiplatform 资料整理。原始文档由 JetBrains 与 Kotlin 贡献者维护，并采用 Apache License 2.0。
