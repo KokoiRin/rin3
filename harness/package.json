@@ -7,17 +7,13 @@
     "node": ">=22.13.0"
   },
   "scripts": {
-    "behavior": "node scripts/behavior.mjs",
-    "check": "node scripts/behavior.mjs check",
     "install:browser": "playwright install chromium",
-    "test:registry": "node --test tests/behavior-registry.test.mjs",
     "test:ci": "node --test tests/ci-workflows.test.mjs",
-    "test:e2e": "npm --prefix .. run build && node --test tests/browser-runtime.test.mjs",
-    "verify": "node scripts/behavior.mjs run all",
-    "test": "npm run check && npm run test:registry && npm run test:ci"
+    "test:e2e": "node scripts/browser.mjs",
+    "verify": "npm run test && npm --prefix .. run check:fast && npm --prefix .. run check:publish && node scripts/browser.mjs --with-static",
+    "test": "node --test tests/browser-runner.test.mjs tests/ci-workflows.test.mjs"
   },
   "devDependencies": {
-    "playwright-chromium": "1.62.1",
-    "typescript": "5.9.3"
+    "playwright-chromium": "1.62.1"
   }
 }

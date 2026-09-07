@@ -19,14 +19,13 @@
 ## 验证与交付
 
 - 按风险选择针对性测试、类型检查和 lint，避免重复完整构建。仅修改说明文档时检查格式和链接，无需启动预览或运行产品测试。
-- 已登记行为所需的浏览器测试属于必要验证；额外浏览器验证用于 UI 交互变更、交互回归、自动化测试无法覆盖的明确风险，或用户明确要求。不为普通重构新增浏览器基础设施；Harness 缺少 Chromium 时，只用 `npm --prefix harness run install:browser` 安装。
-- 修改已发布文章、阅读器内容、样式或资源时，运行对应内容检查；检查入口见根目录 `package.json` 和行为数据库。本地预览用于展示结果，不替代检查。
+- 浏览器验证用于受影响的关键交互、UI 交互变更、交互回归、自动化测试无法覆盖的明确风险，或用户明确要求。不为普通重构新增浏览器基础设施；Harness 缺少 Chromium 时，只用 `npm --prefix harness run install:browser` 安装。
+- 修改已发布文章、阅读器内容、样式或资源时，运行对应内容检查；检查入口见根目录 `package.json`。本地预览用于展示结果，不替代检查。
 - 影响页面展示或交互时，交付已验证可访问的本地预览链接；实际部署后，同时给出线上页面链接。
 
-## 业务行为与测试
+## 测试与架构
 
 - `harness/` 单向验收产品，产品代码、依赖配置和公开产物不得反向依赖它。
-- 行为、函数和测试映射以 `harness/behaviors/registry.json` 为准；长期架构约束写入 `docs/architecture.md` 或 ADR，不新建 OpenSpec change。
-- 修改产品代码或 `harness/scripts/` 前，运行 `npm --prefix harness run behavior -- impact <函数名或文件>`；无映射时判断是新增行为、遗漏映射还是基础设施。
-- 行为变化时更新描述、`version` 和 `lastReviewedOn`；纯重构复核并按需修正映射，不要求升版本。结合代码与测试判断行为是否变化，映射检查通过不代表行为未变。新增行为使用稳定 ID，新增或修改业务测试须登记为 `[行为ID] 中文业务结果`，并附一句中文业务说明。
-- 代码变更后，运行受影响行为及 `npm --prefix harness run check`。多个行为合并执行 `npm --prefix harness run behavior -- run <ID1> <ID2> ...`，共享构建。
+- 根据改动选择现有测试；新增或修复行为时，补充能验证实际结果的测试，名称直接描述预期结果。
+- 日常快速检查用 `npm run check:fast`；静态产物检查用 `npm run test:build`；浏览器测试用 `npm --prefix harness run test:e2e`。需要连同公开发布检查一起完整验收时，用 `npm --prefix harness run verify`，静态和浏览器测试共享一次构建。
+- 长期架构约束写入 `docs/architecture.md` 或 ADR，不新建 OpenSpec change。

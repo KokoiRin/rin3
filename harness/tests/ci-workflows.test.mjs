@@ -9,7 +9,7 @@ async function readWorkflow(fileName) {
   return readFile(path.join(repositoryRoot, ".github/workflows", fileName), "utf8");
 }
 
-test("[PUBLISH-SAFETY-001] 公开部署在上传产物前执行发布安全门禁", async () => {
+test("公开部署在上传产物前执行发布安全门禁", async () => {
   const workflow = await readWorkflow("deploy-pages.yml");
   const safetyCheck = workflow.indexOf("run: npm run check:publish");
   const upload = workflow.indexOf("uses: actions/upload-pages-artifact@");
@@ -19,7 +19,7 @@ test("[PUBLISH-SAFETY-001] 公开部署在上传产物前执行发布安全门�
   assert.ok(safetyCheck < upload, "check:publish must run before the artifact is uploaded");
 });
 
-test("[HARNESS-TRACE-001] 部署和拉取请求都会自动校验行为数据库", async () => {
+test("部署和拉取请求都会自动执行验证工具测试", async () => {
   const [deployWorkflow, pullRequestWorkflow] = await Promise.all([
     readWorkflow("deploy-pages.yml"),
     readWorkflow("verify.yml"),

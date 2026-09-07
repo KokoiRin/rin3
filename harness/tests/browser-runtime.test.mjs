@@ -126,7 +126,7 @@ test("[SLIDES-RUNTIME-001] 导出的 Slides 初始化单一活动页并同步下
   await page.close();
 });
 
-// 富内容页必须渲染图表和图片，并让有序/无序列表显示舒适的黑色数字与圆点。
+// 富内容页必须渲染图表和图片；文章列表使用绿色标记，Slides 列表使用深色标记。
 test("renders Mermaid and deploy-safe images in the exported component guide", async () => {
   const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
   const runtimeErrors = [];
@@ -139,11 +139,11 @@ test("renders Mermaid and deploy-safe images in the exported component guide", a
   assert.deepEqual(await articleOrderedItem.evaluate((item) => ({
     color: getComputedStyle(item, "::marker").color,
     type: getComputedStyle(item).listStyleType,
-  })), { color: "rgb(37, 38, 33)", type: "decimal" });
+  })), { color: "rgb(27, 114, 88)", type: "decimal" });
   assert.deepEqual(await articleBulletItem.evaluate((item) => ({
     color: getComputedStyle(item, "::marker").color,
     type: getComputedStyle(item).listStyleType,
-  })), { color: "rgb(37, 38, 33)", type: "disc" });
+  })), { color: "rgb(27, 114, 88)", type: "disc" });
 
   await page.goto(`${origin}${basePath}/slides/component-guide/`);
   await page.locator(".reveal.ready").waitFor();
