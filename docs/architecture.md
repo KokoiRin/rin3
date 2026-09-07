@@ -1,6 +1,6 @@
 # RIN III 架构边界
 
-本文保存长期有效的架构约束。业务行为、关键函数与验收测试的结构化事实，以 `harness/behaviors/registry.json` 为准；已经完成的实施过程由 Git 历史保存。
+本文保存长期有效的架构约束。可观察行为由对应测试说明和验证；已经完成的实施过程由 Git 历史保存。
 
 ## 两条内容生产链
 
@@ -31,15 +31,14 @@ app/ + components/slides/    静态路由、页面与 Reveal 播放器
 - `core` 内容进入文章和 Slides，显式 `detail` 内容只进入文章；投影目标与 Slide 布局是两个概念。
 - Markdown、KaTeX、Shiki 和富内容在构建期处理；播放器只消费编译后的 deck，不在浏览器中重新解析源文档。
 - Markdown 图片通过宿主提供的地址适配器处理；Mermaid 仅在页面实际包含图表时按需加载，原始 HTML 继续禁用。
-- 站点已有的独立 deck 和公开 URL 兼容入口，在行为数据库或测试仍声明它们时必须保留。
+- 站点已有的独立 deck 和公开 URL 兼容入口，在测试仍声明它们时必须保留。
 
 具体写作格式和布局规则见 [`slides-authoring.md`](slides-authoring.md)。
 
 ## 验证归属
 
-- 可观察业务行为：`harness/behaviors/registry.json`
 - 可移植文档编译：`packages/rin-document/tests/`
-- 站点静态输出：`tests/`
-- 浏览器运行时与公开发布：`harness/`
+- 站点领域、内容、静态输出与公开发布检查：`tests/`
+- 浏览器运行时与验证工具自检：`harness/`
 
-不再使用 OpenSpec 维护需求或架构。新的长期设计决策写入本文件或后续 ADR；新的可观察行为进入行为数据库。
+不再使用 OpenSpec 维护需求或架构。新的长期设计决策写入本文件或后续 ADR；新的可观察行为通过对应测试验证。
