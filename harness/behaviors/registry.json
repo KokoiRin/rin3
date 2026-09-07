@@ -364,16 +364,21 @@
     },
     {
       "id": "HARNESS-TRACE-001",
-      "version": 5,
+      "version": 6,
       "status": "active",
       "nameZh": "业务行为追踪与执行",
-      "behaviorZh": "独立 Harness 可以从函数反查业务与测试、批量运行受影响行为、在构建前检查浏览器依赖，并把结果和证据保留在产品之外。",
-      "lastReviewedOn": "2026-08-29",
+      "behaviorZh": "独立 Harness 可以从函数反查业务与测试、批量运行受影响行为、在构建前检查浏览器依赖，并把结果和证据保留在产品之外；纯重构不强制升版本，行为描述或状态变化必须升版本，映射与新测试命名仍须完整合规。",
+      "lastReviewedOn": "2026-09-07",
       "code": [
         {
           "file": "harness/scripts/behavior.mjs",
           "symbol": "validateRegistry",
           "roleZh": "校验行为、函数和测试之间的结构化关系"
+        },
+        {
+          "file": "harness/scripts/behavior.mjs",
+          "symbol": "validateChangedCode",
+          "roleZh": "检查变更文件映射、新测试命名和行为版本，允许行为描述与状态未变的纯重构保持版本"
         },
         {
           "file": "harness/scripts/behavior.mjs",
@@ -436,6 +441,24 @@
           "name": "[HARNESS-TRACE-001] 部署和拉取请求都会自动校验行为数据库",
           "level": "ci",
           "behaviorZh": "部署和拉取请求都必须自动校验行为数据库与测试映射。"
+        },
+        {
+          "file": "harness/tests/behavior-registry.test.mjs",
+          "name": "[HARNESS-TRACE-001] 纯重构保持行为版本仍能通过变更检查",
+          "level": "unit",
+          "behaviorZh": "只调整已登记实现与已有测试写法时，无需提升行为版本即可通过变更映射检查。"
+        },
+        {
+          "file": "harness/tests/behavior-registry.test.mjs",
+          "name": "[HARNESS-TRACE-001] 行为描述或状态变化必须升版本且版本不能回退",
+          "level": "unit",
+          "behaviorZh": "只修改数据库中的行为描述或状态也必须提升版本，已有版本不能回退。"
+        },
+        {
+          "file": "harness/tests/behavior-registry.test.mjs",
+          "name": "[HARNESS-TRACE-001] 不升版本仍拒绝缺失映射与无行为编号的新测试",
+          "level": "unit",
+          "behaviorZh": "纯重构无需升版本，但未登记的代码或测试文件以及无行为编号的新测试仍会被拒绝。"
         }
       ]
     }

@@ -125,9 +125,9 @@ export async function validateRegistry(registry, root = repositoryRoot) {
   return registry;
 }
 
-function gitLines(args) {
+function gitLines(args, root = repositoryRoot) {
   try {
-    return execFileSync("git", args, { cwd: repositoryRoot, encoding: "utf8" })
+    return execFileSync("git", ["-c", "core.fsmonitor=false", ...args], { cwd: root, encoding: "utf8" })
       .split(/\r?\n/)
       .map((line) => line.trim())
       .filter(Boolean);
@@ -140,24 +140,24 @@ function isUnderCodeRoot(file, codeRoots) {
   return codeExtension.test(file) && codeRoots.some((root) => file === root || file.startsWith(`${root}/`));
 }
 
-export function changedCodeFiles(registry) {
-  const tracked = gitLines(["diff", "--name-only", "HEAD", "--", ...registry.codeRoots]);
-  const untracked = gitLines(["ls-files", "--others", "--exclude-standard", "--", ...registry.codeRoots]);
+export function changedCodeFiles(registry, root = repositoryRoot) {
+  const tracked = gitLines(["diff", "--name-only", "HEAD", "--", ...registry.codeRoots], root);
+  const untracked = gitLines(["ls-files", "--others", "--exclude-standard", "--", ...registry.codeRoots], root);
   return [...new Set([...tracked, ...untracked])].filter((file) => isUnderCodeRoot(file, registry.codeRoots));
 }
 
-function changedTestFiles(registry) {
-  const tracked = gitLines(["diff", "--name-only", "HEAD", "--", ...registry.testRoots]);
-  const untracked = gitLines(["ls-files", "--others", "--exclude-standard", "--", ...registry.testRoots]);
+function changedTestFiles(registry, root = repositoryRoot) {
+  const tracked = gitLines(["diff", "--name-only", "HEAD", "--", ...registry.testRoots], root);
+  const untracked = gitLines(["ls-files", "--others", "--exclude-standard", "--", ...registry.testRoots], root);
   return [...new Set([...tracked, ...untracked])].filter((file) =>
-    /\.test\.mjs$/.test(file) && existsSync(path.join(repositoryRoot, file)));
+    /\.test\.mjs$/.test(file) && existsSync(path.join(root, file)));
 }
 
 function testNames(source) {
   return [...source.matchAll(/test\(\s*["'`]([^"'`]*)["'`]/g)].map((match) => match[1]);
 }
 
-function headFile(file) {
+function headFile(file, root = repositoryRoot) {
   const candidates = [
     file,
     file.startsWith("harness/tests/") ? file.slice("harness/".length) : null,
@@ -165,7 +165,7 @@ function headFile(file) {
   for (const candidate of candidates) {
     try {
       return execFileSync("git", ["show", `HEAD:${candidate}`], {
-        cwd: repositoryRoot,
+        cwd: root,
         encoding: "utf8",
         stdio: ["ignore", "pipe", "ignore"],
       });
@@ -176,26 +176,35 @@ function headFile(file) {
   return "";
 }
 
-function headRegistry() {
+function headRegistry(root = repositoryRoot) {
   try {
     return JSON.parse(execFileSync(
       "git",
       ["show", "HEAD:harness/behaviors/registry.json"],
-      { cwd: repositoryRoot, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] },
+      { cwd: root, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] },
     ));
   } catch {
     return null;
   }
 }
 
-export function validateChangedCode(registry) {
-  const changedFiles = changedCodeFiles(registry);
-  const changedTests = changedTestFiles(registry);
-  if (changedFiles.length === 0 && changedTests.length === 0) return [];
-
+export function validateChangedCode(registry, root = repositoryRoot) {
+  const changedFiles = changedCodeFiles(registry, root);
+  const changedTests = changedTestFiles(registry, root);
   const errors = [];
-  const previous = headRegistry();
+  const previous = headRegistry(root);
   const previousById = new Map((previous?.behaviors ?? []).map((behavior) => [behavior.id, behavior]));
+
+  for (const behavior of registry.behaviors) {
+    const oldBehavior = previousById.get(behavior.id);
+    if (!oldBehavior) continue;
+    if (behavior.version < oldBehavior.version) {
+      errors.push(`${behavior.id}: version must not decrease`);
+    } else if ((behavior.behaviorZh !== oldBehavior.behaviorZh || behavior.status !== oldBehavior.status)
+      && behavior.version === oldBehavior.version) {
+      errors.push(`${behavior.id}: bump version when the behavior description or status changes`);
+    }
+  }
 
   for (const file of changedFiles) {
     const mapped = registry.behaviors.filter((behavior) =>
@@ -203,13 +212,6 @@ export function validateChangedCode(registry) {
     if (mapped.length === 0) {
       errors.push(`${file}: changed code file is not mapped to any active business behavior`);
       continue;
-    }
-    if (!previous) continue;
-    for (const behavior of mapped) {
-      const oldBehavior = previousById.get(behavior.id);
-      if (oldBehavior && behavior.version <= oldBehavior.version) {
-        errors.push(`${file}: bump ${behavior.id} version and review its behavior, code and tests`);
-      }
     }
   }
 
@@ -221,19 +223,11 @@ export function validateChangedCode(registry) {
       continue;
     }
 
-    const oldNames = new Set(testNames(headFile(file)));
-    const currentNames = testNames(readFileSync(path.join(repositoryRoot, file), "utf8"));
+    const oldNames = new Set(testNames(headFile(file, root)));
+    const currentNames = testNames(readFileSync(path.join(root, file), "utf8"));
     for (const name of currentNames.filter((testName) => !oldNames.has(testName))) {
       if (!/^\[[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)*-\d{3}\] [\u3400-\u9fff]/.test(name)) {
         errors.push(`${file}: new or renamed business test needs [行为ID] 中文名称: ${name}`);
-      }
-    }
-
-    if (!previous) continue;
-    for (const behavior of mapped) {
-      const oldBehavior = previousById.get(behavior.id);
-      if (oldBehavior && behavior.version <= oldBehavior.version) {
-        errors.push(`${file}: bump ${behavior.id} version and review its Chinese test descriptions`);
       }
     }
   }
@@ -474,6 +468,7 @@ async function main() {
     process.stdout.write(changedFiles.length > 0
       ? `本轮代码/测试映射已同步：${changedFiles.join(", ")}\n`
       : "本轮没有需要同步的代码文件。\n");
+    process.stdout.write("行为是否变化仍需结合代码与测试复核；映射检查不推断代码语义。\n");
     return;
   }
   help();
