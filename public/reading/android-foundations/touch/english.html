@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Manage touch events in a ViewGroup｜RIN III</title><link rel="stylesheet" href="../../reader.css"><link rel="stylesheet" href="../source.css"></head>
+<body><nav class="site-nav" aria-label="站点导航"><a href="../index.html">← Android 基础 · 官方文档中文阅读版</a><a href="index.html">中文译文</a></nav>
+<main class="reader"><header class="chapter-header"><span class="chapter-kicker">第一周 · 第 4 天 · M13</span><h1>Manage touch events in a ViewGroup</h1><p class="byline"><a href="https://developer.android.com/develop/ui/views/touch-and-input/gestures/viewgroup?hl=en">Manage touch events in a ViewGroup · 官方英文原文</a></p><div class="title-rule"></div>
+<details class="source-details"><summary>阅读范围与原文目录</summary><p>引言；在 ViewGroup 中拦截触摸事件，含原示例，至处理 ACTION_OUTSIDE 事件之前。</p><p>原文核对：2026-09-09。正文按上述范围的原文顺序翻译；代码和图示保留原文。</p><ul><li><a href="#intercept">Intercept touch events in a ViewGroup</a></li></ul></details><nav class="chapter-switcher" aria-label="章节导航"><a href="../drawing/english.html">← Android 如何绘制 View</a><a class="course-home" href="../index.html">全部章节</a><a href="../architecture/english.html">应用架构指南 →</a></nav></header>
+<article class="translated-article"><div><div class="android-page-banner android-page-banner-image-bottom-right"><div class="android-page-banner-content"><div class="android-page-banner-title" data-unit="touch-001">
+        Try the Compose way
+      </div><div class="android-page-banner-description" data-unit="touch-002">
+        Jetpack Compose is the recommended UI toolkit for Android. Learn about gestures in Compose.
+      </div><div class="android-page-banner-cta" data-unit="touch-003">
+        <a href="https://developer.android.com/develop/ui/compose/touch-input/pointer-input/understand-gestures#event-propagation">
+          Gestures →
+        </a>
+      </div></div><div class="android-page-banner-media">
+      <picture>
+
+          <source class="devsite-dark-theme" alt="">
+
+        <img alt="官方原图" class="android-page-banner-image" src="../assets/android-compose-ui-logo.png" loading="lazy">
+      </source></picture>
+    </div></div><p data-unit="touch-004">Handling touch events in a
+<code><a href="https://developer.android.com/reference/android/view/ViewGroup">ViewGroup</a></code> takes special care
+because it's common for a <code>ViewGroup</code> to have children that are targets for different
+touch events than the <code>ViewGroup</code> itself. To make sure each view correctly receives the
+touch events intended for it, override the
+<code><a href="https://developer.android.com/reference/android/view/ViewGroup#onInterceptTouchEvent(android.view.MotionEvent)">onInterceptTouchEvent()</a></code>
+method.</p><div id="additionalResources"><p data-unit="touch-005">Refer to the following related resources:</p><!-- Required platform, tools, add-ons, devices, knowledge, etc. --><ul><li data-unit="touch-006"><a href="https://developer.android.com/guide/topics/ui/ui-events">Input events overview</a>
+    </li><li data-unit="touch-007"><a href="https://developer.android.com/guide/topics/sensors/sensors_overview">Sensors overview</a></li><li data-unit="touch-008"><a href="https://developer.android.com/training/custom-views/making-interactive">Make a custom view interactive</a> </li></ul></div><h2 id="intercept" data-unit="touch-009">Intercept touch events in a ViewGroup</h2><p data-unit="touch-010">The <code>onInterceptTouchEvent()</code> method is called whenever a touch event is detected on
+the surface of a <code>ViewGroup</code>, including on the surface of its children. If
+<code>onInterceptTouchEvent()</code> returns <code>true</code>, the
+<code><a href="https://developer.android.com/reference/android/view/MotionEvent">MotionEvent</a></code>
+is intercepted, meaning it isn't passed onto the child but rather to the
+<code><a href="https://developer.android.com/reference/android/view/View#onTouchEvent(android.view.MotionEvent)">onTouchEvent()</a></code>
+method of the parent.</p><p data-unit="touch-011">The <code>onInterceptTouchEvent()</code> method gives a parent the chance to see touch events
+before its children do. If you return <code>true</code> from <code>onInterceptTouchEvent()</code>,
+the child view that was previously handling touch events receives an
+<code><a href="https://developer.android.com/reference/android/view/MotionEvent#ACTION_CANCEL">ACTION_CANCEL</a></code>,
+and the events from that point forward are sent to the parent's <code>onTouchEvent()</code> method
+for the usual handling. <code>onInterceptTouchEvent()</code> can also return <code>false</code> and
+spy on events as they travel down the view hierarchy to their usual targets, which handle the
+events with their own <code>onTouchEvent()</code>.
+
+</p><p data-unit="touch-012">In the following snippet, the <code>MyViewGroup</code> class extends <code>ViewGroup</code>.
+<code>MyViewGroup</code> contains multiple child views. If you drag your finger across a child view
+horizontally, the child view no longer gets touch events, and <code>MyViewGroup</code> handles touch
+events by scrolling its contents. However, if you tap buttons in the child view, or scroll the child
+view vertically, the parent doesn't intercept those touch events because the child is the intended
+target. In those cases, <code>onInterceptTouchEvent()</code> returns <code>false</code>, and the
+<code>MyViewGroup</code> class's <code>onTouchEvent()</code> isn't called.</p><div><div class="ds-selector-tabs"><section><h3 id="kotlin" data-unit="touch-013">Kotlin</h3><div></div><div class="code-block"><pre><code>class MyViewGroup @JvmOverloads constructor(
+        context: Context,
+        private val mTouchSlop: Int = ViewConfiguration.get(context).scaledTouchSlop
+) : ViewGroup(context) {
+    ...
+    override fun onInterceptTouchEvent(ev: MotionEvent): Boolean {
+        // This method only determines whether you want to intercept the motion.
+        // If this method returns true, onTouchEvent is called and you can do
+        // the actual scrolling there.
+        return when (ev.actionMasked) {
+            // Always handle the case of the touch gesture being complete.
+            MotionEvent.ACTION_CANCEL, MotionEvent.ACTION_UP -&gt; {
+                // Release the scroll.
+                mIsScrolling = false
+                false // Don't intercept the touch event. Let the child handle it.
+            }
+            MotionEvent.ACTION_MOVE -&gt; {
+                if (mIsScrolling) {
+                    // You're currently scrolling, so intercept the touch event.
+                    true
+                } else {
+
+                    // If the user drags their finger horizontally more than the
+                    // touch slop, start the scroll.
+
+                    // Left as an exercise for the reader.
+                    val xDiff: Int = calculateDistanceX(ev)
+
+                    // Touch slop is calculated using ViewConfiguration constants.
+                    if (xDiff &gt; mTouchSlop) {
+                        // Start scrolling!
+                        mIsScrolling = true
+                        true
+                    } else {
+                        false
+                    }
+                }
+            }
+            ...
+            else -&gt; {
+                // In general, don't intercept touch events. The child view
+                // handles them.
+                false
+            }
+        }
+    }
+
+    override fun onTouchEvent(event: MotionEvent): Boolean {
+        // Here, you actually handle the touch event. For example, if the action
+        // is ACTION_MOVE, scroll this container. This method is only called if
+        // the touch event is intercepted in onInterceptTouchEvent.
+        ...
+    }
+}</code></pre></div></section><section><h3 id="java" data-unit="touch-014">Java</h3><div></div><div class="code-block"><pre><code>public class MyViewGroup extends ViewGroup {
+
+    private int mTouchSlop;
+    ...
+    ViewConfiguration vc = ViewConfiguration.get(view.getContext());
+    mTouchSlop = vc.getScaledTouchSlop();
+    ...
+    @Override
+    public boolean onInterceptTouchEvent(MotionEvent ev) {
+        // This method only determines whether you want to intercept the motion.
+        // If this method returns true, onTouchEvent is called and you can do
+        // the actual scrolling there.
+
+        final int action = MotionEventCompat.getActionMasked(ev);
+
+        // Always handle the case of the touch gesture being complete.
+        if (action == MotionEvent.ACTION_CANCEL || action == MotionEvent.ACTION_UP) {
+            // Release the scroll.
+            mIsScrolling = false;
+            return false; // Don't intercept touch event. Let the child handle it.
+        }
+
+        switch (action) {
+            case MotionEvent.ACTION_MOVE: {
+                if (mIsScrolling) {
+                    // You're currently scrolling, so intercept the touch event.
+                    return true;
+                }
+
+                // If the user drags their finger horizontally more than the
+                // touch slop, start the scroll.
+
+                // Left as an exercise for the reader.
+                final int xDiff = calculateDistanceX(ev);
+
+                // Touch slop is calculated using ViewConfiguration constants.
+                if (xDiff &gt; mTouchSlop) {
+                    // Start scrolling.
+                    mIsScrolling = true;
+                    return true;
+                }
+                break;
+            }
+            ...
+        }
+
+        // In general, don't intercept touch events. The child view handles them.
+        return false;
+    }
+
+    @Override
+    public boolean onTouchEvent(MotionEvent ev) {
+        // Here, you actually handle the touch event. For example, if the
+        // action is ACTION_MOVE, scroll this container. This method is only
+        // called if the touch event is intercepted in onInterceptTouchEvent.
+        ...
+    }
+}</code></pre></div></section></div></div><p data-unit="touch-015">Note that <code>ViewGroup</code> also provides a
+<code><a href="https://developer.android.com/reference/android/view/ViewGroup#requestDisallowInterceptTouchEvent(boolean)">requestDisallowInterceptTouchEvent()</a></code>
+method. The <code>ViewGroup</code> calls this method when a child doesn't want the parent and its
+ancestors to intercept touch events with <code>onInterceptTouchEvent()</code>.</p></div></article><nav class="chapter-switcher" aria-label="章节导航"><a href="../drawing/english.html">← Android 如何绘制 View</a><a class="course-home" href="../index.html">全部章节</a><a href="../architecture/english.html">应用架构指南 →</a></nav><footer class="license-note"><p>本阅读版为 Android Developers 英文文档所选范围的非官方中文译文。原文由 Android Developers / Android Open Source Project 维护；原代码、原图及其标识保留。<a href="../NOTICE.html">来源与许可说明</a>。</p></footer></main></body></html>

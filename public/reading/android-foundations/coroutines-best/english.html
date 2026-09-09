@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Best practices for coroutines in Android｜RIN III</title><link rel="stylesheet" href="../../reader.css"><link rel="stylesheet" href="../source.css"></head>
+<body><nav class="site-nav" aria-label="站点导航"><a href="../index.html">← Android 基础 · 官方文档中文阅读版</a><a href="index.html">中文译文</a></nav>
+<main class="reader"><header class="chapter-header"><span class="chapter-kicker">第一周 · 第 5 天 · M21</span><h1>Best practices for coroutines in Android</h1><p class="byline"><a href="https://developer.android.com/kotlin/coroutines/coroutines-best-practices?hl=en">Best practices for coroutines in Android · 官方英文原文</a></p><div class="title-rule"></div>
+<details class="source-details"><summary>阅读范围与原文目录</summary><p>挂起函数应可安全地从主线程调用；使协程可取消；注意异常。</p><p>原文核对：2026-09-09。正文按上述范围的原文顺序翻译；代码和图示保留原文。</p><ul><li><a href="#main-safe">Suspend functions should be safe to call from the main thread</a></li><li><a href="#coroutine-cancellable">Make your coroutine cancellable</a></li><li><a href="#exceptions">Watch out for exceptions</a></li></ul></details><nav class="chapter-switcher" aria-label="章节导航"><a href="../lifecycle-coroutines/english.html">← 在感知生命周期的组件中使用 Kotlin 协程</a><a class="course-home" href="../index.html">全部章节</a><span></span></nav></header>
+<article class="translated-article"><div><h2 id="main-safe" data-unit="coroutines-best-001">Suspend functions should be safe to call from the main thread</h2><p data-unit="coroutines-best-002">Suspend functions should be main-safe, meaning they're safe to call from the
+main thread. If a class is doing long-running blocking operations in a
+coroutine, it's in charge of moving the execution off the main thread using
+<code>withContext</code>. This applies to all classes in your app, regardless of the part
+of the architecture the class is in.</p><p>
+
+
+
+
+
+
+</p><div></div><div class="code-block"><pre><code>class NewsRepository(private val ioDispatcher: CoroutineDispatcher) {
+
+    // As this operation is manually retrieving the news from the server
+    // using a blocking HttpURLConnection, it needs to move the execution
+    // to an IO dispatcher to make it main-safe
+    suspend fun fetchLatestNews(): List&lt;Article&gt; {
+        withContext(ioDispatcher) { /* ... implementation ... */ }
+    }
+}
+
+// This use case fetches the latest news and the associated author.
+class GetLatestNewsWithAuthorsUseCase(
+    private val newsRepository: NewsRepository,
+    private val authorsRepository: AuthorsRepository
+) {
+    // This method doesn't need to worry about moving the execution of the
+    // coroutine to a different thread as newsRepository is main-safe.
+    // The work done in the coroutine is lightweight as it only creates
+    // a list and add elements to it
+    suspend operator fun invoke(): Result&lt;List&lt;ArticleWithAuthor&gt;&gt; {
+        val news = newsRepository.fetchLatestNews()
+
+        val response = mutableListOf&lt;ArticleWithAuthor&gt;()
+        for (article in news) {
+            val author = authorsRepository.getAuthor(article.author)
+            response.add(ArticleWithAuthor(article, author))
+        }
+        return Result.Success(response)
+    }
+}CoroutinesBestPractices.kt</code></pre></div><p data-unit="coroutines-best-003">This pattern makes your app more scalable, as classes calling suspend functions
+don't have to worry about what <code>Dispatcher</code> to use for what type of work. This
+responsibility lies in the class that does the work.</p><h2 id="coroutine-cancellable" data-unit="coroutines-best-004">Make your coroutine cancellable</h2><p data-unit="coroutines-best-005">Cancellation in coroutines is cooperative, which means that when a coroutine's
+<code>Job</code> is cancelled, the coroutine isn't cancelled until it suspends or checks
+for cancellation. If you do blocking operations in a coroutine, make sure
+that the coroutine is <em>cancellable</em>.</p><p data-unit="coroutines-best-006">For example, if you're reading multiple files from disk, before you start
+reading each file, check whether the coroutine was cancelled. One way to
+check for cancellation is by calling the
+<a href="https://kotlin.github.io/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/ensure-active.html" class="external"><code>ensureActive</code></a>
+function.</p><p>
+
+
+
+
+
+
+</p><div></div><div class="code-block"><pre><code>someScope.launch {
+    for (file in files) {
+        ensureActive() // Check for cancellation
+        readFile(file)
+    }
+}CoroutinesBestPractices.kt</code></pre></div><p data-unit="coroutines-best-007">All suspend functions from <code>kotlinx.coroutines</code> such as <code>withContext</code> and
+<code>delay</code> are cancellable. If your coroutine calls them, you shouldn't need to do
+any additional work.</p><p data-unit="coroutines-best-008">For more information about cancellation in coroutines, check out the
+<a href="https://medium.com/androiddevelopers/cancellation-in-coroutines-aa6b90163629" class="external">Cancellation in coroutines blog post</a>.</p><h2 id="exceptions" data-unit="coroutines-best-009">Watch out for exceptions</h2><p data-unit="coroutines-best-010">Unhandled exceptions thrown in coroutines can make your app crash. If exceptions
+are likely to happen, catch them in the body of any coroutines created with
+<code>viewModelScope</code> or <code>lifecycleScope</code>.</p><p>
+
+
+
+
+
+
+</p><div></div><div class="code-block"><pre><code>class LoginViewModel(
+    private val loginRepository: LoginRepository
+) : ViewModel() {
+
+    fun login(username: String, token: String) {
+        viewModelScope.launch {
+            try {
+                loginRepository.login(username, token)
+                // Update UI, user logged in successfully
+            } catch (exception: IOException) {
+                // Update UI, login attempt failed
+            }
+        }
+    }
+}CoroutinesBestPractices.kt</code></pre></div><aside class="prompt" data-unit="coroutines-best-011"><strong>Caution:</strong><span> To enable coroutine cancellation, don't consume exceptions of type
+<code>CancellationException</code> (don't catch them, or always rethrow them if caught).
+Prefer catching specific exception types like <code>IOException</code> over generic
+types like <code>Exception</code> or <code>Throwable</code>.</span></aside><p data-unit="coroutines-best-012">For more information, check out the blog post
+<a href="https://medium.com/androiddevelopers/exceptions-in-coroutines-ce8da1ec060c" class="external">Exceptions in coroutines</a>,
+or <a href="https://kotlinlang.org/docs/exception-handling.html" class="external">Coroutine exceptions handling</a>
+in the Kotlin documentation.</p></div></article><nav class="chapter-switcher" aria-label="章节导航"><a href="../lifecycle-coroutines/english.html">← 在感知生命周期的组件中使用 Kotlin 协程</a><a class="course-home" href="../index.html">全部章节</a><span></span></nav><footer class="license-note"><p>本阅读版为 Android Developers 英文文档所选范围的非官方中文译文。原文由 Android Developers / Android Open Source Project 维护；原代码、原图及其标识保留。<a href="../NOTICE.html">来源与许可说明</a>。</p></footer></main></body></html>

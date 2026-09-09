@@ -120,6 +120,6 @@ test("[CONTENT-CONTRACT-001] 全站派生 Slides 路由保持唯一", async () =
 });
 
 // Kotlin 与 Android 学习页直接交付静态 HTML，因此必须在构建前检查共同的阅读契约。
-test("[COURSE-READER-001] 两套课程使用指定样式并保持完整导航", async () => {
+test("[COURSE-READER-001] 学习课程使用指定样式并保持完整导航", async () => {
   assert.deepEqual(await validateCourseReaders(), []);
 });

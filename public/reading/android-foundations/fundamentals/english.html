@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Application fundamentals｜RIN III</title><link rel="stylesheet" href="../../reader.css"><link rel="stylesheet" href="../source.css"></head>
+<body><nav class="site-nav" aria-label="站点导航"><a href="../index.html">← Android 基础 · 官方文档中文阅读版</a><a href="index.html">中文译文</a></nav>
+<main class="reader"><header class="chapter-header"><span class="chapter-kicker">第一周 · 第 1 天 · M01</span><h1>Application fundamentals</h1><p class="byline"><a href="https://developer.android.com/guide/components/fundamentals?hl=en">Application fundamentals · 官方英文原文</a></p><div class="title-rule"></div>
+<details class="source-details"><summary>阅读范围与原文目录</summary><p>引言；应用组件（含激活组件）；应用资源。</p><p>原文核对：2026-09-09。正文按上述范围的原文顺序翻译；代码和图示保留原文。</p><ul><li><a href="#Components">App components</a></li><li><a href="#ActivatingComponents">Activate components</a></li><li><a href="#Resources">App resources</a></li></ul></details><nav class="chapter-switcher" aria-label="章节导航"><span></span><a class="course-home" href="../index.html">全部章节</a><a href="../build/english.html">Android 构建结构 →</a></nav></header>
+<article class="translated-article"><div><p data-unit="fundamentals-001">Android apps can be written using Kotlin, the Java programming language, and C++ languages. The Android SDK tools compile
+your code along with any data and resource files into an APK or an Android App Bundle.</p><p data-unit="fundamentals-002">An <i>Android package</i>, which is an archive file with an <code>.apk</code> suffix, contains
+the contents of an Android app required at runtime, and it is the file that Android-powered
+devices use to install the app.</p><p data-unit="fundamentals-003">An Android App Bundle, which is an archive file with an <code>.aab</code> suffix, contains
+the contents of an Android app project, including some additional metadata that isn't required at
+runtime. An AAB is a publishing format and can't be installed on Android devices. It
+defers APK generation and signing to a later stage.</p><p data-unit="fundamentals-004">When distributing your app through Google
+Play, for example, Google Play's servers generate optimized APKs that contain only the resources and
+code that are required by the particular device requesting installation of the app.</p><p data-unit="fundamentals-005">Each Android app lives in its own security sandbox, protected by
+ the following Android security features: </p><ul><li data-unit="fundamentals-006">The Android operating system is a multi-user Linux system in which each app is a
+different user.</li><li data-unit="fundamentals-007">By default, the system assigns each app a unique Linux user ID, which is used only by
+the system and is unknown to the app. The system sets permissions for all the files in an
+app so that only the user ID assigned to that app can access them. </li><li data-unit="fundamentals-008">Each process has its own virtual machine (VM), so an app's code runs in isolation from
+other apps.</li><li data-unit="fundamentals-009">By default, every app runs in its own Linux process. The Android system starts
+ the process when any
+of the app's components need to be executed, and then shuts down the process
+ when it's no longer
+needed or when the system must recover memory for other apps.</li></ul><p data-unit="fundamentals-010">The Android system implements the <em>principle of least privilege</em>. That is,
+each app, by default, has access only to the components that it requires to do its work and
+no more. This creates a very secure environment in which an app can't access parts of
+the system it is not given permission for.</p><p data-unit="fundamentals-011">However, there are ways for an app to share
+ data with other apps and for an
+app to access system services:</p><ul><li data-unit="fundamentals-012">It's possible to arrange for two apps to share the same Linux user ID, in which case
+they are able to access each other's files.  To conserve system resources, apps with the
+same user ID can also arrange to run in the same Linux process and share the same VM. The
+apps must also be signed with the same certificate.</li><li data-unit="fundamentals-013">An app can request permission to access device data such as the device's
+location, camera, and Bluetooth connection. The user has
+to explicitly grant these permissions. For more information about permissions, see
+<a href="https://developer.android.com/training/permissions">Permissions on Android</a>.</li></ul><p data-unit="fundamentals-014">The rest of this document introduces the following concepts:</p><ul><li data-unit="fundamentals-015">The core framework components that define your app.</li><li data-unit="fundamentals-016">The manifest file in which you declare the components and the required device
+  features for your
+app.</li><li data-unit="fundamentals-017">Resources that are separate from the app code and that let your app
+gracefully optimize its behavior for a variety of device configurations.</li></ul><h2 id="Components" data-unit="fundamentals-018">App components</h2><p data-unit="fundamentals-019">App components are the essential building blocks of an Android app. Each
+component is an entry point through which the system or a user can enter your app. Some
+components depend on others.</p><p data-unit="fundamentals-020">There are four types of app components:</p><ul><li data-unit="fundamentals-021">Activities</li><li data-unit="fundamentals-022">Services</li><li data-unit="fundamentals-023">Broadcast receivers</li><li data-unit="fundamentals-024">Content providers</li></ul><p data-unit="fundamentals-025">Each type serves a distinct purpose
+and has a distinct lifecycle that defines how a component is created and destroyed.
+ The following sections describe the four types of app components.</p><dl><dt data-unit="fundamentals-026"><b>Activities</b></dt><dd><span data-unit="fundamentals-027">An <i>activity</i> is the entry point for interacting with the user. It represents a single
+ screen with a user interface. For example,
+an email app might have one activity that shows a list of new
+emails, another activity to compose an email, and another activity for reading emails. Although
+the activities work together to form a cohesive user experience in the email app, each one
+is independent of the others.
+</span><p data-unit="fundamentals-028">A different app can start any one of these
+activities if the email app allows it. For example, a camera app might start the
+activity in the email app for composing a new email to let the user share a picture.</p><p data-unit="fundamentals-029">An activity facilitates the following key interactions between system and app:</p><ul><li data-unit="fundamentals-030">Keeping track of what the user currently cares about—what is on-screen—so that the
+      system keeps running the process that is hosting the activity.</li><li data-unit="fundamentals-031">Knowing which previously used processes contain stopped activities the user might return to
+      and prioritizing those processes more highly to keep them available.</li><li data-unit="fundamentals-032">Helping the app handle having its process killed so the user can return to activities
+      with their previous state restored.</li><li data-unit="fundamentals-033">Providing a way for apps to implement user flows between each other, and for the system to
+      coordinate these flows. The primary example of this is sharing.</li></ul><p data-unit="fundamentals-034">You implement an activity as a subclass of the <code><a href="https://developer.android.com/reference/android/app/Activity">Activity</a></code> class. For more
+  information about the <code>Activity</code> class, see
+ <a href="https://developer.android.com/guide/components/activities/intro-activities">Introduction to activities</a>.</p></dd><dt data-unit="fundamentals-035"><b>Services</b></dt><dd><span data-unit="fundamentals-036">A <i>service</i> is a general-purpose entry point for keeping an app running in the background
+for all kinds of reasons. It is a component that runs in the background to perform long-running
+operations or to perform work for remote processes. A service does not provide a user interface.
+</span><p data-unit="fundamentals-037">For
+example, a service might play music in the background while the user is in a different app, or
+it might fetch data over the network without blocking user interaction with an activity. Another
+component, such as an activity, can start the service and let it run or bind to it to
+interact with it.
+
+</p><p data-unit="fundamentals-038">There are two types of services that tell the system how to manage an app: started services and
+bound services.</p><p data-unit="fundamentals-039"><b>Started services</b> tell the system to keep them running until their work is completed.
+This might be to sync some data in the background or play music even after the user leaves the app.
+Syncing data in the background or playing music represent different types of started
+services, which the system handles differently:</p><ul><li data-unit="fundamentals-040">Music playback is something the user is directly aware of, and the app communicates this to
+      the system by indicating that it wants to be in the foreground, with a notification to tell
+      the user that it is running. In this case, the system prioritizes keeping that service's
+      process running, because the user has a bad experience if it goes away.
+    </li><li data-unit="fundamentals-041">A regular background service is not something the user is directly aware of, so
+      the system has more freedom in managing its process. It might let it be killed,
+      restarting the service sometime later, if it needs RAM for things that are of more
+      immediate concern to the user.
+    </li></ul><p data-unit="fundamentals-042"><b>Bound services</b> run because some other app (or the system) has said that it wants to make use of the
+service. A bound service provides an API to another process, and the system
+knows there is a dependency between these processes. So if process A is bound to a service in
+process B, the system knows that it needs to keep process B and its service running for A.  Further, if
+process A is something the user cares about, then it knows to treat process B as something the
+user also cares about.</p><p data-unit="fundamentals-043">Because of their flexibility, services are useful
+building blocks for all kinds of higher-level system concepts.  Live wallpapers, notification
+listeners, screen savers, input methods, accessibility services, and many other core system features
+are all built as services that applications implement and the system binds to when they run.</p><p data-unit="fundamentals-044">A service is implemented as a subclass of <code><a href="https://developer.android.com/reference/android/app/Service">Service</a></code>. For more information
+about the <code>Service</code> class, see the <a href="https://developer.android.com/guide/components/services">
+Services overview</a>.</p><p class="note" data-unit="fundamentals-045"><strong>Note:</strong> If your app targets Android 5.0 (API level 21) or higher,
+ use the <code><a href="https://developer.android.com/reference/android/app/job/JobScheduler">JobScheduler</a></code> class to schedule actions. JobScheduler has the
+advantage of conserving battery by optimally scheduling jobs to reduce power consumption
+and by working with the <a href="https://developer.android.com/training/monitoring-device-state/doze-standby">Doze</a> API.
+For more information about using this class, see the <code><a href="https://developer.android.com/reference/android/app/job/JobScheduler">JobScheduler</a></code>
+reference documentation.</p></dd><span>
+
+<a id="broadcast-receiver"></a>
+</span><dt data-unit="fundamentals-046"><b>Broadcast receivers</b></dt><dd><span data-unit="fundamentals-047">A <i>broadcast receiver</i> is a component that lets the system deliver events to the
+app outside of a regular user flow so the app can respond to system-wide broadcast
+announcements. Because broadcast receivers are another well-defined entry into the app, the system
+can deliver broadcasts even to apps that aren't currently running.
+</span><p data-unit="fundamentals-048">So, for example, an app can
+schedule an alarm to post a notification to tell the user about an upcoming event.
+Because the alarm is delivered to a <code>BroadcastReceiver</code> in the app, there is no need for the app to
+remain running until the alarm goes off.</p><p data-unit="fundamentals-049">Many broadcasts originate from the system, like a broadcast announcing that the screen is turned off,
+the battery is low, or a picture is captured.
+Apps can also initiate broadcasts, such as to let other apps know that
+some data is downloaded to the device and is available for them to use.
+</p><p data-unit="fundamentals-050">Although broadcast
+receivers don't display a user interface, they can <a href="https://developer.android.com/develop/ui/views/notifications">create a status bar notification</a>
+to alert the user when a broadcast event occurs. More commonly, though, a broadcast receiver is
+just a <em>gateway</em> to other components and is intended to do a very minimal amount of work.
+ </p><p data-unit="fundamentals-051">For instance, a broadcast receiver might schedule a <code><a href="https://developer.android.com/reference/android/app/job/JobService">JobService</a></code> to perform some work based
+on an event using <code><a href="https://developer.android.com/reference/android/app/job/JobScheduler">JobScheduler</a></code>.
+Broadcast receivers often involve apps interacting with each other, so it's important to be aware of the
+security implications when setting them up.</p><p data-unit="fundamentals-052">A broadcast receiver is implemented as a subclass of <code><a href="https://developer.android.com/reference/android/content/BroadcastReceiver">BroadcastReceiver</a></code>,
+and each broadcast is delivered as an <code><a href="https://developer.android.com/reference/android/content/Intent">Intent</a></code> object. For more information,
+see the <code><a href="https://developer.android.com/reference/android/content/BroadcastReceiver">BroadcastReceiver</a></code> class.</p></dd><dt data-unit="fundamentals-053"><b>Content providers</b></dt><dd><span data-unit="fundamentals-054">A <i>content provider</i> manages a shared set of app data that you can store in
+the file system, in a SQLite database, on the web, or on any other persistent storage
+location that your
+app can access. Through the content provider, other apps can query or modify
+the data, if the content provider permits it.
+</span><p data-unit="fundamentals-055">For example, the Android system provides a content
+provider that manages the user's contact information. Any app with the proper
+permissions can query the content provider, such as using
+<code><a href="https://developer.android.com/reference/android/provider/ContactsContract.Data">ContactsContract.Data</a></code>, to read and write information about
+a particular person.
+
+</p><p data-unit="fundamentals-056">It is tempting to think of a content provider as an abstraction on a database, because there is a
+lot of API and support built in to them for that common case. However, they have a different
+core purpose from a system-design perspective.
+
+</p><p data-unit="fundamentals-057">To the system, a content provider is an entry point into an app for publishing named data items,
+identified by a URI scheme.  Thus, an app can decide how it wants to map the data it contains to a
+URI namespace, handing out those URIs to other entities which can in turn use them to access the
+data.  There are a few particular things this lets the system do in managing an app:
+
+  </p><ul><li data-unit="fundamentals-058">Assigning a URI doesn't require that the app remain running, so URIs can persist after their
+      owning apps exit. The system only needs to make sure that an owning app is
+      still running when it retrieves the app's data from the corresponding URI.</li><li data-unit="fundamentals-059">These URIs also provide an important fine-grained security model.  For example, an
+    app can place the URI for an image it has on the clipboard, but leave its content
+    provider locked up so that other apps cannot freely access it.  When a second app attempts
+    to access that URI on the clipboard, the system can let that app
+    access the data using a temporary <i>URI permission grant</i>
+    so that it accesses the data only behind that URI, and nothing else in the second app.</li></ul><p data-unit="fundamentals-060">Content providers are also useful for reading and writing data that is private to your
+app and not shared.</p><p data-unit="fundamentals-061">A content provider is implemented as a subclass of <code><a href="https://developer.android.com/reference/android/content/ContentProvider">ContentProvider</a></code>
+and must implement a standard set of APIs that enable other apps to perform
+transactions. For more information, see the <a href="https://developer.android.com/guide/topics/providers/content-providers">Content providers</a> developer
+guide.</p></dd></dl><p data-unit="fundamentals-062">A unique aspect of the Android system design is that any app can start another
+app’s component. For example, if you want the user to capture a
+photo with the device camera, there's probably another app that does that—and your
+app can use it instead of developing an activity to capture a photo yourself. You don't
+need to incorporate or even link to the code from the camera app.
+Instead, you can start the activity in the camera app that captures a
+photo. When complete, the photo is even returned to your app so you can use it. To the user,
+it seems as if the camera is actually a part of your app.</p><p data-unit="fundamentals-063">When the system starts a component, it starts the process for that app, if it's not
+already running, and instantiates the classes needed for the component. For example, if your
+app starts the activity in the camera app that captures a photo, that activity
+runs in the process that belongs to the camera app, not in your app's process.
+Therefore, unlike apps on most other systems, Android apps don't have a single entry
+point: there's no <code>main()</code> function.</p><p data-unit="fundamentals-064">Because the system runs each app in a separate process with file permissions that
+restrict access to other apps, your app can't directly activate a component from
+another app. However, the Android system can. To activate a component in
+another app, you deliver a message to the system that specifies your <em>intent</em> to
+start a particular component. The system then activates the component for you.</p><h3 id="ActivatingComponents" data-unit="fundamentals-065">Activate components</h3><p data-unit="fundamentals-066">An asynchronous message called an <em>intent</em> activates three of the four component types: activities, services, and
+broadcast receivers.
+Intents bind individual components to each other at runtime. You can think of them
+as the messengers that request an action from other components, whether the component belongs
+to your app or another.</p><p data-unit="fundamentals-067">An intent is created with an <code><a href="https://developer.android.com/reference/android/content/Intent">Intent</a></code> object, which defines a message to
+activate either a specific component (an <i>explicit</i> intent) or a specific type of component
+ (an <i>implicit</i> intent).</p><p data-unit="fundamentals-068">For activities and services, an intent defines the action to perform, such as to
+ <em>view</em> or
+<em>send</em> something, and might specify the URI of the data to act on, among other things that the
+component being started might need to know.</p><p data-unit="fundamentals-069">For example, an intent might convey a request for an
+activity to show an image or to open a web page. In some cases, you can start an
+activity to receive a result, in which case the activity also returns
+the result in an <code>Intent</code>. You can also issue an intent to let
+the user pick a personal contact and have it returned to you. The return intent includes a
+URI pointing to the chosen contact.</p><p data-unit="fundamentals-070">For broadcast receivers, the intent defines the
+broadcast announcement. For example, a broadcast to indicate that the device battery is low
+includes only a known action string that indicates <em>battery is low</em>.</p><p data-unit="fundamentals-071">Unlike activities, services, and broadcast receivers, content providers are
+activated when targeted by a request from a <code><a href="https://developer.android.com/reference/android/content/ContentResolver">ContentResolver</a></code>. The content
+resolver handles all direct transactions with the content provider, and the component
+performing transactions with the provider calls methods on the
+<code>ContentResolver</code> object. This leaves a layer of abstraction for security reasons between the
+content provider and the component requesting information.</p><p data-unit="fundamentals-072">There are separate methods for activating each type of component:</p><ul><li data-unit="fundamentals-073">You can start an activity or give it something new to do by
+passing an <code>Intent</code> to <code><a href="https://developer.android.com/reference/android/content/Context#startActivity(android.content.Intent)">startActivity()</a></code>
+or, when you want the activity to return a result,
+<code><a href="https://developer.android.com/reference/android/app/Activity#startActivityForResult(android.content.Intent,%20int)">startActivityForResult()</a></code>.</li><li data-unit="fundamentals-074">On Android 5.0 (API level 21) and higher, you can use
+  the <code><a href="https://developer.android.com/reference/android/app/job/JobScheduler">JobScheduler</a></code> class to schedule actions.
+    For earlier Android versions, you can start
+  a service or give new instructions to an ongoing service by
+passing an <code>Intent</code> to <code><a href="https://developer.android.com/reference/android/content/Context#startService(android.content.Intent)">startService()</a></code>.
+You can bind to the service by passing an <code>Intent</code> to
+<code><a href="https://developer.android.com/reference/android/content/Context#bindService(android.content.Intent,%20android.content.ServiceConnection,%20int)">bindService()</a></code>. </li><li data-unit="fundamentals-075">You can initiate a broadcast by passing an <code>Intent</code> to methods such as
+<code><a href="https://developer.android.com/reference/android/content/Context#sendBroadcast(android.content.Intent)">sendBroadcast()</a></code> or
+<code><a href="https://developer.android.com/reference/android/content/Context#sendOrderedBroadcast(android.content.Intent,%20java.lang.String)">sendOrderedBroadcast()</a></code>.</li><li data-unit="fundamentals-076">You can perform a query to a content provider by calling
+<code><a href="https://developer.android.com/reference/android/content/ContentProvider#query(android.net.Uri,%20java.lang.String[],%20android.os.Bundle,%20android.os.CancellationSignal)">query()</a></code>
+on a <code>ContentResolver</code>.</li></ul><p data-unit="fundamentals-077">For more information about using intents, see the <a href="https://developer.android.com/guide/components/intents-filters">Intents and
+Intent Filters</a> document.
+ The following documents provide more information about activating specific components:
+ <a href="https://developer.android.com/guide/components/activities/intro-activities">Introduction to activities</a>,
+ <a href="https://developer.android.com/guide/components/services">Services overview</a>,
+ <code><a href="https://developer.android.com/reference/android/content/BroadcastReceiver">BroadcastReceiver</a></code>, and
+ <a href="https://developer.android.com/guide/topics/providers/content-providers">Content providers</a>.</p><h2 id="Resources" data-unit="fundamentals-078">App resources</h2><p data-unit="fundamentals-079">An Android app is composed of more than just code. It requires resources that are
+separate from the source code, such as images, audio files, and anything relating to the visual
+presentation of the app. For example, you can define animations, menus, styles, colors,
+and the layout of activity user interfaces with XML files.</p><p data-unit="fundamentals-080">Using app resources makes it easy
+to update various characteristics of your app without modifying code. Providing
+sets of alternative resources lets you optimize your app for a variety of
+device configurations, such as different languages and screen sizes.</p><p data-unit="fundamentals-081">For every resource that you include in your Android project, the SDK build tools define a unique
+integer ID, which you can use to reference the resource from your app code or from
+other resources defined in XML. For example, if your app contains an image file named
+<code>logo.png</code> (saved in the <code>res/drawable/</code> directory), the SDK tools generate
+a resource ID named <code>R.drawable.logo</code>. This ID maps to an app-specific integer, which
+you can use to reference the image and insert it in your user interface.</p><p data-unit="fundamentals-082">One of the most important aspects of providing resources separate from your source code
+is the ability to provide alternative resources for different device
+configurations.</p><p data-unit="fundamentals-083">For example, by defining UI strings in XML, you can translate
+ the strings into other
+languages and save those strings in separate files. Then Android applies the
+ appropriate language strings
+to your UI based on a language <em>qualifier</em>
+that you append to the resource directory's name, such as <code>res/values-fr/</code> for French string
+values, and the user's language setting.</p><p data-unit="fundamentals-084">Android supports many qualifiers for your alternative resources. The
+qualifier is a short string that you include in the name of your resource directories to
+define the device configuration those resources are used for.</p><p data-unit="fundamentals-085">For
+example, you can create different layouts for your activities depending on the
+device's screen orientation and size. When the device screen is in portrait (tall)
+orientation, you might want a layout with buttons arranged vertically, but when the screen is in
+landscape (wide) orientation, you might want the buttons aligned horizontally. To change the layout
+depending on the orientation, you can define two layouts and apply the appropriate
+qualifier to each layout's directory name. Then, the system automatically applies the appropriate
+layout depending on the current device orientation.</p><p data-unit="fundamentals-086">For more information about the different kinds of resources you can include in your application and how to
+create alternative resources for different device configurations, read the <a href="https://developer.android.com/guide/topics/resources/providing-resources">App resources overview</a>. To
+learn more about best practices and designing robust, production-quality apps,
+see the <a href="https://developer.android.com/topic/libraries/architecture/guide">Guide to app architecture</a>.</p></div></article><nav class="chapter-switcher" aria-label="章节导航"><span></span><a class="course-home" href="../index.html">全部章节</a><a href="../build/english.html">Android 构建结构 →</a></nav><footer class="license-note"><p>本阅读版为 Android Developers 英文文档所选范围的非官方中文译文。原文由 Android Developers / Android Open Source Project 维护；原代码、原图及其标识保留。<a href="../NOTICE.html">来源与许可说明</a>。</p></footer></main></body></html>
