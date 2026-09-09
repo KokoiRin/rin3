@@ -2,7 +2,7 @@
 <html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>管理 ViewGroup 中的触摸事件｜RIN III</title><link rel="stylesheet" href="../../reader.css"><link rel="stylesheet" href="../source.css"></head>
 <body><nav class="site-nav" aria-label="站点导航"><a href="../index.html">← Android 基础 · 官方文档中文阅读版</a><a href="english.html">英文对照</a></nav>
 <main class="reader"><header class="chapter-header"><span class="chapter-kicker">第一周 · 第 4 天 · M13</span><h1>管理 ViewGroup 中的触摸事件</h1><p class="byline"><a href="https://developer.android.com/develop/ui/views/touch-and-input/gestures/viewgroup?hl=en">Manage touch events in a ViewGroup · 官方英文原文</a></p><div class="title-rule"></div>
-<details class="source-details"><summary>阅读范围与原文目录</summary><p>引言；在 ViewGroup 中拦截触摸事件，含原示例，至处理 ACTION_OUTSIDE 事件之前。</p><p>原文核对：2026-09-09。正文按上述范围的原文顺序翻译；代码和图示保留原文。</p><ul><li><a href="#intercept">在 ViewGroup 中拦截触摸事件</a></li></ul></details><nav class="chapter-switcher" aria-label="章节导航"><a href="../drawing/index.html">← Android 如何绘制 View</a><a class="course-home" href="../index.html">全部章节</a><a href="../architecture/index.html">应用架构指南 →</a></nav></header>
+<details class="source-details"><summary>原文目录与译文说明</summary><p>对应官方文档正文全文，包含全部章节、示例与正文中的补充资源链接；不包含站点导航、反馈和自动推荐组件。</p><p>原文核对：2026-09-09。正文全文按原文顺序翻译；代码、图示和视频保留原文。</p><ul><li><a href="#intercept">在 ViewGroup 中拦截触摸事件</a></li><li><a href="#ao">处理 ACTION_OUTSIDE 事件</a></li><li><a href="#vc">使用 ViewConfiguration 常量</a></li><li><a href="#delegate">扩展子 View 的可触摸区域</a></li></ul></details><nav class="chapter-switcher" aria-label="章节导航"><a href="../drawing/index.html">← Android 如何绘制 View</a><a class="course-home" href="../index.html">全部章节</a><a href="../architecture/index.html">应用架构指南 →</a></nav></header>
 <article class="translated-article"><div><div class="android-page-banner android-page-banner-image-bottom-right"><div class="android-page-banner-content"><div class="android-page-banner-title" data-unit="touch-001">试试 Compose 的方式</div><div class="android-page-banner-description" data-unit="touch-002">Jetpack Compose 是 Android 推荐的 UI 工具包。了解 Compose 中的手势。</div><div class="android-page-banner-cta" data-unit="touch-003"><a href="https://developer.android.com/develop/ui/compose/touch-input/pointer-input/understand-gestures#event-propagation">手势 →</a></div></div><div class="android-page-banner-media">
       <picture>
 
@@ -10,7 +10,7 @@
 
         <img alt="官方原图" class="android-page-banner-image" src="../assets/android-compose-ui-logo.png" loading="lazy">
       </source></picture>
-    </div></div><p data-unit="touch-004">处理 <a href="https://developer.android.com/reference/android/view/ViewGroup"><code>ViewGroup</code></a> 中的触摸事件需要特别小心，因为 <code>ViewGroup</code> 的子元素所接收的触摸事件目标，与 <code>ViewGroup</code> 自身不同的情况很常见。为了确保每个 View 都能正确收到面向它的触摸事件，请重写 <a href="https://developer.android.com/reference/android/view/ViewGroup#onInterceptTouchEvent(android.view.MotionEvent)"><code>onInterceptTouchEvent()</code></a> 方法。</p><div id="additionalResources"><p data-unit="touch-005">请参阅以下相关资源：</p><!-- Required platform, tools, add-ons, devices, knowledge, etc. --><ul><li data-unit="touch-006"><a href="https://developer.android.com/guide/topics/ui/ui-events">输入事件概览</a></li><li data-unit="touch-007"><a href="https://developer.android.com/guide/topics/sensors/sensors_overview">传感器概览</a></li><li data-unit="touch-008"><a href="https://developer.android.com/training/custom-views/making-interactive">让自定义 View 支持交互</a></li></ul></div><h2 id="intercept" data-unit="touch-009">在 ViewGroup 中拦截触摸事件</h2><p data-unit="touch-010">每当在 <code>ViewGroup</code> 的表面（包括其子元素的表面）检测到触摸事件时，都会调用 <code>onInterceptTouchEvent()</code> 方法。如果 <code>onInterceptTouchEvent()</code> 返回 <code>true</code>，则 <a href="https://developer.android.com/reference/android/view/MotionEvent"><code>MotionEvent</code></a> 会被拦截，也就是说，它不会传给子元素，而会传给父元素的 <a href="https://developer.android.com/reference/android/view/View#onTouchEvent(android.view.MotionEvent)"><code>onTouchEvent()</code></a> 方法。</p><p data-unit="touch-011"><code>onInterceptTouchEvent()</code> 方法让父元素有机会在子元素之前看到触摸事件。如果从 <code>onInterceptTouchEvent()</code> 返回 <code>true</code>，之前处理触摸事件的子 View 就会收到一个 <a href="https://developer.android.com/reference/android/view/MotionEvent#ACTION_CANCEL"><code>ACTION_CANCEL</code></a>，此后的事件会发送到父元素的 <code>onTouchEvent()</code> 方法，进行通常的处理。<code>onInterceptTouchEvent()</code> 也可以返回 <code>false</code>，在事件沿 View 层次结构向下传递到通常的目标时观察它们；这些目标通过自己的 <code>onTouchEvent()</code> 处理事件。</p><p data-unit="touch-012">在以下代码段中，<code>MyViewGroup</code> 类继承了 <code>ViewGroup</code>。<code>MyViewGroup</code> 包含多个子 View。如果在某个子 View 上水平拖动手指，该子 View 就不再收到触摸事件，而由 <code>MyViewGroup</code> 通过滚动自身内容来处理触摸事件。不过，如果点按子 View 中的按钮，或垂直滚动子 View，父元素不会拦截这些触摸事件，因为子元素才是预期目标。在这些情况下，<code>onInterceptTouchEvent()</code> 返回 <code>false</code>，<code>MyViewGroup</code> 类的 <code>onTouchEvent()</code> 不会被调用。</p><div><div class="ds-selector-tabs"><section><h3 id="kotlin" data-unit="touch-013">Kotlin</h3><div></div><div class="code-block"><pre><code>class MyViewGroup @JvmOverloads constructor(
+    </div></div><p data-unit="touch-004">处理 <a href="https://developer.android.com/reference/android/view/ViewGroup"><code>ViewGroup</code></a> 中的触摸事件需要特别小心，因为 <code>ViewGroup</code> 的子元素所接收的触摸事件目标，与 <code>ViewGroup</code> 自身不同的情况很常见。为了确保每个 View 都能正确收到面向它的触摸事件，请重写 <a href="https://developer.android.com/reference/android/view/ViewGroup#onInterceptTouchEvent(android.view.MotionEvent)"><code>onInterceptTouchEvent()</code></a> 方法。</p><div id="additionalResources"><p data-unit="touch-005">请参阅以下相关资源：</p><ul><li data-unit="touch-006"><a href="https://developer.android.com/guide/topics/ui/ui-events">输入事件概览</a></li><li data-unit="touch-007"><a href="https://developer.android.com/guide/topics/sensors/sensors_overview">传感器概览</a></li><li data-unit="touch-008"><a href="https://developer.android.com/training/custom-views/making-interactive">让自定义 View 支持交互</a></li></ul></div><h2 id="intercept" data-unit="touch-009">在 ViewGroup 中拦截触摸事件</h2><p data-unit="touch-010">每当在 <code>ViewGroup</code> 的表面（包括其子元素的表面）检测到触摸事件时，都会调用 <code>onInterceptTouchEvent()</code> 方法。如果 <code>onInterceptTouchEvent()</code> 返回 <code>true</code>，则 <a href="https://developer.android.com/reference/android/view/MotionEvent"><code>MotionEvent</code></a> 会被拦截，也就是说，它不会传给子元素，而会传给父元素的 <a href="https://developer.android.com/reference/android/view/View#onTouchEvent(android.view.MotionEvent)"><code>onTouchEvent()</code></a> 方法。</p><p data-unit="touch-011"><code>onInterceptTouchEvent()</code> 方法让父元素有机会在子元素之前看到触摸事件。如果从 <code>onInterceptTouchEvent()</code> 返回 <code>true</code>，之前处理触摸事件的子 View 就会收到一个 <a href="https://developer.android.com/reference/android/view/MotionEvent#ACTION_CANCEL"><code>ACTION_CANCEL</code></a>，此后的事件会发送到父元素的 <code>onTouchEvent()</code> 方法，进行通常的处理。<code>onInterceptTouchEvent()</code> 也可以返回 <code>false</code>，在事件沿 View 层次结构向下传递到通常的目标时观察它们；这些目标通过自己的 <code>onTouchEvent()</code> 处理事件。</p><p data-unit="touch-012">在以下代码段中，<code>MyViewGroup</code> 类继承了 <code>ViewGroup</code>。<code>MyViewGroup</code> 包含多个子 View。如果在某个子 View 上水平拖动手指，该子 View 就不再收到触摸事件，而由 <code>MyViewGroup</code> 通过滚动自身内容来处理触摸事件。不过，如果点按子 View 中的按钮，或垂直滚动子 View，父元素不会拦截这些触摸事件，因为子元素才是预期目标。在这些情况下，<code>onInterceptTouchEvent()</code> 返回 <code>false</code>，<code>MyViewGroup</code> 类的 <code>onTouchEvent()</code> 不会被调用。</p><div><div class="ds-selector-tabs"><section><h3 id="kotlin" data-unit="touch-013">Kotlin</h3><div></div><div class="code-block"><pre><code>class MyViewGroup @JvmOverloads constructor(
         context: Context,
         private val mTouchSlop: Int = ViewConfiguration.get(context).scaledTouchSlop
 ) : ViewGroup(context) {
@@ -120,4 +120,144 @@
         // called if the touch event is intercepted in onInterceptTouchEvent.
         ...
     }
-}</code></pre></div></section></div></div><p data-unit="touch-015">请注意，<code>ViewGroup</code> 还提供了 <a href="https://developer.android.com/reference/android/view/ViewGroup#requestDisallowInterceptTouchEvent(boolean)"><code>requestDisallowInterceptTouchEvent()</code></a> 方法。当子元素不希望父元素及其祖先通过 <code>onInterceptTouchEvent()</code> 拦截触摸事件时，<code>ViewGroup</code> 会调用此方法。</p></div></article><nav class="chapter-switcher" aria-label="章节导航"><a href="../drawing/index.html">← Android 如何绘制 View</a><a class="course-home" href="../index.html">全部章节</a><a href="../architecture/index.html">应用架构指南 →</a></nav><footer class="license-note"><p>本阅读版为 Android Developers 英文文档所选范围的非官方中文译文。原文由 Android Developers / Android Open Source Project 维护；原代码、原图及其标识保留。<a href="../NOTICE.html">来源与许可说明</a>。</p></footer></main></body></html>
+}</code></pre></div></section></div></div><p data-unit="touch-015">请注意，<code>ViewGroup</code> 还提供了 <a href="https://developer.android.com/reference/android/view/ViewGroup#requestDisallowInterceptTouchEvent(boolean)"><code>requestDisallowInterceptTouchEvent()</code></a> 方法。当子元素不希望父元素及其祖先通过 <code>onInterceptTouchEvent()</code> 拦截触摸事件时，<code>ViewGroup</code> 会调用此方法。</p><h3 id="ao" data-unit="touch-016">处理 ACTION_OUTSIDE 事件</h3><p data-unit="touch-017">如果 <code>ViewGroup</code> 收到带有 <a href="https://developer.android.com/reference/android/view/MotionEvent#ACTION_OUTSIDE"><code>ACTION_OUTSIDE</code></a> 的 <code>MotionEvent</code>，默认不会将事件分派给其子级。要处理带有 <code>ACTION_OUTSIDE</code> 的 <code>MotionEvent</code>，可以重写 <a href="https://developer.android.com/reference/android/view/ViewGroup#dispatchTouchEvent(android.view.MotionEvent)"><code>dispatchTouchEvent(MotionEvent event)</code></a>，将其分派给相应的 <a href="https://developer.android.com/reference/android/view/View"><code>View</code></a>；也可以在相关的 <a href="https://developer.android.com/reference/android/view/Window.Callback"><code>Window.Callback</code></a>（例如 <a href="https://developer.android.com/reference/android/app/Activity"><code>Activity</code></a>）中处理。</p><h2 id="vc" data-unit="touch-018">使用 ViewConfiguration 常量</h2><p data-unit="touch-019">前面的代码片段使用当前的 <code>ViewConfiguration</code> 初始化名为 <code>mTouchSlop</code> 的变量。可以通过 <code>ViewConfiguration</code> 类访问 Android 系统使用的常见距离、速度和时间值。</p><p data-unit="touch-020">“Touch slop”指在手势被解释为滚动之前，用户触点可以移动的像素距离。它通常用于防止用户执行其他触摸操作时（例如触摸屏幕元素）发生意外滚动。</p><p data-unit="touch-021">另外两个常用的 <code>ViewConfiguration</code> 方法是 <a href="https://developer.android.com/reference/android/view/ViewConfiguration#getScaledMinimumFlingVelocity()"><code>getScaledMinimumFlingVelocity()</code></a> 和 <a href="https://developer.android.com/reference/android/view/ViewConfiguration#getScaledMaximumFlingVelocity()"><code>getScaledMaximumFlingVelocity()</code></a>。它们分别返回启动快速滑动所需的最小和最大速度，单位为像素/秒。例如：</p><div><div class="ds-selector-tabs"><section><h3 id="kotlin" data-unit="touch-022">Kotlin</h3><div></div><div class="code-block"><pre><code>private val vc: ViewConfiguration = ViewConfiguration.get(context)
+private val mSlop: Int = vc.scaledTouchSlop
+private val mMinFlingVelocity: Int = vc.scaledMinimumFlingVelocity
+private val mMaxFlingVelocity: Int = vc.scaledMaximumFlingVelocity
+...
+MotionEvent.ACTION_MOVE -&gt; {
+    ...
+    val deltaX: Float = motionEvent.rawX - mDownX
+    if (Math.abs(deltaX) &gt; mSlop) {
+        // A swipe occurs, do something.
+    }
+    return false
+}
+...
+MotionEvent.ACTION_UP -&gt; {
+    ...
+    if (velocityX in mMinFlingVelocity..mMaxFlingVelocity &amp;&amp; velocityY &lt; velocityX) {
+        // The criteria are satisfied, do something.
+    }
+}</code></pre></div></section><section><h3 id="java" data-unit="touch-023">Java</h3><div></div><div class="code-block"><pre><code>ViewConfiguration vc = ViewConfiguration.get(view.getContext());
+private int mSlop = vc.getScaledTouchSlop();
+private int mMinFlingVelocity = vc.getScaledMinimumFlingVelocity();
+private int mMaxFlingVelocity = vc.getScaledMaximumFlingVelocity();
+...
+case MotionEvent.ACTION_MOVE: {
+    ...
+    float deltaX = motionEvent.getRawX() - mDownX;
+    if (Math.abs(deltaX) &gt; mSlop) {
+        // A swipe occurs, do something.
+    }
+...
+case MotionEvent.ACTION_UP: {
+    ...
+    } if (mMinFlingVelocity &lt;= velocityX &amp;&amp; velocityX &lt;= mMaxFlingVelocity
+            &amp;&amp; velocityY &lt; velocityX) {
+        // The criteria are satisfied, do something.
+    }
+}</code></pre></div></section></div></div><h2 id="delegate" data-unit="touch-024">扩展子 View 的可触摸区域</h2><p data-unit="touch-025">Android 提供 <a href="https://developer.android.com/reference/android/view/TouchDelegate"><code>TouchDelegate</code></a> 类，使父级能够将子 View 的可触摸区域扩展到其边界之外。当子 View 必须保持较小尺寸，却需要较大触摸区域时，这很有用。也可以使用这种方式缩小子级的触摸区域。</p><p data-unit="touch-026">以下示例中，<a href="https://developer.android.com/reference/android/widget/ImageButton"><code>ImageButton</code></a> 是<em>委托视图</em>，也就是父级为其扩展触摸区域的子级。布局文件如下：</p><div></div><div class="code-block"><pre><code>&lt;RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+     android:id="@+id/parent_layout"
+     android:layout_width="match_parent"
+     android:layout_height="match_parent"
+     tools:context=".MainActivity" &gt;
+
+     &lt;ImageButton android:id="@+id/button"
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          android:background="@null"
+          android:src="@drawable/icon" /&gt;
+&lt;/RelativeLayout&gt;</code></pre></div><p data-unit="touch-027">以下代码片段完成这些任务：</p><ul><li data-unit="touch-028">获取父 View，并向 UI 线程投递一个 <a href="https://developer.android.com/reference/java/lang/Runnable"><code>Runnable</code></a>。这样可确保父级先完成子级布局，再调用 <a href="https://developer.android.com/reference/android/view/View#getHitRect(android.graphics.Rect)"><code>getHitRect()</code></a>。<code>getHitRect()</code> 方法获取以父级坐标表示的子级<em>命中矩形</em>（即可触摸区域）。</li><li data-unit="touch-029">查找 <code>ImageButton</code> 子 View，调用 <code>getHitRect()</code> 获取子级可触摸区域的边界。</li><li data-unit="touch-030">扩展 <code>ImageButton</code> 子 View 命中矩形的边界。</li><li data-unit="touch-031">实例化 <code>TouchDelegate</code>，将扩展后的命中矩形及 <code>ImageButton</code> 子 View 作为参数传入。</li><li data-unit="touch-032">在父 View 上设置 <code>TouchDelegate</code>，使触摸委托边界内的触摸事件被路由到子级。</li></ul><p data-unit="touch-033">父 View 作为 <code>ImageButton</code> 子 View 的触摸委托，接收所有触摸事件。如果事件发生在子级命中矩形内，父级会将该触摸事件传给子级处理。</p><div><div class="ds-selector-tabs"><section><h3 id="kotlin" data-unit="touch-034">Kotlin</h3><div></div><div class="code-block"><pre><code>public class MainActivity : Activity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_main)
+
+        // Post in the parent's message queue to make sure the parent lays out
+        // its children before you call getHitRect().
+        findViewById&lt;View&gt;(R.id.parent_layout).post {
+            // The bounds for the delegate view, which is an ImageButton in this
+            // example.
+            val delegateArea = Rect()
+            val myButton = findViewById&lt;ImageButton&gt;(R.id.button).apply {
+                isEnabled = true
+                setOnClickListener {
+                    Toast.makeText(
+                            this@MainActivity,
+                            "Touch occurred within ImageButton touch region.",
+                            Toast.LENGTH_SHORT
+                    ).show()
+                }
+
+                // The hit rectangle for the ImageButton.
+                getHitRect(delegateArea)
+            }
+
+            // Extend the touch area of the ImageButton beyond its bounds on the
+            // right and bottom.
+            delegateArea.right += 100
+            delegateArea.bottom += 100
+
+            // Set the TouchDelegate on the parent view so that touches within
+            // the touch delegate bounds are routed to the child.
+            (myButton.parent as? View)?.apply {
+                // Instantiate a TouchDelegate. "delegateArea" is the bounds in
+                // local coordinates of the containing view to be mapped to the
+                // delegate view. "myButton" is the child view that receives
+                // motion events.
+                touchDelegate = TouchDelegate(delegateArea, myButton)
+            }
+        }
+    }
+}</code></pre></div></section><section><h3 id="java" data-unit="touch-035">Java</h3><div></div><div class="code-block"><pre><code>public class MainActivity extends Activity {
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+        // Get the parent view.
+        View parentView = findViewById(R.id.parent_layout);
+
+        parentView.post(new Runnable() {
+            // Post in the parent's message queue to make sure the parent lays
+            // out its children before you call getHitRect().
+            @Override
+            public void run() {
+                // The bounds for the delegate view, which is an ImageButton in
+                // this example.
+                Rect delegateArea = new Rect();
+                ImageButton myButton = (ImageButton) findViewById(R.id.button);
+                myButton.setEnabled(true);
+                myButton.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        Toast.makeText(MainActivity.this,
+                                "Touch occurred within ImageButton touch region.",
+                                Toast.LENGTH_SHORT).show();
+                    }
+                });
+
+                // The hit rectangle for the ImageButton.
+                myButton.getHitRect(delegateArea);
+
+                // Extend the touch area of the ImageButton beyond its bounds on
+                // the right and bottom.
+                delegateArea.right += 100;
+                delegateArea.bottom += 100;
+
+                // Instantiate a TouchDelegate. "delegateArea" is the bounds in
+                // local coordinates of the containing view to be mapped to the
+                // delegate view. "myButton" is the child view that receives
+                // motion events.
+                TouchDelegate touchDelegate = new TouchDelegate(delegateArea,
+                        myButton);
+
+                // Set the TouchDelegate on the parent view so that touches
+                // within the touch delegate bounds are routed to the child.
+                if (View.class.isInstance(myButton.getParent())) {
+                    ((View) myButton.getParent()).setTouchDelegate(touchDelegate);
+                }
+            }
+        });
+    }
+}</code></pre></div></section></div></div></div></article><nav class="chapter-switcher" aria-label="章节导航"><a href="../drawing/index.html">← Android 如何绘制 View</a><a class="course-home" href="../index.html">全部章节</a><a href="../architecture/index.html">应用架构指南 →</a></nav><footer class="license-note"><p>本阅读版为 Android Developers 英文文档正文全文的非官方中文译文。原文由 Android Developers / Android Open Source Project 维护；原代码、原图及其标识保留。<a href="../NOTICE.html">来源与许可说明</a>。</p></footer></main></body></html>

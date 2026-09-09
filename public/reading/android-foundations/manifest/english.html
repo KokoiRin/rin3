@@ -2,7 +2,7 @@
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>App manifest overview｜RIN III</title><link rel="stylesheet" href="../../reader.css"><link rel="stylesheet" href="../source.css"></head>
 <body><nav class="site-nav" aria-label="站点导航"><a href="../index.html">← Android 基础 · 官方文档中文阅读版</a><a href="index.html">中文译文</a></nav>
 <main class="reader"><header class="chapter-header"><span class="chapter-kicker">第一周 · 第 1 天 · M03</span><h1>App manifest overview</h1><p class="byline"><a href="https://developer.android.com/guide/topics/manifest/manifest-intro?hl=en">App manifest overview · 官方英文原文</a></p><div class="title-rule"></div>
-<details class="source-details"><summary>阅读范围与原文目录</summary><p>引言；文件功能中的应用组件、权限与设备兼容性，含其子标题和示例。</p><p>原文核对：2026-09-09。正文按上述范围的原文顺序翻译；代码和图示保留原文。</p><ul><li><a href="#filef">File features</a></li><li><a href="#components">App components</a></li><li><a href="#perms">Permissions</a></li><li><a href="#compatibility">Device compatibility</a></li></ul></details><nav class="chapter-switcher" aria-label="章节导航"><a href="../build/english.html">← Android 构建结构</a><a class="course-home" href="../index.html">全部章节</a><a href="../intents/english.html">Intent 与 Intent Filter →</a></nav></header>
+<details class="source-details"><summary>原文目录与译文说明</summary><p>对应官方文档正文全文，包含全部章节、示例与正文中的补充资源链接；不包含站点导航、反馈和自动推荐组件。</p><p>原文核对：2026-09-09。正文全文按原文顺序翻译；代码、图示和视频保留原文。</p><ul><li><a href="#filef">File features</a></li><li><a href="#components">App components</a></li><li><a href="#perms">Permissions</a></li><li><a href="#compatibility">Device compatibility</a></li><li><a href="#filec">File conventions</a></li><li><a href="#reference">Manifest elements reference</a></li><li><a href="#limits">Limits</a></li><li><a href="#example">Example manifest file</a></li></ul></details><nav class="chapter-switcher" aria-label="章节导航"><a href="../build/english.html">← Android 构建结构</a><a class="course-home" href="../index.html">全部章节</a><a href="../intents/english.html">Intent 与 Intent Filter →</a></nav></header>
 <article class="translated-article"><div><p data-unit="manifest-001">Every app project must have an <code>AndroidManifest.xml</code> file, with precisely that
 name,
 at the root of the <a href="https://developer.android.com/studio/build#sourcesets">project source set</a>.
@@ -154,4 +154,112 @@ So, if you're using Android Studio, specify the <code>minSdkVersion</code> and
     }
 }</code></pre></div></section></div></div><p data-unit="manifest-046">For more information about the <code>build.gradle</code> file, read about <a href="https://developer.android.com/studio/build">how to configure your build</a>.</p><p data-unit="manifest-047">To learn more about how to declare your app's support for different devices,
 see the <a href="https://developer.android.com/guide/practices/compatibility">Device compatibility
-overview</a>.</p></div></article><nav class="chapter-switcher" aria-label="章节导航"><a href="../build/english.html">← Android 构建结构</a><a class="course-home" href="../index.html">全部章节</a><a href="../intents/english.html">Intent 与 Intent Filter →</a></nav><footer class="license-note"><p>本阅读版为 Android Developers 英文文档所选范围的非官方中文译文。原文由 Android Developers / Android Open Source Project 维护；原代码、原图及其标识保留。<a href="../NOTICE.html">来源与许可说明</a>。</p></footer></main></body></html>
+overview</a>.</p><h2 id="filec" data-unit="manifest-048">File conventions</h2><p data-unit="manifest-049">This section describes the conventions and rules that generally apply to all
+elements and attributes in the manifest file.</p><dl><dt data-unit="manifest-050"><b>Elements</b></dt><dd><span data-unit="manifest-051">Only the
+<code><a href="https://developer.android.com/guide/topics/manifest/manifest-element">&lt;manifest&gt;</a></code> and
+<code><a href="https://developer.android.com/guide/topics/manifest/application-element">&lt;application&gt;</a></code>
+elements are required. They each must occur only once.
+Most of the other elements can occur zero or more times. However, some
+of them must be present to make the manifest file useful.
+
+</span><p data-unit="manifest-052"> All values are set through attributes, not as character data within
+an element. </p><p data-unit="manifest-053">
+Elements at the same level are generally not ordered. For example, the
+<code><a href="https://developer.android.com/guide/topics/manifest/activity-element">&lt;activity&gt;</a></code>,
+<code><a href="https://developer.android.com/guide/topics/manifest/provider-element">&lt;provider&gt;</a></code>, and
+<code><a href="https://developer.android.com/guide/topics/manifest/service-element">&lt;service&gt;</a></code>
+elements can be placed in any order. There are two key exceptions to this
+rule:</p><ul><li data-unit="manifest-054">
+    An <code><a href="https://developer.android.com/guide/topics/manifest/activity-alias-element">&lt;activity-alias&gt;</a></code>
+    element must follow the <code>&lt;activity&gt;</code>
+    for which it is an alias.
+  </li><li data-unit="manifest-055">
+    The <code>&lt;application&gt;</code> element must be the last element inside the
+    <code>&lt;manifest&gt;</code> element.
+  </li></ul></dd><dt data-unit="manifest-056"><b>Attributes</b></dt><dd><span data-unit="manifest-057">Technically, all attributes are optional. However, many attributes
+must be specified so that an element can accomplish its purpose.
+For truly optional attributes, the <a href="https://developer.android.com/guide/topics/manifest/manifest-intro?hl=en#reference">reference documentation</a>
+indicates the default values.
+
+</span><p data-unit="manifest-058">Except for some attributes of the root
+<code><a href="https://developer.android.com/guide/topics/manifest/manifest-element">&lt;manifest&gt;</a></code>
+element, all attribute names begin with an <code>android:</code> prefix,
+such as <code>android:alwaysRetainTaskState</code>. Because the prefix is
+universal, the documentation generally omits it when referring to attributes
+by name.</p></dd><dt data-unit="manifest-059"><b>Multiple values</b></dt><dd><span data-unit="manifest-060">If more than one value can be specified, the element is almost always
+repeated, rather than multiple values being listed within a single element.
+For example, an intent filter can list several actions:
+
+</span><div></div><div class="code-block"><pre><code>&lt;intent-filter ... &gt;
+    &lt;action android:name="android.intent.action.EDIT" /&gt;
+    &lt;action android:name="android.intent.action.INSERT" /&gt;
+    &lt;action android:name="android.intent.action.DELETE" /&gt;
+    ...
+&lt;/intent-filter&gt;</code></pre></div></dd><dt data-unit="manifest-061"><b>Resource values</b></dt><dd><span data-unit="manifest-062">Some attributes have values that are displayed to users, such as
+the title for an activity or your app icon. The value for these attributes might
+differ based on the user's language or other device configurations (such as to
+provide a different icon size based on the device's pixel density), so the
+values should be set from a resource or theme, instead of hardcoded into the
+manifest file. The actual value can then change based on <a href="https://developer.android.com/guide/topics/resources/providing-resources">alternative
+resources</a> that you provide for different device configurations.
+
+</span><p data-unit="manifest-063">Resources are expressed as values with the following format:</p><p data-unit="manifest-064"><code>"@[<var>package</var>:]<var>type</var>/<var>name</var>"</code></p><p data-unit="manifest-065">You can omit the <var>package</var> name if the resource is provided by your
+app (including if it is provided by a library dependency, because <a href="https://developer.android.com/studio/write/add-resources#resource_merging">library resources are
+merged into yours</a>). The only other valid package name is
+<code>android</code>, when you want to use a resource from the Android
+framework.</p><p data-unit="manifest-066">The <var>type</var> is a type of resource, such as <a href="https://developer.android.com/guide/topics/resources/string-resource"><code>string</code></a> or
+<a href="https://developer.android.com/guide/topics/resources/drawable-resource"><code>drawable</code></a>,
+and the <var>name</var> is the name that identifies the specific resource.
+Here is an example:
+</p><div></div><div class="code-block"><pre><code>&lt;activity android:icon="@drawable/smallPic" ... &gt;</code></pre></div><p data-unit="manifest-067">For more information about how to add resources to your project, read
+<a href="https://developer.android.com/guide/topics/resources/providing-resources">App resources overview</a>.
+
+</p><p data-unit="manifest-068">To instead apply a value that's defined in a <a href="https://developer.android.com/guide/topics/ui/look-and-feel/themes">theme</a>, the first character
+must be <code>?</code> instead of <code>@</code>:
+</p><p data-unit="manifest-069"><code>"?[<var>package</var>:]<var>type</var>/<var>name</var>"</code>
+</p></dd><dt data-unit="manifest-070"><b>String values</b></dt><dd data-unit="manifest-071">Where an attribute value is a string, use double backslashes
+(<code>\\</code>) to escape characters, such as <code>\\n</code> for
+a newline or <code>\\uxxxx</code> for a Unicode character.</dd></dl><h2 id="reference" data-unit="manifest-072">Manifest elements reference</h2><p data-unit="manifest-073">The following table provides links to the reference documents for all valid
+elements in the <code>AndroidManifest.xml</code> file.</p><div class="table-wrapper" tabindex="0"><table class="alternating-odd-rows"><tr>
+ </tr><tr><td data-unit="manifest-074"><code><a href="https://developer.android.com/guide/topics/manifest/action-element">&lt;action&gt;</a></code></td><td data-unit="manifest-075">Adds an action to an intent filter.</td></tr><tr><td data-unit="manifest-076"><code><a href="https://developer.android.com/guide/topics/manifest/activity-element">&lt;activity&gt;</a></code></td><td data-unit="manifest-077">Declares an activity component.</td></tr><tr><td data-unit="manifest-078"><code><a href="https://developer.android.com/guide/topics/manifest/activity-alias-element">&lt;activity-alias&gt;</a></code></td><td data-unit="manifest-079">Declares an alias for an activity.</td></tr><tr><td data-unit="manifest-080"><code><a href="https://developer.android.com/guide/topics/manifest/application-element">&lt;application&gt;</a></code></td><td data-unit="manifest-081">Declares the application.</td></tr><tr><td data-unit="manifest-082"><code><a href="https://developer.android.com/guide/topics/manifest/category-element">&lt;category&gt;</a></code></td><td data-unit="manifest-083">Adds a category name to an intent filter.</td></tr><tr><td data-unit="manifest-084"><code><a href="https://developer.android.com/guide/topics/manifest/compatible-screens-element">&lt;compatible-screens&gt;</a></code></td><td data-unit="manifest-085">Specifies each screen configuration the application is compatible with.</td></tr><tr><td data-unit="manifest-086"><code><a href="https://developer.android.com/guide/topics/manifest/data-element">&lt;data&gt;</a></code></td><td data-unit="manifest-087">Adds a data specification to an intent filter.</td></tr><tr><td data-unit="manifest-088"><code><a href="https://developer.android.com/guide/topics/manifest/grant-uri-permission-element">&lt;grant-uri-permission&gt;</a></code></td><td data-unit="manifest-089">Specifies the subsets of app data that the parent content provider has permission to access.</td></tr><tr><td data-unit="manifest-090"><code><a href="https://developer.android.com/guide/topics/manifest/instrumentation-element">&lt;instrumentation&gt;</a></code></td><td data-unit="manifest-091">Declares an <code>Instrumentation</code> class that lets you monitor an application's interaction with the system. </td></tr><tr><td data-unit="manifest-092"><code><a href="https://developer.android.com/guide/topics/manifest/intent-filter-element">&lt;intent-filter&gt;</a></code></td><td data-unit="manifest-093">Specifies the types of intents that an activity, service, or broadcast receiver can respond to.</td></tr><tr><td data-unit="manifest-094"><code><a href="https://developer.android.com/guide/topics/manifest/manifest-element">&lt;manifest&gt;</a></code></td><td data-unit="manifest-095">The root element of the <code>AndroidManifest.xml</code> file.</td></tr><tr><td data-unit="manifest-096"><code><a href="https://developer.android.com/guide/topics/manifest/meta-data-element">&lt;meta-data&gt;</a></code></td><td data-unit="manifest-097">A name-value pair for an item of additional, arbitrary data that can be supplied to the parent component.</td></tr><tr><td data-unit="manifest-098"><code><a href="https://developer.android.com/guide/topics/manifest/path-permission-element">&lt;path-permission&gt;</a></code></td><td data-unit="manifest-099">Defines the path and required permissions for a specific subset of data within a content provider.</td></tr><tr><td data-unit="manifest-100"><code><a href="https://developer.android.com/guide/topics/manifest/permission-element">&lt;permission&gt;</a></code></td><td data-unit="manifest-101">Declares a security permission that can be used to limit access to specific components or features of this or other applications.</td></tr><tr><td data-unit="manifest-102"><code><a href="https://developer.android.com/guide/topics/manifest/permission-group-element">&lt;permission-group&gt;</a></code></td><td data-unit="manifest-103">Declares a name for a logical grouping of related permissions.</td></tr><tr><td data-unit="manifest-104"><code><a href="https://developer.android.com/guide/topics/manifest/permission-tree-element">&lt;permission-tree&gt;</a></code></td><td data-unit="manifest-105">Declares the base name for a tree of permissions.</td></tr><tr><td data-unit="manifest-106"><code><a href="https://developer.android.com/guide/topics/manifest/provider-element">&lt;provider&gt;</a></code></td><td data-unit="manifest-107">Declares a content provider component.</td></tr><tr><td data-unit="manifest-108"><code><a href="https://developer.android.com/guide/topics/manifest/queries-element">&lt;queries&gt;</a></code></td><td data-unit="manifest-109">Declares the set of other apps that your app intends to access. Learn more
+ in the guide about <a href="https://developer.android.com/training/package-visibility">package visibility
+ filtering</a>.</td></tr><tr><td data-unit="manifest-110"><code><a href="https://developer.android.com/guide/topics/manifest/receiver-element">&lt;receiver&gt;</a></code></td><td data-unit="manifest-111">Declares a broadcast receiver component.</td></tr><tr><td data-unit="manifest-112"><code><a href="https://developer.android.com/guide/topics/manifest/service-element">&lt;service&gt;</a></code></td><td data-unit="manifest-113">Declares a service component.</td></tr><tr><td data-unit="manifest-114"><code><a href="https://developer.android.com/guide/topics/manifest/supports-gl-texture-element">&lt;supports-gl-texture&gt;</a></code>
+ </td><td data-unit="manifest-115">Declares a single GL texture compression format that the app supports.</td></tr><tr><td data-unit="manifest-116"><code><a href="https://developer.android.com/guide/topics/manifest/supports-screens-element">&lt;supports-screens&gt;</a></code>  </td><td data-unit="manifest-117">Declares the screen sizes your app supports and enables screen compatibility mode for screens larger than what your app supports.</td></tr><tr><td data-unit="manifest-118"><code><a href="https://developer.android.com/guide/topics/manifest/uses-configuration-element">&lt;uses-configuration&gt;</a></code>  </td><td data-unit="manifest-119">Indicates specific input features the application requires.</td></tr><tr><td data-unit="manifest-120"><code><a href="https://developer.android.com/guide/topics/manifest/uses-feature-element">&lt;uses-feature&gt;</a></code>  </td><td data-unit="manifest-121">Declares a single hardware or software feature that is used by the application.</td></tr><tr><td data-unit="manifest-122"><code><a href="https://developer.android.com/guide/topics/manifest/uses-library-element">&lt;uses-library&gt;</a></code></td><td data-unit="manifest-123">Specifies a shared library that the application must be linked against.</td></tr><tr><td data-unit="manifest-124"><code><a href="https://developer.android.com/guide/topics/manifest/uses-native-library-element">&lt;uses-native-library&gt;</a></code></td><td data-unit="manifest-125">Specifies a vendor-provided native shared library that the app must be linked against.</td></tr><tr><td data-unit="manifest-126"><code><a href="https://developer.android.com/guide/topics/manifest/uses-permission-element">&lt;uses-permission&gt;</a></code></td><td data-unit="manifest-127">Specifies a system permission that the user must grant in order for the app to operate correctly.</td></tr><tr><td data-unit="manifest-128"><nobr><code><a href="https://developer.android.com/guide/topics/manifest/uses-permission-sdk-23-element">&lt;uses-permission-sdk-23&gt;</a></code></nobr></td><td data-unit="manifest-129">Specifies that an app wants a particular permission, but only if the app is installed on a device running Android 6.0 (API level 23) or higher.</td></tr><tr><td data-unit="manifest-130"><code><a href="https://developer.android.com/guide/topics/manifest/uses-sdk-element">&lt;uses-sdk&gt;</a></code></td><td data-unit="manifest-131">Lets you express an application's compatibility with one or more versions of the Android platform, by means of an API level integer.</td></tr></table></div><h2 id="limits" data-unit="manifest-132">Limits</h2><p data-unit="manifest-133">The following tags have a limit on the number of occurrences in a manifest file:</p><div class="table-wrapper" tabindex="0"><table class="alternating-odd-rows"><tr><th data-unit="manifest-134">Tag Name</th><th data-unit="manifest-135">Limit</th></tr><tr><td data-unit="manifest-136"><code>&lt;package&gt;</code></td><td data-unit="manifest-137"><code>1000</code></td></tr><tr><td data-unit="manifest-138"><code>&lt;meta-data&gt;</code></td><td data-unit="manifest-139"><code>1000</code></td></tr><tr><td data-unit="manifest-140"><code>&lt;uses-library&gt;</code></td><td data-unit="manifest-141"><code>1000</code></td></tr></table></div><p data-unit="manifest-142">The following attributes have a limit on their maximum length:</p><div class="table-wrapper" tabindex="0"><table class="alternating-odd-rows"><tr><th data-unit="manifest-143">Attribute</th><th data-unit="manifest-144">Limit</th></tr><tr><td data-unit="manifest-145"><code>name</code></td><td data-unit="manifest-146"><code>1024</code></td></tr><tr><td data-unit="manifest-147"><code>versionName</code></td><td data-unit="manifest-148"><code>1024</code></td></tr><tr><td data-unit="manifest-149"><code>host</code></td><td data-unit="manifest-150"><code>255</code></td></tr><tr><td data-unit="manifest-151"><code>mimeType</code></td><td data-unit="manifest-152"><code>255</code></td></tr></table></div><h2 id="example" data-unit="manifest-153">Example manifest file</h2><p data-unit="manifest-154">The XML below is a simple example <code>AndroidManifest.xml</code> that declares
+two activities for the app.</p><div></div><div class="code-block"><pre><code>&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;manifest
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:versionCode="1"
+    android:versionName="1.0"&gt;
+
+    &lt;!-- Beware that these values are overridden by the build.gradle file --&gt;
+    &lt;uses-sdk android:minSdkVersion="15" android:targetSdkVersion="26" /&gt;
+
+    &lt;application
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:label="@string/app_name"
+        android:supportsRtl="true"
+        android:theme="@style/AppTheme"&gt;
+
+        &lt;!-- This name is resolved to com.example.myapp.MainActivity
+             based on the namespace property in the build.gradle file --&gt;
+        &lt;activity android:name=".MainActivity"&gt;
+            &lt;intent-filter&gt;
+                &lt;action android:name="android.intent.action.MAIN" /&gt;
+                &lt;category android:name="android.intent.category.LAUNCHER" /&gt;
+            &lt;/intent-filter&gt;
+        &lt;/activity&gt;
+
+        &lt;activity
+            android:name=".DisplayMessageActivity"
+            android:parentActivityName=".MainActivity" /&gt;
+    &lt;/application&gt;
+&lt;/manifest&gt;
+</code></pre></div><p>
+
+
+
+    <devsite-hats-survey class="nocontent"></devsite-hats-survey>
+
+</p></div></article><nav class="chapter-switcher" aria-label="章节导航"><a href="../build/english.html">← Android 构建结构</a><a class="course-home" href="../index.html">全部章节</a><a href="../intents/english.html">Intent 与 Intent Filter →</a></nav><footer class="license-note"><p>本阅读版为 Android Developers 英文文档正文全文的非官方中文译文。原文由 Android Developers / Android Open Source Project 维护；原代码、原图及其标识保留。<a href="../NOTICE.html">来源与许可说明</a>。</p></footer></main></body></html>

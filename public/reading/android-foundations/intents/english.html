@@ -2,7 +2,7 @@
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Intents and intent filters｜RIN III</title><link rel="stylesheet" href="../../reader.css"><link rel="stylesheet" href="../source.css"></head>
 <body><nav class="site-nav" aria-label="站点导航"><a href="../index.html">← Android 基础 · 官方文档中文阅读版</a><a href="index.html">中文译文</a></nav>
 <main class="reader"><header class="chapter-header"><span class="chapter-kicker">第一周 · 第 2 天 · M04</span><h1>Intents and intent filters</h1><p class="byline"><a href="https://developer.android.com/guide/components/intents-filters?hl=en">Intents and intent filters · 官方英文原文</a></p><div class="title-rule"></div>
-<details class="source-details"><summary>阅读范围与原文目录</summary><p>引言；Intent 类型；构建 Intent（字段与显式、隐式示例）；接收隐式 Intent（含过滤器示例）；Intent 解析。</p><p>原文核对：2026-09-09。正文按上述范围的原文顺序翻译；代码和图示保留原文。</p><ul><li><a href="#Types">Intent types</a></li><li><a href="#Building">Building an intent</a></li><li><a href="#ExampleExplicit">Example explicit intent</a></li><li><a href="#ExampleSend">Example implicit intent</a></li><li><a href="#Receiving">Receiving an implicit intent</a></li><li><a href="#ExampleFilters">Example filters</a></li><li><a href="#Resolution">Intent resolution</a></li><li><a href="#ActionTest">Action test</a></li><li><a href="#CategoryTest">Category test</a></li><li><a href="#DataTest">Data test</a></li><li><a href="#imatch">Intent matching</a></li></ul></details><nav class="chapter-switcher" aria-label="章节导航"><a href="../manifest/english.html">← 应用清单概览</a><a class="course-home" href="../index.html">全部章节</a><a href="../tasks/english.html">任务与返回栈 →</a></nav></header>
+<details class="source-details"><summary>原文目录与译文说明</summary><p>对应官方文档正文全文，包含全部章节、示例与正文中的补充资源链接；不包含站点导航、反馈和自动推荐组件。</p><p>原文核对：2026-09-09。正文全文按原文顺序翻译；代码、图示和视频保留原文。</p><ul><li><a href="#Types">Intent types</a></li><li><a href="#Building">Building an intent</a></li><li><a href="#ExampleExplicit">Example explicit intent</a></li><li><a href="#ExampleSend">Example implicit intent</a></li><li><a href="#ForceChooser">Forcing an app chooser</a></li><li><a href="#DetectUnsafeIntentLaunches">Detect unsafe intent launches</a></li><li><a href="#Receiving">Receiving an implicit intent</a></li><li><a href="#ExampleFilters">Example filters</a></li><li><a href="#match-intent-filter">Match intents to other apps&#x27; intent filters</a></li><li><a href="#PendingIntent">Using a pending intent</a></li><li><a href="#DeclareMutabilityPendingIntent">Specify mutability</a></li><li><a href="#UseExplicitWithinPendingIntent">Use explicit intents within pending intents</a></li><li><a href="#Resolution">Intent resolution</a></li><li><a href="#ActionTest">Action test</a></li><li><a href="#CategoryTest">Category test</a></li><li><a href="#DataTest">Data test</a></li><li><a href="#imatch">Intent matching</a></li></ul></details><nav class="chapter-switcher" aria-label="章节导航"><a href="../manifest/english.html">← 应用清单概览</a><a class="course-home" href="../index.html">全部章节</a><a href="../tasks/english.html">任务与返回栈 →</a></nav></header>
 <article class="translated-article"><div><p data-unit="intents-001">An <code><a href="https://developer.android.com/reference/android/content/Intent">Intent</a></code> is a messaging object you can use to request an action
 from another <a href="https://developer.android.com/guide/components/fundamentals#Components">app component</a>.
 Although intents facilitate communication between components in several ways, there are three
@@ -215,21 +215,119 @@ intent. If no other apps can handle it, your app can catch the
 that occurs. If multiple activities accept the intent, the system
 displays a dialog such as the one shown in Figure 2, so the user can pick which app to use.</p><p data-unit="intents-080">More information about launching other apps is also provided in the guide
 about <a href="https://developer.android.com/training/basics/intents/sending">sending the user to
-another app</a>.</p><div class="attempt-right"><img src="../assets/intent-chooser.png" alt="官方原图" loading="lazy"><p class="img-caption" data-unit="intents-081"><strong>Figure 2.</strong> A chooser dialog.</p></div><h2 id="Receiving" data-unit="intents-082">Receiving an implicit intent</h2><p data-unit="intents-083">To advertise which implicit intents your app can receive, declare one or more intent filters for
+another app</a>.</p><div class="attempt-right"><img src="../assets/intent-chooser.png" alt="官方原图" loading="lazy"><p class="img-caption" data-unit="intents-081"><strong>Figure 2.</strong> A chooser dialog.</p></div><h3 id="ForceChooser" data-unit="intents-082">Forcing an app chooser</h3><p data-unit="intents-083">When there is more than one app that responds to your implicit intent,
+the user can select which app to use and make that app the default choice for the
+action. The ability to select a default is helpful when performing an action for which the user
+probably wants to use the same app every time, such as when opening a web page (users
+often prefer just one web browser).</p><p data-unit="intents-084">However, if multiple apps can respond to the intent and the user might want to use a different
+app each time, you should explicitly show a chooser dialog. The chooser dialog asks the
+user to select which app to use for the action (the user cannot select a default app for
+the action). For example, when your app performs "share" with the <code><a href="https://developer.android.com/reference/android/content/Intent#ACTION_SEND">ACTION_SEND</a></code> action, users may want to share using a different app depending
+on their current situation, so you should always use the chooser dialog, as shown in Figure 2.</p><p data-unit="intents-085">To show the chooser, create an <code><a href="https://developer.android.com/reference/android/content/Intent">Intent</a></code> using <code><a href="https://developer.android.com/reference/android/content/Intent#createChooser(android.content.Intent,%20java.lang.CharSequence)">createChooser()</a></code> and pass it to <code><a href="https://developer.android.com/reference/android/app/Activity#startActivity(android.content.Intent)">startActivity()</a></code>, as shown in the following example.
+ This example displays a dialog with a list of apps that respond to the intent passed to the <code><a href="https://developer.android.com/reference/android/content/Intent#createChooser(android.content.Intent,%20java.lang.CharSequence)">createChooser()</a></code> method and uses the supplied text as the
+dialog title.</p><div><div class="ds-selector-tabs"><section><h3 id="kotlin" data-unit="intents-086">Kotlin</h3><div></div><div class="code-block"><pre><code>val sendIntent = Intent(Intent.ACTION_SEND)
+...
+
+// Always use string resources for UI text.
+// This says something like "Share this photo with"
+val title: String = resources.getString(R.string.chooser_title)
+// Create intent to show the chooser dialog
+val chooser: Intent = Intent.createChooser(sendIntent, title)
+
+// Verify the original intent will resolve to at least one activity
+if (sendIntent.resolveActivity(packageManager) != null) {
+    startActivity(chooser)
+}</code></pre></div></section><section><h3 id="java" data-unit="intents-087">Java</h3><div></div><div class="code-block"><pre><code>Intent sendIntent = new Intent(Intent.ACTION_SEND);
+...
+
+// Always use string resources for UI text.
+// This says something like "Share this photo with"
+String title = getResources().getString(R.string.chooser_title);
+// Create intent to show the chooser dialog
+Intent chooser = Intent.createChooser(sendIntent, title);
+
+// Verify the original intent will resolve to at least one activity
+if (sendIntent.resolveActivity(getPackageManager()) != null) {
+    startActivity(chooser);
+}</code></pre></div></section></div></div><h3 id="DetectUnsafeIntentLaunches" data-unit="intents-088">Detect unsafe intent launches</h3><p data-unit="intents-089">Your app might launch intents to navigate between components inside of your app,
+or to perform an action on behalf of another app. To improve platform security,
+Android 12 (API level 31) and higher provide a debugging feature that warns you
+if your app performs an unsafe launch of an intent. For example, your app might
+perform an unsafe launch of a <em>nested intent</em>, which is an intent that is passed
+as an extra in another intent.</p><p data-unit="intents-090">If your app performs both of the following actions, the system detects an unsafe
+intent launch, and a <a href="https://developer.android.com/reference/android/os/StrictMode">StrictMode</a> violation
+occurs:</p><ol><li data-unit="intents-091">Your app unparcels a nested intent from the extras of a delivered intent.</li><li data-unit="intents-092">Your app immediately starts an <a href="https://developer.android.com/guide/components/fundamentals#Components">app
+component</a> using that nested intent,
+such as passing the intent into
+<a href="https://developer.android.com/reference/android/content/Context#startActivity(android.content.Intent)"><code>startActivity()</code></a>,
+<a href="https://developer.android.com/reference/android/content/Context#startService(android.content.Intent)"><code>startService()</code></a>,
+or
+<a href="https://developer.android.com/reference/android/content/Context#bindService(android.content.Intent,%20android.content.ServiceConnection,%20int)"><code>bindService()</code></a>.</li></ol><p data-unit="intents-093">For more details on how to identify this situation and make changes to your app,
+read the blog post about <a href="https://medium.com/androiddevelopers/android-nesting-intents-e472fafc1933" class="external">Android Nesting
+Intents</a>
+on Medium.</p><h4 id="CheckForUnsafeIntentLaunches" data-unit="intents-094">Check for unsafe intent launches</h4><p data-unit="intents-095">To check for unsafe intent launches in your app, call
+<a href="https://developer.android.com/reference/android/os/StrictMode.VmPolicy.Builder#detectUnsafeIntentLaunch()"><code>detectUnsafeIntentLaunch()</code></a>
+when you configure your <code>VmPolicy</code>, as shown in the following code snippet. If
+your app detects a StrictMode violation, you might want to stop app execution to
+protect potentially sensitive information.</p><aside class="prompt" data-unit="intents-096"><strong>Note:</strong><span> If your app targets Android 12 and uses the
+<a href="https://developer.android.com/reference/android/os/StrictMode.VmPolicy.Builder#detectAll()"><code>detectAll()</code></a>
+method in its <code>VmPolicy</code> definition, the <code>detectUnsafeIntentLaunch()</code> method is
+called automatically.</span></aside><div><div class="ds-selector-tabs"><section><h3 id="kotlin" data-unit="intents-097">Kotlin</h3><div></div><div class="code-block"><pre><code>fun onCreate() {
+    StrictMode.setVmPolicy(VmPolicy.Builder()
+        // Other StrictMode checks that you've previously added.
+        // ...
+        .detectUnsafeIntentLaunch()
+        .penaltyLog()
+        // Consider also adding penaltyDeath()
+        .build())
+}</code></pre></div></section><section><h3 id="java" data-unit="intents-098">Java</h3><div></div><div class="code-block"><pre><code>protected void onCreate() {
+    StrictMode.setVmPolicy(new VmPolicy.Builder()
+        // Other StrictMode checks that you've previously added.
+        // ...
+        .detectUnsafeIntentLaunch()
+        .penaltyLog()
+        // Consider also adding penaltyDeath()
+        .build());
+}</code></pre></div></section></div></div><h4 id="UseIntentsMoreResponsibly" data-unit="intents-099">Use intents more responsibly</h4><p data-unit="intents-100">To minimize the chance of an unsafe intent launch, and a StrictMode violation,
+follow these best practices.</p><p data-unit="intents-101"><strong>Copy only the essential extras within intents, and perform any necessary
+sanitation and validation.</strong> Your app might copy the extras from one intent to
+another intent that is used to launch a new component. This occurs when your
+app calls
+<a href="https://developer.android.com/reference/android/content/Intent#putExtras(android.content.Intent)"><code>putExtras(Intent)</code></a>
+or
+<a href="https://developer.android.com/reference/android/content/Intent#putExtras(android.os.Bundle)"><code>putExtras(Bundle)</code></a>.
+If your app performs one of these operations, copy only the extras that the
+receiving component expects. If the other intent (that receives the copy)
+launches a component that isn't
+<a href="https://developer.android.com/guide/topics/manifest/activity-element#exported">exported</a>, sanitize and
+validate the extras before copying them to the intent that launches the
+component.</p><p data-unit="intents-102"><strong>Don't export your app's components unnecessarily.</strong> For example, if you
+intend to launch an app component using an internal nested intent, set that
+component's <code>android:exported</code> attribute to <code>false</code>.</p><p data-unit="intents-103"><strong>Use a <a href="https://developer.android.com/reference/android/app/PendingIntent"><code>PendingIntent</code></a> instead of a
+nested intent.</strong> That way, when another app unparcels the <code>PendingIntent</code> of its
+containing <code>Intent</code>, the other app can launch the <code>PendingIntent</code> using the
+identity of your app. This configuration allows the other app to safely launch
+any component, including a non-exported component, in your app.</p><p data-unit="intents-104">The diagram in figure 2 shows how the system passes control from your (client)
+app to another (service) app, and back to your app:</p><ol><li data-unit="intents-105">Your app creates an intent that invokes an activity in another app. Within
+that intent, you add a <code>PendingIntent</code> object as an extra. This pending intent
+invokes a component in your app; this component isn't exported.</li><li data-unit="intents-106">Upon receiving your app's intent, the other app extracts the nested
+<code>PendingIntent</code> object.</li><li data-unit="intents-107">The other app invokes the <code>send()</code> method on the <code>PendingIntent</code> object.</li><li data-unit="intents-108">After passing control back to your app, the system invokes the pending
+intent using your app's context.</li></ol><p><img src="../assets/nested-pending-intent.svg" alt="官方原图" class="android-image-dark-theme-background" loading="lazy"></p><p data-unit="intents-109"><strong>Figure 2.</strong>  Diagram of inter-app communication when using a nested pending
+intent.</p><h2 id="Receiving" data-unit="intents-110">Receiving an implicit intent</h2><p data-unit="intents-111">To advertise which implicit intents your app can receive, declare one or more intent filters for
 each of your app components with an <a href="https://developer.android.com/guide/topics/manifest/intent-filter-element"><code>&lt;intent-filter&gt;</code></a>
 element in your <a href="https://developer.android.com/guide/topics/manifest/manifest-intro">manifest file</a>.
 Each intent filter specifies the type of intents it accepts based on the intent's action,
 data, and category. The system delivers an implicit intent to your app component only if the
-intent can pass through one of your intent filters.</p><p class="note" data-unit="intents-084"><strong>Note:</strong> An explicit intent is always delivered to its target,
-regardless of any intent filters the component declares.</p><p data-unit="intents-085">An app component should declare separate filters for each unique job it can do.
+intent can pass through one of your intent filters.</p><p class="note" data-unit="intents-112"><strong>Note:</strong> An explicit intent is always delivered to its target,
+regardless of any intent filters the component declares.</p><p data-unit="intents-113">An app component should declare separate filters for each unique job it can do.
 For example, one activity in an image gallery app may have two filters: one filter
 to view an image, and another filter to edit an image. When the activity starts,
 it inspects the <code><a href="https://developer.android.com/reference/android/content/Intent">Intent</a></code> and decides how to behave based on the information
-in the <code><a href="https://developer.android.com/reference/android/content/Intent">Intent</a></code> (such as to show the editor controls or not).</p><p data-unit="intents-086">Each intent filter is defined by an <a href="https://developer.android.com/guide/topics/manifest/intent-filter-element"><code>&lt;intent-filter&gt;</code></a>
+in the <code><a href="https://developer.android.com/reference/android/content/Intent">Intent</a></code> (such as to show the editor controls or not).</p><p data-unit="intents-114">Each intent filter is defined by an <a href="https://developer.android.com/guide/topics/manifest/intent-filter-element"><code>&lt;intent-filter&gt;</code></a>
 element in the app's manifest file, nested in the corresponding app component (such
 as an <a href="https://developer.android.com/guide/topics/manifest/activity-element"><code>&lt;activity&gt;</code></a>
 element).
-</p><p data-unit="intents-087">In each app component that includes an <code>&lt;intent-filter&gt;</code> element,
+</p><p data-unit="intents-115">In each app component that includes an <code>&lt;intent-filter&gt;</code> element,
 explicitly set a value for
 <a href="https://developer.android.com/guide/topics/manifest/activity-element#exported"><code>android:exported</code></a>.
 This attribute indicates whether the app component is accessible to other apps. In some
@@ -238,44 +336,44 @@ situations, such as activities whose intent filters include the
 category, it's useful to set this attribute to <code>true</code>. Otherwise,
 it's safer to set this attribute to <code>false</code>.
 
-</p><p class="warning" data-unit="intents-088"><b>Warning:</b> If an activity, service, or broadcast
+</p><p class="warning" data-unit="intents-116"><b>Warning:</b> If an activity, service, or broadcast
 receiver in your app uses intent filters and doesn't explicitly set the value
 for <code>android:exported</code>, your app can't be installed on a device that
-runs Android 12 or higher.</p><p data-unit="intents-089">Inside the <a href="https://developer.android.com/guide/topics/manifest/intent-filter-element"><code>&lt;intent-filter&gt;</code></a>,
+runs Android 12 or higher.</p><p data-unit="intents-117">Inside the <a href="https://developer.android.com/guide/topics/manifest/intent-filter-element"><code>&lt;intent-filter&gt;</code></a>,
 you can specify the type of intents to accept using one or more
-of these three elements:</p><dl><dt data-unit="intents-090"><a href="https://developer.android.com/guide/topics/manifest/action-element"><code>&lt;action&gt;</code></a></dt><dd data-unit="intents-091">Declares the intent action accepted, in the <code>name</code> attribute. The value
-  must be the literal string value of an action, not the class constant.</dd><dt data-unit="intents-092"><a href="https://developer.android.com/guide/topics/manifest/data-element"><code>&lt;data&gt;</code></a></dt><dd data-unit="intents-093">Declares the type of data accepted, using one or more attributes that specify various
+of these three elements:</p><dl><dt data-unit="intents-118"><a href="https://developer.android.com/guide/topics/manifest/action-element"><code>&lt;action&gt;</code></a></dt><dd data-unit="intents-119">Declares the intent action accepted, in the <code>name</code> attribute. The value
+  must be the literal string value of an action, not the class constant.</dd><dt data-unit="intents-120"><a href="https://developer.android.com/guide/topics/manifest/data-element"><code>&lt;data&gt;</code></a></dt><dd data-unit="intents-121">Declares the type of data accepted, using one or more attributes that specify various
   aspects of the data URI (<code>scheme</code>, <code>host</code>, <code>port</code>,
-  <code>path</code>) and MIME type.</dd><dt data-unit="intents-094"><a href="https://developer.android.com/guide/topics/manifest/category-element"><code>&lt;category&gt;</code></a></dt><dd><span data-unit="intents-095">Declares the intent category accepted, in the <code>name</code> attribute. The value
+  <code>path</code>) and MIME type.</dd><dt data-unit="intents-122"><a href="https://developer.android.com/guide/topics/manifest/category-element"><code>&lt;category&gt;</code></a></dt><dd><span data-unit="intents-123">Declares the intent category accepted, in the <code>name</code> attribute. The value
   must be the literal string value of an action, not the class constant.
 
-  </span><p class="note" data-unit="intents-096"><strong>Note:</strong> To receive implicit intents, you
+  </span><p class="note" data-unit="intents-124"><strong>Note:</strong> To receive implicit intents, you
   <em>must include</em> the
   <code><a href="https://developer.android.com/reference/android/content/Intent#CATEGORY_DEFAULT">CATEGORY_DEFAULT</a></code> category in the intent filter. The methods
   <code><a href="https://developer.android.com/reference/android/app/Activity#startActivity(android.content.Intent)">startActivity()</a></code> and
   <code><a href="https://developer.android.com/reference/android/app/Activity#startActivityForResult(android.content.Intent,%20int)">startActivityForResult()</a></code> treat all intents
   as if they declared the <code><a href="https://developer.android.com/reference/android/content/Intent#CATEGORY_DEFAULT">CATEGORY_DEFAULT</a></code> category.
   If you do not declare this category in your intent filter, no implicit intents will resolve to
-  your activity.</p></dd></dl><p data-unit="intents-097">For example, here's an activity declaration with an intent filter to receive an
+  your activity.</p></dd></dl><p data-unit="intents-125">For example, here's an activity declaration with an intent filter to receive an
 <code><a href="https://developer.android.com/reference/android/content/Intent#ACTION_SEND">ACTION_SEND</a></code> intent when the data type is text:</p><div></div><div class="code-block"><pre><code>&lt;activity android:name="ShareActivity" android:exported="false"&gt;
     &lt;intent-filter&gt;
         &lt;action android:name="android.intent.action.SEND"/&gt;
         &lt;category android:name="android.intent.category.DEFAULT"/&gt;
         &lt;data android:mimeType="text/plain"/&gt;
     &lt;/intent-filter&gt;
-&lt;/activity&gt;</code></pre></div><p data-unit="intents-098">You can create a filter that includes more than one instance of
+&lt;/activity&gt;</code></pre></div><p data-unit="intents-126">You can create a filter that includes more than one instance of
 <a href="https://developer.android.com/guide/topics/manifest/action-element"><code>&lt;action&gt;</code></a>,
 <a href="https://developer.android.com/guide/topics/manifest/data-element"><code>&lt;data&gt;</code></a>, or
 <a href="https://developer.android.com/guide/topics/manifest/category-element"><code>&lt;category&gt;</code></a>.
 If you do, you need to be certain that the component can handle any and all
-combinations of those filter elements.</p><p data-unit="intents-099">When you want to handle multiple kinds of intents, but only in specific combinations of
-action, data, and category type, then you need to create multiple intent filters.</p><p data-unit="intents-100">An implicit intent is tested against a filter by comparing the intent to each of the
+combinations of those filter elements.</p><p data-unit="intents-127">When you want to handle multiple kinds of intents, but only in specific combinations of
+action, data, and category type, then you need to create multiple intent filters.</p><p data-unit="intents-128">An implicit intent is tested against a filter by comparing the intent to each of the
 three elements. To be delivered to the component, the intent must pass all three tests.
 If it fails to match even one of them, the Android system won't deliver the intent to the
 component.  However, because a component may have multiple intent filters, an intent that does
 not pass through one of a component's filters might make it through on another filter.
 More information about how the system resolves intents is provided in the section below
-about <a href="https://developer.android.com/guide/components/intents-filters?hl=en#Resolution">Intent Resolution</a>.</p><div class="caution"><p data-unit="intents-101"><b>Caution: </b>Using an intent filter isn't a secure way to prevent other apps from starting
+about <a href="https://developer.android.com/guide/components/intents-filters?hl=en#Resolution">Intent Resolution</a>.</p><div class="caution"><p data-unit="intents-129"><b>Caution: </b>Using an intent filter isn't a secure way to prevent other apps from starting
 your components. Although intent filters restrict a component to respond to only
 certain kinds of implicit intents, another app can potentially start your app component
 by using an explicit intent if the developer determines your component names.
@@ -283,13 +381,13 @@ If it's important that <em>only your own app</em> is able to start one of your c
 do not declare intent filters in your manifest. Instead, set the
 <a href="https://developer.android.com/guide/topics/manifest/activity-element#exported"><code>exported</code></a> attribute
 to <code>"false"</code> for that component.
-</p><p data-unit="intents-102">Similarly, to avoid inadvertently running a different app's
-<code><a href="https://developer.android.com/reference/android/app/Service">Service</a></code>, always use an explicit intent to start your own service.</p></div><p class="note" data-unit="intents-103"><strong>Note:</strong>
+</p><p data-unit="intents-130">Similarly, to avoid inadvertently running a different app's
+<code><a href="https://developer.android.com/reference/android/app/Service">Service</a></code>, always use an explicit intent to start your own service.</p></div><p class="note" data-unit="intents-131"><strong>Note:</strong>
 For all activities, you must declare your intent filters in the manifest file.
 However, filters for broadcast receivers can be registered dynamically by calling
 <code><a href="https://developer.android.com/reference/android/content/Context#registerReceiver(android.content.BroadcastReceiver,%20android.content.IntentFilter,%20java.lang.String,%20android.os.Handler)">registerReceiver()</a></code>. You can then unregister the receiver with <code><a href="https://developer.android.com/reference/android/content/Context#unregisterReceiver(android.content.BroadcastReceiver)">unregisterReceiver()</a></code>. Doing so allows your app
 to listen for specific broadcasts during only a specified period of time while your app
-is running.</p><h3 id="ExampleFilters" data-unit="intents-104">Example filters</h3><p data-unit="intents-105">To demonstrate some of the intent filter behaviors, here is an example
+is running.</p><h3 id="ExampleFilters" data-unit="intents-132">Example filters</h3><p data-unit="intents-133">To demonstrate some of the intent filter behaviors, here is an example
 from the manifest file of a social-sharing app:</p><div></div><div class="code-block"><pre><code>&lt;activity android:name="MainActivity" android:exported="true"&gt;
     &lt;!-- This activity is the main entry, should appear in app launcher --&gt;
     &lt;intent-filter&gt;
@@ -314,80 +412,177 @@ from the manifest file of a social-sharing app:</p><div></div><div class="code-b
         &lt;data android:mimeType="image/*"/&gt;
         &lt;data android:mimeType="video/*"/&gt;
     &lt;/intent-filter&gt;
-&lt;/activity&gt;</code></pre></div><p data-unit="intents-106">The first activity, <code>MainActivity</code>, is the app's main entry point—the activity that
-opens when the user initially launches the app with the launcher icon:</p><ul><li data-unit="intents-107">The <code><a href="https://developer.android.com/reference/android/content/Intent#ACTION_MAIN">ACTION_MAIN</a></code> action
-  indicates this is the main entry point and does not expect any intent data.</li><li data-unit="intents-108">The <code><a href="https://developer.android.com/reference/android/content/Intent#CATEGORY_LAUNCHER">CATEGORY_LAUNCHER</a></code> category indicates that this activity's
+&lt;/activity&gt;</code></pre></div><p data-unit="intents-134">The first activity, <code>MainActivity</code>, is the app's main entry point—the activity that
+opens when the user initially launches the app with the launcher icon:</p><ul><li data-unit="intents-135">The <code><a href="https://developer.android.com/reference/android/content/Intent#ACTION_MAIN">ACTION_MAIN</a></code> action
+  indicates this is the main entry point and does not expect any intent data.</li><li data-unit="intents-136">The <code><a href="https://developer.android.com/reference/android/content/Intent#CATEGORY_LAUNCHER">CATEGORY_LAUNCHER</a></code> category indicates that this activity's
   icon should be placed in the system's app launcher. If the <a href="https://developer.android.com/guide/topics/manifest/activity-element"><code>&lt;activity&gt;</code></a> element
   does not specify an icon with <code>icon</code>, then the system uses the icon from the <a href="https://developer.android.com/guide/topics/manifest/application-element"><code>&lt;application&gt;</code></a>
-  element.</li></ul><p data-unit="intents-109">These two must be paired together in order for the activity to appear in the app launcher.</p><p data-unit="intents-110">The second activity, <code>ShareActivity</code>, is intended to facilitate sharing text and media
+  element.</li></ul><p data-unit="intents-137">These two must be paired together in order for the activity to appear in the app launcher.</p><p data-unit="intents-138">The second activity, <code>ShareActivity</code>, is intended to facilitate sharing text and media
 content. Although users might enter this activity by navigating to it from <code>MainActivity</code>,
 they can also enter <code>ShareActivity</code> directly from another app that issues an implicit
-intent matching one of the two intent filters.</p><p class="note" data-unit="intents-111"><strong>Note:</strong> The MIME type,
+intent matching one of the two intent filters.</p><p class="note" data-unit="intents-139"><strong>Note:</strong> The MIME type,
 <a href="https://developers.google.com/panorama/android/" class="external-link"><code>application/vnd.google.panorama360+jpg</code></a>, is a special data type that specifies
 panoramic photos, which you can handle with the <a href="https://developers.google.com/android/reference/com/google/android/gms/panorama/package-summary">Google
-panorama</a> APIs.</p><h2 id="Resolution" data-unit="intents-112">Intent resolution</h2><p data-unit="intents-113">When the system receives an implicit intent to start an activity, it searches for the
-best activity for the intent by comparing it to intent filters based on three aspects:</p><ul><li data-unit="intents-114">Action.
-  </li><li data-unit="intents-115">Data (both URI and data type).
-  </li><li data-unit="intents-116">Category.
-</li></ul><p data-unit="intents-117">The following sections describe how intents are matched to the appropriate components
-according to the intent filter declaration in an app's manifest file.</p><h3 id="ActionTest" data-unit="intents-118">Action test</h3><p data-unit="intents-119">To specify accepted intent actions, an intent filter can declare zero or more
+panorama</a> APIs.</p><h2 id="match-intent-filter" data-unit="intents-140">Match intents to other apps' intent filters</h2><p data-unit="intents-141">If another app targets Android 13 (API level 33) or higher, it can handle your
+app's intent only if your intent matches the actions and categories of an
+<code>&lt;intent-filter&gt;</code> element in that other app. If the system doesn't find a
+match, it throws an
+<a href="https://developer.android.com/reference/android/content/ActivityNotFoundException"><code>ActivityNotFoundException</code></a>.
+The sending app must handle
+this exception.</p><p data-unit="intents-142">Similarly, if you update your app so that it targets Android 13
+or higher, all intents originating from external apps are delivered to an
+exported component of your app only if that intent matches the actions and
+categories of an <code>&lt;intent-filter&gt;</code> element that your app declares. This behavior
+occurs regardless of the sending app's target SDK version.</p><p data-unit="intents-143">In the following cases, intent matching isn't enforced:</p><ul><li data-unit="intents-144">Intents delivered to components that don't declare any intent filters.</li><li data-unit="intents-145">Intents originating from within the same app.</li><li data-unit="intents-146">Intents originating from the system; that is, intents being sent from the
+"system UID" (uid=1000). System apps include <code>system_server</code> and apps that set
+<code>android:sharedUserId</code> to <code>android.uid.system</code>.</li><li data-unit="intents-147">Intents originating from root.</li></ul><p data-unit="intents-148">Learn more about <a href="https://developer.android.com/guide/components/intents-filters?hl=en#imatch">intent matching</a>.</p><h2 id="PendingIntent" data-unit="intents-149">Using a pending intent</h2><p data-unit="intents-150">A <code><a href="https://developer.android.com/reference/android/app/PendingIntent">PendingIntent</a></code> object is a wrapper around an <code><a href="https://developer.android.com/reference/android/content/Intent">Intent</a></code> object. The primary purpose of a <code><a href="https://developer.android.com/reference/android/app/PendingIntent">PendingIntent</a></code>
+is to grant permission to a foreign application
+to use the contained <code><a href="https://developer.android.com/reference/android/content/Intent">Intent</a></code> as if it were executed from your
+app's own process.</p><p data-unit="intents-151">Major use cases for a pending intent include the following:</p><ul><li data-unit="intents-152">Declaring an intent to be executed when the user performs an action with your <a href="https://developer.android.com/develop/ui/views/notifications">Notification</a>
+  (the Android system's <code><a href="https://developer.android.com/reference/android/app/NotificationManager">NotificationManager</a></code>
+  executes the <code><a href="https://developer.android.com/reference/android/content/Intent">Intent</a></code>).
+  </li><li data-unit="intents-153">Declaring an intent to be executed when the user performs an action with your
+  <a href="https://developer.android.com/guide/topics/appwidgets">App Widget</a>
+  (the Home screen app executes the <code><a href="https://developer.android.com/reference/android/content/Intent">Intent</a></code>).
+  </li><li data-unit="intents-154">Declaring an intent to be executed at a specified future time (the Android
+  system's <code><a href="https://developer.android.com/reference/android/app/AlarmManager">AlarmManager</a></code> executes the <code><a href="https://developer.android.com/reference/android/content/Intent">Intent</a></code>).
+</li></ul><p data-unit="intents-155">Just as each <code><a href="https://developer.android.com/reference/android/content/Intent">Intent</a></code> object is designed to be handled by a specific
+type of app component (either an <code><a href="https://developer.android.com/reference/android/app/Activity">Activity</a></code>, a <code><a href="https://developer.android.com/reference/android/app/Service">Service</a></code>, or
+a <code><a href="https://developer.android.com/reference/android/content/BroadcastReceiver">BroadcastReceiver</a></code>), so too must a <code><a href="https://developer.android.com/reference/android/app/PendingIntent">PendingIntent</a></code> be
+created with the same consideration. When using a pending intent, your app doesn't
+execute the intent with a call such as <code><a href="https://developer.android.com/reference/android/content/Context#startActivity(android.content.Intent)">startActivity()</a></code>. Instead, you must declare the intended component type when you create the
+<code><a href="https://developer.android.com/reference/android/app/PendingIntent">PendingIntent</a></code> by calling the respective creator method:</p><ul><li data-unit="intents-156"><code><a href="https://developer.android.com/reference/android/app/PendingIntent#getActivity(android.content.Context,%20int,%20android.content.Intent,%20int)">PendingIntent.getActivity()</a></code> for an
+  <code><a href="https://developer.android.com/reference/android/content/Intent">Intent</a></code> that starts an <code><a href="https://developer.android.com/reference/android/app/Activity">Activity</a></code>.</li><li data-unit="intents-157"><code><a href="https://developer.android.com/reference/android/app/PendingIntent#getService(android.content.Context,%20int,%20android.content.Intent,%20int)">PendingIntent.getService()</a></code> for an
+  <code><a href="https://developer.android.com/reference/android/content/Intent">Intent</a></code> that starts a <code><a href="https://developer.android.com/reference/android/app/Service">Service</a></code>.</li><li data-unit="intents-158"><code><a href="https://developer.android.com/reference/android/app/PendingIntent#getBroadcast(android.content.Context,%20int,%20android.content.Intent,%20int)">PendingIntent.getBroadcast()</a></code> for an
+  <code><a href="https://developer.android.com/reference/android/content/Intent">Intent</a></code> that starts a <code><a href="https://developer.android.com/reference/android/content/BroadcastReceiver">BroadcastReceiver</a></code>.</li></ul><p data-unit="intents-159">Unless your app is <em>receiving</em> pending intents from other apps,
+the above methods to create a <code><a href="https://developer.android.com/reference/android/app/PendingIntent">PendingIntent</a></code> are probably the only
+<code><a href="https://developer.android.com/reference/android/app/PendingIntent">PendingIntent</a></code> methods you'll ever need.</p><p data-unit="intents-160">Each method takes the current app <code><a href="https://developer.android.com/reference/android/content/Context">Context</a></code>, the
+<code><a href="https://developer.android.com/reference/android/content/Intent">Intent</a></code> you want to wrap, and one or more flags that specify
+how the intent should be used (such as whether the intent can be used more than once).</p><p data-unit="intents-161">For more information about using pending intents, see the documentation for each
+of the respective use cases, such as in the <a href="https://developer.android.com/develop/ui/views/notifications">Notifications</a>
+and <a href="https://developer.android.com/guide/topics/appwidgets">App Widgets</a> API guides.</p><h3 id="DeclareMutabilityPendingIntent" data-unit="intents-162">Specify mutability</h3><p data-unit="intents-163">If your app targets Android 12 or higher, you must specify the
+mutability of each <code>PendingIntent</code> object that your app creates. To declare that
+a given <code>PendingIntent</code> object is mutable or immutable, use the
+<a href="https://developer.android.com/reference/android/app/PendingIntent#FLAG_MUTABLE"><code>PendingIntent.FLAG_MUTABLE</code></a>
+or
+<a href="https://developer.android.com/reference/android/app/PendingIntent#FLAG_IMMUTABLE"><code>PendingIntent.FLAG_IMMUTABLE</code></a>
+flag, respectively.</p><p data-unit="intents-164">If your app attempts to create a <code>PendingIntent</code> object
+without setting either mutability flag, the system throws an
+<a href="https://developer.android.com/reference/java/lang/IllegalArgumentException"><code>IllegalArgumentException</code></a>, and
+the following message appears in <a href="https://developer.android.com/studio/command-line/logcat">Logcat</a>:</p><div></div><div class="code-block"><pre><code>PACKAGE_NAME: Targeting S+ (version 31 and above) requires that one of \
+FLAG_IMMUTABLE or FLAG_MUTABLE be specified when creating a PendingIntent.
+
+Strongly consider using FLAG_IMMUTABLE, only use FLAG_MUTABLE if \
+some functionality depends on the PendingIntent being mutable, e.g. if \
+it needs to be used with inline replies or bubbles.
+</code></pre></div><h4 id="CreateImmutablePendingIntents" data-unit="intents-165">Create immutable pending intents whenever possible</h4><p data-unit="intents-166">In most cases, your app should create immutable <code>PendingIntent</code> objects, as
+shown in the following code snippet. If a <code>PendingIntent</code> object is immutable,
+then other apps cannot modify the intent to adjust the result of invoking the
+intent.</p><div><div class="ds-selector-tabs"><section><h3 id="kotlin" data-unit="intents-167">Kotlin</h3><div></div><div class="code-block"><pre><code>val pendingIntent = PendingIntent.getActivity(applicationContext,
+        REQUEST_CODE, intent,
+        /* flags */ PendingIntent.FLAG_IMMUTABLE)</code></pre></div></section><section><h3 id="java" data-unit="intents-168">Java</h3><div></div><div class="code-block"><pre><code>PendingIntent pendingIntent = PendingIntent.getActivity(getApplicationContext(),
+        REQUEST_CODE, intent,
+        /* flags */ PendingIntent.FLAG_IMMUTABLE);</code></pre></div></section></div></div><p data-unit="intents-169">However, certain use cases require mutable <code>PendingIntent</code> objects instead:</p><ul><li data-unit="intents-170">Supporting <a href="https://developer.android.com/training/notify-user/build-notification#reply-action">direct reply actions in
+notifications</a>. The
+direct reply requires a change to the clip data in the PendingIntent object
+that's associated with the reply. Usually, you request this change by passing
+<code>FILL_IN_CLIP_DATA</code> as a flag to the
+<a href="https://developer.android.com/reference/android/content/Intent#fillIn(android.content.Intent,%20int)"><code>fillIn()</code></a>
+method.</li><li data-unit="intents-171">Associating notifications with the Android Auto framework, using instances of
+<a href="https://developer.android.com/reference/androidx/car/app/notification/CarAppExtender"><code>CarAppExtender</code></a>.</li><li data-unit="intents-172">Placing conversations in <a href="https://developer.android.com/guide/topics/ui/bubbles">bubbles</a> using instances
+of <code>PendingIntent</code>. A mutable <code>PendingIntent</code> object allows the system to apply
+the correct flags, such as
+<a href="https://developer.android.com/reference/android/content/Intent#FLAG_ACTIVITY_MULTIPLE_TASK"><code>FLAG_ACTIVITY_MULTIPLE_TASK</code></a>
+and
+<a href="https://developer.android.com/reference/android/content/Intent#FLAG_ACTIVITY_NEW_DOCUMENT"><code>FLAG_ACTIVITY_NEW_DOCUMENT</code></a>.</li><li data-unit="intents-173">Requesting device location information by calling
+<a href="https://developer.android.com/reference/android/location/LocationManager#requestLocationUpdates(java.lang.String,%20long,%20float,%20android.app.PendingIntent)"><code>requestLocationUpdates()</code></a>
+or similar APIs. The mutable <code>PendingIntent</code> object allows the system to add
+intent extras that represent location lifecycle events. These events include a
+change in location and a provider becoming available.</li><li data-unit="intents-174">Scheduling alarms using <a href="https://developer.android.com/reference/android/app/AlarmManager"><code>AlarmManager</code></a>.
+The mutable <code>PendingIntent</code> object allows the system to add the
+<a href="https://developer.android.com/reference/android/content/Intent#EXTRA_ALARM_COUNT"><code>EXTRA_ALARM_COUNT</code></a>
+intent extra. This extra represents the number of times that a repeating alarm
+has been triggered. By containing this extra, the intent can accurately notify
+an app as to whether a repeating alarm was triggered multiple times, such as
+when the device was asleep.</li></ul><p data-unit="intents-175">If your app creates a mutable <code>PendingIntent</code> object, it's strongly recommended
+that you use an <a href="https://developer.android.com/guide/components/intents-filters?hl=en#ExampleExplicit">explicit intent</a> and fill in the
+<a href="https://developer.android.com/reference/android/content/ComponentName"><code>ComponentName</code></a>. That way, whenever
+another app invokes the <code>PendingIntent</code> and passes control back to your app, the
+same component in your app always starts.</p><h3 id="UseExplicitWithinPendingIntent" data-unit="intents-176">Use explicit intents within pending intents</h3><p data-unit="intents-177">To better define how other apps can use your app's pending intents, always
+wrap a pending intent around an <a href="https://developer.android.com/guide/components/intents-filters?hl=en#ExampleExplicit">explicit intent</a>.
+To help follow this best practice, do the following:</p><ol><li data-unit="intents-178">Check that the action, package, and component fields of the base intent
+  are set.</li><li><p data-unit="intents-179">Use <a href="https://developer.android.com/reference/android/app/PendingIntent#FLAG_IMMUTABLE"><code>FLAG_IMMUTABLE</code></a>,
+    added in Android 6.0 (API level 23), to create pending intents. This flag
+    prevents apps that receive a <code>PendingIntent</code> from filling in
+    unpopulated properties. If your app's <code>minSdkVersion</code> is
+    <code>22</code> or lower, you can provide safety and compatibility together
+    using the following code:</p><div></div><div class="code-block"><pre><code>if (Build.VERSION.SDK_INT &gt;= 23) {
+  // Create a PendingIntent using FLAG_IMMUTABLE.
+} else {
+  // Existing code that creates a PendingIntent.
+}</code></pre></div></li></ol><h2 id="Resolution" data-unit="intents-180">Intent resolution</h2><p data-unit="intents-181">When the system receives an implicit intent to start an activity, it searches for the
+best activity for the intent by comparing it to intent filters based on three aspects:</p><ul><li data-unit="intents-182">Action.
+  </li><li data-unit="intents-183">Data (both URI and data type).
+  </li><li data-unit="intents-184">Category.
+</li></ul><p data-unit="intents-185">The following sections describe how intents are matched to the appropriate components
+according to the intent filter declaration in an app's manifest file.</p><h3 id="ActionTest" data-unit="intents-186">Action test</h3><p data-unit="intents-187">To specify accepted intent actions, an intent filter can declare zero or more
 <a href="https://developer.android.com/guide/topics/manifest/action-element"><code>&lt;action&gt;</code></a> elements, as shown in the following example:</p><div></div><div class="code-block"><pre><code>&lt;intent-filter&gt;
     &lt;action android:name="android.intent.action.EDIT" /&gt;
     &lt;action android:name="android.intent.action.VIEW" /&gt;
     ...
-&lt;/intent-filter&gt;</code></pre></div><p data-unit="intents-120">To pass this filter, the action specified in the <code><a href="https://developer.android.com/reference/android/content/Intent">Intent</a></code>
-  must match one of the actions listed in the filter.</p><p data-unit="intents-121">If the filter does not list any actions, there is nothing for an
+&lt;/intent-filter&gt;</code></pre></div><p data-unit="intents-188">To pass this filter, the action specified in the <code><a href="https://developer.android.com/reference/android/content/Intent">Intent</a></code>
+  must match one of the actions listed in the filter.</p><p data-unit="intents-189">If the filter does not list any actions, there is nothing for an
 intent to match, so all intents fail the test. However, if an <code><a href="https://developer.android.com/reference/android/content/Intent">Intent</a></code>
 does not specify an action, it passes the test as long as the filter
-contains at least one action.</p><h3 id="CategoryTest" data-unit="intents-122">Category test</h3><p data-unit="intents-123">To specify accepted intent categories, an intent filter can declare zero or more
+contains at least one action.</p><h3 id="CategoryTest" data-unit="intents-190">Category test</h3><p data-unit="intents-191">To specify accepted intent categories, an intent filter can declare zero or more
 <a href="https://developer.android.com/guide/topics/manifest/category-element"><code>&lt;category&gt;</code></a> elements, as shown in the following example:</p><div></div><div class="code-block"><pre><code>&lt;intent-filter&gt;
     &lt;category android:name="android.intent.category.DEFAULT" /&gt;
     &lt;category android:name="android.intent.category.BROWSABLE" /&gt;
     ...
-&lt;/intent-filter&gt;</code></pre></div><p data-unit="intents-124">For an intent to pass the category test, every category in the <code><a href="https://developer.android.com/reference/android/content/Intent">Intent</a></code>
+&lt;/intent-filter&gt;</code></pre></div><p data-unit="intents-192">For an intent to pass the category test, every category in the <code><a href="https://developer.android.com/reference/android/content/Intent">Intent</a></code>
 must match a category in the filter. The reverse is not necessary—the intent filter may
 declare more categories than are specified in the <code><a href="https://developer.android.com/reference/android/content/Intent">Intent</a></code> and the
 <code><a href="https://developer.android.com/reference/android/content/Intent">Intent</a></code> still passes. Therefore, an intent with no categories
-always passes this test, regardless of what categories are declared in the filter.</p><p class="note" data-unit="intents-125"><strong>Note:</strong>
+always passes this test, regardless of what categories are declared in the filter.</p><p class="note" data-unit="intents-193"><strong>Note:</strong>
 Android automatically applies the <code><a href="https://developer.android.com/reference/android/content/Intent#CATEGORY_DEFAULT">CATEGORY_DEFAULT</a></code> category
 to all implicit intents passed to <code><a href="https://developer.android.com/reference/android/content/Context#startActivity(android.content.Intent)">startActivity()</a></code> and <code><a href="https://developer.android.com/reference/android/app/Activity#startActivityForResult(android.content.Intent,%20int)">startActivityForResult()</a></code>.
 If you want your activity to receive implicit intents, it must
 include a category for <code>"android.intent.category.DEFAULT"</code> in its intent filters, as
-shown in the previous <code>&lt;intent-filter&gt;</code> example.</p><h3 id="DataTest" data-unit="intents-126">Data test</h3><p data-unit="intents-127">To specify accepted intent data, an intent filter can declare zero or more
+shown in the previous <code>&lt;intent-filter&gt;</code> example.</p><h3 id="DataTest" data-unit="intents-194">Data test</h3><p data-unit="intents-195">To specify accepted intent data, an intent filter can declare zero or more
 <a href="https://developer.android.com/guide/topics/manifest/data-element"><code>&lt;data&gt;</code></a> elements, as shown in the following example:</p><div></div><div class="code-block"><pre><code>&lt;intent-filter&gt;
     &lt;data android:mimeType="video/mpeg" android:scheme="http" ... /&gt;
     &lt;data android:mimeType="audio/mpeg" android:scheme="http" ... /&gt;
     ...
-&lt;/intent-filter&gt;</code></pre></div><p data-unit="intents-128">Each <code><a href="https://developer.android.com/guide/topics/manifest/data-element">&lt;data&gt;</a></code>
+&lt;/intent-filter&gt;</code></pre></div><p data-unit="intents-196">Each <code><a href="https://developer.android.com/guide/topics/manifest/data-element">&lt;data&gt;</a></code>
 element can specify a URI structure and a data type (MIME media type).
  Each part of the URI is a separate
 attribute: <code>scheme</code>, <code>host</code>, <code>port</code>,
 and <code>path</code>:
-</p><p data-unit="intents-129"><code>&lt;scheme&gt;://&lt;host&gt;:&lt;port&gt;/&lt;path&gt;</code></p><p data-unit="intents-130">
+</p><p data-unit="intents-197"><code>&lt;scheme&gt;://&lt;host&gt;:&lt;port&gt;/&lt;path&gt;</code></p><p data-unit="intents-198">
 The following example shows possible values for these attributes:
-</p><p data-unit="intents-131"><code>content://com.example.project:200/folder/subfolder/etc</code></p><p data-unit="intents-132">In this URI, the scheme is <code>content</code>, the host is <code>com.example.project</code>,
+</p><p data-unit="intents-199"><code>content://com.example.project:200/folder/subfolder/etc</code></p><p data-unit="intents-200">In this URI, the scheme is <code>content</code>, the host is <code>com.example.project</code>,
 the port is <code>200</code>, and the path is <code>folder/subfolder/etc</code>.
-</p><p data-unit="intents-133">Each of these attributes is optional in a <a href="https://developer.android.com/guide/topics/manifest/data-element"><code>&lt;data&gt;</code></a> element,
-but there are linear dependencies:</p><ul><li data-unit="intents-134">If a scheme is not specified, the host is ignored.</li><li data-unit="intents-135">If a host is not specified, the port is ignored.</li><li data-unit="intents-136">If both the scheme and host are not specified, the path is ignored.</li></ul><p data-unit="intents-137">When the URI in an intent is compared to a URI specification in a filter,
-it's compared only to the parts of the URI included in the filter. For example:</p><ul><li data-unit="intents-138">If a filter specifies only a scheme, all URIs with that scheme match
-the filter.</li><li data-unit="intents-139">If a filter specifies a scheme and an authority but no path, all URIs
-with the same scheme and authority pass the filter, regardless of their paths.</li><li data-unit="intents-140">If a filter specifies a scheme, an authority, and a path, only URIs with the same scheme,
-authority, and path pass the filter.</li></ul><p class="note" data-unit="intents-141"><strong>Note:</strong> A path specification can
-contain a wildcard asterisk (*) to require only a partial match of the path name.</p><p data-unit="intents-142">The data test compares both the URI and the MIME type in the intent to a URI
+</p><p data-unit="intents-201">Each of these attributes is optional in a <a href="https://developer.android.com/guide/topics/manifest/data-element"><code>&lt;data&gt;</code></a> element,
+but there are linear dependencies:</p><ul><li data-unit="intents-202">If a scheme is not specified, the host is ignored.</li><li data-unit="intents-203">If a host is not specified, the port is ignored.</li><li data-unit="intents-204">If both the scheme and host are not specified, the path is ignored.</li></ul><p data-unit="intents-205">When the URI in an intent is compared to a URI specification in a filter,
+it's compared only to the parts of the URI included in the filter. For example:</p><ul><li data-unit="intents-206">If a filter specifies only a scheme, all URIs with that scheme match
+the filter.</li><li data-unit="intents-207">If a filter specifies a scheme and an authority but no path, all URIs
+with the same scheme and authority pass the filter, regardless of their paths.</li><li data-unit="intents-208">If a filter specifies a scheme, an authority, and a path, only URIs with the same scheme,
+authority, and path pass the filter.</li></ul><p class="note" data-unit="intents-209"><strong>Note:</strong> A path specification can
+contain a wildcard asterisk (*) to require only a partial match of the path name.</p><p data-unit="intents-210">The data test compares both the URI and the MIME type in the intent to a URI
 and MIME type specified in the filter.  The rules are as follows:
-</p><ol><li data-unit="intents-143">An intent that contains neither a URI nor a MIME type passes the
-test only if the filter does not specify any URIs or MIME types.</li><li data-unit="intents-144">An intent that contains a URI but no MIME type (neither explicit nor inferable from the
+</p><ol><li data-unit="intents-211">An intent that contains neither a URI nor a MIME type passes the
+test only if the filter does not specify any URIs or MIME types.</li><li data-unit="intents-212">An intent that contains a URI but no MIME type (neither explicit nor inferable from the
 URI) passes the test only if its URI matches the filter's URI format
-and the filter likewise does not specify a MIME type.</li><li data-unit="intents-145">An intent that contains a MIME type but not a URI passes the test
-only if the filter lists the same MIME type and does not specify a URI format.</li><li data-unit="intents-146">An intent that contains both a URI and a MIME type (either explicit or inferable from the
+and the filter likewise does not specify a MIME type.</li><li data-unit="intents-213">An intent that contains a MIME type but not a URI passes the test
+only if the filter lists the same MIME type and does not specify a URI format.</li><li data-unit="intents-214">An intent that contains both a URI and a MIME type (either explicit or inferable from the
 URI) passes the MIME type part of the test only if that
 type matches a type listed in the filter.  It passes the URI part of the test
 either if its URI matches a URI in the filter or if it has a <code>content:</code>
 or <code>file:</code> URI and the filter does not specify a URI.  In other words,
 a component is presumed to support <code>content:</code> and <code>file:</code> data if
 its filter lists <em>only</em> a MIME type.</li></ol><p>
-</p><p class="note" data-unit="intents-147"><strong>Note:</strong> If an intent specifies a URI or MIME type, the data test will
-fail if there are no <code>&lt;data&gt;</code> elements in the <code>&lt;intent-filter&gt;</code>.</p><p data-unit="intents-148">This last rule, rule (d), reflects the expectation
+</p><p class="note" data-unit="intents-215"><strong>Note:</strong> If an intent specifies a URI or MIME type, the data test will
+fail if there are no <code>&lt;data&gt;</code> elements in the <code>&lt;intent-filter&gt;</code>.</p><p data-unit="intents-216">This last rule, rule (d), reflects the expectation
 that components are able to get local data from a file or content provider.
 Therefore, their filters can list just a data type and don't need to explicitly
 name the <code>content:</code> and <code>file:</code> schemes.
@@ -397,11 +592,11 @@ provider and display it:
 </p><div></div><div class="code-block"><pre><code>&lt;intent-filter&gt;
     &lt;data android:mimeType="image/*" /&gt;
     ...
-&lt;/intent-filter&gt;</code></pre></div><p data-unit="intents-149">
+&lt;/intent-filter&gt;</code></pre></div><p data-unit="intents-217">
 Filters that
 specify a data type but not a URI are perhaps the most common because most available
  data is dispensed by content providers.
-</p><p data-unit="intents-150">
+</p><p data-unit="intents-218">
 Another common configuration is a filter with a scheme and a data type.  For
 example, a <a href="https://developer.android.com/guide/topics/manifest/data-element"><code>&lt;data&gt;</code></a>
 element like the following tells Android that
@@ -409,7 +604,7 @@ the component can retrieve video data from the network in order to perform the a
 </p><div></div><div class="code-block"><pre><code>&lt;intent-filter&gt;
     &lt;data android:scheme="http" android:mimeType="video/*" /&gt;
     ...
-&lt;/intent-filter&gt;</code></pre></div><h3 id="imatch" data-unit="intents-151">Intent matching</h3><p data-unit="intents-152">Intents are matched against intent filters not only to discover a target
+&lt;/intent-filter&gt;</code></pre></div><h3 id="imatch" data-unit="intents-219">Intent matching</h3><p data-unit="intents-220">Intents are matched against intent filters not only to discover a target
 component to activate, but also to discover something about the set of
 components on the device.  For example, the Home app populates the app launcher
 by finding all the activities with intent filters that specify the
@@ -417,7 +612,7 @@ by finding all the activities with intent filters that specify the
 <code><a href="https://developer.android.com/reference/android/content/Intent#CATEGORY_LAUNCHER">CATEGORY_LAUNCHER</a></code> category.
 A match is only successful if the actions and categories in the Intent match
 against the filter, as described in the documentation for the <code><a href="https://developer.android.com/reference/android/content/IntentFilter">IntentFilter</a></code>
-class.</p><p data-unit="intents-153">Your application can use intent matching in a manner similar to what the Home app does.
+class.</p><p data-unit="intents-221">Your application can use intent matching in a manner similar to what the Home app does.
 The <code><a href="https://developer.android.com/reference/android/content/pm/PackageManager">PackageManager</a></code> has a set of <code>query...()</code>
 methods that return all components that can accept a particular intent and
 a similar series of <code>resolve...()</code> methods that determine the best
@@ -427,4 +622,4 @@ the intent passed as an argument, and <code><a href="https://developer.android.c
 Neither method activates the components; they just list the ones that
 can respond.  There's a similar method,
 <code><a href="https://developer.android.com/reference/android/content/pm/PackageManager#queryBroadcastReceivers(android.content.Intent,%20int)">queryBroadcastReceivers()</a></code>, for broadcast receivers.
-</p></div></article><nav class="chapter-switcher" aria-label="章节导航"><a href="../manifest/english.html">← 应用清单概览</a><a class="course-home" href="../index.html">全部章节</a><a href="../tasks/english.html">任务与返回栈 →</a></nav><footer class="license-note"><p>本阅读版为 Android Developers 英文文档所选范围的非官方中文译文。原文由 Android Developers / Android Open Source Project 维护；原代码、原图及其标识保留。<a href="../NOTICE.html">来源与许可说明</a>。</p></footer></main></body></html>
+</p></div></article><nav class="chapter-switcher" aria-label="章节导航"><a href="../manifest/english.html">← 应用清单概览</a><a class="course-home" href="../index.html">全部章节</a><a href="../tasks/english.html">任务与返回栈 →</a></nav><footer class="license-note"><p>本阅读版为 Android Developers 英文文档正文全文的非官方中文译文。原文由 Android Developers / Android Open Source Project 维护；原代码、原图及其标识保留。<a href="../NOTICE.html">来源与许可说明</a>。</p></footer></main></body></html>

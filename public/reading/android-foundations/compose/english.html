@@ -2,8 +2,11 @@
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Thinking in Compose｜RIN III</title><link rel="stylesheet" href="../../reader.css"><link rel="stylesheet" href="../source.css"></head>
 <body><nav class="site-nav" aria-label="站点导航"><a href="../index.html">← Android 基础 · 官方文档中文阅读版</a><a href="index.html">中文译文</a></nav>
 <main class="reader"><header class="chapter-header"><span class="chapter-kicker">第一周 · 第 4 天 · M16</span><h1>Thinking in Compose</h1><p class="byline"><a href="https://developer.android.com/develop/ui/compose/mental-model?hl=en">Thinking in Compose · 官方英文原文</a></p><div class="title-rule"></div>
-<details class="source-details"><summary>阅读范围与原文目录</summary><p>引言；声明式编程范式；可组合函数示例；声明式范式转变。</p><p>原文核对：2026-09-09。正文按上述范围的原文顺序翻译；代码和图示保留原文。</p><ul><li><a href="#paradigm">The declarative programming paradigm</a></li><li><a href="#simple-example">An example composable function</a></li><li><a href="#declarative-paradigm-shift">The declarative paradigm shift</a></li></ul></details><nav class="chapter-switcher" aria-label="章节导航"><a href="../viewmodel/english.html">← ViewModel 概览</a><a class="course-home" href="../index.html">全部章节</a><a href="../coroutines/english.html">Android 上的 Kotlin 协程 →</a></nav></header>
-<article class="translated-article"><div><p data-unit="compose-001">Jetpack Compose is a modern declarative UI Toolkit for Android. Compose
+<details class="source-details"><summary>原文目录与译文说明</summary><p>对应官方文档正文全文，包含全部章节、示例与正文中的补充资源链接；不包含站点导航、反馈和自动推荐组件。</p><p>原文核对：2026-09-09。正文全文按原文顺序翻译；代码、图示和视频保留原文。</p><ul><li><a href="#paradigm">The declarative programming paradigm</a></li><li><a href="#simple-example">An example composable function</a></li><li><a href="#declarative-paradigm-shift">The declarative paradigm shift</a></li><li><a href="#dynamic">Dynamic content</a></li><li><a href="#recomposition">Recomposition</a></li><li><a href="#skips">Recomposition skips as much as possible</a></li><li><a href="#optimistic">Recomposition is optimistic</a></li><li><a href="#frequent">Composable functions might run quite frequently</a></li><li><a href="#parallel">Composable functions could run in parallel</a></li><li><a href="#any-order">Composable functions can execute in any order</a></li><li><a href="#learn-more">Learn more</a></li><li><a href="#videos">Videos</a></li></ul></details><nav class="chapter-switcher" aria-label="章节导航"><a href="../viewmodel/english.html">← ViewModel 概览</a><a class="course-home" href="../index.html">全部章节</a><a href="../coroutines/english.html">Android 上的 Kotlin 协程 →</a></nav></header>
+<article class="translated-article"><div><div class="video-wrapper">
+  <iframe class="devsite-embedded-youtube-video" allowfullscreen="" src="https://www.youtube-nocookie.com/embed/4zf30a34OOA" title="官方原视频" loading="lazy">
+  </iframe>
+</div><p data-unit="compose-001">Jetpack Compose is a modern declarative UI Toolkit for Android. Compose
 simplifies writing and maintaining your app UI by providing a
 <em>declarative API</em> that lets you render your app UI without imperatively
 mutating frontend views. This terminology needs some explanation, but the
@@ -66,4 +69,189 @@ data. This causes the UI elements to be redrawn--this process is called
 <em>recomposition</em>.</p><figure id="image-3"><img src="../assets/mmodel-flow-events.png" alt="Illustration of how UI elements respond to interaction, by triggering events that are handled by the app
 logic." loading="lazy"><figcaption data-unit="compose-025"><b>Figure 3.</b> The user interacted with a UI element, causing an event to be
 triggered. The app logic responds to the event, then the composable functions
-are automatically called again with new parameters, if necessary.</figcaption></figure></div></article><nav class="chapter-switcher" aria-label="章节导航"><a href="../viewmodel/english.html">← ViewModel 概览</a><a class="course-home" href="../index.html">全部章节</a><a href="../coroutines/english.html">Android 上的 Kotlin 协程 →</a></nav><footer class="license-note"><p>本阅读版为 Android Developers 英文文档所选范围的非官方中文译文。原文由 Android Developers / Android Open Source Project 维护；原代码、原图及其标识保留。<a href="../NOTICE.html">来源与许可说明</a>。</p></footer></main></body></html>
+are automatically called again with new parameters, if necessary.</figcaption></figure><h2 id="dynamic" data-unit="compose-026">Dynamic content</h2><p data-unit="compose-027">Because composable functions are written in Kotlin instead of XML, they can be
+as dynamic as any other Kotlin code. For example, suppose you want to build a UI
+that greets a list of users:</p><p>
+
+</p><div></div><div class="code-block"><pre><code>@Composable
+fun Greeting(names: List&lt;String&gt;) {
+    for (name in names) {
+        Text("Hello $name")
+    }
+}</code></pre><div class="code-caption"><a href="https://github.com/android/snippets/blob/70cc63249a4bb73f782bed92f3340af744c9c5d4/compose/snippets/src/main/java/com/example/compose/snippets/mentalmodel/ThinkingInComposeSnippets.kt#L37-L42" class="gc-analytics-event"><span class="devsite-syntax-n">ThinkingInComposeSnippets</span><span class="devsite-syntax-p">.</span><span class="devsite-syntax-na">kt</span></a></div></div><p data-unit="compose-028">This function takes in a list of names and generates a greeting for each user.
+Composable functions can be quite sophisticated. You can use <code>if</code> statements to
+decide if you want to show a particular UI element. You can use loops. You can
+call helper functions. You have the full flexibility of the underlying language.
+This power and flexibility is one of the key advantages of Jetpack Compose.</p><h2 id="recomposition" data-unit="compose-029">Recomposition</h2><p data-unit="compose-030">In an imperative UI model, to change a widget, you call a setter on the widget
+to change its internal state. In Compose, you call the composable function again
+with new data. Doing so causes the function to be <em>recomposed</em>--the widgets
+emitted by the function are redrawn, if necessary, with new data. The Compose
+framework can intelligently recompose only the components that changed.</p><p data-unit="compose-031">For example, consider this composable function which displays a button:</p><p>
+
+</p><div></div><div class="code-block"><pre><code>@Composable
+fun ClickCounter(clicks: Int, onClick: () -&gt; Unit) {
+    Button(onClick = onClick) {
+        Text("I've been clicked $clicks times")
+    }
+}</code></pre><div class="code-caption"><a href="https://github.com/android/snippets/blob/70cc63249a4bb73f782bed92f3340af744c9c5d4/compose/snippets/src/main/java/com/example/compose/snippets/mentalmodel/ThinkingInComposeSnippets.kt#L46-L51" class="gc-analytics-event"><span class="devsite-syntax-n">ThinkingInComposeSnippets</span><span class="devsite-syntax-p">.</span><span class="devsite-syntax-na">kt</span></a></div></div><p data-unit="compose-032">Every time the button is clicked, the caller updates the value of <code>clicks</code>.
+Compose calls the lambda with the <code>Text</code> function again to show the new value;
+this process is called <em>recomposition</em>. Other functions that don't depend on the
+value are not recomposed.</p><p data-unit="compose-033">As we discussed, recomposing the entire UI tree can be computationally
+expensive, which uses computing power and battery life. Compose solves this
+problem with this <em>intelligent recomposition</em>.</p><p data-unit="compose-034">Recomposition is the process of calling your composable functions again when
+inputs change. When Compose recomposes based on new inputs, it calls only the
+functions or lambdas that might have changed, and skips the rest. By skipping
+functions or lambdas with unchanged parameters, Compose recomposes efficiently.</p><p data-unit="compose-035">Never depend on side-effects from executing composable functions, since a
+function's recomposition may be skipped. If you do, users may experience strange
+and unpredictable behavior in your app. A side-effect is any change that is
+visible to the rest of your app. For example, these actions are all dangerous
+side-effects:</p><ul><li data-unit="compose-036">Writing to a property of a shared object</li><li data-unit="compose-037">Updating an observable in <code>ViewModel</code></li><li data-unit="compose-038">Updating shared preferences</li></ul><p data-unit="compose-039">Composable functions might be re-executed as often as every frame, such as when
+an animation is being rendered. Composable functions should be fast to avoid
+jank during animations. If you need to do expensive operations, such as reading
+from shared preferences, do it in a background coroutine and pass the value
+result to the composable function as a parameter.</p><p data-unit="compose-040">As an example, this code creates a composable to update a value in
+<code>SharedPreferences</code>. The composable shouldn't read or write from shared
+preferences itself. Instead, this code moves the read and write to a <code>ViewModel</code>
+in a background coroutine. The app logic passes the current value with a
+callback to trigger an update.</p><p>
+
+</p><div></div><div class="code-block"><pre><code>@Composable
+fun SharedPrefsToggle(
+    text: String,
+    value: Boolean,
+    onValueChanged: (Boolean) -&gt; Unit
+) {
+    Row {
+        Text(text)
+        Checkbox(checked = value, onCheckedChange = onValueChanged)
+    }
+}</code></pre><div class="code-caption"><a href="https://github.com/android/snippets/blob/70cc63249a4bb73f782bed92f3340af744c9c5d4/compose/snippets/src/main/java/com/example/compose/snippets/mentalmodel/ThinkingInComposeSnippets.kt#L55-L65" class="gc-analytics-event"><span class="devsite-syntax-n">ThinkingInComposeSnippets</span><span class="devsite-syntax-p">.</span><span class="devsite-syntax-na">kt</span></a></div></div><p data-unit="compose-041">This document discusses a number of things to be aware of when you use Compose:</p><ul><li data-unit="compose-042">Recomposition skips as many composable functions and lambdas as possible.</li><li data-unit="compose-043">Recomposition is optimistic and may be canceled.</li><li data-unit="compose-044">A composable function might be run quite frequently, as often as every frame
+of an animation.</li><li data-unit="compose-045">Composable functions can execute in parallel.</li><li data-unit="compose-046">Composable functions can execute in any order.</li></ul><p data-unit="compose-047">The following sections will cover how to build composable functions to support
+recomposition. In every case, the best practice is to keep your composable
+functions fast, idempotent, and side-effect free.</p><h3 id="skips" data-unit="compose-048">Recomposition skips as much as possible</h3><p data-unit="compose-049">When portions of your UI are invalid, Compose does its best to recompose just
+the portions that need to be updated. This means it may skip to re-run a single
+<code>Button</code>'s composable without executing any of the composables higher or lower
+in the UI tree.</p><p data-unit="compose-050">Every composable function and lambda might recompose by itself. The following
+example demonstrates how recomposition can skip some elements when
+rendering a list:</p><p>
+
+</p><div></div><div class="code-block"><pre><code>/**
+ * Display a list of names the user can click with a header
+ */
+@Composable
+fun NamePicker(
+    header: String,
+    names: List&lt;String&gt;,
+    onNameClicked: (String) -&gt; Unit
+) {
+    Column {
+        // this will recompose when [header] changes, but not when [names] changes
+        Text(header, style = MaterialTheme.typography.bodyLarge)
+        HorizontalDivider()
+
+        // LazyColumn is the Compose version of a RecyclerView.
+        // The lambda passed to items() is similar to a RecyclerView.ViewHolder.
+        LazyColumn {
+            items(names) { name -&gt;
+                // When an item's [name] updates, the adapter for that item
+                // will recompose. This will not recompose when [header] changes
+                NamePickerItem(name, onNameClicked)
+            }
+        }
+    }
+}
+
+/**
+ * Display a single name the user can click.
+ */
+@Composable
+private fun NamePickerItem(name: String, onClicked: (String) -&gt; Unit) {
+    Text(name, Modifier.clickable(onClick = { onClicked(name) }))
+}</code></pre><div class="code-caption"><a href="https://github.com/android/snippets/blob/70cc63249a4bb73f782bed92f3340af744c9c5d4/compose/snippets/src/main/java/com/example/compose/snippets/mentalmodel/ThinkingInComposeSnippets.kt#L130-L162" class="gc-analytics-event"><span class="devsite-syntax-n">ThinkingInComposeSnippets</span><span class="devsite-syntax-p">.</span><span class="devsite-syntax-na">kt</span></a></div></div><p data-unit="compose-051">Each of these scopes might be the only thing to execute during a recomposition.
+Compose might skip to the <code>Column</code> lambda without executing any of its parents
+when the <code>header</code> changes. And when executing <code>Column</code>, Compose might choose to
+skip the <code>LazyColumn</code>'s items if <code>names</code> didn't change.</p><p data-unit="compose-052">Again, all composable functions or lambdas should be side-effect free.
+When you need to perform a side-effect, trigger it from a callback.</p><h3 id="optimistic" data-unit="compose-053">Recomposition is optimistic</h3><p data-unit="compose-054">Recomposition starts whenever Compose thinks that the parameters of a composable
+might have changed. Recomposition is <em>optimistic,</em> which means Compose expects
+to finish recomposition before the parameters change again. If a parameter
+<em>does</em> change before recomposition finishes, Compose might cancel the
+recomposition and restart it with the new parameter.</p><p data-unit="compose-055">When recomposition is canceled, Compose discards the UI tree from the
+recomposition. If you have any side-effects that depend on the UI being
+displayed, the side-effect will be applied even if composition is canceled. This
+can lead to inconsistent app state.</p><p data-unit="compose-056">Verify that all composable functions and lambdas are idempotent and side-effect
+free to handle optimistic recomposition.</p><h3 id="frequent" data-unit="compose-057">Composable functions might run quite frequently</h3><p data-unit="compose-058">In some cases, a composable function might run for every frame of a UI
+animation. If the function performs expensive operations, like reading from
+device storage, the function can cause UI jank.</p><p data-unit="compose-059">For example, if your widget tried to read device settings, it could potentially
+read those settings hundreds of times a second, with disastrous effects on your
+app's performance.</p><p data-unit="compose-060">If a composable function needs data, define parameters for that data. You can
+then move expensive work to another thread, outside of composition, and pass
+the resulting value to the composable function as a parameter using
+<code>mutableStateOf</code> or <code>LiveData</code>.</p><h3 id="parallel" data-unit="compose-061">Composable functions could run in parallel</h3><aside class="prompt" data-unit="compose-062"><strong>Note:</strong><span> Composable functions cannot currently be run in parallel, but you
+should write Compose code in a multithreaded way. In the future, Compose may
+be multithreaded.</span></aside><p data-unit="compose-063">Compose could optimize recomposition by running composable functions in
+parallel. This would let Compose take advantage of multiple cores, and run
+composable functions not on the screen at a lower priority.</p><p data-unit="compose-064">This optimization would mean a composable function might execute within a pool
+of background threads.
+If a composable function calls a function on a <code>ViewModel</code>,
+Compose might call that function from several threads at the same time.</p><p data-unit="compose-065">To verify your application behaves correctly, all composable functions should
+have no side-effects. Instead, trigger side-effects from callbacks such as
+<code>onClick</code> that always execute on the UI thread.</p><p data-unit="compose-066">When a composable function is invoked, the invocation might occur on a different
+thread from the caller. That means code that modifies variables in a composable
+lambda should be avoided–both because such code is not thread-safe, and because
+it is an impermissible side-effect of the composable lambda.</p><p data-unit="compose-067">Here's an example showing a composable that displays a list and its count:</p><p>
+
+</p><div></div><div class="code-block"><pre><code>@Composable
+fun ListComposable(myList: List&lt;String&gt;) {
+    Row(horizontalArrangement = Arrangement.SpaceBetween) {
+        Column {
+            for (item in myList) {
+                Text("Item: $item")
+            }
+        }
+        Text("Count: ${myList.size}")
+    }
+}</code></pre><div class="code-caption"><a href="https://github.com/android/snippets/blob/70cc63249a4bb73f782bed92f3340af744c9c5d4/compose/snippets/src/main/java/com/example/compose/snippets/mentalmodel/ThinkingInComposeSnippets.kt#L97-L107" class="gc-analytics-event"><span class="devsite-syntax-n">ThinkingInComposeSnippets</span><span class="devsite-syntax-p">.</span><span class="devsite-syntax-na">kt</span></a></div></div><p data-unit="compose-068">This code is side-effect free, and transforms the input list to UI. This is
+great code for displaying a small list. However, if the function writes to a
+local variable, this code won't be thread-safe or correct:</p><p>
+
+</p><div></div><div class="code-block"><pre><code>@Composable
+fun ListWithBug(myList: List&lt;String&gt;) {
+    var items = 0
+
+    Row(horizontalArrangement = Arrangement.SpaceBetween) {
+        Column {
+            for (item in myList) {
+                Card {
+                    Text("Item: $item")
+                    items++ // Avoid! Side-effect of the column recomposing.
+                }
+            }
+        }
+        Text("Count: $items")
+    }
+}</code></pre><div class="code-caption"><a href="https://github.com/android/snippets/blob/70cc63249a4bb73f782bed92f3340af744c9c5d4/compose/snippets/src/main/java/com/example/compose/snippets/mentalmodel/ThinkingInComposeSnippets.kt#L111-L126" class="gc-analytics-event"><span class="devsite-syntax-n">ThinkingInComposeSnippets</span><span class="devsite-syntax-p">.</span><span class="devsite-syntax-na">kt</span></a></div></div><p data-unit="compose-069">In this example, <code>items</code> is modified with every recomposition. That could be
+every frame of an animation, or when the list updates. Either way, the UI will
+display the wrong count. Because of this, writes like this are not supported in
+Compose; by prohibiting those writes, we allow the framework to change threads
+to execute composable lambdas.</p><h3 id="any-order" data-unit="compose-070">Composable functions can execute in any order</h3><aside class="prompt" data-unit="compose-071"><strong>Note:</strong><span> Compose operates on the main thread, but it has been designed from the
+start with multithreading in mind, and we don't guarantee a single threaded
+model will remain in the future. Because of this, you should always write your
+composables as if they can be run on multiple threads.</span></aside><p data-unit="compose-072">If you look at the code for a composable function, you might assume that the
+code is run in the order it appears. But this isn't necessarily true. If a
+composable function contains calls to other composable functions, those
+functions might run in any order. Compose has the option of recognizing that
+some UI elements are higher priority than others, and drawing them first.</p><p data-unit="compose-073">For example, suppose you have code like this to draw three screens in a tab
+layout:</p><p>
+
+</p><div></div><div class="code-block"><pre><code>@Composable
+fun ButtonRow() {
+    MyFancyNavigation {
+        StartScreen()
+        MiddleScreen()
+        EndScreen()
+    }
+}</code></pre><div class="code-caption"><a href="https://github.com/android/snippets/blob/70cc63249a4bb73f782bed92f3340af744c9c5d4/compose/snippets/src/main/java/com/example/compose/snippets/mentalmodel/ThinkingInComposeSnippets.kt#L86-L93" class="gc-analytics-event"><span class="devsite-syntax-n">ThinkingInComposeSnippets</span><span class="devsite-syntax-p">.</span><span class="devsite-syntax-na">kt</span></a></div></div><p data-unit="compose-074">The calls to <code>StartScreen</code>, <code>MiddleScreen</code>, and <code>EndScreen</code> might happen in any
+order. This means you can't, for example, have <code>StartScreen()</code> set some global
+variable (a side-effect) and have <code>MiddleScreen()</code> take advantage of that
+change. Instead, each of those functions needs to be self-contained.</p><h2 id="learn-more" data-unit="compose-075">Learn more</h2><p data-unit="compose-076">To learn more about how to think in Compose and composable functions, see
+the following additional resources.</p><h3 id="videos" data-unit="compose-077">Videos</h3><ul><li data-unit="compose-078"><a href="https://www.youtube.com/watch?v=fFLBCgoHHys">Composable functions - MAD Skills</a></li></ul></div></article><nav class="chapter-switcher" aria-label="章节导航"><a href="../viewmodel/english.html">← ViewModel 概览</a><a class="course-home" href="../index.html">全部章节</a><a href="../coroutines/english.html">Android 上的 Kotlin 协程 →</a></nav><footer class="license-note"><p>本阅读版为 Android Developers 英文文档正文全文的非官方中文译文。原文由 Android Developers / Android Open Source Project 维护；原代码、原图及其标识保留。<a href="../NOTICE.html">来源与许可说明</a>。</p></footer></main></body></html>

@@ -1,6 +1,6 @@
 ---
 title: Android 基础 · 官方文档中文阅读版
-summary: 第一周五天的二十一份 Android 官方文档，按既定范围逐段翻译，保留原文结构、代码、图示和完整示例。
+summary: 第一周五天的二十一份 Android 官方文档，正文全文逐段翻译，保留原文结构、代码、图示和完整示例。
 date: 2026-09-09
 lang: zh-CN
 topic: Android
@@ -47,4 +47,4 @@ tags:
 - [M20 在感知生命周期的组件中使用 Kotlin 协程](../../reading/android-foundations/lifecycle-coroutines/index.html)
 - [M21 Android 协程最佳实践](../../reading/android-foundations/coroutines-best/index.html)
 
-每篇标明所选范围与官方英文来源，提供英文对照。中文正文按原文顺序翻译，代码和图示保留原文。资料来源和许可见[署名与许可说明](../../reading/android-foundations/NOTICE.html)。
+每篇提供对应官方英文文档的正文全文与完整英文对照，包括全部章节、示例和正文补充资源；Handler 包括构造器和方法参考。中文正文按原文顺序翻译，原代码、图示和视频保留。资料来源和许可见[署名与许可说明](../../reading/android-foundations/NOTICE.html)。

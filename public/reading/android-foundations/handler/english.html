@@ -1,20 +1,87 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Handler｜RIN III</title><link rel="stylesheet" href="../../reader.css"><link rel="stylesheet" href="../source.css"></head>
 <body><nav class="site-nav" aria-label="站点导航"><a href="../index.html">← Android 基础 · 官方文档中文阅读版</a><a href="index.html">中文译文</a></nav>
-<main class="reader"><header class="chapter-header"><span class="chapter-kicker">第一周 · 第 3 天 · M09</span><h1>Handler</h1><p class="byline"><a href="https://developer.android.com/reference/android/os/Handler?hl=en">Handler · 官方英文原文</a></p><div class="title-rule"></div>
-<details class="source-details"><summary>阅读范围与原文目录</summary><p>类说明：从 A Handler allows 开始，至 API 成员摘要之前，含性能注意事项。</p><p>原文核对：2026-09-09。正文按上述范围的原文顺序翻译；代码和图示保留原文。</p><ul><li><a href="#performance-considerations-when-using-handler">Performance considerations when using Handler</a></li></ul></details><nav class="chapter-switcher" aria-label="章节导航"><a href="../threads/english.html">← 进程与线程概览</a><a class="course-home" href="../index.html">全部章节</a><a href="../memory/english.html">内存管理概览 →</a></nav></header>
-<article class="translated-article"><div><p data-unit="handler-001">A Handler allows you to send and process <code><a href="https://developer.android.com/reference/android/os/Message">Message</a></code> and Runnable
+<main class="reader"><header class="chapter-header"><span class="chapter-kicker">第一周 · 第 3 天 · M09</span><h1 class="api-title" id="handler" data-unit="handler-001">Handler</h1><p class="byline"><a href="https://developer.android.com/reference/android/os/Handler?hl=en">Handler · 官方英文原文</a></p><div class="title-rule"></div>
+<details class="source-details"><summary>原文目录与译文说明</summary><p>对应官方文档正文全文，包含全部章节、示例与正文中的补充资源链接；不包含站点导航、反馈和自动推荐组件。本篇同时包含完整构造器、方法摘要和方法参考。</p><p>原文核对：2026-09-09。正文全文按原文顺序翻译；代码、图示和视频保留原文。</p><ul><li><a href="#performance-considerations-when-using-handler">Performance considerations when using Handler</a></li><li><a href="#summary">Summary</a></li><li><a href="#nested-classes">Nested classes</a></li><li><a href="#public-constructors">Public constructors</a></li><li><a href="#public-methods">Public methods</a></li><li><a href="#inherited-methods">Inherited methods</a></li><li><a href="#public-constructors_1">Public constructors</a></li><li><a href="#Handler%28%29">Handler</a></li><li><a href="#Handler%28android.os.Handler.Callback%29">Handler</a></li><li><a href="#Handler%28android.os.Looper%29">Handler</a></li><li><a href="#Handler%28android.os.Looper%2C%2520android.os.Handler.Callback%29">Handler</a></li><li><a href="#public-methods_1">Public methods</a></li><li><a href="#createAsync%28android.os.Looper%2C%2520android.os.Handler.Callback%29">createAsync</a></li><li><a href="#createAsync%28android.os.Looper%29">createAsync</a></li><li><a href="#dispatchMessage%28android.os.Message%29">dispatchMessage</a></li><li><a href="#dump%28android.util.Printer%2C%2520java.lang.String%29">dump</a></li><li><a href="#getLooper%28%29">getLooper</a></li><li><a href="#getMessageName%28android.os.Message%29">getMessageName</a></li><li><a href="#handleMessage%28android.os.Message%29">handleMessage</a></li><li><a href="#hasCallbacks%28java.lang.Runnable%29">hasCallbacks</a></li><li><a href="#hasMessages%28int%29">hasMessages</a></li><li><a href="#hasMessages%28int%2C%2520java.lang.Object%29">hasMessages</a></li><li><a href="#obtainMessage%28int%2C%2520java.lang.Object%29">obtainMessage</a></li><li><a href="#obtainMessage%28%29">obtainMessage</a></li><li><a href="#obtainMessage%28int%2C%2520int%2C%2520int%29">obtainMessage</a></li><li><a href="#obtainMessage%28int%2C%2520int%2C%2520int%2C%2520java.lang.Object%29">obtainMessage</a></li><li><a href="#obtainMessage%28int%29">obtainMessage</a></li><li><a href="#post%28java.lang.Runnable%29">post</a></li><li><a href="#postAtFrontOfQueue%28java.lang.Runnable%29">postAtFrontOfQueue</a></li><li><a href="#postAtTime%28java.lang.Runnable%2C%2520long%29">postAtTime</a></li><li><a href="#postAtTime%28java.lang.Runnable%2C%2520java.lang.Object%2C%2520long%29">postAtTime</a></li><li><a href="#postDelayed%28java.lang.Runnable%2C%2520long%29">postDelayed</a></li><li><a href="#postDelayed%28java.lang.Runnable%2C%2520java.lang.Object%2C%2520long%29">postDelayed</a></li><li><a href="#removeCallbacks%28java.lang.Runnable%29">removeCallbacks</a></li><li><a href="#removeCallbacks%28java.lang.Runnable%2C%2520java.lang.Object%29">removeCallbacks</a></li><li><a href="#removeCallbacksAndMessages%28java.lang.Object%29">removeCallbacksAndMessages</a></li><li><a href="#removeMessages%28int%29">removeMessages</a></li><li><a href="#removeMessages%28int%2C%2520java.lang.Object%29">removeMessages</a></li><li><a href="#sendEmptyMessage%28int%29">sendEmptyMessage</a></li><li><a href="#sendEmptyMessageAtTime%28int%2C%2520long%29">sendEmptyMessageAtTime</a></li><li><a href="#sendEmptyMessageDelayed%28int%2C%2520long%29">sendEmptyMessageDelayed</a></li><li><a href="#sendMessage%28android.os.Message%29">sendMessage</a></li><li><a href="#sendMessageAtFrontOfQueue%28android.os.Message%29">sendMessageAtFrontOfQueue</a></li><li><a href="#sendMessageAtTime%28android.os.Message%2C%2520long%29">sendMessageAtTime</a></li><li><a href="#sendMessageDelayed%28android.os.Message%2C%2520long%29">sendMessageDelayed</a></li><li><a href="#toString%28%29">toString</a></li></ul></details><nav class="chapter-switcher" aria-label="章节导航"><a href="../threads/english.html">← 进程与线程概览</a><a class="course-home" href="../index.html">全部章节</a><a href="../memory/english.html">内存管理概览 →</a></nav></header>
+<article class="translated-article"><div><hr><div class="nocontent"><div data-unit="handler-002">
+
+
+
+<a href="https://developer.android.com/reference/kotlin/android/os/Handler" title="View this page in Kotlin">Kotlin</a>
+<span>|</span><span>Java</span>
+
+
+</div></div><p data-unit="handler-003">
+<code class="api-signature">
+  public
+
+
+
+  class
+  Handler
+</code>
+<br>
+
+
+<code class="api-signature">
+
+    extends <a href="https://developer.android.com/reference/java/lang/Object">Object</a>
+
+
+
+</code>
+
+<code class="api-signature">
+
+
+
+</code>
+
+</p><div class="table-wrapper" tabindex="0"><table class="jd-inheritance-table"><tbody><tr><td colspan="2" class="jd-inheritance-class-cell" data-unit="handler-004"><a href="https://developer.android.com/reference/java/lang/Object">java.lang.Object</a>
+    </td></tr><tr><td class="jd-inheritance-space" data-unit="handler-005">   ↳</td><td colspan="1" class="jd-inheritance-class-cell" data-unit="handler-006">android.os.Handler
+    </td></tr></tbody></table></div><div class="table-wrapper" tabindex="0"><table class="jd-sumtable jd-sumtable-subclasses"><tbody><tr><td><div class="expandable"><span data-unit="handler-007">
+          <span class="expand-control">Known direct subclasses</span>
+
+  </span><div id="subclasses-direct" class="showalways" data-unit="handler-008"> <a href="https://developer.android.com/reference/android/content/AsyncQueryHandler">AsyncQueryHandler</a>, <a href="https://developer.android.com/reference/android/content/AsyncQueryHandler.WorkerHandler">AsyncQueryHandler.WorkerHandler</a>, <a href="https://developer.android.com/reference/android/webkit/HttpAuthHandler">HttpAuthHandler</a>, <a href="https://developer.android.com/reference/android/webkit/SslErrorHandler">SslErrorHandler</a>
+  </div><div id="subclasses-direct-summary"><div class="table-wrapper" tabindex="0"><table class="jd-sumtable-expando"><tbody><tr><td class="jd-linkcol" data-unit="handler-009"><a href="https://developer.android.com/reference/android/content/AsyncQueryHandler">AsyncQueryHandler</a></td><td class="jd-descrcol" data-unit="handler-010">
+          A helper class to help make handling asynchronous <code><a href="https://developer.android.com/reference/android/content/ContentResolver">ContentResolver</a></code>
+queries easier. 
+
+
+
+        </td></tr><tr><td class="jd-linkcol" data-unit="handler-011"><a href="https://developer.android.com/reference/android/content/AsyncQueryHandler.WorkerHandler">AsyncQueryHandler.WorkerHandler</a></td><td class="jd-descrcol">
+           
+
+
+
+        </td></tr><tr><td class="jd-linkcol" data-unit="handler-012"><a href="https://developer.android.com/reference/android/webkit/HttpAuthHandler">HttpAuthHandler</a></td><td class="jd-descrcol" data-unit="handler-013">
+          Represents a request for HTTP authentication. 
+
+
+
+        </td></tr><tr><td class="jd-linkcol" data-unit="handler-014"><a href="https://developer.android.com/reference/android/webkit/SslErrorHandler">SslErrorHandler</a></td><td class="jd-descrcol" data-unit="handler-015">
+          Represents a request for handling an SSL error. 
+
+
+
+        </td></tr></tbody></table></div></div></div></td></tr></tbody></table></div><span>
+
+
+
+
+
+<br></span><hr><p data-unit="handler-016">A Handler allows you to send and process <code><a href="https://developer.android.com/reference/android/os/Message">Message</a></code> and Runnable
 objects associated with a thread's <code><a href="https://developer.android.com/reference/android/os/MessageQueue">MessageQueue</a></code>.  Each Handler
 instance is associated with a single thread and that thread's message
 queue. When you create a new Handler it is bound to a <code><a href="https://developer.android.com/reference/android/os/Looper">Looper</a></code>.
 It will deliver messages and runnables to that Looper's message
 queue and execute them on that Looper's thread.
 
-</p><p data-unit="handler-002">There are two main uses for a Handler: (1) to schedule messages and
+</p><p data-unit="handler-017">There are two main uses for a Handler: (1) to schedule messages and
 runnables to be executed at some point in the future; and (2) to enqueue
 an action to be performed on a different thread than your own.
 
-</p><p data-unit="handler-003">Scheduling messages is accomplished with the
+</p><p data-unit="handler-018">Scheduling messages is accomplished with the
 <code><a href="https://developer.android.com/reference/android/os/Handler#post(java.lang.Runnable)">post(Runnable)</a></code>, <code><a href="https://developer.android.com/reference/android/os/Handler#postAtTime(java.lang.Runnable,%20long)">postAtTime(Runnable,long)</a></code>,
 <code><a href="https://developer.android.com/reference/android/os/Handler#postDelayed(java.lang.Runnable,%20java.lang.Object,%20long)">postDelayed(Runnable, Object, long)</a></code>, <code><a href="https://developer.android.com/reference/android/os/Handler#sendEmptyMessage(int)">sendEmptyMessage(int)</a></code>,
 <code><a href="https://developer.android.com/reference/android/os/Handler#sendMessage(android.os.Message)">sendMessage(Message)</a></code>, <code><a href="https://developer.android.com/reference/android/os/Handler#sendMessageAtTime(android.os.Message,%20long)">sendMessageAtTime(Message, long)</a></code>, and
@@ -25,13 +92,13 @@ a <code><a href="https://developer.android.com/reference/android/os/Message">Mes
 processed by the Handler's <code><a href="https://developer.android.com/reference/android/os/Handler#handleMessage(android.os.Message)">handleMessage(Message)</a></code> method (requiring that
 you implement a subclass of Handler).
 
-</p><p data-unit="handler-004">When posting or sending to a Handler, you can either
+</p><p data-unit="handler-019">When posting or sending to a Handler, you can either
 allow the item to be processed as soon as the message queue is ready
 to do so, or specify a delay before it gets processed or absolute time for
 it to be processed.  The latter two allow you to implement timeouts,
 ticks, and other timing-based behavior.
 
-</p><p data-unit="handler-005">When a
+</p><p data-unit="handler-020">When a
 process is created for your application, its main thread is dedicated to
 running a message queue that takes care of managing the top-level
 application objects (activities, broadcast receivers, etc) and any windows
@@ -41,27 +108,1170 @@ the same <em>post</em> or <em>sendMessage</em> methods as before, but from
 your new thread.  The given Runnable or Message will then be scheduled
 in the Handler's message queue and processed when appropriate.
 
-</p><h2 id="performance-considerations-when-using-handler" data-unit="handler-006">Performance considerations when using <code>Handler</code></h2><p data-unit="handler-007">Beware that the "has" and "remove" methods of <code>Handler</code> can be very
+</p><h2 id="performance-considerations-when-using-handler" data-unit="handler-021">Performance considerations when using <code>Handler</code></h2><p data-unit="handler-022">Beware that the "has" and "remove" methods of <code>Handler</code> can be very
 slow because these operations scan the entire queue of pending messages.
 If the underlying <code><a href="https://developer.android.com/reference/android/os/Looper">Looper</a></code>'s <code><a href="https://developer.android.com/reference/android/os/MessageQueue">MessageQueue</a></code> has many pending
 messages, this can be expensive.
 
-</p><ul><li data-unit="handler-008">Instead of removing a message or a callback to cancel a pending
+</p><ul><li data-unit="handler-023">Instead of removing a message or a callback to cancel a pending
 operation, consider setting a flag to indicate cancellation and having the
 operation check the flag before proceeding.
-</li><li data-unit="handler-009">Instead of checking if the queue has a message or a callback to find if
+</li><li data-unit="handler-024">Instead of checking if the queue has a message or a callback to find if
 a pending operation has not yet occurred, consider having that operation set
 a flag to indicate that it has begun.
-</li></ul><span data-unit="handler-010">
+</li></ul><span data-unit="handler-025">
 
-See <code>java.util.concurrent</code> for standard concurrency primitives.
-
-
+See <code>java.util.concurrent</code> for standard concurrency primitives.</span><p></p><h2 class="api-section" id="summary" data-unit="handler-026">Summary</h2><div class="table-wrapper" tabindex="0"><table id="nestedclasses" class="responsive"><tbody><tr><th colspan="2"><h3 id="nested-classes" data-unit="handler-027">Nested classes</h3></th></tr><tr><td class="jd-typecol" data-unit="handler-028"><code>
 
 
 
 
+        interface</code></td><td class="jd-descrcol"><span data-unit="handler-029">
+        <code><a href="https://developer.android.com/reference/android/os/Handler.Callback">Handler.Callback</a></code>
+        </span><p data-unit="handler-030">Callback interface you can use when instantiating a Handler to avoid
+having to implement your own subclass of Handler. 
+
+
+</p></td></tr></tbody></table></div><div class="table-wrapper" tabindex="0"><table id="pubctors" class="responsive constructors"><tbody><tr><th colspan="2"><h3 id="public-constructors" data-unit="handler-031">Public constructors</h3></th></tr><tr><td><span data-unit="handler-032">
+      <code>
+      <a href="https://developer.android.com/reference/android/os/Handler#Handler()">Handler</a>()
+      </code>
+
+        </span><p data-unit="handler-033"><em>
+      This constructor is deprecated.
+    Implicitly choosing a Looper during Handler construction can lead to bugs
+  where operations are silently lost (if the Handler is not expecting new tasks and quits),
+  crashes (if a handler is sometimes created on a thread without a Looper active), or race
+  conditions, where the thread a handler is associated with is not what the author
+  anticipated. Instead, use an <code><a href="https://developer.android.com/reference/java/util/concurrent/Executor">Executor</a></code> or specify the Looper
+  explicitly, using <code><a href="https://developer.android.com/reference/android/os/Looper#getMainLooper()">Looper.getMainLooper</a></code>, <code><a href="https://developer.android.com/reference/android/view/View#getHandler()">View.getHandler()</a></code>, or
+  similar. If the implicit thread local behavior is required for compatibility, use
+  <code>new Handler(Looper.myLooper())</code> to make it clear to readers.</em>
+
+
+</p></td></tr><tr><td><span data-unit="handler-034">
+      <code>
+      <a href="https://developer.android.com/reference/android/os/Handler#Handler(android.os.Handler.Callback)">Handler</a>(<a href="https://developer.android.com/reference/android/os/Handler.Callback">Handler.Callback</a> callback)
+      </code>
+
+        </span><p data-unit="handler-035"><em>
+      This constructor is deprecated.
+    Implicitly choosing a Looper during Handler construction can lead to bugs
+  where operations are silently lost (if the Handler is not expecting new tasks and quits),
+  crashes (if a handler is sometimes created on a thread without a Looper active), or race
+  conditions, where the thread a handler is associated with is not what the author
+  anticipated. Instead, use an <code><a href="https://developer.android.com/reference/java/util/concurrent/Executor">Executor</a></code> or specify the Looper
+  explicitly, using <code><a href="https://developer.android.com/reference/android/os/Looper#getMainLooper()">Looper.getMainLooper</a></code>, <code><a href="https://developer.android.com/reference/android/view/View#getHandler()">View.getHandler()</a></code>, or
+  similar. If the implicit thread local behavior is required for compatibility, use
+  <code>new Handler(Looper.myLooper(), callback)</code> to make it clear to readers.</em>
+
+
+</p></td></tr><tr><td><span data-unit="handler-036">
+      <code>
+      <a href="https://developer.android.com/reference/android/os/Handler#Handler(android.os.Looper)">Handler</a>(<a href="https://developer.android.com/reference/android/os/Looper">Looper</a> looper)
+      </code>
+
+        </span><p data-unit="handler-037">Use the provided <code><a href="https://developer.android.com/reference/android/os/Looper">Looper</a></code> instead of the default one.
+
+
+</p></td></tr><tr><td><span data-unit="handler-038">
+      <code>
+      <a href="https://developer.android.com/reference/android/os/Handler#Handler(android.os.Looper,%20android.os.Handler.Callback)">Handler</a>(<a href="https://developer.android.com/reference/android/os/Looper">Looper</a> looper, <a href="https://developer.android.com/reference/android/os/Handler.Callback">Handler.Callback</a> callback)
+      </code>
+
+        </span><p data-unit="handler-039">Use the provided <code><a href="https://developer.android.com/reference/android/os/Looper">Looper</a></code> instead of the default one and take a callback
+interface in which to handle messages.
+
+
+</p></td></tr></tbody></table></div><div class="table-wrapper" tabindex="0"><table id="pubmethods" class="responsive methods"><tbody><tr><th colspan="2"><h3 id="public-methods" data-unit="handler-040">Public methods</h3></th></tr><tr><td data-unit="handler-041"><code>
+
+
+        static
+
+
+        <a href="https://developer.android.com/reference/android/os/Handler">Handler</a></code>
+    </td><td><span data-unit="handler-042">
+      <code>
+      <a href="https://developer.android.com/reference/android/os/Handler#createAsync(android.os.Looper,%20android.os.Handler.Callback)">createAsync</a>(<a href="https://developer.android.com/reference/android/os/Looper">Looper</a> looper, <a href="https://developer.android.com/reference/android/os/Handler.Callback">Handler.Callback</a> callback)
+      </code>
+
+        </span><p data-unit="handler-043">Create a new Handler whose posted messages and runnables are not subject to
+synchronization barriers such as display vsync.
+
+
+</p></td></tr><tr><td data-unit="handler-044"><code>
+
+
+        static
+
+
+        <a href="https://developer.android.com/reference/android/os/Handler">Handler</a></code>
+    </td><td><span data-unit="handler-045">
+      <code>
+      <a href="https://developer.android.com/reference/android/os/Handler#createAsync(android.os.Looper)">createAsync</a>(<a href="https://developer.android.com/reference/android/os/Looper">Looper</a> looper)
+      </code>
+
+        </span><p data-unit="handler-046">Create a new Handler whose posted messages and runnables are not subject to
+synchronization barriers such as display vsync.
+
+
+</p></td></tr><tr><td data-unit="handler-047"><code>
 
 
 
-</span></div></article><nav class="chapter-switcher" aria-label="章节导航"><a href="../threads/english.html">← 进程与线程概览</a><a class="course-home" href="../index.html">全部章节</a><a href="../memory/english.html">内存管理概览 →</a></nav><footer class="license-note"><p>本阅读版为 Android Developers 英文文档所选范围的非官方中文译文。原文由 Android Developers / Android Open Source Project 维护；原代码、原图及其标识保留。<a href="../NOTICE.html">来源与许可说明</a>。</p></footer></main></body></html>
+
+
+        void</code>
+    </td><td><span data-unit="handler-048">
+      <code>
+      <a href="https://developer.android.com/reference/android/os/Handler#dispatchMessage(android.os.Message)">dispatchMessage</a>(<a href="https://developer.android.com/reference/android/os/Message">Message</a> msg)
+      </code>
+
+        </span><p data-unit="handler-049">Handle system messages here.
+
+
+</p></td></tr><tr><td data-unit="handler-050"><code>
+
+
+
+        final
+
+        void</code>
+    </td><td data-unit="handler-051">
+      <code>
+      <a href="https://developer.android.com/reference/android/os/Handler#dump(android.util.Printer,%20java.lang.String)">dump</a>(<a href="https://developer.android.com/reference/android/util/Printer">Printer</a> pw, <a href="https://developer.android.com/reference/java/lang/String">String</a> prefix)
+      </code>
+
+    </td></tr><tr><td data-unit="handler-052"><code>
+
+
+
+        final
+
+        <a href="https://developer.android.com/reference/android/os/Looper">Looper</a></code>
+    </td><td data-unit="handler-053">
+      <code>
+      <a href="https://developer.android.com/reference/android/os/Handler#getLooper()">getLooper</a>()
+      </code>
+
+    </td></tr><tr><td data-unit="handler-054"><code>
+
+
+
+
+
+        <a href="https://developer.android.com/reference/java/lang/String">String</a></code>
+    </td><td><span data-unit="handler-055">
+      <code>
+      <a href="https://developer.android.com/reference/android/os/Handler#getMessageName(android.os.Message)">getMessageName</a>(<a href="https://developer.android.com/reference/android/os/Message">Message</a> message)
+      </code>
+
+        </span><p data-unit="handler-056">Returns a string representing the name of the specified message.
+
+
+</p></td></tr><tr><td data-unit="handler-057"><code>
+
+
+
+
+
+        void</code>
+    </td><td><span data-unit="handler-058">
+      <code>
+      <a href="https://developer.android.com/reference/android/os/Handler#handleMessage(android.os.Message)">handleMessage</a>(<a href="https://developer.android.com/reference/android/os/Message">Message</a> msg)
+      </code>
+
+        </span><p data-unit="handler-059">Subclasses must implement this to receive messages.
+
+
+</p></td></tr><tr><td data-unit="handler-060"><code>
+
+
+
+        final
+
+        boolean</code>
+    </td><td><span data-unit="handler-061">
+      <code>
+      <a href="https://developer.android.com/reference/android/os/Handler#hasCallbacks(java.lang.Runnable)">hasCallbacks</a>(<a href="https://developer.android.com/reference/java/lang/Runnable">Runnable</a> r)
+      </code>
+
+        </span><p data-unit="handler-062">Check if there are any pending posts of messages with callback r in
+the message queue.
+
+
+</p></td></tr><tr><td data-unit="handler-063"><code>
+
+
+
+        final
+
+        boolean</code>
+    </td><td><span data-unit="handler-064">
+      <code>
+      <a href="https://developer.android.com/reference/android/os/Handler#hasMessages(int)">hasMessages</a>(int what)
+      </code>
+
+        </span><p data-unit="handler-065">Check if there are any pending posts of messages with code 'what' in
+the message queue.
+
+
+</p></td></tr><tr><td data-unit="handler-066"><code>
+
+
+
+        final
+
+        boolean</code>
+    </td><td><span data-unit="handler-067">
+      <code>
+      <a href="https://developer.android.com/reference/android/os/Handler#hasMessages(int,%20java.lang.Object)">hasMessages</a>(int what, <a href="https://developer.android.com/reference/java/lang/Object">Object</a> object)
+      </code>
+
+        </span><p data-unit="handler-068">Check if there are any pending posts of messages with code 'what' and
+whose obj is 'object' in the message queue.
+
+
+</p></td></tr><tr><td data-unit="handler-069"><code>
+
+
+
+        final
+
+        <a href="https://developer.android.com/reference/android/os/Message">Message</a></code>
+    </td><td><span data-unit="handler-070">
+      <code>
+      <a href="https://developer.android.com/reference/android/os/Handler#obtainMessage(int,%20java.lang.Object)">obtainMessage</a>(int what, <a href="https://developer.android.com/reference/java/lang/Object">Object</a> obj)
+      </code>
+
+        </span><p data-unit="handler-071">Same as <code><a href="https://developer.android.com/reference/android/os/Handler#obtainMessage()">obtainMessage()</a></code>, except that it also sets the what and obj members
+of the returned Message.
+
+
+</p></td></tr><tr><td data-unit="handler-072"><code>
+
+
+
+        final
+
+        <a href="https://developer.android.com/reference/android/os/Message">Message</a></code>
+    </td><td><span data-unit="handler-073">
+      <code>
+      <a href="https://developer.android.com/reference/android/os/Handler#obtainMessage()">obtainMessage</a>()
+      </code>
+
+        </span><p data-unit="handler-074">Returns a new <code><a href="https://developer.android.com/reference/android/os/Message">Message</a></code> from the global message pool.
+
+
+</p></td></tr><tr><td data-unit="handler-075"><code>
+
+
+
+        final
+
+        <a href="https://developer.android.com/reference/android/os/Message">Message</a></code>
+    </td><td><span data-unit="handler-076">
+      <code>
+      <a href="https://developer.android.com/reference/android/os/Handler#obtainMessage(int,%20int,%20int)">obtainMessage</a>(int what, int arg1, int arg2)
+      </code>
+
+        </span><p data-unit="handler-077">Same as <code><a href="https://developer.android.com/reference/android/os/Handler#obtainMessage()">obtainMessage()</a></code>, except that it also sets the what, arg1 and arg2 members of the returned
+Message.
+
+
+</p></td></tr><tr><td data-unit="handler-078"><code>
+
+
+
+        final
+
+        <a href="https://developer.android.com/reference/android/os/Message">Message</a></code>
+    </td><td><span data-unit="handler-079">
+      <code>
+      <a href="https://developer.android.com/reference/android/os/Handler#obtainMessage(int,%20int,%20int,%20java.lang.Object)">obtainMessage</a>(int what, int arg1, int arg2, <a href="https://developer.android.com/reference/java/lang/Object">Object</a> obj)
+      </code>
+
+        </span><p data-unit="handler-080">Same as <code><a href="https://developer.android.com/reference/android/os/Handler#obtainMessage()">obtainMessage()</a></code>, except that it also sets the what, obj, arg1,and arg2 values on the
+returned Message.
+
+
+</p></td></tr><tr><td data-unit="handler-081"><code>
+
+
+
+        final
+
+        <a href="https://developer.android.com/reference/android/os/Message">Message</a></code>
+    </td><td><span data-unit="handler-082">
+      <code>
+      <a href="https://developer.android.com/reference/android/os/Handler#obtainMessage(int)">obtainMessage</a>(int what)
+      </code>
+
+        </span><p data-unit="handler-083">Same as <code><a href="https://developer.android.com/reference/android/os/Handler#obtainMessage()">obtainMessage()</a></code>, except that it also sets the what member of the returned Message.
+
+
+</p></td></tr><tr><td data-unit="handler-084"><code>
+
+
+
+        final
+
+        boolean</code>
+    </td><td><span data-unit="handler-085">
+      <code>
+      <a href="https://developer.android.com/reference/android/os/Handler#post(java.lang.Runnable)">post</a>(<a href="https://developer.android.com/reference/java/lang/Runnable">Runnable</a> r)
+      </code>
+
+        </span><p data-unit="handler-086">Causes the Runnable r to be added to the message queue.
+
+
+</p></td></tr><tr><td data-unit="handler-087"><code>
+
+
+
+        final
+
+        boolean</code>
+    </td><td><span data-unit="handler-088">
+      <code>
+      <a href="https://developer.android.com/reference/android/os/Handler#postAtFrontOfQueue(java.lang.Runnable)">postAtFrontOfQueue</a>(<a href="https://developer.android.com/reference/java/lang/Runnable">Runnable</a> r)
+      </code>
+
+        </span><p data-unit="handler-089">Posts a message to an object that implements Runnable.
+
+
+</p></td></tr><tr><td data-unit="handler-090"><code>
+
+
+
+        final
+
+        boolean</code>
+    </td><td><span data-unit="handler-091">
+      <code>
+      <a href="https://developer.android.com/reference/android/os/Handler#postAtTime(java.lang.Runnable,%20long)">postAtTime</a>(<a href="https://developer.android.com/reference/java/lang/Runnable">Runnable</a> r, long uptimeMillis)
+      </code>
+
+        </span><p data-unit="handler-092">Causes the Runnable r to be added to the message queue, to be run
+at a specific time given by <var>uptimeMillis</var>.
+
+
+</p></td></tr><tr><td data-unit="handler-093"><code>
+
+
+
+        final
+
+        boolean</code>
+    </td><td><span data-unit="handler-094">
+      <code>
+      <a href="https://developer.android.com/reference/android/os/Handler#postAtTime(java.lang.Runnable,%20java.lang.Object,%20long)">postAtTime</a>(<a href="https://developer.android.com/reference/java/lang/Runnable">Runnable</a> r, <a href="https://developer.android.com/reference/java/lang/Object">Object</a> token, long uptimeMillis)
+      </code>
+
+        </span><p data-unit="handler-095">Causes the Runnable r to be added to the message queue, to be run
+at a specific time given by <var>uptimeMillis</var>.
+
+
+</p></td></tr><tr><td data-unit="handler-096"><code>
+
+
+
+        final
+
+        boolean</code>
+    </td><td><span data-unit="handler-097">
+      <code>
+      <a href="https://developer.android.com/reference/android/os/Handler#postDelayed(java.lang.Runnable,%20long)">postDelayed</a>(<a href="https://developer.android.com/reference/java/lang/Runnable">Runnable</a> r, long delayMillis)
+      </code>
+
+        </span><p data-unit="handler-098">Causes the Runnable r to be added to the message queue, to be run
+after the specified amount of time elapses.
+
+
+</p></td></tr><tr><td data-unit="handler-099"><code>
+
+
+
+        final
+
+        boolean</code>
+    </td><td><span data-unit="handler-100">
+      <code>
+      <a href="https://developer.android.com/reference/android/os/Handler#postDelayed(java.lang.Runnable,%20java.lang.Object,%20long)">postDelayed</a>(<a href="https://developer.android.com/reference/java/lang/Runnable">Runnable</a> r, <a href="https://developer.android.com/reference/java/lang/Object">Object</a> token, long delayMillis)
+      </code>
+
+        </span><p data-unit="handler-101">Causes the Runnable r to be added to the message queue, to be run
+after the specified amount of time elapses.
+
+
+</p></td></tr><tr><td data-unit="handler-102"><code>
+
+
+
+        final
+
+        void</code>
+    </td><td><span data-unit="handler-103">
+      <code>
+      <a href="https://developer.android.com/reference/android/os/Handler#removeCallbacks(java.lang.Runnable)">removeCallbacks</a>(<a href="https://developer.android.com/reference/java/lang/Runnable">Runnable</a> r)
+      </code>
+
+        </span><p data-unit="handler-104">Remove any pending posts of Runnable r that are in the message queue.
+
+
+</p></td></tr><tr><td data-unit="handler-105"><code>
+
+
+
+        final
+
+        void</code>
+    </td><td><span data-unit="handler-106">
+      <code>
+      <a href="https://developer.android.com/reference/android/os/Handler#removeCallbacks(java.lang.Runnable,%20java.lang.Object)">removeCallbacks</a>(<a href="https://developer.android.com/reference/java/lang/Runnable">Runnable</a> r, <a href="https://developer.android.com/reference/java/lang/Object">Object</a> token)
+      </code>
+
+        </span><p data-unit="handler-107">Remove any pending posts of Runnable <var>r</var> with Object
+<var>token</var> that are in the message queue.
+
+
+</p></td></tr><tr><td data-unit="handler-108"><code>
+
+
+
+        final
+
+        void</code>
+    </td><td><span data-unit="handler-109">
+      <code>
+      <a href="https://developer.android.com/reference/android/os/Handler#removeCallbacksAndMessages(java.lang.Object)">removeCallbacksAndMessages</a>(<a href="https://developer.android.com/reference/java/lang/Object">Object</a> token)
+      </code>
+
+        </span><p data-unit="handler-110">Remove any pending posts of callbacks and sent messages whose
+<var>obj</var> is <var>token</var>.
+
+
+</p></td></tr><tr><td data-unit="handler-111"><code>
+
+
+
+        final
+
+        void</code>
+    </td><td><span data-unit="handler-112">
+      <code>
+      <a href="https://developer.android.com/reference/android/os/Handler#removeMessages(int)">removeMessages</a>(int what)
+      </code>
+
+        </span><p data-unit="handler-113">Remove any pending posts of messages with code 'what' that are in the
+message queue.
+
+
+</p></td></tr><tr><td data-unit="handler-114"><code>
+
+
+
+        final
+
+        void</code>
+    </td><td><span data-unit="handler-115">
+      <code>
+      <a href="https://developer.android.com/reference/android/os/Handler#removeMessages(int,%20java.lang.Object)">removeMessages</a>(int what, <a href="https://developer.android.com/reference/java/lang/Object">Object</a> object)
+      </code>
+
+        </span><p data-unit="handler-116">Remove any pending posts of messages with code 'what' and whose obj is
+'object' that are in the message queue.
+
+
+</p></td></tr><tr><td data-unit="handler-117"><code>
+
+
+
+        final
+
+        boolean</code>
+    </td><td><span data-unit="handler-118">
+      <code>
+      <a href="https://developer.android.com/reference/android/os/Handler#sendEmptyMessage(int)">sendEmptyMessage</a>(int what)
+      </code>
+
+        </span><p data-unit="handler-119">Sends a Message containing only the what value.
+
+
+</p></td></tr><tr><td data-unit="handler-120"><code>
+
+
+
+        final
+
+        boolean</code>
+    </td><td><span data-unit="handler-121">
+      <code>
+      <a href="https://developer.android.com/reference/android/os/Handler#sendEmptyMessageAtTime(int,%20long)">sendEmptyMessageAtTime</a>(int what, long uptimeMillis)
+      </code>
+
+        </span><p data-unit="handler-122">Sends a Message containing only the what value, to be delivered
+at a specific time.
+
+
+</p></td></tr><tr><td data-unit="handler-123"><code>
+
+
+
+        final
+
+        boolean</code>
+    </td><td><span data-unit="handler-124">
+      <code>
+      <a href="https://developer.android.com/reference/android/os/Handler#sendEmptyMessageDelayed(int,%20long)">sendEmptyMessageDelayed</a>(int what, long delayMillis)
+      </code>
+
+        </span><p data-unit="handler-125">Sends a Message containing only the what value, to be delivered
+after the specified amount of time elapses.
+
+
+</p></td></tr><tr><td data-unit="handler-126"><code>
+
+
+
+        final
+
+        boolean</code>
+    </td><td><span data-unit="handler-127">
+      <code>
+      <a href="https://developer.android.com/reference/android/os/Handler#sendMessage(android.os.Message)">sendMessage</a>(<a href="https://developer.android.com/reference/android/os/Message">Message</a> msg)
+      </code>
+
+        </span><p data-unit="handler-128">Pushes a message onto the end of the message queue after all pending messages
+before the current time.
+
+
+</p></td></tr><tr><td data-unit="handler-129"><code>
+
+
+
+        final
+
+        boolean</code>
+    </td><td><span data-unit="handler-130">
+      <code>
+      <a href="https://developer.android.com/reference/android/os/Handler#sendMessageAtFrontOfQueue(android.os.Message)">sendMessageAtFrontOfQueue</a>(<a href="https://developer.android.com/reference/android/os/Message">Message</a> msg)
+      </code>
+
+        </span><p data-unit="handler-131">Enqueue a message at the front of the message queue, to be processed on
+the next iteration of the message loop.
+
+
+</p></td></tr><tr><td data-unit="handler-132"><code>
+
+
+
+
+
+        boolean</code>
+    </td><td><span data-unit="handler-133">
+      <code>
+      <a href="https://developer.android.com/reference/android/os/Handler#sendMessageAtTime(android.os.Message,%20long)">sendMessageAtTime</a>(<a href="https://developer.android.com/reference/android/os/Message">Message</a> msg, long uptimeMillis)
+      </code>
+
+        </span><p data-unit="handler-134">Enqueue a message into the message queue after all pending messages
+before the absolute time (in milliseconds) <var>uptimeMillis</var>.
+
+
+</p></td></tr><tr><td data-unit="handler-135"><code>
+
+
+
+        final
+
+        boolean</code>
+    </td><td><span data-unit="handler-136">
+      <code>
+      <a href="https://developer.android.com/reference/android/os/Handler#sendMessageDelayed(android.os.Message,%20long)">sendMessageDelayed</a>(<a href="https://developer.android.com/reference/android/os/Message">Message</a> msg, long delayMillis)
+      </code>
+
+        </span><p data-unit="handler-137">Enqueue a message into the message queue after all pending messages
+before (current time + delayMillis).
+
+
+</p></td></tr><tr><td data-unit="handler-138"><code>
+
+
+
+
+
+        <a href="https://developer.android.com/reference/java/lang/String">String</a></code>
+    </td><td><span data-unit="handler-139">
+      <code>
+      <a href="https://developer.android.com/reference/android/os/Handler#toString()">toString</a>()
+      </code>
+
+        </span><p data-unit="handler-140">Returns a string representation of the object.
+
+
+</p></td></tr></tbody></table></div><div class="table-wrapper" tabindex="0"><table id="inhmethods" class="responsive methods inhtable"><tbody><tr><th><h3 id="inherited-methods" data-unit="handler-141">Inherited methods</h3></th></tr><tr><td colspan="2"><div class="expandable jd-inherited-apis"><span data-unit="handler-142">
+    <span class="expand-control">From class
+      <code>
+
+          <a href="https://developer.android.com/reference/java/lang/Object">java.lang.Object</a>
+
+      </code>
+    </span>
+    </span><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><td data-unit="handler-143"><code>
+
+
+
+
+
+        <a href="https://developer.android.com/reference/java/lang/Object">Object</a></code>
+    </td><td><span data-unit="handler-144">
+      <code>
+      <a href="https://developer.android.com/reference/java/lang/Object#clone()">clone</a>()
+      </code>
+
+        </span><p data-unit="handler-145">Creates and returns a copy of this object.
+
+
+</p></td></tr><tr><td data-unit="handler-146"><code>
+
+
+
+
+
+        boolean</code>
+    </td><td><span data-unit="handler-147">
+      <code>
+      <a href="https://developer.android.com/reference/java/lang/Object#equals(java.lang.Object)">equals</a>(<a href="https://developer.android.com/reference/java/lang/Object">Object</a> obj)
+      </code>
+
+        </span><p data-unit="handler-148">Indicates whether some other object is "equal to" this one.
+
+
+</p></td></tr><tr><td data-unit="handler-149"><code>
+
+
+
+
+
+        void</code>
+    </td><td><span data-unit="handler-150">
+      <code>
+      <a href="https://developer.android.com/reference/java/lang/Object#finalize()">finalize</a>()
+      </code>
+
+        </span><p data-unit="handler-151">Called by the garbage collector on an object when garbage collection
+determines that there are no more references to the object.
+
+
+</p></td></tr><tr><td data-unit="handler-152"><code>
+
+
+
+        final
+
+        <a href="https://developer.android.com/reference/java/lang/Class">Class</a>&lt;?&gt;</code>
+    </td><td><span data-unit="handler-153">
+      <code>
+      <a href="https://developer.android.com/reference/java/lang/Object#getClass()">getClass</a>()
+      </code>
+
+        </span><p data-unit="handler-154">Returns the runtime class of this <code>Object</code>.
+
+
+</p></td></tr><tr><td data-unit="handler-155"><code>
+
+
+
+
+
+        int</code>
+    </td><td><span data-unit="handler-156">
+      <code>
+      <a href="https://developer.android.com/reference/java/lang/Object#hashCode()">hashCode</a>()
+      </code>
+
+        </span><p data-unit="handler-157">Returns a hash code value for the object.
+
+
+</p></td></tr><tr><td data-unit="handler-158"><code>
+
+
+
+        final
+
+        void</code>
+    </td><td><span data-unit="handler-159">
+      <code>
+      <a href="https://developer.android.com/reference/java/lang/Object#notify()">notify</a>()
+      </code>
+
+        </span><p data-unit="handler-160">Wakes up a single thread that is waiting on this object's
+monitor.
+
+
+</p></td></tr><tr><td data-unit="handler-161"><code>
+
+
+
+        final
+
+        void</code>
+    </td><td><span data-unit="handler-162">
+      <code>
+      <a href="https://developer.android.com/reference/java/lang/Object#notifyAll()">notifyAll</a>()
+      </code>
+
+        </span><p data-unit="handler-163">Wakes up all threads that are waiting on this object's monitor.
+
+
+</p></td></tr><tr><td data-unit="handler-164"><code>
+
+
+
+
+
+        <a href="https://developer.android.com/reference/java/lang/String">String</a></code>
+    </td><td><span data-unit="handler-165">
+      <code>
+      <a href="https://developer.android.com/reference/java/lang/Object#toString()">toString</a>()
+      </code>
+
+        </span><p data-unit="handler-166">Returns a string representation of the object.
+
+
+</p></td></tr><tr><td data-unit="handler-167"><code>
+
+
+
+        final
+
+        void</code>
+    </td><td><span data-unit="handler-168">
+      <code>
+      <a href="https://developer.android.com/reference/java/lang/Object#wait(long,%20int)">wait</a>(long timeoutMillis, int nanos)
+      </code>
+
+        </span><p data-unit="handler-169">Causes the current thread to wait until it is awakened, typically
+by being <em>notified</em> or <em>interrupted</em>, or until a
+certain amount of real time has elapsed.
+
+
+</p></td></tr><tr><td data-unit="handler-170"><code>
+
+
+
+        final
+
+        void</code>
+    </td><td><span data-unit="handler-171">
+      <code>
+      <a href="https://developer.android.com/reference/java/lang/Object#wait(long)">wait</a>(long timeoutMillis)
+      </code>
+
+        </span><p data-unit="handler-172">Causes the current thread to wait until it is awakened, typically
+by being <em>notified</em> or <em>interrupted</em>, or until a
+certain amount of real time has elapsed.
+
+
+</p></td></tr><tr><td data-unit="handler-173"><code>
+
+
+
+        final
+
+        void</code>
+    </td><td><span data-unit="handler-174">
+      <code>
+      <a href="https://developer.android.com/reference/java/lang/Object#wait()">wait</a>()
+      </code>
+
+        </span><p data-unit="handler-175">Causes the current thread to wait until it is awakened, typically
+by being <em>notified</em> or <em>interrupted</em>.
+
+
+</p></td></tr></tbody></table></div></div></td></tr></tbody></table></div><h2 class="api-section" id="public-constructors_1" data-unit="handler-176">Public constructors</h2><div><h3 class="api-name" id="Handler()" data-unit="handler-177">Handler</h3><div class="api-level"><div data-unit="handler-178">
+    Added in <a href="https://developer.android.com/guide/topics/manifest/uses-sdk-element#ApiLevels">API level 1</a>
+  </div></div><div></div><div class="code-block"><pre><code>public Handler ()</code></pre></div><p>
+  </p><p class="caution" data-unit="handler-179"><strong>
+      This constructor is deprecated.</strong><br>
+    Implicitly choosing a Looper during Handler construction can lead to bugs
+  where operations are silently lost (if the Handler is not expecting new tasks and quits),
+  crashes (if a handler is sometimes created on a thread without a Looper active), or race
+  conditions, where the thread a handler is associated with is not what the author
+  anticipated. Instead, use an <code><a href="https://developer.android.com/reference/java/util/concurrent/Executor">Executor</a></code> or specify the Looper
+  explicitly, using <code><a href="https://developer.android.com/reference/android/os/Looper#getMainLooper()">Looper.getMainLooper</a></code>, <code><a href="https://developer.android.com/reference/android/view/View#getHandler()">View.getHandler()</a></code>, or
+  similar. If the implicit thread local behavior is required for compatibility, use
+  <code>new Handler(Looper.myLooper())</code> to make it clear to readers.
+  </p><p data-unit="handler-180">Default constructor associates this handler with the <code><a href="https://developer.android.com/reference/android/os/Looper">Looper</a></code> for the
+current thread.
+
+If this thread does not have a looper, this handler won't be able to receive messages
+so an exception is thrown.</p><p></p></div><div><h3 class="api-name" id="Handler(android.os.Handler.Callback)" data-unit="handler-181">Handler</h3><div class="api-level"><div data-unit="handler-182">
+    Added in <a href="https://developer.android.com/guide/topics/manifest/uses-sdk-element#ApiLevels">API level 3</a>
+  </div></div><div></div><div class="code-block"><pre><code>public Handler (Handler.Callback callback)</code></pre></div><p>
+  </p><p class="caution" data-unit="handler-183"><strong>
+      This constructor is deprecated.</strong><br>
+    Implicitly choosing a Looper during Handler construction can lead to bugs
+  where operations are silently lost (if the Handler is not expecting new tasks and quits),
+  crashes (if a handler is sometimes created on a thread without a Looper active), or race
+  conditions, where the thread a handler is associated with is not what the author
+  anticipated. Instead, use an <code><a href="https://developer.android.com/reference/java/util/concurrent/Executor">Executor</a></code> or specify the Looper
+  explicitly, using <code><a href="https://developer.android.com/reference/android/os/Looper#getMainLooper()">Looper.getMainLooper</a></code>, <code><a href="https://developer.android.com/reference/android/view/View#getHandler()">View.getHandler()</a></code>, or
+  similar. If the implicit thread local behavior is required for compatibility, use
+  <code>new Handler(Looper.myLooper(), callback)</code> to make it clear to readers.
+  </p><p data-unit="handler-184">Constructor associates this handler with the <code><a href="https://developer.android.com/reference/android/os/Looper">Looper</a></code> for the
+current thread and takes a callback interface in which you can handle
+messages.
+
+If this thread does not have a looper, this handler won't be able to receive messages
+so an exception is thrown.</p><p></p><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-185">Parameters</th></tr><tr><td data-unit="handler-186"><code>callback</code></td><td><span data-unit="handler-187">
+          <code>Handler.Callback</code>: The callback interface in which to handle messages, or null.</span><p></p></td></tr></tbody></table></div></div><div><h3 class="api-name" id="Handler(android.os.Looper)" data-unit="handler-188">Handler</h3><div class="api-level"><div data-unit="handler-189">
+    Added in <a href="https://developer.android.com/guide/topics/manifest/uses-sdk-element#ApiLevels">API level 1</a>
+  </div></div><div></div><div class="code-block"><pre><code>public Handler (Looper looper)</code></pre></div><p data-unit="handler-190">Use the provided <code><a href="https://developer.android.com/reference/android/os/Looper">Looper</a></code> instead of the default one.</p><p></p><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-191">Parameters</th></tr><tr><td data-unit="handler-192"><code>looper</code></td><td><span data-unit="handler-193">
+          <code>Looper</code>: The looper, must not be null.</span><p></p></td></tr></tbody></table></div></div><div><h3 class="api-name" id="Handler(android.os.Looper,%20android.os.Handler.Callback)" data-unit="handler-194">Handler</h3><div class="api-level"><div data-unit="handler-195">
+    Added in <a href="https://developer.android.com/guide/topics/manifest/uses-sdk-element#ApiLevels">API level 3</a>
+  </div></div><div></div><div class="code-block"><pre><code>public Handler (Looper looper,&#32;
+                Handler.Callback callback)</code></pre></div><p data-unit="handler-196">Use the provided <code><a href="https://developer.android.com/reference/android/os/Looper">Looper</a></code> instead of the default one and take a callback
+interface in which to handle messages.</p><p></p><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-197">Parameters</th></tr><tr><td data-unit="handler-198"><code>looper</code></td><td><span data-unit="handler-199">
+          <code>Looper</code>: The looper, must not be null.</span><p></p></td></tr><tr><td data-unit="handler-200"><code>callback</code></td><td><span data-unit="handler-201">
+          <code>Handler.Callback</code>: The callback interface in which to handle messages, or null.</span><p></p></td></tr></tbody></table></div></div><h2 class="api-section" id="public-methods_1" data-unit="handler-202">Public methods</h2><div><h3 class="api-name" id="createAsync(android.os.Looper,%20android.os.Handler.Callback)" data-unit="handler-203">createAsync</h3><div class="api-level"><div data-unit="handler-204">
+    Added in <a href="https://developer.android.com/guide/topics/manifest/uses-sdk-element#ApiLevels">API level 28</a>
+  </div></div><div></div><div class="code-block"><pre><code>public static Handler createAsync (Looper looper,&#32;
+                Handler.Callback callback)</code></pre></div><p data-unit="handler-205">Create a new Handler whose posted messages and runnables are not subject to
+synchronization barriers such as display vsync.
+
+</p><p data-unit="handler-206">Messages sent to an async handler are guaranteed to be ordered with respect to one another,
+but not necessarily with respect to messages from other Handlers.</p><p></p><p></p><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-207">Parameters</th></tr><tr><td data-unit="handler-208"><code>looper</code></td><td><span data-unit="handler-209">
+          <code>Looper</code>: the Looper that the new Handler should be bound to.
+<br>
+This value cannot be <code>null</code>.</span><p></p></td></tr><tr><td data-unit="handler-210"><code>callback</code></td><td><span data-unit="handler-211">
+          <code>Handler.Callback</code>: This value cannot be <code>null</code>.</span><p></p></td></tr></tbody></table></div><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-212">Returns</th></tr><tr><td data-unit="handler-213"><code><a href="https://developer.android.com/reference/android/os/Handler">Handler</a></code></td><td><span data-unit="handler-214">a new async Handler instance.
+<br>
+This value cannot be <code>null</code>.</span><p></p></td></tr></tbody></table></div><div><p data-unit="handler-215"><b>See also:</b></p><ul class="nolist"><li data-unit="handler-216"><code><a href="https://developer.android.com/reference/android/os/Handler#createAsync(android.os.Looper)">to create an async Handler without custom message handling.</a></code></li></ul></div></div><div><h3 class="api-name" id="createAsync(android.os.Looper)" data-unit="handler-217">createAsync</h3><div class="api-level"><div data-unit="handler-218">
+    Added in <a href="https://developer.android.com/guide/topics/manifest/uses-sdk-element#ApiLevels">API level 28</a>
+  </div></div><div></div><div class="code-block"><pre><code>public static Handler createAsync (Looper looper)</code></pre></div><p data-unit="handler-219">Create a new Handler whose posted messages and runnables are not subject to
+synchronization barriers such as display vsync.
+
+</p><p data-unit="handler-220">Messages sent to an async handler are guaranteed to be ordered with respect to one another,
+but not necessarily with respect to messages from other Handlers.</p><p></p><p></p><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-221">Parameters</th></tr><tr><td data-unit="handler-222"><code>looper</code></td><td><span data-unit="handler-223">
+          <code>Looper</code>: the Looper that the new Handler should be bound to.
+<br>
+This value cannot be <code>null</code>.</span><p></p></td></tr></tbody></table></div><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-224">Returns</th></tr><tr><td data-unit="handler-225"><code><a href="https://developer.android.com/reference/android/os/Handler">Handler</a></code></td><td><span data-unit="handler-226">a new async Handler instance.
+<br>
+This value cannot be <code>null</code>.</span><p></p></td></tr></tbody></table></div><div><p data-unit="handler-227"><b>See also:</b></p><ul class="nolist"><li data-unit="handler-228"><code><a href="https://developer.android.com/reference/android/os/Handler#createAsync(android.os.Looper,%20android.os.Handler.Callback)">to create an async Handler with custom message handling.</a></code></li></ul></div></div><div><h3 class="api-name" id="dispatchMessage(android.os.Message)" data-unit="handler-229">dispatchMessage</h3><div class="api-level"><div data-unit="handler-230">
+    Added in <a href="https://developer.android.com/guide/topics/manifest/uses-sdk-element#ApiLevels">API level 1</a>
+  </div></div><div></div><div class="code-block"><pre><code>public void dispatchMessage (Message msg)</code></pre></div><p data-unit="handler-231">Handle system messages here.</p><p></p><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-232">Parameters</th></tr><tr><td data-unit="handler-233"><code>msg</code></td><td><span data-unit="handler-234">
+          <code>Message</code>: This value cannot be <code>null</code>.</span><p></p></td></tr></tbody></table></div></div><div><h3 class="api-name" id="dump(android.util.Printer,%20java.lang.String)" data-unit="handler-235">dump</h3><div class="api-level"><div data-unit="handler-236">
+    Added in <a href="https://developer.android.com/guide/topics/manifest/uses-sdk-element#ApiLevels">API level 1</a>
+  </div></div><div></div><div class="code-block"><pre><code>public final void dump (Printer pw,&#32;
+                String prefix)</code></pre></div><p></p><p></p><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-237">Parameters</th></tr><tr><td data-unit="handler-238"><code>pw</code></td><td><span data-unit="handler-239">
+          <code>Printer</code>: This value cannot be <code>null</code>.</span><p></p></td></tr><tr><td data-unit="handler-240"><code>prefix</code></td><td><span data-unit="handler-241">
+          <code>String</code>: This value cannot be <code>null</code>.</span><p></p></td></tr></tbody></table></div></div><div><h3 class="api-name" id="getLooper()" data-unit="handler-242">getLooper</h3><div class="api-level"><div data-unit="handler-243">
+    Added in <a href="https://developer.android.com/guide/topics/manifest/uses-sdk-element#ApiLevels">API level 1</a>
+  </div></div><div></div><div class="code-block"><pre><code>public final Looper getLooper ()</code></pre></div><p></p><p></p><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-244">Returns</th></tr><tr><td data-unit="handler-245"><code><a href="https://developer.android.com/reference/android/os/Looper">Looper</a></code></td><td><span data-unit="handler-246">This value cannot be <code>null</code>.</span><p></p></td></tr></tbody></table></div></div><div><h3 class="api-name" id="getMessageName(android.os.Message)" data-unit="handler-247">getMessageName</h3><div class="api-level"><div data-unit="handler-248">
+    Added in <a href="https://developer.android.com/guide/topics/manifest/uses-sdk-element#ApiLevels">API level 14</a>
+  </div></div><div></div><div class="code-block"><pre><code>public String getMessageName (Message message)</code></pre></div><p data-unit="handler-249">Returns a string representing the name of the specified message.
+The default implementation will either return the class name of the
+message callback if any, or the hexadecimal representation of the
+message "what" field.</p><p></p><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-250">Parameters</th></tr><tr><td data-unit="handler-251"><code>message</code></td><td><span data-unit="handler-252">
+          <code>Message</code>: The message whose name is being queried.
+<br>
+This value cannot be <code>null</code>.</span><p></p></td></tr></tbody></table></div><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-253">Returns</th></tr><tr><td data-unit="handler-254"><code><a href="https://developer.android.com/reference/java/lang/String">String</a></code></td><td><span data-unit="handler-255">This value cannot be <code>null</code>.</span><p></p></td></tr></tbody></table></div></div><div><h3 class="api-name" id="handleMessage(android.os.Message)" data-unit="handler-256">handleMessage</h3><div class="api-level"><div data-unit="handler-257">
+    Added in <a href="https://developer.android.com/guide/topics/manifest/uses-sdk-element#ApiLevels">API level 1</a>
+  </div></div><div></div><div class="code-block"><pre><code>public void handleMessage (Message msg)</code></pre></div><p data-unit="handler-258">Subclasses must implement this to receive messages.</p><p></p><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-259">Parameters</th></tr><tr><td data-unit="handler-260"><code>msg</code></td><td><span data-unit="handler-261">
+          <code>Message</code>: This value cannot be <code>null</code>.</span><p></p></td></tr></tbody></table></div></div><div><h3 class="api-name" id="hasCallbacks(java.lang.Runnable)" data-unit="handler-262">hasCallbacks</h3><div class="api-level"><div data-unit="handler-263">
+    Added in <a href="https://developer.android.com/guide/topics/manifest/uses-sdk-element#ApiLevels">API level 29</a>
+  </div></div><div></div><div class="code-block"><pre><code>public final boolean hasCallbacks (Runnable r)</code></pre></div><p data-unit="handler-264">Check if there are any pending posts of messages with callback r in
+the message queue.
+
+</p><p data-unit="handler-265">This operation is worst case O(n) in the number of messages in the queue, and should be
+avoided. Instead consider another mechanism outside of the queue to track if messages were
+enqueued and dispatched. For instance, maintain a counter, incrementing it when enqueuing a
+message and decrementing it when handling a message.</p><p></p><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-266">Parameters</th></tr><tr><td data-unit="handler-267"><code>r</code></td><td><span data-unit="handler-268">
+          <code>Runnable</code>: This value cannot be <code>null</code>.</span><p></p></td></tr></tbody></table></div><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-269">Returns</th></tr><tr><td data-unit="handler-270"><code>boolean</code></td><td><p></p></td></tr></tbody></table></div></div><div><h3 class="api-name" id="hasMessages(int)" data-unit="handler-271">hasMessages</h3><div class="api-level"><div data-unit="handler-272">
+    Added in <a href="https://developer.android.com/guide/topics/manifest/uses-sdk-element#ApiLevels">API level 1</a>
+  </div></div><div></div><div class="code-block"><pre><code>public final boolean hasMessages (int what)</code></pre></div><p data-unit="handler-273">Check if there are any pending posts of messages with code 'what' in
+the message queue.
+
+</p><p data-unit="handler-274">This operation is worst case O(n) in the number of messages in the queue, and should be
+avoided. Instead consider another mechanism outside of the queue to track if messages were
+enqueued and dispatched. For instance, maintain a counter, incrementing it when enqueuing a
+message and decrementing it when handling a message.</p><p></p><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-275">Parameters</th></tr><tr><td data-unit="handler-276"><code>what</code></td><td><span data-unit="handler-277">
+          <code>int</code> </span><p></p></td></tr></tbody></table></div><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-278">Returns</th></tr><tr><td data-unit="handler-279"><code>boolean</code></td><td><p></p></td></tr></tbody></table></div></div><div><h3 class="api-name" id="hasMessages(int,%20java.lang.Object)" data-unit="handler-280">hasMessages</h3><div class="api-level"><div data-unit="handler-281">
+    Added in <a href="https://developer.android.com/guide/topics/manifest/uses-sdk-element#ApiLevels">API level 1</a>
+  </div></div><div></div><div class="code-block"><pre><code>public final boolean hasMessages (int what,&#32;
+                Object object)</code></pre></div><p data-unit="handler-282">Check if there are any pending posts of messages with code 'what' and
+whose obj is 'object' in the message queue.
+
+</p><p data-unit="handler-283">This operation is worst case O(n) in the number of messages in the queue, and should be
+avoided. Instead consider another mechanism outside of the queue to track if messages were
+enqueued and dispatched. For instance, maintain a counter, incrementing it when enqueuing a
+message and decrementing it when handling a message.</p><p></p><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-284">Parameters</th></tr><tr><td data-unit="handler-285"><code>what</code></td><td><span data-unit="handler-286">
+          <code>int</code> </span><p></p></td></tr><tr><td data-unit="handler-287"><code>object</code></td><td><span data-unit="handler-288">
+          <code>Object</code>: This value may be <code>null</code>.</span><p></p></td></tr></tbody></table></div><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-289">Returns</th></tr><tr><td data-unit="handler-290"><code>boolean</code></td><td><p></p></td></tr></tbody></table></div></div><div><h3 class="api-name" id="obtainMessage(int,%20java.lang.Object)" data-unit="handler-291">obtainMessage</h3><div class="api-level"><div data-unit="handler-292">
+    Added in <a href="https://developer.android.com/guide/topics/manifest/uses-sdk-element#ApiLevels">API level 1</a>
+  </div></div><div></div><div class="code-block"><pre><code>public final Message obtainMessage (int what,&#32;
+                Object obj)</code></pre></div><p data-unit="handler-293">Same as <code><a href="https://developer.android.com/reference/android/os/Handler#obtainMessage()">obtainMessage()</a></code>, except that it also sets the what and obj members
+of the returned Message.</p><p></p><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-294">Parameters</th></tr><tr><td data-unit="handler-295"><code>what</code></td><td><span data-unit="handler-296">
+          <code>int</code>: Value to assign to the returned Message.what field.</span><p></p></td></tr><tr><td data-unit="handler-297"><code>obj</code></td><td><span data-unit="handler-298">
+          <code>Object</code>: Value to assign to the returned Message.obj field.
+<br>
+This value may be <code>null</code>.</span><p></p></td></tr></tbody></table></div><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-299">Returns</th></tr><tr><td data-unit="handler-300"><code><a href="https://developer.android.com/reference/android/os/Message">Message</a></code></td><td><span data-unit="handler-301">A Message from the global message pool.
+<br>
+This value cannot be <code>null</code>.</span><p></p></td></tr></tbody></table></div></div><div><h3 class="api-name" id="obtainMessage()" data-unit="handler-302">obtainMessage</h3><div class="api-level"><div data-unit="handler-303">
+    Added in <a href="https://developer.android.com/guide/topics/manifest/uses-sdk-element#ApiLevels">API level 1</a>
+  </div></div><div></div><div class="code-block"><pre><code>public final Message obtainMessage ()</code></pre></div><p data-unit="handler-304">Returns a new <code><a href="https://developer.android.com/reference/android/os/Message">Message</a></code> from the global message pool. More efficient than
+creating and allocating new instances. The retrieved message has its handler set to this instance (Message.target == this).
+ If you don't want that facility, just call Message.obtain() instead.</p><p></p><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-305">Returns</th></tr><tr><td data-unit="handler-306"><code><a href="https://developer.android.com/reference/android/os/Message">Message</a></code></td><td><span data-unit="handler-307">This value cannot be <code>null</code>.</span><p></p></td></tr></tbody></table></div></div><div><h3 class="api-name" id="obtainMessage(int,%20int,%20int)" data-unit="handler-308">obtainMessage</h3><div class="api-level"><div data-unit="handler-309">
+    Added in <a href="https://developer.android.com/guide/topics/manifest/uses-sdk-element#ApiLevels">API level 1</a>
+  </div></div><div></div><div class="code-block"><pre><code>public final Message obtainMessage (int what,&#32;
+                int arg1,&#32;
+                int arg2)</code></pre></div><p data-unit="handler-310">Same as <code><a href="https://developer.android.com/reference/android/os/Handler#obtainMessage()">obtainMessage()</a></code>, except that it also sets the what, arg1 and arg2 members of the returned
+Message.</p><p></p><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-311">Parameters</th></tr><tr><td data-unit="handler-312"><code>what</code></td><td><span data-unit="handler-313">
+          <code>int</code>: Value to assign to the returned Message.what field.</span><p></p></td></tr><tr><td data-unit="handler-314"><code>arg1</code></td><td><span data-unit="handler-315">
+          <code>int</code>: Value to assign to the returned Message.arg1 field.</span><p></p></td></tr><tr><td data-unit="handler-316"><code>arg2</code></td><td><span data-unit="handler-317">
+          <code>int</code>: Value to assign to the returned Message.arg2 field.</span><p></p></td></tr></tbody></table></div><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-318">Returns</th></tr><tr><td data-unit="handler-319"><code><a href="https://developer.android.com/reference/android/os/Message">Message</a></code></td><td><span data-unit="handler-320">A Message from the global message pool.
+<br>
+This value cannot be <code>null</code>.</span><p></p></td></tr></tbody></table></div></div><div><h3 class="api-name" id="obtainMessage(int,%20int,%20int,%20java.lang.Object)" data-unit="handler-321">obtainMessage</h3><div class="api-level"><div data-unit="handler-322">
+    Added in <a href="https://developer.android.com/guide/topics/manifest/uses-sdk-element#ApiLevels">API level 1</a>
+  </div></div><div></div><div class="code-block"><pre><code>public final Message obtainMessage (int what,&#32;
+                int arg1,&#32;
+                int arg2,&#32;
+                Object obj)</code></pre></div><p data-unit="handler-323">Same as <code><a href="https://developer.android.com/reference/android/os/Handler#obtainMessage()">obtainMessage()</a></code>, except that it also sets the what, obj, arg1,and arg2 values on the
+returned Message.</p><p></p><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-324">Parameters</th></tr><tr><td data-unit="handler-325"><code>what</code></td><td><span data-unit="handler-326">
+          <code>int</code>: Value to assign to the returned Message.what field.</span><p></p></td></tr><tr><td data-unit="handler-327"><code>arg1</code></td><td><span data-unit="handler-328">
+          <code>int</code>: Value to assign to the returned Message.arg1 field.</span><p></p></td></tr><tr><td data-unit="handler-329"><code>arg2</code></td><td><span data-unit="handler-330">
+          <code>int</code>: Value to assign to the returned Message.arg2 field.</span><p></p></td></tr><tr><td data-unit="handler-331"><code>obj</code></td><td><span data-unit="handler-332">
+          <code>Object</code>: Value to assign to the returned Message.obj field.
+<br>
+This value may be <code>null</code>.</span><p></p></td></tr></tbody></table></div><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-333">Returns</th></tr><tr><td data-unit="handler-334"><code><a href="https://developer.android.com/reference/android/os/Message">Message</a></code></td><td><span data-unit="handler-335">A Message from the global message pool.
+<br>
+This value cannot be <code>null</code>.</span><p></p></td></tr></tbody></table></div></div><div><h3 class="api-name" id="obtainMessage(int)" data-unit="handler-336">obtainMessage</h3><div class="api-level"><div data-unit="handler-337">
+    Added in <a href="https://developer.android.com/guide/topics/manifest/uses-sdk-element#ApiLevels">API level 1</a>
+  </div></div><div></div><div class="code-block"><pre><code>public final Message obtainMessage (int what)</code></pre></div><p data-unit="handler-338">Same as <code><a href="https://developer.android.com/reference/android/os/Handler#obtainMessage()">obtainMessage()</a></code>, except that it also sets the what member of the returned Message.</p><p></p><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-339">Parameters</th></tr><tr><td data-unit="handler-340"><code>what</code></td><td><span data-unit="handler-341">
+          <code>int</code>: Value to assign to the returned Message.what field.</span><p></p></td></tr></tbody></table></div><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-342">Returns</th></tr><tr><td data-unit="handler-343"><code><a href="https://developer.android.com/reference/android/os/Message">Message</a></code></td><td><span data-unit="handler-344">A Message from the global message pool.
+<br>
+This value cannot be <code>null</code>.</span><p></p></td></tr></tbody></table></div></div><div><h3 class="api-name" id="post(java.lang.Runnable)" data-unit="handler-345">post</h3><div class="api-level"><div data-unit="handler-346">
+    Added in <a href="https://developer.android.com/guide/topics/manifest/uses-sdk-element#ApiLevels">API level 1</a>
+  </div></div><div></div><div class="code-block"><pre><code>public final boolean post (Runnable r)</code></pre></div><p data-unit="handler-347">Causes the Runnable r to be added to the message queue.
+The runnable will be run on the thread to which this handler is
+attached.</p><p></p><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-348">Parameters</th></tr><tr><td data-unit="handler-349"><code>r</code></td><td><span data-unit="handler-350">
+          <code>Runnable</code>: The Runnable that will be executed.
+<br>
+This value cannot be <code>null</code>.</span><p></p></td></tr></tbody></table></div><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-351">Returns</th></tr><tr><td data-unit="handler-352"><code>boolean</code></td><td><span data-unit="handler-353">Returns true if the Runnable was successfully placed in to the
+        message queue.  Returns false on failure, usually because the
+        looper processing the message queue is exiting.</span><p></p></td></tr></tbody></table></div></div><div><h3 class="api-name" id="postAtFrontOfQueue(java.lang.Runnable)" data-unit="handler-354">postAtFrontOfQueue</h3><div class="api-level"><div data-unit="handler-355">
+    Added in <a href="https://developer.android.com/guide/topics/manifest/uses-sdk-element#ApiLevels">API level 1</a>
+  </div></div><div></div><div class="code-block"><pre><code>public final boolean postAtFrontOfQueue (Runnable r)</code></pre></div><p data-unit="handler-356">Posts a message to an object that implements Runnable.
+Causes the Runnable r to executed on the next iteration through the
+message queue. The runnable will be run on the thread to which this
+handler is attached.
+<b>This method is only for use in very special circumstances -- it
+can easily starve the message queue, cause ordering problems, or have
+other unexpected side-effects.</b></p><p></p><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-357">Parameters</th></tr><tr><td data-unit="handler-358"><code>r</code></td><td><span data-unit="handler-359">
+          <code>Runnable</code>: The Runnable that will be executed.
+<br>
+This value cannot be <code>null</code>.</span><p></p></td></tr></tbody></table></div><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-360">Returns</th></tr><tr><td data-unit="handler-361"><code>boolean</code></td><td><span data-unit="handler-362">Returns true if the message was successfully placed in to the
+        message queue.  Returns false on failure, usually because the
+        looper processing the message queue is exiting.</span><p></p></td></tr></tbody></table></div></div><div><h3 class="api-name" id="postAtTime(java.lang.Runnable,%20long)" data-unit="handler-363">postAtTime</h3><div class="api-level"><div data-unit="handler-364">
+    Added in <a href="https://developer.android.com/guide/topics/manifest/uses-sdk-element#ApiLevels">API level 1</a>
+  </div></div><div></div><div class="code-block"><pre><code>public final boolean postAtTime (Runnable r,&#32;
+                long uptimeMillis)</code></pre></div><p data-unit="handler-365">Causes the Runnable r to be added to the message queue, to be run
+at a specific time given by <var>uptimeMillis</var>.
+<b>The time-base is <code><a href="https://developer.android.com/reference/android/os/SystemClock#uptimeMillis()">SystemClock.uptimeMillis()</a></code>.</b>
+Time spent in deep sleep will add an additional delay to execution.
+The runnable will be run on the thread to which this handler is attached.</p><p></p><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-366">Parameters</th></tr><tr><td data-unit="handler-367"><code>r</code></td><td><span data-unit="handler-368">
+          <code>Runnable</code>: The Runnable that will be executed.
+<br>
+This value cannot be <code>null</code>.</span><p></p></td></tr><tr><td data-unit="handler-369"><code>uptimeMillis</code></td><td><span data-unit="handler-370">
+          <code>long</code>: The absolute time at which the callback should run,
+        using the <code><a href="https://developer.android.com/reference/android/os/SystemClock#uptimeMillis()">SystemClock.uptimeMillis()</a></code> time-base.</span><p></p></td></tr></tbody></table></div><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-371">Returns</th></tr><tr><td data-unit="handler-372"><code>boolean</code></td><td><span data-unit="handler-373">Returns true if the Runnable was successfully placed in to the
+        message queue.  Returns false on failure, usually because the
+        looper processing the message queue is exiting.  Note that a
+        result of true does not mean the Runnable will be processed -- if
+        the looper is quit before the delivery time of the message
+        occurs then the message will be dropped.</span><p></p></td></tr></tbody></table></div></div><div><h3 class="api-name" id="postAtTime(java.lang.Runnable,%20java.lang.Object,%20long)" data-unit="handler-374">postAtTime</h3><div class="api-level"><div data-unit="handler-375">
+    Added in <a href="https://developer.android.com/guide/topics/manifest/uses-sdk-element#ApiLevels">API level 1</a>
+  </div></div><div></div><div class="code-block"><pre><code>public final boolean postAtTime (Runnable r,&#32;
+                Object token,&#32;
+                long uptimeMillis)</code></pre></div><p data-unit="handler-376">Causes the Runnable r to be added to the message queue, to be run
+at a specific time given by <var>uptimeMillis</var>.
+<b>The time-base is <code><a href="https://developer.android.com/reference/android/os/SystemClock#uptimeMillis()">SystemClock.uptimeMillis()</a></code>.</b>
+Time spent in deep sleep will add an additional delay to execution.
+The runnable will be run on the thread to which this handler is attached.</p><p></p><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-377">Parameters</th></tr><tr><td data-unit="handler-378"><code>r</code></td><td><span data-unit="handler-379">
+          <code>Runnable</code>: The Runnable that will be executed.
+<br>
+This value cannot be <code>null</code>.</span><p></p></td></tr><tr><td data-unit="handler-380"><code>token</code></td><td><span data-unit="handler-381">
+          <code>Object</code>: An instance which can be used to cancel <code>r</code> via
+        <code><a href="https://developer.android.com/reference/android/os/Handler#removeCallbacksAndMessages(java.lang.Object)">removeCallbacksAndMessages(Object)</a></code>.
+<br>
+This value may be <code>null</code>.</span><p></p></td></tr><tr><td data-unit="handler-382"><code>uptimeMillis</code></td><td><span data-unit="handler-383">
+          <code>long</code>: The absolute time at which the callback should run,
+        using the <code><a href="https://developer.android.com/reference/android/os/SystemClock#uptimeMillis()">SystemClock.uptimeMillis()</a></code> time-base.</span><p></p></td></tr></tbody></table></div><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-384">Returns</th></tr><tr><td data-unit="handler-385"><code>boolean</code></td><td><span data-unit="handler-386">Returns true if the Runnable was successfully placed in to the
+        message queue.  Returns false on failure, usually because the
+        looper processing the message queue is exiting.  Note that a
+        result of true does not mean the Runnable will be processed -- if
+        the looper is quit before the delivery time of the message
+        occurs then the message will be dropped.</span><p></p></td></tr></tbody></table></div><div><p data-unit="handler-387"><b>See also:</b></p><ul class="nolist"><li data-unit="handler-388"><code><a href="https://developer.android.com/reference/android/os/SystemClock#uptimeMillis()">SystemClock.uptimeMillis()</a></code></li></ul></div></div><div><h3 class="api-name" id="postDelayed(java.lang.Runnable,%20long)" data-unit="handler-389">postDelayed</h3><div class="api-level"><div data-unit="handler-390">
+    Added in <a href="https://developer.android.com/guide/topics/manifest/uses-sdk-element#ApiLevels">API level 1</a>
+  </div></div><div></div><div class="code-block"><pre><code>public final boolean postDelayed (Runnable r,&#32;
+                long delayMillis)</code></pre></div><p data-unit="handler-391">Causes the Runnable r to be added to the message queue, to be run
+after the specified amount of time elapses.
+The runnable will be run on the thread to which this handler
+is attached.
+<b>The time-base is <code><a href="https://developer.android.com/reference/android/os/SystemClock#uptimeMillis()">SystemClock.uptimeMillis()</a></code>.</b>
+Time spent in deep sleep will add an additional delay to execution.</p><p></p><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-392">Parameters</th></tr><tr><td data-unit="handler-393"><code>r</code></td><td><span data-unit="handler-394">
+          <code>Runnable</code>: The Runnable that will be executed.
+<br>
+This value cannot be <code>null</code>.</span><p></p></td></tr><tr><td data-unit="handler-395"><code>delayMillis</code></td><td><span data-unit="handler-396">
+          <code>long</code>: The delay (in milliseconds) until the Runnable
+       will be executed.</span><p></p></td></tr></tbody></table></div><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-397">Returns</th></tr><tr><td data-unit="handler-398"><code>boolean</code></td><td><span data-unit="handler-399">Returns true if the Runnable was successfully placed in to the
+        message queue.  Returns false on failure, usually because the
+        looper processing the message queue is exiting.  Note that a
+        result of true does not mean the Runnable will be processed --
+        if the looper is quit before the delivery time of the message
+        occurs then the message will be dropped.</span><p></p></td></tr></tbody></table></div></div><div><h3 class="api-name" id="postDelayed(java.lang.Runnable,%20java.lang.Object,%20long)" data-unit="handler-400">postDelayed</h3><div class="api-level"><div data-unit="handler-401">
+    Added in <a href="https://developer.android.com/guide/topics/manifest/uses-sdk-element#ApiLevels">API level 28</a>
+  </div></div><div></div><div class="code-block"><pre><code>public final boolean postDelayed (Runnable r,&#32;
+                Object token,&#32;
+                long delayMillis)</code></pre></div><p data-unit="handler-402">Causes the Runnable r to be added to the message queue, to be run
+after the specified amount of time elapses.
+The runnable will be run on the thread to which this handler
+is attached.
+<b>The time-base is <code><a href="https://developer.android.com/reference/android/os/SystemClock#uptimeMillis()">SystemClock.uptimeMillis()</a></code>.</b>
+Time spent in deep sleep will add an additional delay to execution.</p><p></p><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-403">Parameters</th></tr><tr><td data-unit="handler-404"><code>r</code></td><td><span data-unit="handler-405">
+          <code>Runnable</code>: The Runnable that will be executed.
+<br>
+This value cannot be <code>null</code>.</span><p></p></td></tr><tr><td data-unit="handler-406"><code>token</code></td><td><span data-unit="handler-407">
+          <code>Object</code>: An instance which can be used to cancel <code>r</code> via
+        <code><a href="https://developer.android.com/reference/android/os/Handler#removeCallbacksAndMessages(java.lang.Object)">removeCallbacksAndMessages(Object)</a></code>.
+<br>
+This value may be <code>null</code>.</span><p></p></td></tr><tr><td data-unit="handler-408"><code>delayMillis</code></td><td><span data-unit="handler-409">
+          <code>long</code>: The delay (in milliseconds) until the Runnable
+       will be executed.</span><p></p></td></tr></tbody></table></div><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-410">Returns</th></tr><tr><td data-unit="handler-411"><code>boolean</code></td><td><span data-unit="handler-412">Returns true if the Runnable was successfully placed in to the
+        message queue.  Returns false on failure, usually because the
+        looper processing the message queue is exiting.  Note that a
+        result of true does not mean the Runnable will be processed --
+        if the looper is quit before the delivery time of the message
+        occurs then the message will be dropped.</span><p></p></td></tr></tbody></table></div></div><div><h3 class="api-name" id="removeCallbacks(java.lang.Runnable)" data-unit="handler-413">removeCallbacks</h3><div class="api-level"><div data-unit="handler-414">
+    Added in <a href="https://developer.android.com/guide/topics/manifest/uses-sdk-element#ApiLevels">API level 1</a>
+  </div></div><div></div><div class="code-block"><pre><code>public final void removeCallbacks (Runnable r)</code></pre></div><p data-unit="handler-415">Remove any pending posts of Runnable r that are in the message queue.
+
+</p><p data-unit="handler-416">This operation is worst case O(n) in the number of messages in the queue, and should be
+avoided. Instead consider another mechanism outside of the queue to cancel a pending
+operation. For instance, maintain a flag to indicate whether the operation should be
+performed differently or not at all once it is dispatched.</p><p></p><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-417">Parameters</th></tr><tr><td data-unit="handler-418"><code>r</code></td><td><span data-unit="handler-419">
+          <code>Runnable</code>: This value cannot be <code>null</code>.</span><p></p></td></tr></tbody></table></div></div><div><h3 class="api-name" id="removeCallbacks(java.lang.Runnable,%20java.lang.Object)" data-unit="handler-420">removeCallbacks</h3><div class="api-level"><div data-unit="handler-421">
+    Added in <a href="https://developer.android.com/guide/topics/manifest/uses-sdk-element#ApiLevels">API level 1</a>
+  </div></div><div></div><div class="code-block"><pre><code>public final void removeCallbacks (Runnable r,&#32;
+                Object token)</code></pre></div><p data-unit="handler-422">Remove any pending posts of Runnable <var>r</var> with Object
+<var>token</var> that are in the message queue.  If <var>token</var> is null,
+all callbacks will be removed.
+
+</p><p data-unit="handler-423">This operation is worst case O(n) in the number of messages in the queue, and should be
+avoided. Instead consider another mechanism outside of the queue to cancel a pending
+operation. For instance, maintain a flag to indicate whether the operation should be
+performed differently or not at all once it is dispatched.</p><p></p><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-424">Parameters</th></tr><tr><td data-unit="handler-425"><code>r</code></td><td><span data-unit="handler-426">
+          <code>Runnable</code>: This value cannot be <code>null</code>.</span><p></p></td></tr><tr><td data-unit="handler-427"><code>token</code></td><td><span data-unit="handler-428">
+          <code>Object</code>: This value may be <code>null</code>.</span><p></p></td></tr></tbody></table></div></div><div><h3 class="api-name" id="removeCallbacksAndMessages(java.lang.Object)" data-unit="handler-429">removeCallbacksAndMessages</h3><div class="api-level"><div data-unit="handler-430">
+    Added in <a href="https://developer.android.com/guide/topics/manifest/uses-sdk-element#ApiLevels">API level 1</a>
+  </div></div><div></div><div class="code-block"><pre><code>public final void removeCallbacksAndMessages (Object token)</code></pre></div><p data-unit="handler-431">Remove any pending posts of callbacks and sent messages whose
+<var>obj</var> is <var>token</var>.  If <var>token</var> is null,
+all callbacks and messages will be removed.</p><p></p><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-432">Parameters</th></tr><tr><td data-unit="handler-433"><code>token</code></td><td><span data-unit="handler-434">
+          <code>Object</code>: This value may be <code>null</code>.</span><p></p></td></tr></tbody></table></div></div><div><h3 class="api-name" id="removeMessages(int)" data-unit="handler-435">removeMessages</h3><div class="api-level"><div data-unit="handler-436">
+    Added in <a href="https://developer.android.com/guide/topics/manifest/uses-sdk-element#ApiLevels">API level 1</a>
+  </div></div><div></div><div class="code-block"><pre><code>public final void removeMessages (int what)</code></pre></div><p data-unit="handler-437">Remove any pending posts of messages with code 'what' that are in the
+message queue.
+
+Note that `Message#what` is 0 unless otherwise set.
+When calling `postMessage(Runnable)` or `postAtTime(Runnable, long)`,
+the `Runnable` is internally wrapped with a `Message` whose `what` is 0.
+Calling `removeMessages(0)` will remove all messages without a `what`,
+including posted `Runnable`s.
+
+</p><p data-unit="handler-438">This operation is worst case O(n) in the number of messages in the queue, and should be
+avoided. Instead consider another mechanism outside of the queue to cancel a pending
+operation. For instance, maintain a flag to indicate whether the operation should be
+performed differently or not at all once it is dispatched.</p><p></p><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-439">Parameters</th></tr><tr><td data-unit="handler-440"><code>what</code></td><td><span data-unit="handler-441">
+          <code>int</code> </span><p></p></td></tr></tbody></table></div></div><div><h3 class="api-name" id="removeMessages(int,%20java.lang.Object)" data-unit="handler-442">removeMessages</h3><div class="api-level"><div data-unit="handler-443">
+    Added in <a href="https://developer.android.com/guide/topics/manifest/uses-sdk-element#ApiLevels">API level 1</a>
+  </div></div><div></div><div class="code-block"><pre><code>public final void removeMessages (int what,&#32;
+                Object object)</code></pre></div><p data-unit="handler-444">Remove any pending posts of messages with code 'what' and whose obj is
+'object' that are in the message queue.  If <var>object</var> is null,
+all messages will be removed.
+
+</p><p data-unit="handler-445">This operation is worst case O(n) in the number of messages in the queue, and should be
+avoided. Instead consider another mechanism outside of the queue to cancel a pending
+operation. For instance, maintain a flag to indicate whether the operation should be
+performed differently or not at all once it is dispatched.</p><p></p><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-446">Parameters</th></tr><tr><td data-unit="handler-447"><code>what</code></td><td><span data-unit="handler-448">
+          <code>int</code> </span><p></p></td></tr><tr><td data-unit="handler-449"><code>object</code></td><td><span data-unit="handler-450">
+          <code>Object</code>: This value may be <code>null</code>.</span><p></p></td></tr></tbody></table></div></div><div><h3 class="api-name" id="sendEmptyMessage(int)" data-unit="handler-451">sendEmptyMessage</h3><div class="api-level"><div data-unit="handler-452">
+    Added in <a href="https://developer.android.com/guide/topics/manifest/uses-sdk-element#ApiLevels">API level 1</a>
+  </div></div><div></div><div class="code-block"><pre><code>public final boolean sendEmptyMessage (int what)</code></pre></div><p data-unit="handler-453">Sends a Message containing only the what value.</p><p></p><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-454">Parameters</th></tr><tr><td data-unit="handler-455"><code>what</code></td><td><span data-unit="handler-456">
+          <code>int</code> </span><p></p></td></tr></tbody></table></div><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-457">Returns</th></tr><tr><td data-unit="handler-458"><code>boolean</code></td><td><span data-unit="handler-459">Returns true if the message was successfully placed in to the
+        message queue.  Returns false on failure, usually because the
+        looper processing the message queue is exiting.</span><p></p></td></tr></tbody></table></div></div><div><h3 class="api-name" id="sendEmptyMessageAtTime(int,%20long)" data-unit="handler-460">sendEmptyMessageAtTime</h3><div class="api-level"><div data-unit="handler-461">
+    Added in <a href="https://developer.android.com/guide/topics/manifest/uses-sdk-element#ApiLevels">API level 1</a>
+  </div></div><div></div><div class="code-block"><pre><code>public final boolean sendEmptyMessageAtTime (int what,&#32;
+                long uptimeMillis)</code></pre></div><p data-unit="handler-462">Sends a Message containing only the what value, to be delivered
+at a specific time.</p><p></p><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-463">Parameters</th></tr><tr><td data-unit="handler-464"><code>what</code></td><td><span data-unit="handler-465">
+          <code>int</code> </span><p></p></td></tr><tr><td data-unit="handler-466"><code>uptimeMillis</code></td><td><span data-unit="handler-467">
+          <code>long</code> </span><p></p></td></tr></tbody></table></div><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-468">Returns</th></tr><tr><td data-unit="handler-469"><code>boolean</code></td><td><span data-unit="handler-470">Returns true if the message was successfully placed in to the
+        message queue.  Returns false on failure, usually because the
+        looper processing the message queue is exiting.</span><p></p></td></tr></tbody></table></div><div><p data-unit="handler-471"><b>See also:</b></p><ul class="nolist"><li data-unit="handler-472"><code><a href="https://developer.android.com/reference/android/os/Handler#sendMessageAtTime(android.os.Message,%20long)">sendMessageAtTime(android.os.Message, long)</a></code></li></ul></div></div><div><h3 class="api-name" id="sendEmptyMessageDelayed(int,%20long)" data-unit="handler-473">sendEmptyMessageDelayed</h3><div class="api-level"><div data-unit="handler-474">
+    Added in <a href="https://developer.android.com/guide/topics/manifest/uses-sdk-element#ApiLevels">API level 1</a>
+  </div></div><div></div><div class="code-block"><pre><code>public final boolean sendEmptyMessageDelayed (int what,&#32;
+                long delayMillis)</code></pre></div><p data-unit="handler-475">Sends a Message containing only the what value, to be delivered
+after the specified amount of time elapses.</p><p></p><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-476">Parameters</th></tr><tr><td data-unit="handler-477"><code>what</code></td><td><span data-unit="handler-478">
+          <code>int</code> </span><p></p></td></tr><tr><td data-unit="handler-479"><code>delayMillis</code></td><td><span data-unit="handler-480">
+          <code>long</code> </span><p></p></td></tr></tbody></table></div><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-481">Returns</th></tr><tr><td data-unit="handler-482"><code>boolean</code></td><td><span data-unit="handler-483">Returns true if the message was successfully placed in to the
+        message queue.  Returns false on failure, usually because the
+        looper processing the message queue is exiting.</span><p></p></td></tr></tbody></table></div><div><p data-unit="handler-484"><b>See also:</b></p><ul class="nolist"><li data-unit="handler-485"><code><a href="https://developer.android.com/reference/android/os/Handler#sendMessageDelayed(android.os.Message,%20long)">sendMessageDelayed(android.os.Message, long)</a></code></li></ul></div></div><div><h3 class="api-name" id="sendMessage(android.os.Message)" data-unit="handler-486">sendMessage</h3><div class="api-level"><div data-unit="handler-487">
+    Added in <a href="https://developer.android.com/guide/topics/manifest/uses-sdk-element#ApiLevels">API level 1</a>
+  </div></div><div></div><div class="code-block"><pre><code>public final boolean sendMessage (Message msg)</code></pre></div><p data-unit="handler-488">Pushes a message onto the end of the message queue after all pending messages
+before the current time. It will be received in <code><a href="https://developer.android.com/reference/android/os/Handler#handleMessage(android.os.Message)">handleMessage(Message)</a></code>,
+in the thread attached to this handler.</p><p></p><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-489">Parameters</th></tr><tr><td data-unit="handler-490"><code>msg</code></td><td><span data-unit="handler-491">
+          <code>Message</code>: This value cannot be <code>null</code>.</span><p></p></td></tr></tbody></table></div><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-492">Returns</th></tr><tr><td data-unit="handler-493"><code>boolean</code></td><td><span data-unit="handler-494">Returns true if the message was successfully placed in to the
+        message queue.  Returns false on failure, usually because the
+        looper processing the message queue is exiting.</span><p></p></td></tr></tbody></table></div></div><div><h3 class="api-name" id="sendMessageAtFrontOfQueue(android.os.Message)" data-unit="handler-495">sendMessageAtFrontOfQueue</h3><div class="api-level"><div data-unit="handler-496">
+    Added in <a href="https://developer.android.com/guide/topics/manifest/uses-sdk-element#ApiLevels">API level 1</a>
+  </div></div><div></div><div class="code-block"><pre><code>public final boolean sendMessageAtFrontOfQueue (Message msg)</code></pre></div><p data-unit="handler-497">Enqueue a message at the front of the message queue, to be processed on
+the next iteration of the message loop.  You will receive it in
+<code><a href="https://developer.android.com/reference/android/os/Handler#handleMessage(android.os.Message)">handleMessage(Message)</a></code>, in the thread attached to this handler.
+<b>This method is only for use in very special circumstances -- it
+can easily starve the message queue, cause ordering problems, or have
+other unexpected side-effects.</b></p><p></p><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-498">Parameters</th></tr><tr><td data-unit="handler-499"><code>msg</code></td><td><span data-unit="handler-500">
+          <code>Message</code>: This value cannot be <code>null</code>.</span><p></p></td></tr></tbody></table></div><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-501">Returns</th></tr><tr><td data-unit="handler-502"><code>boolean</code></td><td><span data-unit="handler-503">Returns true if the message was successfully placed in to the
+        message queue.  Returns false on failure, usually because the
+        looper processing the message queue is exiting.</span><p></p></td></tr></tbody></table></div></div><div><h3 class="api-name" id="sendMessageAtTime(android.os.Message,%20long)" data-unit="handler-504">sendMessageAtTime</h3><div class="api-level"><div data-unit="handler-505">
+    Added in <a href="https://developer.android.com/guide/topics/manifest/uses-sdk-element#ApiLevels">API level 1</a>
+  </div></div><div></div><div class="code-block"><pre><code>public boolean sendMessageAtTime (Message msg,&#32;
+                long uptimeMillis)</code></pre></div><p data-unit="handler-506">Enqueue a message into the message queue after all pending messages
+before the absolute time (in milliseconds) <var>uptimeMillis</var>.
+<b>The time-base is <code><a href="https://developer.android.com/reference/android/os/SystemClock#uptimeMillis()">SystemClock.uptimeMillis()</a></code>.</b>
+Time spent in deep sleep will add an additional delay to execution.
+You will receive it in <code><a href="https://developer.android.com/reference/android/os/Handler#handleMessage(android.os.Message)">handleMessage(Message)</a></code>, in the thread attached
+to this handler.</p><p></p><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-507">Parameters</th></tr><tr><td data-unit="handler-508"><code>msg</code></td><td><span data-unit="handler-509">
+          <code>Message</code>: This value cannot be <code>null</code>.</span><p></p></td></tr><tr><td data-unit="handler-510"><code>uptimeMillis</code></td><td><span data-unit="handler-511">
+          <code>long</code>: The absolute time at which the message should be
+        delivered, using the
+        <code><a href="https://developer.android.com/reference/android/os/SystemClock#uptimeMillis()">SystemClock.uptimeMillis()</a></code> time-base.</span><p></p></td></tr></tbody></table></div><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-512">Returns</th></tr><tr><td data-unit="handler-513"><code>boolean</code></td><td><span data-unit="handler-514">Returns true if the message was successfully placed in to the
+        message queue.  Returns false on failure, usually because the
+        looper processing the message queue is exiting.  Note that a
+        result of true does not mean the message will be processed -- if
+        the looper is quit before the delivery time of the message
+        occurs then the message will be dropped.</span><p></p></td></tr></tbody></table></div></div><div><h3 class="api-name" id="sendMessageDelayed(android.os.Message,%20long)" data-unit="handler-515">sendMessageDelayed</h3><div class="api-level"><div data-unit="handler-516">
+    Added in <a href="https://developer.android.com/guide/topics/manifest/uses-sdk-element#ApiLevels">API level 1</a>
+  </div></div><div></div><div class="code-block"><pre><code>public final boolean sendMessageDelayed (Message msg,&#32;
+                long delayMillis)</code></pre></div><p data-unit="handler-517">Enqueue a message into the message queue after all pending messages
+before (current time + delayMillis). You will receive it in
+<code><a href="https://developer.android.com/reference/android/os/Handler#handleMessage(android.os.Message)">handleMessage(Message)</a></code>, in the thread attached to this handler.</p><p></p><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-518">Parameters</th></tr><tr><td data-unit="handler-519"><code>msg</code></td><td><span data-unit="handler-520">
+          <code>Message</code>: This value cannot be <code>null</code>.</span><p></p></td></tr><tr><td data-unit="handler-521"><code>delayMillis</code></td><td><span data-unit="handler-522">
+          <code>long</code> </span><p></p></td></tr></tbody></table></div><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-523">Returns</th></tr><tr><td data-unit="handler-524"><code>boolean</code></td><td><span data-unit="handler-525">Returns true if the message was successfully placed in to the
+        message queue.  Returns false on failure, usually because the
+        looper processing the message queue is exiting.  Note that a
+        result of true does not mean the message will be processed -- if
+        the looper is quit before the delivery time of the message
+        occurs then the message will be dropped.</span><p></p></td></tr></tbody></table></div></div><div><h3 class="api-name" id="toString()" data-unit="handler-526">toString</h3><div class="api-level"><div data-unit="handler-527">
+    Added in <a href="https://developer.android.com/guide/topics/manifest/uses-sdk-element#ApiLevels">API level 1</a>
+  </div></div><div></div><div class="code-block"><pre><code>public String toString ()</code></pre></div><p data-unit="handler-528">Returns a string representation of the object.</p><p></p><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-529">Returns</th></tr><tr><td data-unit="handler-530"><code><a href="https://developer.android.com/reference/java/lang/String">String</a></code></td><td><span data-unit="handler-531">a string representation of the object.</span><p></p></td></tr></tbody></table></div></div></div></article><nav class="chapter-switcher" aria-label="章节导航"><a href="../threads/english.html">← 进程与线程概览</a><a class="course-home" href="../index.html">全部章节</a><a href="../memory/english.html">内存管理概览 →</a></nav><footer class="license-note"><p>本阅读版为 Android Developers 英文文档正文全文的非官方中文译文。原文由 Android Developers / Android Open Source Project 维护；原代码、原图及其标识保留。<a href="../NOTICE.html">来源与许可说明</a>。</p></footer></main></body></html>

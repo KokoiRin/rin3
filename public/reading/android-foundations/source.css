@@ -17,3 +17,8 @@
   background: transparent;
 }
 .chapter-header h1 .byline { display: block; margin-top: 10px; font-weight: 400; line-height: 1.65; letter-spacing: normal; }
+
+.video-wrapper { margin: 1.5rem 0; }
+.video-wrapper iframe { display: block; width: 100%; aspect-ratio: 16 / 9; border: 0; height: auto; }
+
+.code-caption { margin: -.75rem 0 1.5rem; font-size: .8rem; overflow-wrap: anywhere; }

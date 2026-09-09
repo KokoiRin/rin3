@@ -2,7 +2,7 @@
 <html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Android 如何绘制 View｜RIN III</title><link rel="stylesheet" href="../../reader.css"><link rel="stylesheet" href="../source.css"></head>
 <body><nav class="site-nav" aria-label="站点导航"><a href="../index.html">← Android 基础 · 官方文档中文阅读版</a><a href="english.html">英文对照</a></nav>
 <main class="reader"><header class="chapter-header"><span class="chapter-kicker">第一周 · 第 4 天 · M12</span><h1>Android 如何绘制 View</h1><p class="byline"><a href="https://developer.android.com/guide/topics/ui/how-android-draws?hl=en">How Android draws views · 官方英文原文</a></p><div class="title-rule"></div>
-<details class="source-details"><summary>阅读范围与原文目录</summary><p>引言；发起测量遍历；发起布局遍历。</p><p>原文核对：2026-09-09。正文按上述范围的原文顺序翻译；代码和图示保留原文。</p><ul><li><a href="#measure">发起测量遍历</a></li><li><a href="#layout">发起布局遍历</a></li></ul></details><nav class="chapter-switcher" aria-label="章节导航"><a href="../layouts/index.html">← View 中的布局</a><a class="course-home" href="../index.html">全部章节</a><a href="../touch/index.html">管理 ViewGroup 中的触摸事件 →</a></nav></header>
+<details class="source-details"><summary>原文目录与译文说明</summary><p>对应官方文档正文全文，包含全部章节、示例与正文中的补充资源链接；不包含站点导航、反馈和自动推荐组件。</p><p>原文核对：2026-09-09。正文全文按原文顺序翻译；代码、图示和视频保留原文。</p><ul><li><a href="#measure">发起测量遍历</a></li><li><a href="#layout">发起布局遍历</a></li><li><a href="#custom-logic">实现自定义测量和布局逻辑</a></li></ul></details><nav class="chapter-switcher" aria-label="章节导航"><a href="../layouts/index.html">← View 中的布局</a><a class="course-home" href="../index.html">全部章节</a><a href="../touch/index.html">管理 ViewGroup 中的触摸事件 →</a></nav></header>
 <article class="translated-article"><div><div class="android-page-banner android-page-banner-image-bottom-right"><div class="android-page-banner-content"><div class="android-page-banner-title" data-unit="drawing-001">试试 Compose 的方式</div><div class="android-page-banner-description" data-unit="drawing-002">Jetpack Compose 是 Android 推荐的 UI 工具包。了解 Compose 的各个阶段。</div><div class="android-page-banner-cta" data-unit="drawing-003"><a href="https://developer.android.com/develop/ui/compose/phases">Compose 阶段 →</a></div></div><div class="android-page-banner-media">
       <picture>
 
@@ -10,4 +10,297 @@
 
         <img alt="官方原图" class="android-page-banner-image" src="../assets/android-compose-ui-logo.png" loading="lazy">
       </source></picture>
-    </div></div><p data-unit="drawing-004">当 <a href="https://developer.android.com/reference/android/app/Activity"><code>Activity</code></a> 获得焦点时，Android 框架会要求它绘制布局。Android 框架负责处理绘制过程，但 <code>Activity</code> 必须提供其布局层次结构的根节点。</p><p data-unit="drawing-005">Android 框架会绘制布局的根节点，并测量和绘制布局树。绘制时，它会遍历树，渲染每个与失效区域相交的 <a href="https://developer.android.com/reference/android/view/View"><code>View</code></a>。每个 <a href="https://developer.android.com/reference/android/view/ViewGroup"><code>ViewGroup</code></a> 都负责使用 <a href="https://developer.android.com/reference/android/view/View#draw(android.graphics.Canvas)"><code>draw()</code></a> 方法请求绘制其各个子元素，而每个 <code>View</code> 负责绘制自身。由于采用前序遍历，框架会先绘制父元素，再绘制子元素——也就是说，父元素位于子元素的<em>后面</em>；同级元素则按它们在树中出现的顺序绘制。</p><aside class="prompt" data-unit="drawing-006"><strong>注意：</strong>框架不会绘制不在有效区域内的 <code>View</code> 对象。它也会替你处理 <code>View</code> 背景的绘制。可以通过调用 <a href="https://developer.android.com/reference/android/view/View#invalidate()"><code>invalidate()</code></a> 强制 <code>View</code> 绘制。</aside><p data-unit="drawing-007">Android 框架通过两次遍历来绘制布局：测量遍历和布局遍历。框架在 <a href="https://developer.android.com/reference/android/view/View#measure(int,%20int)"><code>measure(int, int)</code></a> 中执行测量遍历，并自上而下遍历 <code>View</code> 树。递归过程中，每个 <code>View</code> 都会将尺寸规格向树的下层传递。测量遍历结束时，每个 <code>View</code> 都保存了自己的测量值。框架在 <a href="https://developer.android.com/reference/android/view/View#layout(int,%20int,%20int,%20int)"><code>layout(int, int, int, int)</code></a> 中执行第二次遍历，同样是自上而下。在此次遍历中，每个父元素负责使用测量遍历中计算出的大小，为所有子元素定位。</p><p data-unit="drawing-008">以下各节更详细地介绍布局过程的这两次遍历。</p><h2 id="measure" data-unit="drawing-009">发起测量遍历</h2><p data-unit="drawing-010">当 <code>View</code> 对象的 <a href="https://developer.android.com/reference/android/view/View#measure(int,%20int)"><code>measure()</code></a> 方法返回时，设置其 <a href="https://developer.android.com/reference/android/view/View#getMeasuredWidth()"><code>getMeasuredWidth()</code></a> 和 <a href="https://developer.android.com/reference/android/view/View#getMeasuredHeight()"><code>getMeasuredHeight()</code></a> 值，以及该 <code>View</code> 对象所有后代的对应值。<code>View</code> 对象的测量宽度和测量高度必须遵守其父元素施加的约束。这有助于确保测量遍历结束时，所有父元素都接受其所有子元素的测量结果。</p><p data-unit="drawing-011">父 <code>View</code> 可能会对其子元素多次调用 <code>measure()</code>。例如，父元素可能先使用未指定的尺寸对子元素测量一次，以确定它们偏好的大小。如果子元素不受约束时的大小之和过大或过小，父元素可能会再次调用 <code>measure()</code>，传入限制子元素大小的值。</p><p data-unit="drawing-012">测量遍历使用两个类传达尺寸信息。<code>View</code> 对象通过 <a href="https://developer.android.com/reference/android/view/ViewGroup.LayoutParams"><code>ViewGroup.LayoutParams</code></a> 类传达其偏好的大小和位置。基类 <code>ViewGroup.LayoutParams</code> 描述 <code>View</code> 偏好的宽度和高度。对于每个维度，可以指定以下选项之一：</p><ul><li data-unit="drawing-013">一个精确的尺寸。</li><li data-unit="drawing-014"><a href="https://developer.android.com/reference/android/view/ViewGroup.LayoutParams#MATCH_PARENT"><code>MATCH_PARENT</code></a>，表示 <code>View</code> 偏好的大小是其父元素的大小减去内边距。</li><li data-unit="drawing-015"><a href="https://developer.android.com/reference/android/view/ViewGroup.LayoutParams#WRAP_CONTENT"><code>WRAP_CONTENT</code></a>，表示 <code>View</code> 偏好的大小是恰好包住其内容，再加上内边距。</li></ul><p data-unit="drawing-016">不同的 <code>ViewGroup</code> 子类有不同的 <code>ViewGroup.LayoutParams</code> 子类。例如，<a href="https://developer.android.com/reference/android/widget/RelativeLayout"><code>RelativeLayout</code></a> 有自己的 <code>ViewGroup.LayoutParams</code> 子类，其中包含使子 <code>View</code> 对象水平和垂直居中的能力。</p><p data-unit="drawing-017"><a href="https://developer.android.com/reference/android/view/View.MeasureSpec"><code>MeasureSpec</code></a> 对象用于将要求从父元素沿树向下传递给子元素。<code>MeasureSpec</code> 可以处于以下三种模式之一：</p><ul><li data-unit="drawing-018"><a href="https://developer.android.com/reference/android/view/View.MeasureSpec#UNSPECIFIED"><code>UNSPECIFIED</code></a>：父元素用它来确定子 <code>View</code> 的目标尺寸。例如，<a href="https://developer.android.com/reference/android/widget/LinearLayout"><code>LinearLayout</code></a> 可能对子元素调用 <code>measure()</code>，将高度设为 <code>UNSPECIFIED</code>，宽度设为 <a href="https://developer.android.com/reference/android/view/View.MeasureSpec#EXACTLY"><code>EXACTLY</code></a> 240，以确定在给定 240 像素宽度的情况下，子 <code>View</code> 希望有多高。</li><li data-unit="drawing-019"><a href="https://developer.android.com/reference/android/view/View.MeasureSpec#EXACTLY"><code>EXACTLY</code></a>：父元素用它来为子元素规定精确大小。子元素必须使用此大小，并保证其所有后代都能容纳在此大小内。</li><li data-unit="drawing-020"><a href="https://developer.android.com/reference/android/view/View.MeasureSpec#AT_MOST"><code>AT MOST</code></a>：父元素用它来为子元素规定最大大小。子元素必须保证自身及所有后代都能容纳在此大小内。</li></ul><h2 id="layout" data-unit="drawing-021">发起布局遍历</h2><p data-unit="drawing-022">要发起布局，请调用 <a href="https://developer.android.com/reference/android/view/View#requestLayout()"><code>requestLayout()</code></a>。通常，当 <code>View</code> 认为自身已无法容纳在其边界内时，会对自身调用此方法。</p></div></article><nav class="chapter-switcher" aria-label="章节导航"><a href="../layouts/index.html">← View 中的布局</a><a class="course-home" href="../index.html">全部章节</a><a href="../touch/index.html">管理 ViewGroup 中的触摸事件 →</a></nav><footer class="license-note"><p>本阅读版为 Android Developers 英文文档所选范围的非官方中文译文。原文由 Android Developers / Android Open Source Project 维护；原代码、原图及其标识保留。<a href="../NOTICE.html">来源与许可说明</a>。</p></footer></main></body></html>
+    </div></div><p data-unit="drawing-004">当 <a href="https://developer.android.com/reference/android/app/Activity"><code>Activity</code></a> 获得焦点时，Android 框架会要求它绘制布局。Android 框架负责处理绘制过程，但 <code>Activity</code> 必须提供其布局层次结构的根节点。</p><p data-unit="drawing-005">Android 框架会绘制布局的根节点，并测量和绘制布局树。绘制时，它会遍历树，渲染每个与失效区域相交的 <a href="https://developer.android.com/reference/android/view/View"><code>View</code></a>。每个 <a href="https://developer.android.com/reference/android/view/ViewGroup"><code>ViewGroup</code></a> 都负责使用 <a href="https://developer.android.com/reference/android/view/View#draw(android.graphics.Canvas)"><code>draw()</code></a> 方法请求绘制其各个子元素，而每个 <code>View</code> 负责绘制自身。由于采用前序遍历，框架会先绘制父元素，再绘制子元素——也就是说，父元素位于子元素的<em>后面</em>；同级元素则按它们在树中出现的顺序绘制。</p><aside class="prompt" data-unit="drawing-006"><strong>注意：</strong>框架不会绘制不在有效区域内的 <code>View</code> 对象。它也会替你处理 <code>View</code> 背景的绘制。可以通过调用 <a href="https://developer.android.com/reference/android/view/View#invalidate()"><code>invalidate()</code></a> 强制 <code>View</code> 绘制。</aside><p data-unit="drawing-007">Android 框架通过两次遍历来绘制布局：测量遍历和布局遍历。框架在 <a href="https://developer.android.com/reference/android/view/View#measure(int,%20int)"><code>measure(int, int)</code></a> 中执行测量遍历，并自上而下遍历 <code>View</code> 树。递归过程中，每个 <code>View</code> 都会将尺寸规格向树的下层传递。测量遍历结束时，每个 <code>View</code> 都保存了自己的测量值。框架在 <a href="https://developer.android.com/reference/android/view/View#layout(int,%20int,%20int,%20int)"><code>layout(int, int, int, int)</code></a> 中执行第二次遍历，同样是自上而下。在此次遍历中，每个父元素负责使用测量遍历中计算出的大小，为所有子元素定位。</p><p data-unit="drawing-008">以下各节更详细地介绍布局过程的这两次遍历。</p><h2 id="measure" data-unit="drawing-009">发起测量遍历</h2><p data-unit="drawing-010">当 <code>View</code> 对象的 <a href="https://developer.android.com/reference/android/view/View#measure(int,%20int)"><code>measure()</code></a> 方法返回时，设置其 <a href="https://developer.android.com/reference/android/view/View#getMeasuredWidth()"><code>getMeasuredWidth()</code></a> 和 <a href="https://developer.android.com/reference/android/view/View#getMeasuredHeight()"><code>getMeasuredHeight()</code></a> 值，以及该 <code>View</code> 对象所有后代的对应值。<code>View</code> 对象的测量宽度和测量高度必须遵守其父元素施加的约束。这有助于确保测量遍历结束时，所有父元素都接受其所有子元素的测量结果。</p><p data-unit="drawing-011">父 <code>View</code> 可能会对其子元素多次调用 <code>measure()</code>。例如，父元素可能先使用未指定的尺寸对子元素测量一次，以确定它们偏好的大小。如果子元素不受约束时的大小之和过大或过小，父元素可能会再次调用 <code>measure()</code>，传入限制子元素大小的值。</p><p data-unit="drawing-012">测量遍历使用两个类传达尺寸信息。<code>View</code> 对象通过 <a href="https://developer.android.com/reference/android/view/ViewGroup.LayoutParams"><code>ViewGroup.LayoutParams</code></a> 类传达其偏好的大小和位置。基类 <code>ViewGroup.LayoutParams</code> 描述 <code>View</code> 偏好的宽度和高度。对于每个维度，可以指定以下选项之一：</p><ul><li data-unit="drawing-013">一个精确的尺寸。</li><li data-unit="drawing-014"><a href="https://developer.android.com/reference/android/view/ViewGroup.LayoutParams#MATCH_PARENT"><code>MATCH_PARENT</code></a>，表示 <code>View</code> 偏好的大小是其父元素的大小减去内边距。</li><li data-unit="drawing-015"><a href="https://developer.android.com/reference/android/view/ViewGroup.LayoutParams#WRAP_CONTENT"><code>WRAP_CONTENT</code></a>，表示 <code>View</code> 偏好的大小是恰好包住其内容，再加上内边距。</li></ul><p data-unit="drawing-016">不同的 <code>ViewGroup</code> 子类有不同的 <code>ViewGroup.LayoutParams</code> 子类。例如，<a href="https://developer.android.com/reference/android/widget/RelativeLayout"><code>RelativeLayout</code></a> 有自己的 <code>ViewGroup.LayoutParams</code> 子类，其中包含使子 <code>View</code> 对象水平和垂直居中的能力。</p><p data-unit="drawing-017"><a href="https://developer.android.com/reference/android/view/View.MeasureSpec"><code>MeasureSpec</code></a> 对象用于将要求从父元素沿树向下传递给子元素。<code>MeasureSpec</code> 可以处于以下三种模式之一：</p><ul><li data-unit="drawing-018"><a href="https://developer.android.com/reference/android/view/View.MeasureSpec#UNSPECIFIED"><code>UNSPECIFIED</code></a>：父元素用它来确定子 <code>View</code> 的目标尺寸。例如，<a href="https://developer.android.com/reference/android/widget/LinearLayout"><code>LinearLayout</code></a> 可能对子元素调用 <code>measure()</code>，将高度设为 <code>UNSPECIFIED</code>，宽度设为 <a href="https://developer.android.com/reference/android/view/View.MeasureSpec#EXACTLY"><code>EXACTLY</code></a> 240，以确定在给定 240 像素宽度的情况下，子 <code>View</code> 希望有多高。</li><li data-unit="drawing-019"><a href="https://developer.android.com/reference/android/view/View.MeasureSpec#EXACTLY"><code>EXACTLY</code></a>：父元素用它来为子元素规定精确大小。子元素必须使用此大小，并保证其所有后代都能容纳在此大小内。</li><li data-unit="drawing-020"><a href="https://developer.android.com/reference/android/view/View.MeasureSpec#AT_MOST"><code>AT MOST</code></a>：父元素用它来为子元素规定最大大小。子元素必须保证自身及所有后代都能容纳在此大小内。</li></ul><h2 id="layout" data-unit="drawing-021">发起布局遍历</h2><p data-unit="drawing-022">要发起布局，请调用 <a href="https://developer.android.com/reference/android/view/View#requestLayout()"><code>requestLayout()</code></a>。通常，当 <code>View</code> 认为自身已无法容纳在其边界内时，会对自身调用此方法。</p><h2 id="custom-logic" data-unit="drawing-023">实现自定义测量和布局逻辑</h2><p data-unit="drawing-024">如果想实现自定义测量或布局逻辑，请重写实现这些逻辑的方法：<a href="https://developer.android.com/reference/android/view/View#onMeasure(int,%20int)"><code>onMeasure(int, int)</code></a> 和 <a href="https://developer.android.com/reference/android/view/View#onLayout(boolean,%20int,%20int,%20int,%20int)"><code>onLayout(boolean, int, int, int, int)</code></a>。它们分别由 <code>measure(int, int)</code> 和 <code>layout(int, int, int, int)</code> 调用。不要尝试重写 <code>measure(int, int)</code> 或 <code>layout(int, int)</code> 方法——这两个方法都是 <code>final</code>，因此无法重写。</p><p data-unit="drawing-025">以下示例展示了 <a href="https://github.com/android/user-interface-samples/tree/main/WindowManager">WindowManager</a> 示例应用中的 <a href="https://github.com/android/user-interface-samples/blob/main/WindowManager/app/src/main/java/com/example/windowmanagersample/SplitLayout.kt"><code>SplitLayout</code></a> 类如何实现这些逻辑。如果 <code>SplitLayout</code> 有两个或更多子 View，且显示屏有折痕，它会将两个子 View 分别放在折痕两侧。此示例展示了重写测量和布局的使用场景，但在生产环境中，如果需要此行为，请使用 <a href="https://developer.android.com/reference/androidx/slidingpanelayout/widget/SlidingPaneLayout"><code>SlidingPaneLayout</code></a>。</p><div><div class="ds-selector-tabs"><section><h3 id="kotlin" data-unit="drawing-026">Kotlin</h3><div></div><div class="code-block"><pre><code>/**
+ * An example of split-layout for two views, separated by a display
+ * feature that goes across the window. When both start and end views are
+ * added, it checks whether there are display features that separate the area
+ * in two—such as a fold or hinge—and places them side-by-side or
+ * top-bottom.
+ */
+class SplitLayout : FrameLayout {
+   private var windowLayoutInfo: WindowLayoutInfo? = null
+   private var startViewId = 0
+   private var endViewId = 0
+
+   private var lastWidthMeasureSpec: Int = 0
+   private var lastHeightMeasureSpec: Int = 0
+
+   ...
+
+   fun updateWindowLayout(windowLayoutInfo: WindowLayoutInfo) {
+      this.windowLayoutInfo = windowLayoutInfo
+      requestLayout()
+   }
+
+   override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
+      val startView = findStartView()
+      val endView = findEndView()
+      val splitPositions = splitViewPositions(startView, endView)
+
+      if (startView != null &amp;&amp; endView != null &amp;&amp; splitPositions != null) {
+            val startPosition = splitPositions[0]
+            val startWidthSpec = MeasureSpec.makeMeasureSpec(startPosition.width(), EXACTLY)
+            val startHeightSpec = MeasureSpec.makeMeasureSpec(startPosition.height(), EXACTLY)
+            startView.measure(startWidthSpec, startHeightSpec)
+            startView.layout(
+               startPosition.left, startPosition.top, startPosition.right,
+               startPosition.bottom
+            )
+
+            val endPosition = splitPositions[1]
+            val endWidthSpec = MeasureSpec.makeMeasureSpec(endPosition.width(), EXACTLY)
+            val endHeightSpec = MeasureSpec.makeMeasureSpec(endPosition.height(), EXACTLY)
+            endView.measure(endWidthSpec, endHeightSpec)
+            endView.layout(
+               endPosition.left, endPosition.top, endPosition.right,
+               endPosition.bottom
+            )
+      } else {
+            super.onLayout(changed, left, top, right, bottom)
+      }
+   }
+
+   /**
+   * Gets the position of the split for this view.
+   * @return A rect that defines of split, or {@code null} if there is no split.
+   */
+   private fun splitViewPositions(startView: View?, endView: View?): Array? {
+      if (windowLayoutInfo == null || startView == null || endView == null) {
+            return null
+      }
+
+      // Calculate the area for view's content with padding.
+      val paddedWidth = width - paddingLeft - paddingRight
+      val paddedHeight = height - paddingTop - paddingBottom
+
+      windowLayoutInfo?.displayFeatures
+            ?.firstOrNull { feature -&gt; isValidFoldFeature(feature) }
+            ?.let { feature -&gt;
+               getFeaturePositionInViewRect(feature, this)?.let {
+                  if (feature.bounds.left == 0) { // Horizontal layout.
+                        val topRect = Rect(
+                           paddingLeft, paddingTop,
+                           paddingLeft + paddedWidth, it.top
+                        )
+                        val bottomRect = Rect(
+                           paddingLeft, it.bottom,
+                           paddingLeft + paddedWidth, paddingTop + paddedHeight
+                        )
+
+                        if (measureAndCheckMinSize(topRect, startView) &amp;&amp;
+                           measureAndCheckMinSize(bottomRect, endView)
+                        ) {
+                           return arrayOf(topRect, bottomRect)
+                        }
+                  } else if (feature.bounds.top == 0) { // Vertical layout.
+                        val leftRect = Rect(
+                           paddingLeft, paddingTop,
+                           it.left, paddingTop + paddedHeight
+                        )
+                        val rightRect = Rect(
+                           it.right, paddingTop,
+                           paddingLeft + paddedWidth, paddingTop + paddedHeight
+                        )
+
+                        if (measureAndCheckMinSize(leftRect, startView) &amp;&amp;
+                           measureAndCheckMinSize(rightRect, endView)
+                        ) {
+                           return arrayOf(leftRect, rightRect)
+                        }
+                  }
+               }
+            }
+
+      // You previously tried to fit the children and measure them. Since they
+      // don't fit, measure again to update the stored values.
+      measure(lastWidthMeasureSpec, lastHeightMeasureSpec)
+      return null
+   }
+
+   override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
+      super.onMeasure(widthMeasureSpec, heightMeasureSpec)
+      lastWidthMeasureSpec = widthMeasureSpec
+      lastHeightMeasureSpec = heightMeasureSpec
+   }
+
+   /**
+   * Measures a child view and sees if it fits in the provided rect.
+   * This method calls [View.measure] on the child view, which updates its
+   * stored values for measured width and height. If the view ends up with
+   * different values, measure again.
+   */
+   private fun measureAndCheckMinSize(rect: Rect, childView: View): Boolean {
+      val widthSpec = MeasureSpec.makeMeasureSpec(rect.width(), AT_MOST)
+      val heightSpec = MeasureSpec.makeMeasureSpec(rect.height(), AT_MOST)
+      childView.measure(widthSpec, heightSpec)
+      return childView.measuredWidthAndState and MEASURED_STATE_TOO_SMALL == 0 &amp;&amp;
+               childView.measuredHeightAndState and MEASURED_STATE_TOO_SMALL == 0
+   }
+
+   private fun isValidFoldFeature(displayFeature: DisplayFeature) =
+      (displayFeature as? FoldingFeature)?.let { feature -&gt;
+            getFeaturePositionInViewRect(feature, this) != null
+      } ?: false
+}</code></pre></div></section><section><h3 id="java" data-unit="drawing-027">Java</h3><div></div><div class="code-block"><pre><code>/**
+* An example of split-layout for two views, separated by a display feature
+* that goes across the window. When both start and end views are added, it checks
+* whether there are display features that separate the area in two—such as
+* fold or hinge—and places them side-by-side or top-bottom.
+*/
+public class SplitLayout extends FrameLayout {
+   @Nullable
+   private WindowLayoutInfo windowLayoutInfo = null;
+   private int startViewId = 0;
+   private int endViewId = 0;
+
+   private int lastWidthMeasureSpec = 0;
+   private int lastHeightMeasureSpec = 0;
+
+   ...
+
+   void updateWindowLayout(WindowLayoutInfo windowLayoutInfo) {
+      this.windowLayoutInfo = windowLayoutInfo;
+      requestLayout();
+   }
+
+   @Override
+   protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
+      @Nullable
+      View startView = findStartView();
+      @Nullable
+      View endView = findEndView();
+      @Nullable
+      List splitPositions = splitViewPositions(startView, endView);
+
+      if (startView != null &amp;&amp; endView != null &amp;&amp; splitPositions != null) {
+            Rect startPosition = splitPositions.get(0);
+            int startWidthSpec = MeasureSpec.makeMeasureSpec(startPosition.width(), EXACTLY);
+            int startHeightSpec = MeasureSpec.makeMeasureSpec(startPosition.height(), EXACTLY);
+            startView.measure(startWidthSpec, startHeightSpec);
+            startView.layout(
+                  startPosition.left,
+                  startPosition.top,
+                  startPosition.right,
+                  startPosition.bottom
+            );
+
+            Rect endPosition = splitPositions.get(1);
+            int endWidthSpec = MeasureSpec.makeMeasureSpec(endPosition.width(), EXACTLY);
+            int endHeightSpec = MeasureSpec.makeMeasureSpec(endPosition.height(), EXACTLY);
+            startView.measure(endWidthSpec, endHeightSpec);
+            startView.layout(
+                  endPosition.left,
+                  endPosition.top,
+                  endPosition.right,
+                  endPosition.bottom
+            );
+      } else {
+            super.onLayout(changed, left, top, right, bottom);
+      }
+   }
+
+   /**
+   * Gets the position of the split for this view.
+   * @return A rect that defines of split, or {@code null} if there is no split.
+   */
+   @Nullable
+   private List splitViewPositions(@Nullable View startView, @Nullable View endView) {
+      if (windowLayoutInfo == null || startView == null || endView == null) {
+            return null;
+      }
+
+      int paddedWidth = getWidth() - getPaddingLeft() - getPaddingRight();
+      int paddedHeight = getHeight() - getPaddingTop() - getPaddingBottom();
+
+      List displayFeatures = windowLayoutInfo.getDisplayFeatures();
+
+      @Nullable
+      DisplayFeature feature = displayFeatures
+               .stream()
+               .filter(item -&gt;
+                  isValidFoldFeature(item)
+               )
+               .findFirst()
+               .orElse(null);
+
+      if (feature != null) {
+            Rect position = SampleToolsKt.getFeaturePositionInViewRect(feature, this, true);
+            Rect featureBounds = feature.getBounds();
+            if (featureBounds.left == 0) { // Horizontal layout.
+               Rect topRect = new Rect(
+                        getPaddingLeft(),
+                        getPaddingTop(),
+                        getPaddingLeft() + paddedWidth,
+                        position.top
+               );
+               Rect bottomRect = new Rect(
+                        getPaddingLeft(),
+                        position.bottom,
+                        getPaddingLeft() + paddedWidth,
+                        getPaddingTop() + paddedHeight
+               );
+               if (measureAndCheckMinSize(topRect, startView) &amp;&amp;
+                        measureAndCheckMinSize(bottomRect, endView)) {
+                  ArrayList rects = new ArrayList();
+                  rects.add(topRect);
+                  rects.add(bottomRect);
+                  return rects;
+               }
+            } else if (featureBounds.top == 0) { // Vertical layout.
+               Rect leftRect = new Rect(
+                        getPaddingLeft(),
+                        getPaddingTop(),
+                        position.left,
+                        getPaddingTop() + paddedHeight
+               );
+               Rect rightRect = new Rect(
+                        position.right,
+                        getPaddingTop(),
+                        getPaddingLeft() + paddedWidth,
+                        getPaddingTop() + paddedHeight
+               );
+               if (measureAndCheckMinSize(leftRect, startView) &amp;&amp;
+                        measureAndCheckMinSize(rightRect, endView)) {
+                  ArrayList rects = new ArrayList();
+                  rects.add(leftRect);
+                  rects.add(rightRect);
+                  return rects;
+               }
+            }
+      }
+
+      // You previously tried to fit the children and measure them. Since
+      // they don't fit, measure again to update the stored values.
+      measure(lastWidthMeasureSpec, lastHeightMeasureSpec);
+      return null;
+   }
+
+   @Override
+   protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+      super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+      lastWidthMeasureSpec = widthMeasureSpec;
+      lastHeightMeasureSpec = heightMeasureSpec;
+   }
+
+   /**
+   * Measures a child view and sees if it fits in the provided rect.
+   * This method calls [View.measure] on the child view, which updates
+   * its stored values for measured width and height. If the view ends up with
+   * different values, measure again.
+   */
+   private boolean measureAndCheckMinSize(Rect rect, View childView) {
+      int widthSpec = MeasureSpec.makeMeasureSpec(rect.width(), AT_MOST);
+      int heightSpec = MeasureSpec.makeMeasureSpec(rect.height(), AT_MOST);
+      childView.measure(widthSpec, heightSpec);
+      return (childView.getMeasuredWidthAndState() &amp; MEASURED_STATE_TOO_SMALL) == 0 &amp;&amp;
+               (childView.getMeasuredHeightAndState() &amp; MEASURED_STATE_TOO_SMALL) == 0;
+   }
+
+   private boolean isValidFoldFeature(DisplayFeature displayFeature) {
+      if (displayFeature instanceof FoldingFeature) {
+            return SampleToolsKt.getFeaturePositionInViewRect(displayFeature, this, true) != null;
+      } else {
+            return false;
+      }
+   }
+}</code></pre></div></section></div></div></div></article><nav class="chapter-switcher" aria-label="章节导航"><a href="../layouts/index.html">← View 中的布局</a><a class="course-home" href="../index.html">全部章节</a><a href="../touch/index.html">管理 ViewGroup 中的触摸事件 →</a></nav><footer class="license-note"><p>本阅读版为 Android Developers 英文文档正文全文的非官方中文译文。原文由 Android Developers / Android Open Source Project 维护；原代码、原图及其标识保留。<a href="../NOTICE.html">来源与许可说明</a>。</p></footer></main></body></html>

@@ -1,6 +1,655 @@
 <!doctype html>
 <html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Handler｜RIN III</title><link rel="stylesheet" href="../../reader.css"><link rel="stylesheet" href="../source.css"></head>
 <body><nav class="site-nav" aria-label="站点导航"><a href="../index.html">← Android 基础 · 官方文档中文阅读版</a><a href="english.html">英文对照</a></nav>
-<main class="reader"><header class="chapter-header"><span class="chapter-kicker">第一周 · 第 3 天 · M09</span><h1>Handler</h1><p class="byline"><a href="https://developer.android.com/reference/android/os/Handler?hl=en">Handler · 官方英文原文</a></p><div class="title-rule"></div>
-<details class="source-details"><summary>阅读范围与原文目录</summary><p>类说明：从 A Handler allows 开始，至 API 成员摘要之前，含性能注意事项。</p><p>原文核对：2026-09-09。正文按上述范围的原文顺序翻译；代码和图示保留原文。</p><ul><li><a href="#performance-considerations-when-using-handler">使用 Handler 时的性能注意事项</a></li></ul></details><nav class="chapter-switcher" aria-label="章节导航"><a href="../threads/index.html">← 进程与线程概览</a><a class="course-home" href="../index.html">全部章节</a><a href="../memory/index.html">内存管理概览 →</a></nav></header>
-<article class="translated-article"><div><p data-unit="handler-001">Handler 允许你发送和处理与某个线程的 <a href="https://developer.android.com/reference/android/os/MessageQueue"><code>MessageQueue</code></a> 关联的 <a href="https://developer.android.com/reference/android/os/Message"><code>Message</code></a> 和 Runnable 对象。每个 Handler 实例都与一个线程及其消息队列关联。创建一个新的 Handler 时，它会绑定到一个 <a href="https://developer.android.com/reference/android/os/Looper"><code>Looper</code></a>。它会将消息和 Runnable 传递到该 Looper 的消息队列，并在该 Looper 的线程上执行它们。</p><p data-unit="handler-002">Handler 主要有两种用途：（1）调度消息和 Runnable，使其在将来某个时刻执行；（2）将某个操作加入队列，使其在不同于当前线程的线程上执行。</p><p data-unit="handler-003">消息调度通过 <a href="https://developer.android.com/reference/android/os/Handler#post(java.lang.Runnable)"><code>post(Runnable)</code></a>、<a href="https://developer.android.com/reference/android/os/Handler#postAtTime(java.lang.Runnable,%20long)"><code>postAtTime(Runnable,long)</code></a>、<a href="https://developer.android.com/reference/android/os/Handler#postDelayed(java.lang.Runnable,%20java.lang.Object,%20long)"><code>postDelayed(Runnable, Object, long)</code></a>、<a href="https://developer.android.com/reference/android/os/Handler#sendEmptyMessage(int)"><code>sendEmptyMessage(int)</code></a>、<a href="https://developer.android.com/reference/android/os/Handler#sendMessage(android.os.Message)"><code>sendMessage(Message)</code></a>、<a href="https://developer.android.com/reference/android/os/Handler#sendMessageAtTime(android.os.Message,%20long)"><code>sendMessageAtTime(Message, long)</code></a> 和 <a href="https://developer.android.com/reference/android/os/Handler#sendMessageDelayed(android.os.Message,%20long)"><code>sendMessageDelayed(Message, long)</code></a> 方法完成。<em>post</em> 系列方法允许将 Runnable 对象加入队列，在消息队列接收到它们时调用；<em>sendMessage</em> 系列方法允许将包含一组数据的 <a href="https://developer.android.com/reference/android/os/Message"><code>Message</code></a> 对象加入队列，该数据将由 Handler 的 <a href="https://developer.android.com/reference/android/os/Handler#handleMessage(android.os.Message)"><code>handleMessage(Message)</code></a> 方法处理（需要你实现 Handler 的子类）。</p><p data-unit="handler-004">向 Handler 投递或发送条目时，可以让条目在消息队列准备好处理时尽快得到处理，也可以指定处理前的延迟时间或处理的绝对时间。后两种方式允许实现超时、定时节拍以及其他基于时间的行为。</p><p data-unit="handler-005">为应用创建进程时，其主线程专门用于运行一个消息队列，负责管理顶层应用对象（Activity、广播接收器等）以及它们创建的任何窗口。可以创建自己的线程，并通过 Handler 与应用主线程通信。具体做法与之前相同，调用 <em>post</em> 或 <em>sendMessage</em> 方法，只是从新线程中调用。给定的 Runnable 或 Message 随后会被安排到 Handler 的消息队列中，并在适当时得到处理。</p><h2 id="performance-considerations-when-using-handler" data-unit="handler-006">使用 <code>Handler</code> 时的性能注意事项</h2><p data-unit="handler-007">请注意，<code>Handler</code> 的“has”和“remove”方法可能非常慢，因为这些操作会扫描整个待处理消息队列。如果底层 <a href="https://developer.android.com/reference/android/os/Looper"><code>Looper</code></a> 的 <a href="https://developer.android.com/reference/android/os/MessageQueue"><code>MessageQueue</code></a> 中有许多待处理消息，开销可能很大。</p><ul><li data-unit="handler-008">与其移除消息或回调来取消待处理操作，不如考虑设置一个表示取消的标志，并让操作在继续之前检查该标志。</li><li data-unit="handler-009">与其检查队列中是否存在某条消息或回调来判断待处理操作是否尚未发生，不如考虑让该操作设置一个标志，表明自己已经开始。</li></ul><span data-unit="handler-010">有关标准并发原语，请参阅 <code>java.util.concurrent</code>。</span></div></article><nav class="chapter-switcher" aria-label="章节导航"><a href="../threads/index.html">← 进程与线程概览</a><a class="course-home" href="../index.html">全部章节</a><a href="../memory/index.html">内存管理概览 →</a></nav><footer class="license-note"><p>本阅读版为 Android Developers 英文文档所选范围的非官方中文译文。原文由 Android Developers / Android Open Source Project 维护；原代码、原图及其标识保留。<a href="../NOTICE.html">来源与许可说明</a>。</p></footer></main></body></html>
+<main class="reader"><header class="chapter-header"><span class="chapter-kicker">第一周 · 第 3 天 · M09</span><h1 class="api-title" id="handler" data-unit="handler-001">Handler</h1><p class="byline"><a href="https://developer.android.com/reference/android/os/Handler?hl=en">Handler · 官方英文原文</a></p><div class="title-rule"></div>
+<details class="source-details"><summary>原文目录与译文说明</summary><p>对应官方文档正文全文，包含全部章节、示例与正文中的补充资源链接；不包含站点导航、反馈和自动推荐组件。本篇同时包含完整构造器、方法摘要和方法参考。</p><p>原文核对：2026-09-09。正文全文按原文顺序翻译；代码、图示和视频保留原文。</p><ul><li><a href="#performance-considerations-when-using-handler">使用 Handler 时的性能注意事项</a></li><li><a href="#summary">摘要</a></li><li><a href="#nested-classes">嵌套类</a></li><li><a href="#public-constructors">公共构造器</a></li><li><a href="#public-methods">公共方法</a></li><li><a href="#inherited-methods">继承的方法</a></li><li><a href="#public-constructors_1">公共构造器</a></li><li><a href="#Handler%28%29">Handler</a></li><li><a href="#Handler%28android.os.Handler.Callback%29">Handler</a></li><li><a href="#Handler%28android.os.Looper%29">Handler</a></li><li><a href="#Handler%28android.os.Looper%2C%2520android.os.Handler.Callback%29">Handler</a></li><li><a href="#public-methods_1">公共方法</a></li><li><a href="#createAsync%28android.os.Looper%2C%2520android.os.Handler.Callback%29">createAsync</a></li><li><a href="#createAsync%28android.os.Looper%29">createAsync</a></li><li><a href="#dispatchMessage%28android.os.Message%29">dispatchMessage</a></li><li><a href="#dump%28android.util.Printer%2C%2520java.lang.String%29">dump</a></li><li><a href="#getLooper%28%29">getLooper</a></li><li><a href="#getMessageName%28android.os.Message%29">getMessageName</a></li><li><a href="#handleMessage%28android.os.Message%29">handleMessage</a></li><li><a href="#hasCallbacks%28java.lang.Runnable%29">hasCallbacks</a></li><li><a href="#hasMessages%28int%29">hasMessages</a></li><li><a href="#hasMessages%28int%2C%2520java.lang.Object%29">hasMessages</a></li><li><a href="#obtainMessage%28int%2C%2520java.lang.Object%29">obtainMessage</a></li><li><a href="#obtainMessage%28%29">obtainMessage</a></li><li><a href="#obtainMessage%28int%2C%2520int%2C%2520int%29">obtainMessage</a></li><li><a href="#obtainMessage%28int%2C%2520int%2C%2520int%2C%2520java.lang.Object%29">obtainMessage</a></li><li><a href="#obtainMessage%28int%29">obtainMessage</a></li><li><a href="#post%28java.lang.Runnable%29">post</a></li><li><a href="#postAtFrontOfQueue%28java.lang.Runnable%29">postAtFrontOfQueue</a></li><li><a href="#postAtTime%28java.lang.Runnable%2C%2520long%29">postAtTime</a></li><li><a href="#postAtTime%28java.lang.Runnable%2C%2520java.lang.Object%2C%2520long%29">postAtTime</a></li><li><a href="#postDelayed%28java.lang.Runnable%2C%2520long%29">postDelayed</a></li><li><a href="#postDelayed%28java.lang.Runnable%2C%2520java.lang.Object%2C%2520long%29">postDelayed</a></li><li><a href="#removeCallbacks%28java.lang.Runnable%29">removeCallbacks</a></li><li><a href="#removeCallbacks%28java.lang.Runnable%2C%2520java.lang.Object%29">removeCallbacks</a></li><li><a href="#removeCallbacksAndMessages%28java.lang.Object%29">removeCallbacksAndMessages</a></li><li><a href="#removeMessages%28int%29">removeMessages</a></li><li><a href="#removeMessages%28int%2C%2520java.lang.Object%29">removeMessages</a></li><li><a href="#sendEmptyMessage%28int%29">sendEmptyMessage</a></li><li><a href="#sendEmptyMessageAtTime%28int%2C%2520long%29">sendEmptyMessageAtTime</a></li><li><a href="#sendEmptyMessageDelayed%28int%2C%2520long%29">sendEmptyMessageDelayed</a></li><li><a href="#sendMessage%28android.os.Message%29">sendMessage</a></li><li><a href="#sendMessageAtFrontOfQueue%28android.os.Message%29">sendMessageAtFrontOfQueue</a></li><li><a href="#sendMessageAtTime%28android.os.Message%2C%2520long%29">sendMessageAtTime</a></li><li><a href="#sendMessageDelayed%28android.os.Message%2C%2520long%29">sendMessageDelayed</a></li><li><a href="#toString%28%29">toString</a></li></ul></details><nav class="chapter-switcher" aria-label="章节导航"><a href="../threads/index.html">← 进程与线程概览</a><a class="course-home" href="../index.html">全部章节</a><a href="../memory/index.html">内存管理概览 →</a></nav></header>
+<article class="translated-article"><div><hr><div class="nocontent"><div data-unit="handler-002">
+
+
+
+<a href="https://developer.android.com/reference/kotlin/android/os/Handler" title="View this page in Kotlin">Kotlin</a>
+<span>|</span><span>Java</span>
+
+
+</div></div><p data-unit="handler-003">
+<code class="api-signature">
+  public
+
+
+
+  class
+  Handler
+</code>
+<br>
+
+
+<code class="api-signature">
+
+    extends <a href="https://developer.android.com/reference/java/lang/Object">Object</a>
+
+
+
+</code>
+
+<code class="api-signature">
+
+
+
+</code>
+
+</p><div class="table-wrapper" tabindex="0"><table class="jd-inheritance-table"><tbody><tr><td colspan="2" class="jd-inheritance-class-cell" data-unit="handler-004"><a href="https://developer.android.com/reference/java/lang/Object">java.lang.Object</a>
+    </td></tr><tr><td class="jd-inheritance-space" data-unit="handler-005">   ↳</td><td colspan="1" class="jd-inheritance-class-cell" data-unit="handler-006">android.os.Handler
+    </td></tr></tbody></table></div><div class="table-wrapper" tabindex="0"><table class="jd-sumtable jd-sumtable-subclasses"><tbody><tr><td><div class="expandable"><span data-unit="handler-007">已知的直接子类</span><div id="subclasses-direct" class="showalways" data-unit="handler-008"> <a href="https://developer.android.com/reference/android/content/AsyncQueryHandler">AsyncQueryHandler</a>, <a href="https://developer.android.com/reference/android/content/AsyncQueryHandler.WorkerHandler">AsyncQueryHandler.WorkerHandler</a>, <a href="https://developer.android.com/reference/android/webkit/HttpAuthHandler">HttpAuthHandler</a>, <a href="https://developer.android.com/reference/android/webkit/SslErrorHandler">SslErrorHandler</a>
+  </div><div id="subclasses-direct-summary"><div class="table-wrapper" tabindex="0"><table class="jd-sumtable-expando"><tbody><tr><td class="jd-linkcol" data-unit="handler-009"><a href="https://developer.android.com/reference/android/content/AsyncQueryHandler">AsyncQueryHandler</a></td><td class="jd-descrcol" data-unit="handler-010">一个辅助类，用于简化异步 <a href="https://developer.android.com/reference/android/content/ContentResolver"><code>ContentResolver</code></a> 查询的处理。</td></tr><tr><td class="jd-linkcol" data-unit="handler-011"><a href="https://developer.android.com/reference/android/content/AsyncQueryHandler.WorkerHandler">AsyncQueryHandler.WorkerHandler</a></td><td class="jd-descrcol">
+           
+
+
+
+        </td></tr><tr><td class="jd-linkcol" data-unit="handler-012"><a href="https://developer.android.com/reference/android/webkit/HttpAuthHandler">HttpAuthHandler</a></td><td class="jd-descrcol" data-unit="handler-013">表示一个 HTTP 身份验证请求。</td></tr><tr><td class="jd-linkcol" data-unit="handler-014"><a href="https://developer.android.com/reference/android/webkit/SslErrorHandler">SslErrorHandler</a></td><td class="jd-descrcol" data-unit="handler-015">表示一个处理 SSL 错误的请求。</td></tr></tbody></table></div></div></div></td></tr></tbody></table></div><span>
+
+
+
+
+
+<br></span><hr><p data-unit="handler-016">Handler 允许你发送和处理与某个线程的 <a href="https://developer.android.com/reference/android/os/MessageQueue"><code>MessageQueue</code></a> 关联的 <a href="https://developer.android.com/reference/android/os/Message"><code>Message</code></a> 和 Runnable 对象。每个 Handler 实例都与一个线程及其消息队列关联。创建一个新的 Handler 时，它会绑定到一个 <a href="https://developer.android.com/reference/android/os/Looper"><code>Looper</code></a>。它会将消息和 Runnable 传递到该 Looper 的消息队列，并在该 Looper 的线程上执行它们。</p><p data-unit="handler-017">Handler 主要有两种用途：（1）调度消息和 Runnable，使其在将来某个时刻执行；（2）将某个操作加入队列，使其在不同于当前线程的线程上执行。</p><p data-unit="handler-018">消息调度通过 <a href="https://developer.android.com/reference/android/os/Handler#post(java.lang.Runnable)"><code>post(Runnable)</code></a>、<a href="https://developer.android.com/reference/android/os/Handler#postAtTime(java.lang.Runnable,%20long)"><code>postAtTime(Runnable,long)</code></a>、<a href="https://developer.android.com/reference/android/os/Handler#postDelayed(java.lang.Runnable,%20java.lang.Object,%20long)"><code>postDelayed(Runnable, Object, long)</code></a>、<a href="https://developer.android.com/reference/android/os/Handler#sendEmptyMessage(int)"><code>sendEmptyMessage(int)</code></a>、<a href="https://developer.android.com/reference/android/os/Handler#sendMessage(android.os.Message)"><code>sendMessage(Message)</code></a>、<a href="https://developer.android.com/reference/android/os/Handler#sendMessageAtTime(android.os.Message,%20long)"><code>sendMessageAtTime(Message, long)</code></a> 和 <a href="https://developer.android.com/reference/android/os/Handler#sendMessageDelayed(android.os.Message,%20long)"><code>sendMessageDelayed(Message, long)</code></a> 方法完成。<em>post</em> 系列方法允许将 Runnable 对象加入队列，在消息队列接收到它们时调用；<em>sendMessage</em> 系列方法允许将包含一组数据的 <a href="https://developer.android.com/reference/android/os/Message"><code>Message</code></a> 对象加入队列，该数据将由 Handler 的 <a href="https://developer.android.com/reference/android/os/Handler#handleMessage(android.os.Message)"><code>handleMessage(Message)</code></a> 方法处理（需要你实现 Handler 的子类）。</p><p data-unit="handler-019">向 Handler 投递或发送条目时，可以让条目在消息队列准备好处理时尽快得到处理，也可以指定处理前的延迟时间或处理的绝对时间。后两种方式允许实现超时、定时节拍以及其他基于时间的行为。</p><p data-unit="handler-020">为应用创建进程时，其主线程专门用于运行一个消息队列，负责管理顶层应用对象（Activity、广播接收器等）以及它们创建的任何窗口。可以创建自己的线程，并通过 Handler 与应用主线程通信。具体做法与之前相同，调用 <em>post</em> 或 <em>sendMessage</em> 方法，只是从新线程中调用。给定的 Runnable 或 Message 随后会被安排到 Handler 的消息队列中，并在适当时得到处理。</p><h2 id="performance-considerations-when-using-handler" data-unit="handler-021">使用 <code>Handler</code> 时的性能注意事项</h2><p data-unit="handler-022">请注意，<code>Handler</code> 的“has”和“remove”方法可能非常慢，因为这些操作会扫描整个待处理消息队列。如果底层 <a href="https://developer.android.com/reference/android/os/Looper"><code>Looper</code></a> 的 <a href="https://developer.android.com/reference/android/os/MessageQueue"><code>MessageQueue</code></a> 中有许多待处理消息，开销可能很大。</p><ul><li data-unit="handler-023">与其移除消息或回调来取消待处理操作，不如考虑设置一个表示取消的标志，并让操作在继续之前检查该标志。</li><li data-unit="handler-024">与其检查队列中是否存在某条消息或回调来判断待处理操作是否尚未发生，不如考虑让该操作设置一个标志，表明自己已经开始。</li></ul><span data-unit="handler-025">有关标准并发原语，请参阅 <code>java.util.concurrent</code>。</span><p></p><h2 class="api-section" id="summary" data-unit="handler-026">摘要</h2><div class="table-wrapper" tabindex="0"><table id="nestedclasses" class="responsive"><tbody><tr><th colspan="2"><h3 id="nested-classes" data-unit="handler-027">嵌套类</h3></th></tr><tr><td class="jd-typecol" data-unit="handler-028"><code>
+
+
+
+
+        interface</code></td><td class="jd-descrcol"><span data-unit="handler-029">
+        <code><a href="https://developer.android.com/reference/android/os/Handler.Callback">Handler.Callback</a></code>
+        </span><p data-unit="handler-030">实例化 Handler 时可以使用的回调接口，从而避免必须自行实现 Handler 子类。</p></td></tr></tbody></table></div><div class="table-wrapper" tabindex="0"><table id="pubctors" class="responsive constructors"><tbody><tr><th colspan="2"><h3 id="public-constructors" data-unit="handler-031">公共构造器</h3></th></tr><tr><td><span data-unit="handler-032">
+      <code>
+      <a href="https://developer.android.com/reference/android/os/Handler#Handler()">Handler</a>()
+      </code>
+
+        </span><p data-unit="handler-033"><em>此构造器已弃用。在构造 Handler 时隐式选择 Looper，可能导致操作被静默丢失（Handler 不再等待新任务并退出时）、崩溃（有时在没有活跃 Looper 的线程上创建 Handler 时），或出现竞态条件，使 Handler 关联的线程与编写者预期不同。请改用 <a href="https://developer.android.com/reference/java/util/concurrent/Executor"><code>Executor</code></a>，或使用 <a href="https://developer.android.com/reference/android/os/Looper#getMainLooper()"><code>Looper.getMainLooper</code></a>、<a href="https://developer.android.com/reference/android/view/View#getHandler()"><code>View.getHandler()</code></a> 等方式显式指定 Looper。如果出于兼容性要求必须保留隐式线程本地行为，请使用 <code>new Handler(Looper.myLooper())</code>，向代码阅读者明确表达这一点。</em></p></td></tr><tr><td><span data-unit="handler-034">
+      <code>
+      <a href="https://developer.android.com/reference/android/os/Handler#Handler(android.os.Handler.Callback)">Handler</a>(<a href="https://developer.android.com/reference/android/os/Handler.Callback">Handler.Callback</a> callback)
+      </code>
+
+        </span><p data-unit="handler-035"><em>此构造器已弃用。在构造 Handler 时隐式选择 Looper，可能导致操作被静默丢失（Handler 不再等待新任务并退出时）、崩溃（有时在没有活跃 Looper 的线程上创建 Handler 时），或出现竞态条件，使 Handler 关联的线程与编写者预期不同。请改用 <a href="https://developer.android.com/reference/java/util/concurrent/Executor"><code>Executor</code></a>，或使用 <a href="https://developer.android.com/reference/android/os/Looper#getMainLooper()"><code>Looper.getMainLooper</code></a>、<a href="https://developer.android.com/reference/android/view/View#getHandler()"><code>View.getHandler()</code></a> 等方式显式指定 Looper。如果出于兼容性要求必须保留隐式线程本地行为，请使用 <code>new Handler(Looper.myLooper(), callback)</code>，向代码阅读者明确表达这一点。</em></p></td></tr><tr><td><span data-unit="handler-036">
+      <code>
+      <a href="https://developer.android.com/reference/android/os/Handler#Handler(android.os.Looper)">Handler</a>(<a href="https://developer.android.com/reference/android/os/Looper">Looper</a> looper)
+      </code>
+
+        </span><p data-unit="handler-037">使用提供的 <a href="https://developer.android.com/reference/android/os/Looper"><code>Looper</code></a>，而非默认 Looper。</p></td></tr><tr><td><span data-unit="handler-038">
+      <code>
+      <a href="https://developer.android.com/reference/android/os/Handler#Handler(android.os.Looper,%20android.os.Handler.Callback)">Handler</a>(<a href="https://developer.android.com/reference/android/os/Looper">Looper</a> looper, <a href="https://developer.android.com/reference/android/os/Handler.Callback">Handler.Callback</a> callback)
+      </code>
+
+        </span><p data-unit="handler-039">使用提供的 <a href="https://developer.android.com/reference/android/os/Looper"><code>Looper</code></a>，而非默认 Looper，并接收一个用于处理消息的回调接口。</p></td></tr></tbody></table></div><div class="table-wrapper" tabindex="0"><table id="pubmethods" class="responsive methods"><tbody><tr><th colspan="2"><h3 id="public-methods" data-unit="handler-040">公共方法</h3></th></tr><tr><td data-unit="handler-041"><code>
+
+
+        static
+
+
+        <a href="https://developer.android.com/reference/android/os/Handler">Handler</a></code>
+    </td><td><span data-unit="handler-042">
+      <code>
+      <a href="https://developer.android.com/reference/android/os/Handler#createAsync(android.os.Looper,%20android.os.Handler.Callback)">createAsync</a>(<a href="https://developer.android.com/reference/android/os/Looper">Looper</a> looper, <a href="https://developer.android.com/reference/android/os/Handler.Callback">Handler.Callback</a> callback)
+      </code>
+
+        </span><p data-unit="handler-043">创建一个新的 Handler；投递到它的消息和 Runnable 不受显示垂直同步（vsync）等同步屏障的影响。</p></td></tr><tr><td data-unit="handler-044"><code>
+
+
+        static
+
+
+        <a href="https://developer.android.com/reference/android/os/Handler">Handler</a></code>
+    </td><td><span data-unit="handler-045">
+      <code>
+      <a href="https://developer.android.com/reference/android/os/Handler#createAsync(android.os.Looper)">createAsync</a>(<a href="https://developer.android.com/reference/android/os/Looper">Looper</a> looper)
+      </code>
+
+        </span><p data-unit="handler-046">创建一个新的 Handler；投递到它的消息和 Runnable 不受显示垂直同步（vsync）等同步屏障的影响。</p></td></tr><tr><td data-unit="handler-047"><code>
+
+
+
+
+
+        void</code>
+    </td><td><span data-unit="handler-048">
+      <code>
+      <a href="https://developer.android.com/reference/android/os/Handler#dispatchMessage(android.os.Message)">dispatchMessage</a>(<a href="https://developer.android.com/reference/android/os/Message">Message</a> msg)
+      </code>
+
+        </span><p data-unit="handler-049">在此处理系统消息。</p></td></tr><tr><td data-unit="handler-050"><code>
+
+
+
+        final
+
+        void</code>
+    </td><td data-unit="handler-051">
+      <code>
+      <a href="https://developer.android.com/reference/android/os/Handler#dump(android.util.Printer,%20java.lang.String)">dump</a>(<a href="https://developer.android.com/reference/android/util/Printer">Printer</a> pw, <a href="https://developer.android.com/reference/java/lang/String">String</a> prefix)
+      </code>
+
+    </td></tr><tr><td data-unit="handler-052"><code>
+
+
+
+        final
+
+        <a href="https://developer.android.com/reference/android/os/Looper">Looper</a></code>
+    </td><td data-unit="handler-053">
+      <code>
+      <a href="https://developer.android.com/reference/android/os/Handler#getLooper()">getLooper</a>()
+      </code>
+
+    </td></tr><tr><td data-unit="handler-054"><code>
+
+
+
+
+
+        <a href="https://developer.android.com/reference/java/lang/String">String</a></code>
+    </td><td><span data-unit="handler-055">
+      <code>
+      <a href="https://developer.android.com/reference/android/os/Handler#getMessageName(android.os.Message)">getMessageName</a>(<a href="https://developer.android.com/reference/android/os/Message">Message</a> message)
+      </code>
+
+        </span><p data-unit="handler-056">返回表示指定消息名称的字符串。</p></td></tr><tr><td data-unit="handler-057"><code>
+
+
+
+
+
+        void</code>
+    </td><td><span data-unit="handler-058">
+      <code>
+      <a href="https://developer.android.com/reference/android/os/Handler#handleMessage(android.os.Message)">handleMessage</a>(<a href="https://developer.android.com/reference/android/os/Message">Message</a> msg)
+      </code>
+
+        </span><p data-unit="handler-059">子类必须实现此方法才能接收消息。</p></td></tr><tr><td data-unit="handler-060"><code>
+
+
+
+        final
+
+        boolean</code>
+    </td><td><span data-unit="handler-061">
+      <code>
+      <a href="https://developer.android.com/reference/android/os/Handler#hasCallbacks(java.lang.Runnable)">hasCallbacks</a>(<a href="https://developer.android.com/reference/java/lang/Runnable">Runnable</a> r)
+      </code>
+
+        </span><p data-unit="handler-062">检查消息队列中是否存在带有回调 r、尚待处理的已投递消息。</p></td></tr><tr><td data-unit="handler-063"><code>
+
+
+
+        final
+
+        boolean</code>
+    </td><td><span data-unit="handler-064">
+      <code>
+      <a href="https://developer.android.com/reference/android/os/Handler#hasMessages(int)">hasMessages</a>(int what)
+      </code>
+
+        </span><p data-unit="handler-065">检查消息队列中是否存在代码为 'what'、尚待处理的已投递消息。</p></td></tr><tr><td data-unit="handler-066"><code>
+
+
+
+        final
+
+        boolean</code>
+    </td><td><span data-unit="handler-067">
+      <code>
+      <a href="https://developer.android.com/reference/android/os/Handler#hasMessages(int,%20java.lang.Object)">hasMessages</a>(int what, <a href="https://developer.android.com/reference/java/lang/Object">Object</a> object)
+      </code>
+
+        </span><p data-unit="handler-068">检查消息队列中是否存在代码为 'what' 且 obj 为 'object'、尚待处理的已投递消息。</p></td></tr><tr><td data-unit="handler-069"><code>
+
+
+
+        final
+
+        <a href="https://developer.android.com/reference/android/os/Message">Message</a></code>
+    </td><td><span data-unit="handler-070">
+      <code>
+      <a href="https://developer.android.com/reference/android/os/Handler#obtainMessage(int,%20java.lang.Object)">obtainMessage</a>(int what, <a href="https://developer.android.com/reference/java/lang/Object">Object</a> obj)
+      </code>
+
+        </span><p data-unit="handler-071">与 <a href="https://developer.android.com/reference/android/os/Handler#obtainMessage()"><code>obtainMessage()</code></a> 相同，但还会设置返回的 Message 的 what 和 obj 成员。</p></td></tr><tr><td data-unit="handler-072"><code>
+
+
+
+        final
+
+        <a href="https://developer.android.com/reference/android/os/Message">Message</a></code>
+    </td><td><span data-unit="handler-073">
+      <code>
+      <a href="https://developer.android.com/reference/android/os/Handler#obtainMessage()">obtainMessage</a>()
+      </code>
+
+        </span><p data-unit="handler-074">从全局消息池中返回一个新的 <a href="https://developer.android.com/reference/android/os/Message"><code>Message</code></a>。</p></td></tr><tr><td data-unit="handler-075"><code>
+
+
+
+        final
+
+        <a href="https://developer.android.com/reference/android/os/Message">Message</a></code>
+    </td><td><span data-unit="handler-076">
+      <code>
+      <a href="https://developer.android.com/reference/android/os/Handler#obtainMessage(int,%20int,%20int)">obtainMessage</a>(int what, int arg1, int arg2)
+      </code>
+
+        </span><p data-unit="handler-077">与 <a href="https://developer.android.com/reference/android/os/Handler#obtainMessage()"><code>obtainMessage()</code></a> 相同，但还会设置返回的 Message 的 what、arg1 和 arg2 成员。</p></td></tr><tr><td data-unit="handler-078"><code>
+
+
+
+        final
+
+        <a href="https://developer.android.com/reference/android/os/Message">Message</a></code>
+    </td><td><span data-unit="handler-079">
+      <code>
+      <a href="https://developer.android.com/reference/android/os/Handler#obtainMessage(int,%20int,%20int,%20java.lang.Object)">obtainMessage</a>(int what, int arg1, int arg2, <a href="https://developer.android.com/reference/java/lang/Object">Object</a> obj)
+      </code>
+
+        </span><p data-unit="handler-080">与 <a href="https://developer.android.com/reference/android/os/Handler#obtainMessage()"><code>obtainMessage()</code></a> 相同，但还会设置返回的 Message 的 what、obj、arg1 和 arg2 值。</p></td></tr><tr><td data-unit="handler-081"><code>
+
+
+
+        final
+
+        <a href="https://developer.android.com/reference/android/os/Message">Message</a></code>
+    </td><td><span data-unit="handler-082">
+      <code>
+      <a href="https://developer.android.com/reference/android/os/Handler#obtainMessage(int)">obtainMessage</a>(int what)
+      </code>
+
+        </span><p data-unit="handler-083">与 <a href="https://developer.android.com/reference/android/os/Handler#obtainMessage()"><code>obtainMessage()</code></a> 相同，但还会设置返回的 Message 的 what 成员。</p></td></tr><tr><td data-unit="handler-084"><code>
+
+
+
+        final
+
+        boolean</code>
+    </td><td><span data-unit="handler-085">
+      <code>
+      <a href="https://developer.android.com/reference/android/os/Handler#post(java.lang.Runnable)">post</a>(<a href="https://developer.android.com/reference/java/lang/Runnable">Runnable</a> r)
+      </code>
+
+        </span><p data-unit="handler-086">将 Runnable r 添加到消息队列。</p></td></tr><tr><td data-unit="handler-087"><code>
+
+
+
+        final
+
+        boolean</code>
+    </td><td><span data-unit="handler-088">
+      <code>
+      <a href="https://developer.android.com/reference/android/os/Handler#postAtFrontOfQueue(java.lang.Runnable)">postAtFrontOfQueue</a>(<a href="https://developer.android.com/reference/java/lang/Runnable">Runnable</a> r)
+      </code>
+
+        </span><p data-unit="handler-089">向实现了 Runnable 的对象投递一条消息。</p></td></tr><tr><td data-unit="handler-090"><code>
+
+
+
+        final
+
+        boolean</code>
+    </td><td><span data-unit="handler-091">
+      <code>
+      <a href="https://developer.android.com/reference/android/os/Handler#postAtTime(java.lang.Runnable,%20long)">postAtTime</a>(<a href="https://developer.android.com/reference/java/lang/Runnable">Runnable</a> r, long uptimeMillis)
+      </code>
+
+        </span><p data-unit="handler-092">将 Runnable r 添加到消息队列，使其在 uptimeMillis 指定的时间运行。</p></td></tr><tr><td data-unit="handler-093"><code>
+
+
+
+        final
+
+        boolean</code>
+    </td><td><span data-unit="handler-094">
+      <code>
+      <a href="https://developer.android.com/reference/android/os/Handler#postAtTime(java.lang.Runnable,%20java.lang.Object,%20long)">postAtTime</a>(<a href="https://developer.android.com/reference/java/lang/Runnable">Runnable</a> r, <a href="https://developer.android.com/reference/java/lang/Object">Object</a> token, long uptimeMillis)
+      </code>
+
+        </span><p data-unit="handler-095">将 Runnable r 添加到消息队列，使其在 uptimeMillis 指定的时间运行。</p></td></tr><tr><td data-unit="handler-096"><code>
+
+
+
+        final
+
+        boolean</code>
+    </td><td><span data-unit="handler-097">
+      <code>
+      <a href="https://developer.android.com/reference/android/os/Handler#postDelayed(java.lang.Runnable,%20long)">postDelayed</a>(<a href="https://developer.android.com/reference/java/lang/Runnable">Runnable</a> r, long delayMillis)
+      </code>
+
+        </span><p data-unit="handler-098">将 Runnable r 添加到消息队列，使其在经过指定时间后运行。</p></td></tr><tr><td data-unit="handler-099"><code>
+
+
+
+        final
+
+        boolean</code>
+    </td><td><span data-unit="handler-100">
+      <code>
+      <a href="https://developer.android.com/reference/android/os/Handler#postDelayed(java.lang.Runnable,%20java.lang.Object,%20long)">postDelayed</a>(<a href="https://developer.android.com/reference/java/lang/Runnable">Runnable</a> r, <a href="https://developer.android.com/reference/java/lang/Object">Object</a> token, long delayMillis)
+      </code>
+
+        </span><p data-unit="handler-101">将 Runnable r 添加到消息队列，使其在经过指定时间后运行。</p></td></tr><tr><td data-unit="handler-102"><code>
+
+
+
+        final
+
+        void</code>
+    </td><td><span data-unit="handler-103">
+      <code>
+      <a href="https://developer.android.com/reference/android/os/Handler#removeCallbacks(java.lang.Runnable)">removeCallbacks</a>(<a href="https://developer.android.com/reference/java/lang/Runnable">Runnable</a> r)
+      </code>
+
+        </span><p data-unit="handler-104">移除消息队列中所有尚待处理、已投递的 Runnable r。</p></td></tr><tr><td data-unit="handler-105"><code>
+
+
+
+        final
+
+        void</code>
+    </td><td><span data-unit="handler-106">
+      <code>
+      <a href="https://developer.android.com/reference/android/os/Handler#removeCallbacks(java.lang.Runnable,%20java.lang.Object)">removeCallbacks</a>(<a href="https://developer.android.com/reference/java/lang/Runnable">Runnable</a> r, <a href="https://developer.android.com/reference/java/lang/Object">Object</a> token)
+      </code>
+
+        </span><p data-unit="handler-107">移除消息队列中所有带有 Object token、尚待处理的已投递 Runnable r。</p></td></tr><tr><td data-unit="handler-108"><code>
+
+
+
+        final
+
+        void</code>
+    </td><td><span data-unit="handler-109">
+      <code>
+      <a href="https://developer.android.com/reference/android/os/Handler#removeCallbacksAndMessages(java.lang.Object)">removeCallbacksAndMessages</a>(<a href="https://developer.android.com/reference/java/lang/Object">Object</a> token)
+      </code>
+
+        </span><p data-unit="handler-110">移除所有尚待处理、obj 为 token 的已投递回调和已发送消息。</p></td></tr><tr><td data-unit="handler-111"><code>
+
+
+
+        final
+
+        void</code>
+    </td><td><span data-unit="handler-112">
+      <code>
+      <a href="https://developer.android.com/reference/android/os/Handler#removeMessages(int)">removeMessages</a>(int what)
+      </code>
+
+        </span><p data-unit="handler-113">移除消息队列中所有代码为 'what'、尚待处理的已投递消息。</p></td></tr><tr><td data-unit="handler-114"><code>
+
+
+
+        final
+
+        void</code>
+    </td><td><span data-unit="handler-115">
+      <code>
+      <a href="https://developer.android.com/reference/android/os/Handler#removeMessages(int,%20java.lang.Object)">removeMessages</a>(int what, <a href="https://developer.android.com/reference/java/lang/Object">Object</a> object)
+      </code>
+
+        </span><p data-unit="handler-116">移除消息队列中所有代码为 'what' 且 obj 为 'object'、尚待处理的已投递消息。</p></td></tr><tr><td data-unit="handler-117"><code>
+
+
+
+        final
+
+        boolean</code>
+    </td><td><span data-unit="handler-118">
+      <code>
+      <a href="https://developer.android.com/reference/android/os/Handler#sendEmptyMessage(int)">sendEmptyMessage</a>(int what)
+      </code>
+
+        </span><p data-unit="handler-119">发送一条仅包含 what 值的 Message。</p></td></tr><tr><td data-unit="handler-120"><code>
+
+
+
+        final
+
+        boolean</code>
+    </td><td><span data-unit="handler-121">
+      <code>
+      <a href="https://developer.android.com/reference/android/os/Handler#sendEmptyMessageAtTime(int,%20long)">sendEmptyMessageAtTime</a>(int what, long uptimeMillis)
+      </code>
+
+        </span><p data-unit="handler-122">发送一条仅包含 what 值的 Message，在指定时间送达。</p></td></tr><tr><td data-unit="handler-123"><code>
+
+
+
+        final
+
+        boolean</code>
+    </td><td><span data-unit="handler-124">
+      <code>
+      <a href="https://developer.android.com/reference/android/os/Handler#sendEmptyMessageDelayed(int,%20long)">sendEmptyMessageDelayed</a>(int what, long delayMillis)
+      </code>
+
+        </span><p data-unit="handler-125">发送一条仅包含 what 值的 Message，在经过指定时间后送达。</p></td></tr><tr><td data-unit="handler-126"><code>
+
+
+
+        final
+
+        boolean</code>
+    </td><td><span data-unit="handler-127">
+      <code>
+      <a href="https://developer.android.com/reference/android/os/Handler#sendMessage(android.os.Message)">sendMessage</a>(<a href="https://developer.android.com/reference/android/os/Message">Message</a> msg)
+      </code>
+
+        </span><p data-unit="handler-128">将消息推入消息队列末尾，位于所有计划在当前时间之前处理的待处理消息之后。</p></td></tr><tr><td data-unit="handler-129"><code>
+
+
+
+        final
+
+        boolean</code>
+    </td><td><span data-unit="handler-130">
+      <code>
+      <a href="https://developer.android.com/reference/android/os/Handler#sendMessageAtFrontOfQueue(android.os.Message)">sendMessageAtFrontOfQueue</a>(<a href="https://developer.android.com/reference/android/os/Message">Message</a> msg)
+      </code>
+
+        </span><p data-unit="handler-131">将一条消息加入消息队列的队首，在消息循环的下一次迭代中处理。</p></td></tr><tr><td data-unit="handler-132"><code>
+
+
+
+
+
+        boolean</code>
+    </td><td><span data-unit="handler-133">
+      <code>
+      <a href="https://developer.android.com/reference/android/os/Handler#sendMessageAtTime(android.os.Message,%20long)">sendMessageAtTime</a>(<a href="https://developer.android.com/reference/android/os/Message">Message</a> msg, long uptimeMillis)
+      </code>
+
+        </span><p data-unit="handler-134">将一条消息加入消息队列，位于所有计划在绝对时间 uptimeMillis（毫秒）之前处理的待处理消息之后。</p></td></tr><tr><td data-unit="handler-135"><code>
+
+
+
+        final
+
+        boolean</code>
+    </td><td><span data-unit="handler-136">
+      <code>
+      <a href="https://developer.android.com/reference/android/os/Handler#sendMessageDelayed(android.os.Message,%20long)">sendMessageDelayed</a>(<a href="https://developer.android.com/reference/android/os/Message">Message</a> msg, long delayMillis)
+      </code>
+
+        </span><p data-unit="handler-137">将一条消息加入消息队列，位于所有计划在（当前时间 + delayMillis）之前处理的待处理消息之后。</p></td></tr><tr><td data-unit="handler-138"><code>
+
+
+
+
+
+        <a href="https://developer.android.com/reference/java/lang/String">String</a></code>
+    </td><td><span data-unit="handler-139">
+      <code>
+      <a href="https://developer.android.com/reference/android/os/Handler#toString()">toString</a>()
+      </code>
+
+        </span><p data-unit="handler-140">返回此对象的字符串表示。</p></td></tr></tbody></table></div><div class="table-wrapper" tabindex="0"><table id="inhmethods" class="responsive methods inhtable"><tbody><tr><th><h3 id="inherited-methods" data-unit="handler-141">继承的方法</h3></th></tr><tr><td colspan="2"><div class="expandable jd-inherited-apis"><span data-unit="handler-142">来自类 <a href="https://developer.android.com/reference/java/lang/Object"><code>java.lang.Object</code></a></span><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><td data-unit="handler-143"><code>
+
+
+
+
+
+        <a href="https://developer.android.com/reference/java/lang/Object">Object</a></code>
+    </td><td><span data-unit="handler-144">
+      <code>
+      <a href="https://developer.android.com/reference/java/lang/Object#clone()">clone</a>()
+      </code>
+
+        </span><p data-unit="handler-145">创建并返回此对象的副本。</p></td></tr><tr><td data-unit="handler-146"><code>
+
+
+
+
+
+        boolean</code>
+    </td><td><span data-unit="handler-147">
+      <code>
+      <a href="https://developer.android.com/reference/java/lang/Object#equals(java.lang.Object)">equals</a>(<a href="https://developer.android.com/reference/java/lang/Object">Object</a> obj)
+      </code>
+
+        </span><p data-unit="handler-148">指示另一个对象是否与此对象“相等”。</p></td></tr><tr><td data-unit="handler-149"><code>
+
+
+
+
+
+        void</code>
+    </td><td><span data-unit="handler-150">
+      <code>
+      <a href="https://developer.android.com/reference/java/lang/Object#finalize()">finalize</a>()
+      </code>
+
+        </span><p data-unit="handler-151">当垃圾回收确定不再有指向此对象的引用时，由垃圾回收器在该对象上调用。</p></td></tr><tr><td data-unit="handler-152"><code>
+
+
+
+        final
+
+        <a href="https://developer.android.com/reference/java/lang/Class">Class</a>&lt;?&gt;</code>
+    </td><td><span data-unit="handler-153">
+      <code>
+      <a href="https://developer.android.com/reference/java/lang/Object#getClass()">getClass</a>()
+      </code>
+
+        </span><p data-unit="handler-154">返回此 <code>Object</code> 的运行时类。</p></td></tr><tr><td data-unit="handler-155"><code>
+
+
+
+
+
+        int</code>
+    </td><td><span data-unit="handler-156">
+      <code>
+      <a href="https://developer.android.com/reference/java/lang/Object#hashCode()">hashCode</a>()
+      </code>
+
+        </span><p data-unit="handler-157">返回此对象的哈希码值。</p></td></tr><tr><td data-unit="handler-158"><code>
+
+
+
+        final
+
+        void</code>
+    </td><td><span data-unit="handler-159">
+      <code>
+      <a href="https://developer.android.com/reference/java/lang/Object#notify()">notify</a>()
+      </code>
+
+        </span><p data-unit="handler-160">唤醒一个正在此对象监视器上等待的线程。</p></td></tr><tr><td data-unit="handler-161"><code>
+
+
+
+        final
+
+        void</code>
+    </td><td><span data-unit="handler-162">
+      <code>
+      <a href="https://developer.android.com/reference/java/lang/Object#notifyAll()">notifyAll</a>()
+      </code>
+
+        </span><p data-unit="handler-163">唤醒所有正在此对象监视器上等待的线程。</p></td></tr><tr><td data-unit="handler-164"><code>
+
+
+
+
+
+        <a href="https://developer.android.com/reference/java/lang/String">String</a></code>
+    </td><td><span data-unit="handler-165">
+      <code>
+      <a href="https://developer.android.com/reference/java/lang/Object#toString()">toString</a>()
+      </code>
+
+        </span><p data-unit="handler-166">返回此对象的字符串表示。</p></td></tr><tr><td data-unit="handler-167"><code>
+
+
+
+        final
+
+        void</code>
+    </td><td><span data-unit="handler-168">
+      <code>
+      <a href="https://developer.android.com/reference/java/lang/Object#wait(long,%20int)">wait</a>(long timeoutMillis, int nanos)
+      </code>
+
+        </span><p data-unit="handler-169">使当前线程等待，直到被唤醒（通常是收到<em>通知</em>或被<em>中断</em>），或经过指定的实际时间。</p></td></tr><tr><td data-unit="handler-170"><code>
+
+
+
+        final
+
+        void</code>
+    </td><td><span data-unit="handler-171">
+      <code>
+      <a href="https://developer.android.com/reference/java/lang/Object#wait(long)">wait</a>(long timeoutMillis)
+      </code>
+
+        </span><p data-unit="handler-172">使当前线程等待，直到被唤醒（通常是收到<em>通知</em>或被<em>中断</em>），或经过指定的实际时间。</p></td></tr><tr><td data-unit="handler-173"><code>
+
+
+
+        final
+
+        void</code>
+    </td><td><span data-unit="handler-174">
+      <code>
+      <a href="https://developer.android.com/reference/java/lang/Object#wait()">wait</a>()
+      </code>
+
+        </span><p data-unit="handler-175">使当前线程等待，直到被唤醒，通常是收到<em>通知</em>或被<em>中断</em>。</p></td></tr></tbody></table></div></div></td></tr></tbody></table></div><h2 class="api-section" id="public-constructors_1" data-unit="handler-176">公共构造器</h2><div><h3 class="api-name" id="Handler()" data-unit="handler-177">Handler</h3><div class="api-level"><div data-unit="handler-178">在 <a href="https://developer.android.com/guide/topics/manifest/uses-sdk-element#ApiLevels">API 级别 1</a> 中添加</div></div><div></div><div class="code-block"><pre><code>public Handler ()</code></pre></div><p>
+  </p><p class="caution" data-unit="handler-179"><strong>此构造器已弃用。</strong><br>在构造 Handler 时隐式选择 Looper，可能导致操作被静默丢失（Handler 不再等待新任务并退出时）、崩溃（有时在没有活跃 Looper 的线程上创建 Handler 时），或出现竞态条件，使 Handler 关联的线程与编写者预期不同。请改用 <a href="https://developer.android.com/reference/java/util/concurrent/Executor"><code>Executor</code></a>，或使用 <a href="https://developer.android.com/reference/android/os/Looper#getMainLooper()"><code>Looper.getMainLooper</code></a>、<a href="https://developer.android.com/reference/android/view/View#getHandler()"><code>View.getHandler()</code></a> 等方式显式指定 Looper。如果出于兼容性要求必须保留隐式线程本地行为，请使用 <code>new Handler(Looper.myLooper())</code>，向代码阅读者明确表达这一点。</p><p data-unit="handler-180">默认构造器将此 Handler 与当前线程的 <a href="https://developer.android.com/reference/android/os/Looper"><code>Looper</code></a> 关联。如果此线程没有 Looper，该 Handler 将无法接收消息，因此会抛出异常。</p><p></p></div><div><h3 class="api-name" id="Handler(android.os.Handler.Callback)" data-unit="handler-181">Handler</h3><div class="api-level"><div data-unit="handler-182">在 <a href="https://developer.android.com/guide/topics/manifest/uses-sdk-element#ApiLevels">API 级别 3</a> 中添加</div></div><div></div><div class="code-block"><pre><code>public Handler (Handler.Callback callback)</code></pre></div><p>
+  </p><p class="caution" data-unit="handler-183"><strong>此构造器已弃用。</strong><br>在构造 Handler 时隐式选择 Looper，可能导致操作被静默丢失（Handler 不再等待新任务并退出时）、崩溃（有时在没有活跃 Looper 的线程上创建 Handler 时），或出现竞态条件，使 Handler 关联的线程与编写者预期不同。请改用 <a href="https://developer.android.com/reference/java/util/concurrent/Executor"><code>Executor</code></a>，或使用 <a href="https://developer.android.com/reference/android/os/Looper#getMainLooper()"><code>Looper.getMainLooper</code></a>、<a href="https://developer.android.com/reference/android/view/View#getHandler()"><code>View.getHandler()</code></a> 等方式显式指定 Looper。如果出于兼容性要求必须保留隐式线程本地行为，请使用 <code>new Handler(Looper.myLooper(), callback)</code>，向代码阅读者明确表达这一点。</p><p data-unit="handler-184">此构造器将 Handler 与当前线程的 <a href="https://developer.android.com/reference/android/os/Looper"><code>Looper</code></a> 关联，并接收一个可在其中处理消息的回调接口。如果此线程没有 Looper，该 Handler 将无法接收消息，因此会抛出异常。</p><p></p><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-185">参数</th></tr><tr><td data-unit="handler-186"><code>callback</code></td><td><span data-unit="handler-187"><code>Handler.Callback</code>：用于处理消息的回调接口，或 null。</span><p></p></td></tr></tbody></table></div></div><div><h3 class="api-name" id="Handler(android.os.Looper)" data-unit="handler-188">Handler</h3><div class="api-level"><div data-unit="handler-189">在 <a href="https://developer.android.com/guide/topics/manifest/uses-sdk-element#ApiLevels">API 级别 1</a> 中添加</div></div><div></div><div class="code-block"><pre><code>public Handler (Looper looper)</code></pre></div><p data-unit="handler-190">使用提供的 <a href="https://developer.android.com/reference/android/os/Looper"><code>Looper</code></a>，而非默认 Looper。</p><p></p><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-191">参数</th></tr><tr><td data-unit="handler-192"><code>looper</code></td><td><span data-unit="handler-193"><code>Looper</code>：所使用的 Looper，不得为 null。</span><p></p></td></tr></tbody></table></div></div><div><h3 class="api-name" id="Handler(android.os.Looper,%20android.os.Handler.Callback)" data-unit="handler-194">Handler</h3><div class="api-level"><div data-unit="handler-195">在 <a href="https://developer.android.com/guide/topics/manifest/uses-sdk-element#ApiLevels">API 级别 3</a> 中添加</div></div><div></div><div class="code-block"><pre><code>public Handler (Looper looper,&#32;
+                Handler.Callback callback)</code></pre></div><p data-unit="handler-196">使用提供的 <a href="https://developer.android.com/reference/android/os/Looper"><code>Looper</code></a>，而非默认 Looper，并接收一个用于处理消息的回调接口。</p><p></p><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-197">参数</th></tr><tr><td data-unit="handler-198"><code>looper</code></td><td><span data-unit="handler-199"><code>Looper</code>：所使用的 Looper，不得为 null。</span><p></p></td></tr><tr><td data-unit="handler-200"><code>callback</code></td><td><span data-unit="handler-201"><code>Handler.Callback</code>：用于处理消息的回调接口，或 null。</span><p></p></td></tr></tbody></table></div></div><h2 class="api-section" id="public-methods_1" data-unit="handler-202">公共方法</h2><div><h3 class="api-name" id="createAsync(android.os.Looper,%20android.os.Handler.Callback)" data-unit="handler-203">createAsync</h3><div class="api-level"><div data-unit="handler-204">在 <a href="https://developer.android.com/guide/topics/manifest/uses-sdk-element#ApiLevels">API 级别 28</a> 中添加</div></div><div></div><div class="code-block"><pre><code>public static Handler createAsync (Looper looper,&#32;
+                Handler.Callback callback)</code></pre></div><p data-unit="handler-205">创建一个新的 Handler；投递到它的消息和 Runnable 不受显示垂直同步（vsync）等同步屏障的影响。</p><p data-unit="handler-206">发送给异步 Handler 的消息保证彼此有序，但不一定与来自其他 Handler 的消息之间保持顺序。</p><p></p><p></p><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-207">参数</th></tr><tr><td data-unit="handler-208"><code>looper</code></td><td><span data-unit="handler-209"><code>Looper</code>：新 Handler 应绑定的 Looper。<br>此值不能为 <code>null</code>。</span><p></p></td></tr><tr><td data-unit="handler-210"><code>callback</code></td><td><span data-unit="handler-211"><code>Handler.Callback</code>：此值不能为 <code>null</code>。</span><p></p></td></tr></tbody></table></div><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-212">返回值</th></tr><tr><td data-unit="handler-213"><code><a href="https://developer.android.com/reference/android/os/Handler">Handler</a></code></td><td><span data-unit="handler-214">一个新的异步 Handler 实例。<br>此值不能为 <code>null</code>。</span><p></p></td></tr></tbody></table></div><div><p data-unit="handler-215"><strong>另请参阅：</strong></p><ul class="nolist"><li data-unit="handler-216"><a href="https://developer.android.com/reference/android/os/Handler#createAsync(android.os.Looper)">创建不带自定义消息处理的异步 Handler。</a></li></ul></div></div><div><h3 class="api-name" id="createAsync(android.os.Looper)" data-unit="handler-217">createAsync</h3><div class="api-level"><div data-unit="handler-218">在 <a href="https://developer.android.com/guide/topics/manifest/uses-sdk-element#ApiLevels">API 级别 28</a> 中添加</div></div><div></div><div class="code-block"><pre><code>public static Handler createAsync (Looper looper)</code></pre></div><p data-unit="handler-219">创建一个新的 Handler；投递到它的消息和 Runnable 不受显示垂直同步（vsync）等同步屏障的影响。</p><p data-unit="handler-220">发送给异步 Handler 的消息保证彼此有序，但不一定与来自其他 Handler 的消息之间保持顺序。</p><p></p><p></p><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-221">参数</th></tr><tr><td data-unit="handler-222"><code>looper</code></td><td><span data-unit="handler-223"><code>Looper</code>：新 Handler 应绑定的 Looper。<br>此值不能为 <code>null</code>。</span><p></p></td></tr></tbody></table></div><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-224">返回值</th></tr><tr><td data-unit="handler-225"><code><a href="https://developer.android.com/reference/android/os/Handler">Handler</a></code></td><td><span data-unit="handler-226">一个新的异步 Handler 实例。<br>此值不能为 <code>null</code>。</span><p></p></td></tr></tbody></table></div><div><p data-unit="handler-227"><strong>另请参阅：</strong></p><ul class="nolist"><li data-unit="handler-228"><a href="https://developer.android.com/reference/android/os/Handler#createAsync(android.os.Looper,%20android.os.Handler.Callback)">创建带有自定义消息处理的异步 Handler。</a></li></ul></div></div><div><h3 class="api-name" id="dispatchMessage(android.os.Message)" data-unit="handler-229">dispatchMessage</h3><div class="api-level"><div data-unit="handler-230">在 <a href="https://developer.android.com/guide/topics/manifest/uses-sdk-element#ApiLevels">API 级别 1</a> 中添加</div></div><div></div><div class="code-block"><pre><code>public void dispatchMessage (Message msg)</code></pre></div><p data-unit="handler-231">在此处理系统消息。</p><p></p><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-232">参数</th></tr><tr><td data-unit="handler-233"><code>msg</code></td><td><span data-unit="handler-234"><code>Message</code>：此值不能为 <code>null</code>。</span><p></p></td></tr></tbody></table></div></div><div><h3 class="api-name" id="dump(android.util.Printer,%20java.lang.String)" data-unit="handler-235">dump</h3><div class="api-level"><div data-unit="handler-236">在 <a href="https://developer.android.com/guide/topics/manifest/uses-sdk-element#ApiLevels">API 级别 1</a> 中添加</div></div><div></div><div class="code-block"><pre><code>public final void dump (Printer pw,&#32;
+                String prefix)</code></pre></div><p></p><p></p><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-237">参数</th></tr><tr><td data-unit="handler-238"><code>pw</code></td><td><span data-unit="handler-239"><code>Printer</code>：此值不能为 <code>null</code>。</span><p></p></td></tr><tr><td data-unit="handler-240"><code>prefix</code></td><td><span data-unit="handler-241"><code>String</code>：此值不能为 <code>null</code>。</span><p></p></td></tr></tbody></table></div></div><div><h3 class="api-name" id="getLooper()" data-unit="handler-242">getLooper</h3><div class="api-level"><div data-unit="handler-243">在 <a href="https://developer.android.com/guide/topics/manifest/uses-sdk-element#ApiLevels">API 级别 1</a> 中添加</div></div><div></div><div class="code-block"><pre><code>public final Looper getLooper ()</code></pre></div><p></p><p></p><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-244">返回值</th></tr><tr><td data-unit="handler-245"><code><a href="https://developer.android.com/reference/android/os/Looper">Looper</a></code></td><td><span data-unit="handler-246">此值不能为 <code>null</code>。</span><p></p></td></tr></tbody></table></div></div><div><h3 class="api-name" id="getMessageName(android.os.Message)" data-unit="handler-247">getMessageName</h3><div class="api-level"><div data-unit="handler-248">在 <a href="https://developer.android.com/guide/topics/manifest/uses-sdk-element#ApiLevels">API 级别 14</a> 中添加</div></div><div></div><div class="code-block"><pre><code>public String getMessageName (Message message)</code></pre></div><p data-unit="handler-249">返回表示指定消息名称的字符串。默认实现会返回消息回调的类名（如果有回调），否则返回消息 “what” 字段的十六进制表示。</p><p></p><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-250">参数</th></tr><tr><td data-unit="handler-251"><code>message</code></td><td><span data-unit="handler-252"><code>Message</code>：要查询名称的消息。<br>此值不能为 <code>null</code>。</span><p></p></td></tr></tbody></table></div><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-253">返回值</th></tr><tr><td data-unit="handler-254"><code><a href="https://developer.android.com/reference/java/lang/String">String</a></code></td><td><span data-unit="handler-255">此值不能为 <code>null</code>。</span><p></p></td></tr></tbody></table></div></div><div><h3 class="api-name" id="handleMessage(android.os.Message)" data-unit="handler-256">handleMessage</h3><div class="api-level"><div data-unit="handler-257">在 <a href="https://developer.android.com/guide/topics/manifest/uses-sdk-element#ApiLevels">API 级别 1</a> 中添加</div></div><div></div><div class="code-block"><pre><code>public void handleMessage (Message msg)</code></pre></div><p data-unit="handler-258">子类必须实现此方法才能接收消息。</p><p></p><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-259">参数</th></tr><tr><td data-unit="handler-260"><code>msg</code></td><td><span data-unit="handler-261"><code>Message</code>：此值不能为 <code>null</code>。</span><p></p></td></tr></tbody></table></div></div><div><h3 class="api-name" id="hasCallbacks(java.lang.Runnable)" data-unit="handler-262">hasCallbacks</h3><div class="api-level"><div data-unit="handler-263">在 <a href="https://developer.android.com/guide/topics/manifest/uses-sdk-element#ApiLevels">API 级别 29</a> 中添加</div></div><div></div><div class="code-block"><pre><code>public final boolean hasCallbacks (Runnable r)</code></pre></div><p data-unit="handler-264">检查消息队列中是否存在带有回调 r、尚待处理的已投递消息。</p><p data-unit="handler-265">此操作的最坏情况时间复杂度为 O(n)，其中 n 是队列中的消息数，应避免使用。可以考虑在队列之外采用其他机制，跟踪消息是否已入队和分派。例如，维护一个计数器，在消息入队时递增，在处理消息时递减。</p><p></p><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-266">参数</th></tr><tr><td data-unit="handler-267"><code>r</code></td><td><span data-unit="handler-268"><code>Runnable</code>：此值不能为 <code>null</code>。</span><p></p></td></tr></tbody></table></div><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-269">返回值</th></tr><tr><td data-unit="handler-270"><code>boolean</code></td><td><p></p></td></tr></tbody></table></div></div><div><h3 class="api-name" id="hasMessages(int)" data-unit="handler-271">hasMessages</h3><div class="api-level"><div data-unit="handler-272">在 <a href="https://developer.android.com/guide/topics/manifest/uses-sdk-element#ApiLevels">API 级别 1</a> 中添加</div></div><div></div><div class="code-block"><pre><code>public final boolean hasMessages (int what)</code></pre></div><p data-unit="handler-273">检查消息队列中是否存在代码为 'what'、尚待处理的已投递消息。</p><p data-unit="handler-274">此操作的最坏情况时间复杂度为 O(n)，其中 n 是队列中的消息数，应避免使用。可以考虑在队列之外采用其他机制，跟踪消息是否已入队和分派。例如，维护一个计数器，在消息入队时递增，在处理消息时递减。</p><p></p><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-275">参数</th></tr><tr><td data-unit="handler-276"><code>what</code></td><td><span data-unit="handler-277">
+          <code>int</code> </span><p></p></td></tr></tbody></table></div><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-278">返回值</th></tr><tr><td data-unit="handler-279"><code>boolean</code></td><td><p></p></td></tr></tbody></table></div></div><div><h3 class="api-name" id="hasMessages(int,%20java.lang.Object)" data-unit="handler-280">hasMessages</h3><div class="api-level"><div data-unit="handler-281">在 <a href="https://developer.android.com/guide/topics/manifest/uses-sdk-element#ApiLevels">API 级别 1</a> 中添加</div></div><div></div><div class="code-block"><pre><code>public final boolean hasMessages (int what,&#32;
+                Object object)</code></pre></div><p data-unit="handler-282">检查消息队列中是否存在代码为 'what' 且 obj 为 'object'、尚待处理的已投递消息。</p><p data-unit="handler-283">此操作的最坏情况时间复杂度为 O(n)，其中 n 是队列中的消息数，应避免使用。可以考虑在队列之外采用其他机制，跟踪消息是否已入队和分派。例如，维护一个计数器，在消息入队时递增，在处理消息时递减。</p><p></p><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-284">参数</th></tr><tr><td data-unit="handler-285"><code>what</code></td><td><span data-unit="handler-286">
+          <code>int</code> </span><p></p></td></tr><tr><td data-unit="handler-287"><code>object</code></td><td><span data-unit="handler-288"><code>Object</code>：此值可以为 <code>null</code>。</span><p></p></td></tr></tbody></table></div><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-289">返回值</th></tr><tr><td data-unit="handler-290"><code>boolean</code></td><td><p></p></td></tr></tbody></table></div></div><div><h3 class="api-name" id="obtainMessage(int,%20java.lang.Object)" data-unit="handler-291">obtainMessage</h3><div class="api-level"><div data-unit="handler-292">在 <a href="https://developer.android.com/guide/topics/manifest/uses-sdk-element#ApiLevels">API 级别 1</a> 中添加</div></div><div></div><div class="code-block"><pre><code>public final Message obtainMessage (int what,&#32;
+                Object obj)</code></pre></div><p data-unit="handler-293">与 <a href="https://developer.android.com/reference/android/os/Handler#obtainMessage()"><code>obtainMessage()</code></a> 相同，但还会设置返回的 Message 的 what 和 obj 成员。</p><p></p><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-294">参数</th></tr><tr><td data-unit="handler-295"><code>what</code></td><td><span data-unit="handler-296"><code>int</code>：要赋给返回的 Message.what 字段的值。</span><p></p></td></tr><tr><td data-unit="handler-297"><code>obj</code></td><td><span data-unit="handler-298"><code>Object</code>：要赋给返回的 Message.obj 字段的值。<br>此值可以为 <code>null</code>。</span><p></p></td></tr></tbody></table></div><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-299">返回值</th></tr><tr><td data-unit="handler-300"><code><a href="https://developer.android.com/reference/android/os/Message">Message</a></code></td><td><span data-unit="handler-301">来自全局消息池的一个 Message。<br>此值不能为 <code>null</code>。</span><p></p></td></tr></tbody></table></div></div><div><h3 class="api-name" id="obtainMessage()" data-unit="handler-302">obtainMessage</h3><div class="api-level"><div data-unit="handler-303">在 <a href="https://developer.android.com/guide/topics/manifest/uses-sdk-element#ApiLevels">API 级别 1</a> 中添加</div></div><div></div><div class="code-block"><pre><code>public final Message obtainMessage ()</code></pre></div><p data-unit="handler-304">从全局消息池中返回一个新的 <a href="https://developer.android.com/reference/android/os/Message"><code>Message</code></a>。这比创建和分配新实例更高效。所获取消息的 handler 会被设置为此实例（Message.target == this）。如果不需要此功能，直接调用 Message.obtain() 即可。</p><p></p><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-305">返回值</th></tr><tr><td data-unit="handler-306"><code><a href="https://developer.android.com/reference/android/os/Message">Message</a></code></td><td><span data-unit="handler-307">此值不能为 <code>null</code>。</span><p></p></td></tr></tbody></table></div></div><div><h3 class="api-name" id="obtainMessage(int,%20int,%20int)" data-unit="handler-308">obtainMessage</h3><div class="api-level"><div data-unit="handler-309">在 <a href="https://developer.android.com/guide/topics/manifest/uses-sdk-element#ApiLevels">API 级别 1</a> 中添加</div></div><div></div><div class="code-block"><pre><code>public final Message obtainMessage (int what,&#32;
+                int arg1,&#32;
+                int arg2)</code></pre></div><p data-unit="handler-310">与 <a href="https://developer.android.com/reference/android/os/Handler#obtainMessage()"><code>obtainMessage()</code></a> 相同，但还会设置返回的 Message 的 what、arg1 和 arg2 成员。</p><p></p><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-311">参数</th></tr><tr><td data-unit="handler-312"><code>what</code></td><td><span data-unit="handler-313"><code>int</code>：要赋给返回的 Message.what 字段的值。</span><p></p></td></tr><tr><td data-unit="handler-314"><code>arg1</code></td><td><span data-unit="handler-315"><code>int</code>：要赋给返回的 Message.arg1 字段的值。</span><p></p></td></tr><tr><td data-unit="handler-316"><code>arg2</code></td><td><span data-unit="handler-317"><code>int</code>：要赋给返回的 Message.arg2 字段的值。</span><p></p></td></tr></tbody></table></div><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-318">返回值</th></tr><tr><td data-unit="handler-319"><code><a href="https://developer.android.com/reference/android/os/Message">Message</a></code></td><td><span data-unit="handler-320">来自全局消息池的一个 Message。<br>此值不能为 <code>null</code>。</span><p></p></td></tr></tbody></table></div></div><div><h3 class="api-name" id="obtainMessage(int,%20int,%20int,%20java.lang.Object)" data-unit="handler-321">obtainMessage</h3><div class="api-level"><div data-unit="handler-322">在 <a href="https://developer.android.com/guide/topics/manifest/uses-sdk-element#ApiLevels">API 级别 1</a> 中添加</div></div><div></div><div class="code-block"><pre><code>public final Message obtainMessage (int what,&#32;
+                int arg1,&#32;
+                int arg2,&#32;
+                Object obj)</code></pre></div><p data-unit="handler-323">与 <a href="https://developer.android.com/reference/android/os/Handler#obtainMessage()"><code>obtainMessage()</code></a> 相同，但还会设置返回的 Message 的 what、obj、arg1 和 arg2 值。</p><p></p><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-324">参数</th></tr><tr><td data-unit="handler-325"><code>what</code></td><td><span data-unit="handler-326"><code>int</code>：要赋给返回的 Message.what 字段的值。</span><p></p></td></tr><tr><td data-unit="handler-327"><code>arg1</code></td><td><span data-unit="handler-328"><code>int</code>：要赋给返回的 Message.arg1 字段的值。</span><p></p></td></tr><tr><td data-unit="handler-329"><code>arg2</code></td><td><span data-unit="handler-330"><code>int</code>：要赋给返回的 Message.arg2 字段的值。</span><p></p></td></tr><tr><td data-unit="handler-331"><code>obj</code></td><td><span data-unit="handler-332"><code>Object</code>：要赋给返回的 Message.obj 字段的值。<br>此值可以为 <code>null</code>。</span><p></p></td></tr></tbody></table></div><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-333">返回值</th></tr><tr><td data-unit="handler-334"><code><a href="https://developer.android.com/reference/android/os/Message">Message</a></code></td><td><span data-unit="handler-335">来自全局消息池的一个 Message。<br>此值不能为 <code>null</code>。</span><p></p></td></tr></tbody></table></div></div><div><h3 class="api-name" id="obtainMessage(int)" data-unit="handler-336">obtainMessage</h3><div class="api-level"><div data-unit="handler-337">在 <a href="https://developer.android.com/guide/topics/manifest/uses-sdk-element#ApiLevels">API 级别 1</a> 中添加</div></div><div></div><div class="code-block"><pre><code>public final Message obtainMessage (int what)</code></pre></div><p data-unit="handler-338">与 <a href="https://developer.android.com/reference/android/os/Handler#obtainMessage()"><code>obtainMessage()</code></a> 相同，但还会设置返回的 Message 的 what 成员。</p><p></p><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-339">参数</th></tr><tr><td data-unit="handler-340"><code>what</code></td><td><span data-unit="handler-341"><code>int</code>：要赋给返回的 Message.what 字段的值。</span><p></p></td></tr></tbody></table></div><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-342">返回值</th></tr><tr><td data-unit="handler-343"><code><a href="https://developer.android.com/reference/android/os/Message">Message</a></code></td><td><span data-unit="handler-344">来自全局消息池的一个 Message。<br>此值不能为 <code>null</code>。</span><p></p></td></tr></tbody></table></div></div><div><h3 class="api-name" id="post(java.lang.Runnable)" data-unit="handler-345">post</h3><div class="api-level"><div data-unit="handler-346">在 <a href="https://developer.android.com/guide/topics/manifest/uses-sdk-element#ApiLevels">API 级别 1</a> 中添加</div></div><div></div><div class="code-block"><pre><code>public final boolean post (Runnable r)</code></pre></div><p data-unit="handler-347">将 Runnable r 添加到消息队列。该 Runnable 将在此 Handler 所关联的线程上运行。</p><p></p><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-348">参数</th></tr><tr><td data-unit="handler-349"><code>r</code></td><td><span data-unit="handler-350"><code>Runnable</code>：将要执行的 Runnable。<br>此值不能为 <code>null</code>。</span><p></p></td></tr></tbody></table></div><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-351">返回值</th></tr><tr><td data-unit="handler-352"><code>boolean</code></td><td><span data-unit="handler-353">如果成功将 Runnable 放入消息队列，则返回 true。失败时返回 false，通常是因为处理消息队列的 Looper 正在退出。</span><p></p></td></tr></tbody></table></div></div><div><h3 class="api-name" id="postAtFrontOfQueue(java.lang.Runnable)" data-unit="handler-354">postAtFrontOfQueue</h3><div class="api-level"><div data-unit="handler-355">在 <a href="https://developer.android.com/guide/topics/manifest/uses-sdk-element#ApiLevels">API 级别 1</a> 中添加</div></div><div></div><div class="code-block"><pre><code>public final boolean postAtFrontOfQueue (Runnable r)</code></pre></div><p data-unit="handler-356">向实现了 Runnable 的对象投递一条消息，使 Runnable r 在消息队列的下一次迭代中执行。该 Runnable 将在此 Handler 所关联的线程上运行。<strong>此方法仅适用于非常特殊的情况——它很容易使消息队列中的其他消息得不到处理、导致顺序问题，或产生其他意外副作用。</strong></p><p></p><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-357">参数</th></tr><tr><td data-unit="handler-358"><code>r</code></td><td><span data-unit="handler-359"><code>Runnable</code>：将要执行的 Runnable。<br>此值不能为 <code>null</code>。</span><p></p></td></tr></tbody></table></div><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-360">返回值</th></tr><tr><td data-unit="handler-361"><code>boolean</code></td><td><span data-unit="handler-362">如果成功将消息放入消息队列，则返回 true。失败时返回 false，通常是因为处理消息队列的 Looper 正在退出。</span><p></p></td></tr></tbody></table></div></div><div><h3 class="api-name" id="postAtTime(java.lang.Runnable,%20long)" data-unit="handler-363">postAtTime</h3><div class="api-level"><div data-unit="handler-364">在 <a href="https://developer.android.com/guide/topics/manifest/uses-sdk-element#ApiLevels">API 级别 1</a> 中添加</div></div><div></div><div class="code-block"><pre><code>public final boolean postAtTime (Runnable r,&#32;
+                long uptimeMillis)</code></pre></div><p data-unit="handler-365">将 Runnable r 添加到消息队列，使其在 uptimeMillis 指定的时间运行。<strong>时间基准为 <a href="https://developer.android.com/reference/android/os/SystemClock#uptimeMillis()"><code>SystemClock.uptimeMillis()</code></a>。</strong>深度睡眠所耗费的时间会额外延迟执行。该 Runnable 将在此 Handler 所关联的线程上运行。</p><p></p><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-366">参数</th></tr><tr><td data-unit="handler-367"><code>r</code></td><td><span data-unit="handler-368"><code>Runnable</code>：将要执行的 Runnable。<br>此值不能为 <code>null</code>。</span><p></p></td></tr><tr><td data-unit="handler-369"><code>uptimeMillis</code></td><td><span data-unit="handler-370"><code>long</code>：回调应运行的绝对时间，采用 <a href="https://developer.android.com/reference/android/os/SystemClock#uptimeMillis()"><code>SystemClock.uptimeMillis()</code></a> 时间基准。</span><p></p></td></tr></tbody></table></div><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-371">返回值</th></tr><tr><td data-unit="handler-372"><code>boolean</code></td><td><span data-unit="handler-373">如果成功将 Runnable 放入消息队列，则返回 true。失败时返回 false，通常是因为处理消息队列的 Looper 正在退出。注意，返回 true 并不意味着 Runnable 一定会被处理——如果在消息送达时间到来之前 Looper 就退出，该消息会被丢弃。</span><p></p></td></tr></tbody></table></div></div><div><h3 class="api-name" id="postAtTime(java.lang.Runnable,%20java.lang.Object,%20long)" data-unit="handler-374">postAtTime</h3><div class="api-level"><div data-unit="handler-375">在 <a href="https://developer.android.com/guide/topics/manifest/uses-sdk-element#ApiLevels">API 级别 1</a> 中添加</div></div><div></div><div class="code-block"><pre><code>public final boolean postAtTime (Runnable r,&#32;
+                Object token,&#32;
+                long uptimeMillis)</code></pre></div><p data-unit="handler-376">将 Runnable r 添加到消息队列，使其在 uptimeMillis 指定的时间运行。<strong>时间基准为 <a href="https://developer.android.com/reference/android/os/SystemClock#uptimeMillis()"><code>SystemClock.uptimeMillis()</code></a>。</strong>深度睡眠所耗费的时间会额外延迟执行。该 Runnable 将在此 Handler 所关联的线程上运行。</p><p></p><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-377">参数</th></tr><tr><td data-unit="handler-378"><code>r</code></td><td><span data-unit="handler-379"><code>Runnable</code>：将要执行的 Runnable。<br>此值不能为 <code>null</code>。</span><p></p></td></tr><tr><td data-unit="handler-380"><code>token</code></td><td><span data-unit="handler-381"><code>Object</code>：可通过 <a href="https://developer.android.com/reference/android/os/Handler#removeCallbacksAndMessages(java.lang.Object)"><code>removeCallbacksAndMessages(Object)</code></a> 取消 <code>r</code> 的实例。<br>此值可以为 <code>null</code>。</span><p></p></td></tr><tr><td data-unit="handler-382"><code>uptimeMillis</code></td><td><span data-unit="handler-383"><code>long</code>：回调应运行的绝对时间，采用 <a href="https://developer.android.com/reference/android/os/SystemClock#uptimeMillis()"><code>SystemClock.uptimeMillis()</code></a> 时间基准。</span><p></p></td></tr></tbody></table></div><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-384">返回值</th></tr><tr><td data-unit="handler-385"><code>boolean</code></td><td><span data-unit="handler-386">如果成功将 Runnable 放入消息队列，则返回 true。失败时返回 false，通常是因为处理消息队列的 Looper 正在退出。注意，返回 true 并不意味着 Runnable 一定会被处理——如果在消息送达时间到来之前 Looper 就退出，该消息会被丢弃。</span><p></p></td></tr></tbody></table></div><div><p data-unit="handler-387"><strong>另请参阅：</strong></p><ul class="nolist"><li data-unit="handler-388"><code><a href="https://developer.android.com/reference/android/os/SystemClock#uptimeMillis()">SystemClock.uptimeMillis()</a></code></li></ul></div></div><div><h3 class="api-name" id="postDelayed(java.lang.Runnable,%20long)" data-unit="handler-389">postDelayed</h3><div class="api-level"><div data-unit="handler-390">在 <a href="https://developer.android.com/guide/topics/manifest/uses-sdk-element#ApiLevels">API 级别 1</a> 中添加</div></div><div></div><div class="code-block"><pre><code>public final boolean postDelayed (Runnable r,&#32;
+                long delayMillis)</code></pre></div><p data-unit="handler-391">将 Runnable r 添加到消息队列，使其在经过指定时间后运行。该 Runnable 将在此 Handler 所关联的线程上运行。<strong>时间基准为 <a href="https://developer.android.com/reference/android/os/SystemClock#uptimeMillis()"><code>SystemClock.uptimeMillis()</code></a>。</strong>深度睡眠所耗费的时间会额外延迟执行。</p><p></p><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-392">参数</th></tr><tr><td data-unit="handler-393"><code>r</code></td><td><span data-unit="handler-394"><code>Runnable</code>：将要执行的 Runnable。<br>此值不能为 <code>null</code>。</span><p></p></td></tr><tr><td data-unit="handler-395"><code>delayMillis</code></td><td><span data-unit="handler-396"><code>long</code>：Runnable 执行前的延迟时间，单位为毫秒。</span><p></p></td></tr></tbody></table></div><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-397">返回值</th></tr><tr><td data-unit="handler-398"><code>boolean</code></td><td><span data-unit="handler-399">如果成功将 Runnable 放入消息队列，则返回 true。失败时返回 false，通常是因为处理消息队列的 Looper 正在退出。注意，返回 true 并不意味着 Runnable 一定会被处理——如果在消息送达时间到来之前 Looper 就退出，该消息会被丢弃。</span><p></p></td></tr></tbody></table></div></div><div><h3 class="api-name" id="postDelayed(java.lang.Runnable,%20java.lang.Object,%20long)" data-unit="handler-400">postDelayed</h3><div class="api-level"><div data-unit="handler-401">在 <a href="https://developer.android.com/guide/topics/manifest/uses-sdk-element#ApiLevels">API 级别 28</a> 中添加</div></div><div></div><div class="code-block"><pre><code>public final boolean postDelayed (Runnable r,&#32;
+                Object token,&#32;
+                long delayMillis)</code></pre></div><p data-unit="handler-402">将 Runnable r 添加到消息队列，使其在经过指定时间后运行。该 Runnable 将在此 Handler 所关联的线程上运行。<strong>时间基准为 <a href="https://developer.android.com/reference/android/os/SystemClock#uptimeMillis()"><code>SystemClock.uptimeMillis()</code></a>。</strong>深度睡眠所耗费的时间会额外延迟执行。</p><p></p><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-403">参数</th></tr><tr><td data-unit="handler-404"><code>r</code></td><td><span data-unit="handler-405"><code>Runnable</code>：将要执行的 Runnable。<br>此值不能为 <code>null</code>。</span><p></p></td></tr><tr><td data-unit="handler-406"><code>token</code></td><td><span data-unit="handler-407"><code>Object</code>：可通过 <a href="https://developer.android.com/reference/android/os/Handler#removeCallbacksAndMessages(java.lang.Object)"><code>removeCallbacksAndMessages(Object)</code></a> 取消 <code>r</code> 的实例。<br>此值可以为 <code>null</code>。</span><p></p></td></tr><tr><td data-unit="handler-408"><code>delayMillis</code></td><td><span data-unit="handler-409"><code>long</code>：Runnable 执行前的延迟时间，单位为毫秒。</span><p></p></td></tr></tbody></table></div><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-410">返回值</th></tr><tr><td data-unit="handler-411"><code>boolean</code></td><td><span data-unit="handler-412">如果成功将 Runnable 放入消息队列，则返回 true。失败时返回 false，通常是因为处理消息队列的 Looper 正在退出。注意，返回 true 并不意味着 Runnable 一定会被处理——如果在消息送达时间到来之前 Looper 就退出，该消息会被丢弃。</span><p></p></td></tr></tbody></table></div></div><div><h3 class="api-name" id="removeCallbacks(java.lang.Runnable)" data-unit="handler-413">removeCallbacks</h3><div class="api-level"><div data-unit="handler-414">在 <a href="https://developer.android.com/guide/topics/manifest/uses-sdk-element#ApiLevels">API 级别 1</a> 中添加</div></div><div></div><div class="code-block"><pre><code>public final void removeCallbacks (Runnable r)</code></pre></div><p data-unit="handler-415">移除消息队列中所有尚待处理、已投递的 Runnable r。</p><p data-unit="handler-416">此操作的最坏情况时间复杂度为 O(n)，其中 n 是队列中的消息数，应避免使用。可以考虑在队列之外采用其他机制取消待处理操作。例如，维护一个标志，指示操作被分派时应以其他方式执行，还是完全不执行。</p><p></p><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-417">参数</th></tr><tr><td data-unit="handler-418"><code>r</code></td><td><span data-unit="handler-419"><code>Runnable</code>：此值不能为 <code>null</code>。</span><p></p></td></tr></tbody></table></div></div><div><h3 class="api-name" id="removeCallbacks(java.lang.Runnable,%20java.lang.Object)" data-unit="handler-420">removeCallbacks</h3><div class="api-level"><div data-unit="handler-421">在 <a href="https://developer.android.com/guide/topics/manifest/uses-sdk-element#ApiLevels">API 级别 1</a> 中添加</div></div><div></div><div class="code-block"><pre><code>public final void removeCallbacks (Runnable r,&#32;
+                Object token)</code></pre></div><p data-unit="handler-422">移除消息队列中所有带有 Object token、尚待处理的已投递 Runnable r。如果 token 为 null，则移除所有回调。</p><p data-unit="handler-423">此操作的最坏情况时间复杂度为 O(n)，其中 n 是队列中的消息数，应避免使用。可以考虑在队列之外采用其他机制取消待处理操作。例如，维护一个标志，指示操作被分派时应以其他方式执行，还是完全不执行。</p><p></p><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-424">参数</th></tr><tr><td data-unit="handler-425"><code>r</code></td><td><span data-unit="handler-426"><code>Runnable</code>：此值不能为 <code>null</code>。</span><p></p></td></tr><tr><td data-unit="handler-427"><code>token</code></td><td><span data-unit="handler-428"><code>Object</code>：此值可以为 <code>null</code>。</span><p></p></td></tr></tbody></table></div></div><div><h3 class="api-name" id="removeCallbacksAndMessages(java.lang.Object)" data-unit="handler-429">removeCallbacksAndMessages</h3><div class="api-level"><div data-unit="handler-430">在 <a href="https://developer.android.com/guide/topics/manifest/uses-sdk-element#ApiLevels">API 级别 1</a> 中添加</div></div><div></div><div class="code-block"><pre><code>public final void removeCallbacksAndMessages (Object token)</code></pre></div><p data-unit="handler-431">移除所有尚待处理、obj 为 token 的已投递回调和已发送消息。如果 token 为 null，则移除所有回调和消息。</p><p></p><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-432">参数</th></tr><tr><td data-unit="handler-433"><code>token</code></td><td><span data-unit="handler-434"><code>Object</code>：此值可以为 <code>null</code>。</span><p></p></td></tr></tbody></table></div></div><div><h3 class="api-name" id="removeMessages(int)" data-unit="handler-435">removeMessages</h3><div class="api-level"><div data-unit="handler-436">在 <a href="https://developer.android.com/guide/topics/manifest/uses-sdk-element#ApiLevels">API 级别 1</a> 中添加</div></div><div></div><div class="code-block"><pre><code>public final void removeMessages (int what)</code></pre></div><p data-unit="handler-437">移除消息队列中所有代码为 'what'、尚待处理的已投递消息。注意，除非另行设置，否则 <code>Message#what</code> 为 0。调用 <code>postMessage(Runnable)</code> 或 <code>postAtTime(Runnable, long)</code> 时，<code>Runnable</code> 在内部会被包装为一个 <code>what</code> 为 0 的 <code>Message</code>。调用 <code>removeMessages(0)</code> 会移除所有未设置 <code>what</code> 的消息，包括已投递的 <code>Runnable</code>。</p><p data-unit="handler-438">此操作的最坏情况时间复杂度为 O(n)，其中 n 是队列中的消息数，应避免使用。可以考虑在队列之外采用其他机制取消待处理操作。例如，维护一个标志，指示操作被分派时应以其他方式执行，还是完全不执行。</p><p></p><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-439">参数</th></tr><tr><td data-unit="handler-440"><code>what</code></td><td><span data-unit="handler-441">
+          <code>int</code> </span><p></p></td></tr></tbody></table></div></div><div><h3 class="api-name" id="removeMessages(int,%20java.lang.Object)" data-unit="handler-442">removeMessages</h3><div class="api-level"><div data-unit="handler-443">在 <a href="https://developer.android.com/guide/topics/manifest/uses-sdk-element#ApiLevels">API 级别 1</a> 中添加</div></div><div></div><div class="code-block"><pre><code>public final void removeMessages (int what,&#32;
+                Object object)</code></pre></div><p data-unit="handler-444">移除消息队列中所有代码为 'what' 且 obj 为 'object'、尚待处理的已投递消息。如果 object 为 null，则移除所有消息。</p><p data-unit="handler-445">此操作的最坏情况时间复杂度为 O(n)，其中 n 是队列中的消息数，应避免使用。可以考虑在队列之外采用其他机制取消待处理操作。例如，维护一个标志，指示操作被分派时应以其他方式执行，还是完全不执行。</p><p></p><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-446">参数</th></tr><tr><td data-unit="handler-447"><code>what</code></td><td><span data-unit="handler-448">
+          <code>int</code> </span><p></p></td></tr><tr><td data-unit="handler-449"><code>object</code></td><td><span data-unit="handler-450"><code>Object</code>：此值可以为 <code>null</code>。</span><p></p></td></tr></tbody></table></div></div><div><h3 class="api-name" id="sendEmptyMessage(int)" data-unit="handler-451">sendEmptyMessage</h3><div class="api-level"><div data-unit="handler-452">在 <a href="https://developer.android.com/guide/topics/manifest/uses-sdk-element#ApiLevels">API 级别 1</a> 中添加</div></div><div></div><div class="code-block"><pre><code>public final boolean sendEmptyMessage (int what)</code></pre></div><p data-unit="handler-453">发送一条仅包含 what 值的 Message。</p><p></p><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-454">参数</th></tr><tr><td data-unit="handler-455"><code>what</code></td><td><span data-unit="handler-456">
+          <code>int</code> </span><p></p></td></tr></tbody></table></div><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-457">返回值</th></tr><tr><td data-unit="handler-458"><code>boolean</code></td><td><span data-unit="handler-459">如果成功将消息放入消息队列，则返回 true。失败时返回 false，通常是因为处理消息队列的 Looper 正在退出。</span><p></p></td></tr></tbody></table></div></div><div><h3 class="api-name" id="sendEmptyMessageAtTime(int,%20long)" data-unit="handler-460">sendEmptyMessageAtTime</h3><div class="api-level"><div data-unit="handler-461">在 <a href="https://developer.android.com/guide/topics/manifest/uses-sdk-element#ApiLevels">API 级别 1</a> 中添加</div></div><div></div><div class="code-block"><pre><code>public final boolean sendEmptyMessageAtTime (int what,&#32;
+                long uptimeMillis)</code></pre></div><p data-unit="handler-462">发送一条仅包含 what 值的 Message，在指定时间送达。</p><p></p><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-463">参数</th></tr><tr><td data-unit="handler-464"><code>what</code></td><td><span data-unit="handler-465">
+          <code>int</code> </span><p></p></td></tr><tr><td data-unit="handler-466"><code>uptimeMillis</code></td><td><span data-unit="handler-467">
+          <code>long</code> </span><p></p></td></tr></tbody></table></div><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-468">返回值</th></tr><tr><td data-unit="handler-469"><code>boolean</code></td><td><span data-unit="handler-470">如果成功将消息放入消息队列，则返回 true。失败时返回 false，通常是因为处理消息队列的 Looper 正在退出。</span><p></p></td></tr></tbody></table></div><div><p data-unit="handler-471"><strong>另请参阅：</strong></p><ul class="nolist"><li data-unit="handler-472"><code><a href="https://developer.android.com/reference/android/os/Handler#sendMessageAtTime(android.os.Message,%20long)">sendMessageAtTime(android.os.Message, long)</a></code></li></ul></div></div><div><h3 class="api-name" id="sendEmptyMessageDelayed(int,%20long)" data-unit="handler-473">sendEmptyMessageDelayed</h3><div class="api-level"><div data-unit="handler-474">在 <a href="https://developer.android.com/guide/topics/manifest/uses-sdk-element#ApiLevels">API 级别 1</a> 中添加</div></div><div></div><div class="code-block"><pre><code>public final boolean sendEmptyMessageDelayed (int what,&#32;
+                long delayMillis)</code></pre></div><p data-unit="handler-475">发送一条仅包含 what 值的 Message，在经过指定时间后送达。</p><p></p><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-476">参数</th></tr><tr><td data-unit="handler-477"><code>what</code></td><td><span data-unit="handler-478">
+          <code>int</code> </span><p></p></td></tr><tr><td data-unit="handler-479"><code>delayMillis</code></td><td><span data-unit="handler-480">
+          <code>long</code> </span><p></p></td></tr></tbody></table></div><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-481">返回值</th></tr><tr><td data-unit="handler-482"><code>boolean</code></td><td><span data-unit="handler-483">如果成功将消息放入消息队列，则返回 true。失败时返回 false，通常是因为处理消息队列的 Looper 正在退出。</span><p></p></td></tr></tbody></table></div><div><p data-unit="handler-484"><strong>另请参阅：</strong></p><ul class="nolist"><li data-unit="handler-485"><code><a href="https://developer.android.com/reference/android/os/Handler#sendMessageDelayed(android.os.Message,%20long)">sendMessageDelayed(android.os.Message, long)</a></code></li></ul></div></div><div><h3 class="api-name" id="sendMessage(android.os.Message)" data-unit="handler-486">sendMessage</h3><div class="api-level"><div data-unit="handler-487">在 <a href="https://developer.android.com/guide/topics/manifest/uses-sdk-element#ApiLevels">API 级别 1</a> 中添加</div></div><div></div><div class="code-block"><pre><code>public final boolean sendMessage (Message msg)</code></pre></div><p data-unit="handler-488">将消息推入消息队列末尾，位于所有计划在当前时间之前处理的待处理消息之后。你会在此 Handler 所关联的线程上，通过 <a href="https://developer.android.com/reference/android/os/Handler#handleMessage(android.os.Message)"><code>handleMessage(Message)</code></a> 收到它。</p><p></p><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-489">参数</th></tr><tr><td data-unit="handler-490"><code>msg</code></td><td><span data-unit="handler-491"><code>Message</code>：此值不能为 <code>null</code>。</span><p></p></td></tr></tbody></table></div><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-492">返回值</th></tr><tr><td data-unit="handler-493"><code>boolean</code></td><td><span data-unit="handler-494">如果成功将消息放入消息队列，则返回 true。失败时返回 false，通常是因为处理消息队列的 Looper 正在退出。</span><p></p></td></tr></tbody></table></div></div><div><h3 class="api-name" id="sendMessageAtFrontOfQueue(android.os.Message)" data-unit="handler-495">sendMessageAtFrontOfQueue</h3><div class="api-level"><div data-unit="handler-496">在 <a href="https://developer.android.com/guide/topics/manifest/uses-sdk-element#ApiLevels">API 级别 1</a> 中添加</div></div><div></div><div class="code-block"><pre><code>public final boolean sendMessageAtFrontOfQueue (Message msg)</code></pre></div><p data-unit="handler-497">将一条消息加入消息队列的队首，在消息循环的下一次迭代中处理。你会在此 Handler 所关联的线程上，通过 <a href="https://developer.android.com/reference/android/os/Handler#handleMessage(android.os.Message)"><code>handleMessage(Message)</code></a> 收到它。<strong>此方法仅适用于非常特殊的情况——它很容易使消息队列中的其他消息得不到处理、导致顺序问题，或产生其他意外副作用。</strong></p><p></p><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-498">参数</th></tr><tr><td data-unit="handler-499"><code>msg</code></td><td><span data-unit="handler-500"><code>Message</code>：此值不能为 <code>null</code>。</span><p></p></td></tr></tbody></table></div><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-501">返回值</th></tr><tr><td data-unit="handler-502"><code>boolean</code></td><td><span data-unit="handler-503">如果成功将消息放入消息队列，则返回 true。失败时返回 false，通常是因为处理消息队列的 Looper 正在退出。</span><p></p></td></tr></tbody></table></div></div><div><h3 class="api-name" id="sendMessageAtTime(android.os.Message,%20long)" data-unit="handler-504">sendMessageAtTime</h3><div class="api-level"><div data-unit="handler-505">在 <a href="https://developer.android.com/guide/topics/manifest/uses-sdk-element#ApiLevels">API 级别 1</a> 中添加</div></div><div></div><div class="code-block"><pre><code>public boolean sendMessageAtTime (Message msg,&#32;
+                long uptimeMillis)</code></pre></div><p data-unit="handler-506">将一条消息加入消息队列，位于所有计划在绝对时间 uptimeMillis（毫秒）之前处理的待处理消息之后。<strong>时间基准为 <a href="https://developer.android.com/reference/android/os/SystemClock#uptimeMillis()"><code>SystemClock.uptimeMillis()</code></a>。</strong>深度睡眠所耗费的时间会额外延迟执行。你会在此 Handler 所关联的线程上，通过 <a href="https://developer.android.com/reference/android/os/Handler#handleMessage(android.os.Message)"><code>handleMessage(Message)</code></a> 收到它。</p><p></p><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-507">参数</th></tr><tr><td data-unit="handler-508"><code>msg</code></td><td><span data-unit="handler-509"><code>Message</code>：此值不能为 <code>null</code>。</span><p></p></td></tr><tr><td data-unit="handler-510"><code>uptimeMillis</code></td><td><span data-unit="handler-511"><code>long</code>：消息应送达的绝对时间，采用 <a href="https://developer.android.com/reference/android/os/SystemClock#uptimeMillis()"><code>SystemClock.uptimeMillis()</code></a> 时间基准。</span><p></p></td></tr></tbody></table></div><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-512">返回值</th></tr><tr><td data-unit="handler-513"><code>boolean</code></td><td><span data-unit="handler-514">如果成功将消息放入消息队列，则返回 true。失败时返回 false，通常是因为处理消息队列的 Looper 正在退出。注意，返回 true 并不意味着消息一定会被处理——如果在消息送达时间到来之前 Looper 就退出，该消息会被丢弃。</span><p></p></td></tr></tbody></table></div></div><div><h3 class="api-name" id="sendMessageDelayed(android.os.Message,%20long)" data-unit="handler-515">sendMessageDelayed</h3><div class="api-level"><div data-unit="handler-516">在 <a href="https://developer.android.com/guide/topics/manifest/uses-sdk-element#ApiLevels">API 级别 1</a> 中添加</div></div><div></div><div class="code-block"><pre><code>public final boolean sendMessageDelayed (Message msg,&#32;
+                long delayMillis)</code></pre></div><p data-unit="handler-517">将一条消息加入消息队列，位于所有计划在（当前时间 + delayMillis）之前处理的待处理消息之后。你会在此 Handler 所关联的线程上，通过 <a href="https://developer.android.com/reference/android/os/Handler#handleMessage(android.os.Message)"><code>handleMessage(Message)</code></a> 收到它。</p><p></p><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-518">参数</th></tr><tr><td data-unit="handler-519"><code>msg</code></td><td><span data-unit="handler-520"><code>Message</code>：此值不能为 <code>null</code>。</span><p></p></td></tr><tr><td data-unit="handler-521"><code>delayMillis</code></td><td><span data-unit="handler-522">
+          <code>long</code> </span><p></p></td></tr></tbody></table></div><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-523">返回值</th></tr><tr><td data-unit="handler-524"><code>boolean</code></td><td><span data-unit="handler-525">如果成功将消息放入消息队列，则返回 true。失败时返回 false，通常是因为处理消息队列的 Looper 正在退出。注意，返回 true 并不意味着消息一定会被处理——如果在消息送达时间到来之前 Looper 就退出，该消息会被丢弃。</span><p></p></td></tr></tbody></table></div></div><div><h3 class="api-name" id="toString()" data-unit="handler-526">toString</h3><div class="api-level"><div data-unit="handler-527">在 <a href="https://developer.android.com/guide/topics/manifest/uses-sdk-element#ApiLevels">API 级别 1</a> 中添加</div></div><div></div><div class="code-block"><pre><code>public String toString ()</code></pre></div><p data-unit="handler-528">返回此对象的字符串表示。</p><p></p><div class="table-wrapper" tabindex="0"><table class="responsive"><tbody><tr><th colspan="2" data-unit="handler-529">返回值</th></tr><tr><td data-unit="handler-530"><code><a href="https://developer.android.com/reference/java/lang/String">String</a></code></td><td><span data-unit="handler-531">对象的字符串表示。</span><p></p></td></tr></tbody></table></div></div></div></article><nav class="chapter-switcher" aria-label="章节导航"><a href="../threads/index.html">← 进程与线程概览</a><a class="course-home" href="../index.html">全部章节</a><a href="../memory/index.html">内存管理概览 →</a></nav><footer class="license-note"><p>本阅读版为 Android Developers 英文文档正文全文的非官方中文译文。原文由 Android Developers / Android Open Source Project 维护；原代码、原图及其标识保留。<a href="../NOTICE.html">来源与许可说明</a>。</p></footer></main></body></html>
