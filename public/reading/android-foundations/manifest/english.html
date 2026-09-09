@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>App manifest overview｜RIN III</title><link rel="stylesheet" href="../../reader.css"><link rel="stylesheet" href="../source.css"></head>
+<body><nav class="site-nav" aria-label="站点导航"><a href="../index.html">← Android 基础 · 官方文档中文阅读版</a><a href="index.html">中文译文</a></nav>
+<main class="reader"><header class="chapter-header"><span class="chapter-kicker">第一周 · 第 1 天 · M03</span><h1>App manifest overview</h1><p class="byline"><a href="https://developer.android.com/guide/topics/manifest/manifest-intro?hl=en">App manifest overview · 官方英文原文</a></p><div class="title-rule"></div>
+<details class="source-details"><summary>阅读范围与原文目录</summary><p>引言；文件功能中的应用组件、权限与设备兼容性，含其子标题和示例。</p><p>原文核对：2026-09-09。正文按上述范围的原文顺序翻译；代码和图示保留原文。</p><ul><li><a href="#filef">File features</a></li><li><a href="#components">App components</a></li><li><a href="#perms">Permissions</a></li><li><a href="#compatibility">Device compatibility</a></li></ul></details><nav class="chapter-switcher" aria-label="章节导航"><a href="../build/english.html">← Android 构建结构</a><a class="course-home" href="../index.html">全部章节</a><a href="../intents/english.html">Intent 与 Intent Filter →</a></nav></header>
+<article class="translated-article"><div><p data-unit="manifest-001">Every app project must have an <code>AndroidManifest.xml</code> file, with precisely that
+name,
+at the root of the <a href="https://developer.android.com/studio/build#sourcesets">project source set</a>.
+<span>The manifest file describes essential information
+about your app to the Android build tools, the Android operating system, and
+Google Play.</span></p><p data-unit="manifest-002">Among many other things, the manifest file is required to declare the following:</p><ul><li data-unit="manifest-003">The components of the app, including all activities, services,
+broadcast receivers, and content providers. Each component must define basic
+properties, such as the name of its Kotlin or Java class. It can also declare
+capabilities, such as which device configurations it can handle, and
+intent filters that describe how the component can be started.
+<a href="https://developer.android.com/guide/topics/manifest/manifest-intro?hl=en#components">Read more about app components</a> in a following section.</li><li data-unit="manifest-004">The permissions that the app needs in order to
+access protected parts of the system or other apps. It also declares
+any permissions that other apps must have if they want to access content from this app.
+<a href="https://developer.android.com/guide/topics/manifest/manifest-intro?hl=en#perms">Read more about permissions</a> in a following section.
+</li><li data-unit="manifest-005">The hardware and software features the app requires, which affects which
+devices can install the app from Google Play. <a href="https://developer.android.com/guide/topics/manifest/manifest-intro?hl=en#compatibility">Read more about device compatibility</a> in a following section.</li></ul><p data-unit="manifest-006">If you're using <a href="https://developer.android.com/studio">Android Studio</a> to build your app, the manifest file
+is created for you and most of the essential manifest elements are added as
+you build your app, especially when using <a href="https://developer.android.com/studio/projects/templates">code templates</a>.</p><h2 id="filef" data-unit="manifest-007">File features</h2><p data-unit="manifest-008">The following sections describe how some of the most important characteristics
+of your app are reflected in the manifest file.</p><h3 id="components" data-unit="manifest-009">App components</h3><p data-unit="manifest-010">For each <a href="https://developer.android.com/guide/components/fundamentals#Components">app
+component</a> that you create in your app,
+declare a corresponding XML element in the manifest file:
+</p><ul><li data-unit="manifest-011"><code><a href="https://developer.android.com/guide/topics/manifest/activity-element">&lt;activity&gt;</a></code>
+  for each subclass of <code><a href="https://developer.android.com/reference/android/app/Activity">Activity</a></code></li><li data-unit="manifest-012"><code><a href="https://developer.android.com/guide/topics/manifest/service-element">&lt;service&gt;</a></code>
+  for each subclass of <code><a href="https://developer.android.com/reference/android/app/Service">Service</a></code></li><li data-unit="manifest-013"><code><a href="https://developer.android.com/guide/topics/manifest/receiver-element">&lt;receiver&gt;</a></code>
+  for each subclass of <code><a href="https://developer.android.com/reference/android/content/BroadcastReceiver">BroadcastReceiver</a></code></li><li data-unit="manifest-014"><code><a href="https://developer.android.com/guide/topics/manifest/provider-element">&lt;provider&gt;</a></code>
+  for each subclass of <code><a href="https://developer.android.com/reference/android/content/ContentProvider">ContentProvider</a></code></li></ul><p data-unit="manifest-015">If you subclass any of these components without declaring it in the manifest
+file, the system can't start it.</p><p data-unit="manifest-016">Specify the name of your subclass with the <code>name</code>
+attribute, using the full package designation. For example, an
+<code>Activity</code> subclass is declared as follows:
+</p><div></div><div class="code-block"><pre><code>&lt;manifest ... &gt;
+    &lt;application ... &gt;
+        &lt;activity android:name="com.example.myapp.MainActivity" ... &gt;
+        &lt;/activity&gt;
+    &lt;/application&gt;
+&lt;/manifest&gt;</code></pre></div><p data-unit="manifest-017">However, if the first character in the <code>name</code> value is a period,
+the app's namespace, from the module-level <code>build.gradle</code> file's
+<code><a href="https://developer.android.com/reference/tools/gradle-api/7.1/com/android/build/api/variant/Variant#namespace">namespace</a></code>
+property, is prefixed to the name. For example, if the namespace is
+<code>"com.example.myapp"</code>, the following activity name resolves to
+<code>com.example.myapp.MainActivity</code>:
+</p><div></div><div class="code-block"><pre><code>&lt;manifest ... &gt;
+    &lt;application ... &gt;
+        &lt;activity android:name=".MainActivity" ... &gt;
+            ...
+        &lt;/activity&gt;
+    &lt;/application&gt;
+&lt;/manifest&gt;</code></pre></div><p data-unit="manifest-018">For more information about setting the package name or namespace, see <a href="https://developer.android.com/studio/build/configure-app-module#set-namespace">Set the namespace</a>.</p><p data-unit="manifest-019">If you have app components that reside in sub-packages, such as in
+<code>com.example.myapp.purchases</code>, the <code>name</code> value must add the missing
+sub-package names, such as <code>".purchases.PayActivity"</code>, or use the
+fully qualified package name.</p><h4 id="ifs" data-unit="manifest-020">Intent filters</h4><p data-unit="manifest-021">
+App activities, services, and broadcast
+receivers are activated by <i>intents</i>. An intent is a message defined by
+an <code><a href="https://developer.android.com/reference/android/content/Intent">Intent</a></code> object that describes an
+action to perform, including the data to be acted on, the category of
+component that is expected to perform the action, and other instructions.</p><p data-unit="manifest-022">When an app issues an intent to the system, the system locates an app
+component that can handle the intent based on <i>intent filter</i>
+declarations in each app's manifest file. The system launches
+an instance of the matching component and passes the <code>Intent</code> object to that component. If more than one app can
+handle the intent, then the user can select which app to use.</p><p data-unit="manifest-023">An app component can have any number of intent filters (defined with the
+<code><a href="https://developer.android.com/guide/topics/manifest/intent-filter-element">&lt;intent-filter&gt;</a></code>
+element), each one describing a different capability of that component.
+</p><p data-unit="manifest-024">
+For more information, see the <a href="https://developer.android.com/guide/components/intents-filters">Intents and Intent Filters</a> document.
+</p><h4 id="iconlabel" data-unit="manifest-025">Icons and labels</h4><p data-unit="manifest-026">
+A number of manifest elements have <code>icon</code> and <code>label</code>
+attributes for displaying a small icon and a text label, respectively,
+to users for the corresponding app component.
+</p><p data-unit="manifest-027">In every case, the icon and label that are set in a parent element become the default
+<code>icon</code> and <code>label</code> value for all child elements.
+For example, the icon and label that are set in the
+<code><a href="https://developer.android.com/guide/topics/manifest/application-element">&lt;application&gt;</a></code>
+element are the default icon and label for each of the app's components, such as all activities.
+</p><p data-unit="manifest-028">The icon and label that are set in a component's
+<code><a href="https://developer.android.com/guide/topics/manifest/intent-filter-element">&lt;intent-filter&gt;</a></code>
+are shown to the user whenever that component is presented as an option to
+fulfill an intent. By default, this icon is inherited from whichever
+icon is declared for the parent component, either the
+<code><a href="https://developer.android.com/guide/topics/manifest/activity-element">&lt;activity&gt;</a></code> or
+<code>&lt;application&gt;</code> element.</p><p data-unit="manifest-029">You might want to change the icon
+for an intent filter if it provides a unique action that you'd like to better indicate in the
+chooser dialog. For more information, see <a href="https://developer.android.com/training/basics/intents/filters">Allow other apps to start your activity</a>.
+</p><h3 id="perms" data-unit="manifest-030">Permissions</h3><p data-unit="manifest-031">Android apps must request permission to access sensitive user data,
+such as contacts and SMS, or certain system features, such as the
+camera and internet access. Each permission is identified by a unique label.
+For example, an app that needs to send SMS messages must have the following
+line in the manifest: </p><div></div><div class="code-block"><pre><code>&lt;manifest ... &gt;
+    &lt;uses-permission android:name="android.permission.SEND_SMS"/&gt;
+    ...
+&lt;/manifest&gt;</code></pre></div><p data-unit="manifest-032">Beginning with
+Android 6.0 (API level 23), the user can approve or reject some app permissions at runtime. But
+no matter which Android version your app supports, you must declare all permission requests with a
+<code><a href="https://developer.android.com/guide/topics/manifest/uses-permission-element">&lt;uses-permission&gt;</a></code>
+element in the manifest. If the permission is granted, the app is able to use the protected
+features. If not, its attempts to access those features fail.
+</p><p data-unit="manifest-033">Your app can also protect its own components with permissions. It can use
+any of the permissions that are defined by Android, as listed in
+<code><a href="https://developer.android.com/reference/android/Manifest.permission">android.Manifest.permission</a></code>, or a permission
+that's declared in another app. Your app can also define its own permissions.
+A new permission is declared with the
+<code><a href="https://developer.android.com/guide/topics/manifest/permission-element">&lt;permission&gt;</a></code>
+element.</p><p data-unit="manifest-034">For more information, see <a href="https://developer.android.com/guide/topics/permissions/overview">Permissions
+on Android</a>.</p><h3 id="compatibility" data-unit="manifest-035">Device compatibility</h3><p data-unit="manifest-036">The manifest file is also where you can declare what types of hardware or
+software features your app requires and, by extension, which types of devices your app
+is compatible with. Google Play Store doesn't let users install your app
+on devices that don't provide the features or system version that your app
+requires.</p><p data-unit="manifest-037">There are several manifest tags that define which devices your app is
+compatible with. The following are some of the most common.</p><h4 id="uses-feature" data-unit="manifest-038">&lt;uses-feature&gt;</h4><p data-unit="manifest-039">The <a href="https://developer.android.com/guide/topics/manifest/uses-feature-element">
+<code>&lt;uses-feature&gt;</code></a> element lets you declare hardware and
+software features your app needs. For example, if your app can't achieve basic
+functionality on a device without a compass sensor, you can declare the compass
+sensor as required with the following manifest tag:</p><div></div><div class="code-block"><pre><code>&lt;manifest ... &gt;
+    &lt;uses-feature android:name="android.hardware.sensor.compass"
+                  android:required="true" /&gt;
+    ...
+&lt;/manifest&gt;</code></pre></div><p class="note" data-unit="manifest-040"><strong>Note</strong>:
+If you want to make your app available on Chromebooks, there are some
+important hardware and software feature limitations
+to consider. For more information, see
+<a href="https://developer.android.com/topic/arc/manifest">App manifest compatibility for
+Chromebooks</a>. </p><h4 id="uses-sdk" data-unit="manifest-041">&lt;uses-sdk&gt;</h4><p data-unit="manifest-042">Each successive platform version often adds new APIs not
+available in the previous version. To indicate the minimum version with which your app is
+compatible, your manifest must include the <a href="https://developer.android.com/guide/topics/manifest/uses-sdk-element"><code>&lt;uses-sdk&gt;</code></a> tag
+and its <a href="https://developer.android.com/guide/topics/manifest/uses-sdk-element#min"><code>minSdkVersion</code></a>
+attribute.</p><p data-unit="manifest-043">However, be aware that attributes in the <code>&lt;uses-sdk&gt;</code> element
+are overridden by corresponding properties
+in the <a href="https://developer.android.com/studio/build#build-files"><code>build.gradle</code></a> file.
+So, if you're using Android Studio, specify the <code>minSdkVersion</code> and
+<code>targetSdkVersion</code> values there instead:</p><div><div class="ds-selector-tabs"><section><h3 id="groovy" data-unit="manifest-044">Groovy</h3><div></div><div class="code-block"><pre><code>android {
+    defaultConfig {
+        applicationId 'com.example.myapp'
+
+        // Defines the minimum API level required to run the app.
+        minSdkVersion 23
+
+        // Specifies the API level used to test the app.
+        targetSdkVersion 36
+        ...
+    }
+}</code></pre></div></section><section><h3 id="kts" data-unit="manifest-045">Kotlin</h3><div></div><div class="code-block"><pre><code>android {
+    defaultConfig {
+        applicationId = "com.example.myapp"
+
+        // Defines the minimum API level required to run the app.
+        minSdkVersion(23)
+
+        // Specifies the API level used to test the app.
+        targetSdkVersion(36)
+        ...
+    }
+}</code></pre></div></section></div></div><p data-unit="manifest-046">For more information about the <code>build.gradle</code> file, read about <a href="https://developer.android.com/studio/build">how to configure your build</a>.</p><p data-unit="manifest-047">To learn more about how to declare your app's support for different devices,
+see the <a href="https://developer.android.com/guide/practices/compatibility">Device compatibility
+overview</a>.</p></div></article><nav class="chapter-switcher" aria-label="章节导航"><a href="../build/english.html">← Android 构建结构</a><a class="course-home" href="../index.html">全部章节</a><a href="../intents/english.html">Intent 与 Intent Filter →</a></nav><footer class="license-note"><p>本阅读版为 Android Developers 英文文档所选范围的非官方中文译文。原文由 Android Developers / Android Open Source Project 维护；原代码、原图及其标识保留。<a href="../NOTICE.html">来源与许可说明</a>。</p></footer></main></body></html>

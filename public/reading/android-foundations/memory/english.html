@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Overview of memory management｜RIN III</title><link rel="stylesheet" href="../../reader.css"><link rel="stylesheet" href="../source.css"></head>
+<body><nav class="site-nav" aria-label="站点导航"><a href="../index.html">← Android 基础 · 官方文档中文阅读版</a><a href="index.html">中文译文</a></nav>
+<main class="reader"><header class="chapter-header"><span class="chapter-kicker">第一周 · 第 3 天 · M10</span><h1>Overview of memory management</h1><p class="byline"><a href="https://developer.android.com/topic/performance/memory-overview?hl=en">Overview of memory management · 官方英文原文</a></p><div class="title-rule"></div>
+<details class="source-details"><summary>阅读范围与原文目录</summary><p>垃圾回收；限制应用内存；切换应用。</p><p>原文核对：2026-09-09。正文按上述范围的原文顺序翻译；代码和图示保留原文。</p><ul><li><a href="#gc">Garbage collection</a></li><li><a href="#RestrictingMemory">Restrict app memory</a></li><li><a href="#SwitchingApps">Switch apps</a></li></ul></details><nav class="chapter-switcher" aria-label="章节导航"><a href="../handler/english.html">← Handler</a><a class="course-home" href="../index.html">全部章节</a><a href="../layouts/english.html">View 中的布局 →</a></nav></header>
+<article class="translated-article"><div><h2 id="gc" data-unit="memory-001">Garbage collection</h2><p data-unit="memory-002">
+  A managed memory environment, like the ART or Dalvik virtual machine,
+  keeps track of each memory allocation. Once it determines
+  that a piece of memory is no longer being used by the program,
+  it frees it back to the heap, without any intervention from the programmer.
+  The mechanism for reclaiming unused memory
+  within a managed memory environment
+  is known as <i>garbage collection</i>. Garbage collection has two goals:
+  find data objects in a program that cannot be accessed in the future; and
+  reclaim the resources used by those objects.
+</p><p data-unit="memory-003">
+  Android’s memory heap is a generational one, meaning that there are
+  different buckets of allocations that it tracks,
+  based on the expected life and size of an object being allocated.
+  For example, recently allocated objects belong in the <i>Young generation</i>.
+  When an object stays active long enough, it can be promoted
+  to an older generation, followed by a permanent generation.
+</p><p data-unit="memory-004">
+  Each heap generation has its own dedicated upper limit on the amount
+  of memory that objects there can occupy. Any time a generation starts
+  to fill up, the system executes a garbage collection
+  event in an attempt to free up memory. The duration of the garbage collection
+  depends on which generation of objects it's collecting
+  and how many active objects are in each generation.
+</p><p data-unit="memory-005">
+  Even though garbage collection can be quite fast, it can still
+  affect your app's performance. You don’t generally control
+  when a garbage collection event occurs from within your code.
+  The system has a running set of criteria for determining when to perform
+  garbage collection. When the criteria are satisfied,
+  the system stops executing the process and begins garbage collection. If
+  garbage collection occurs in the middle of an intensive processing loop
+  like an animation or during music playback, it can increase processing time.
+  This increase can potentially push code execution in your app past the
+  recommended 16ms threshold for efficient and smooth frame rendering.
+</p><p data-unit="memory-006">
+  Additionally, your code flow may perform kinds of work that
+  force garbage collection events to occur
+  more often or make them last longer-than-normal.
+  For example, if you allocate multiple objects in the
+  innermost part of a for-loop during each frame of an alpha
+  blending animation, you might pollute your memory heap with a
+  lot of objects.
+  In that circumstance, the garbage collector executes multiple garbage
+  collection events and can degrade the performance of your app.
+</p><p data-unit="memory-007">
+  For more general information about garbage collection, see
+  <a href="https://en.wikipedia.org/wiki/Garbage_collection_(computer_science)" class="external-link">Garbage collection</a>.
+</p><h2 id="RestrictingMemory" data-unit="memory-008">Restrict app memory</h2><p data-unit="memory-009">
+  To maintain a functional multi-tasking environment,
+  Android sets a hard limit on the heap size
+  for each app. The exact heap size limit varies
+  between devices based on how much RAM the device
+  has available overall. If your app has reached the
+  heap capacity and tries to allocate more
+  memory, it can receive an <code><a href="https://developer.android.com/reference/java/lang/OutOfMemoryError">OutOfMemoryError</a></code>.
+</p><p data-unit="memory-010">
+  In some cases, you might want to query the
+  system to determine exactly how much heap space you
+  have available on the current device—for example, to
+  determine how much data is safe to keep in a
+  cache. You can query the system for this figure by calling
+  <code><a href="https://developer.android.com/reference/android/app/ActivityManager#getMemoryClass()">getMemoryClass()</a></code>.
+  This method returns an integer indicating the number of
+  megabytes available for your app's heap.
+</p><h2 id="SwitchingApps" data-unit="memory-011">Switch apps</h2><p data-unit="memory-012">
+  When users switch between apps,
+  Android keeps apps that
+  are not foreground—that is, not visible to the user or running a
+  foreground service like music playback—
+  in a cache.
+  For example, when a user first launches an app,
+  a process is created for it; but when the user
+  leaves the app, that process does <em>not</em> quit.
+  The system keeps the process cached. If
+  the user later returns to the app, the system reuses the process, thereby
+  making the app switching faster.
+</p><p data-unit="memory-013">
+  If your app has a cached process and it retains resources
+  that it currently does not need,
+  then your app—even while the user is not using it—
+  affects the system's
+  overall performance. As the system runs low on resources like memory,
+  it kills processes in the cache. The system also
+  accounts for processes that hold onto the most memory
+  and can terminate them to free up RAM.
+</p><p class="note" data-unit="memory-014">
+  <strong>Note:</strong> The less memory your app consumes while in the cache,
+  the better its chances are not to be killed and to be able to quickly resume.
+  However, depending on instantanous system requirements, it's possible for cached
+  processes to be terminated at any time no matter their resource utilization.
+</p><p data-unit="memory-015">
+  For more information about how processes are cached while
+  not running in the foreground and how
+  Android decides which ones
+  can be killed, see the
+  <a href="https://developer.android.com/guide/components/processes-and-threads">Processes and Threads</a>
+  guide.
+</p></div></article><nav class="chapter-switcher" aria-label="章节导航"><a href="../handler/english.html">← Handler</a><a class="course-home" href="../index.html">全部章节</a><a href="../layouts/english.html">View 中的布局 →</a></nav><footer class="license-note"><p>本阅读版为 Android Developers 英文文档所选范围的非官方中文译文。原文由 Android Developers / Android Open Source Project 维护；原代码、原图及其标识保留。<a href="../NOTICE.html">来源与许可说明</a>。</p></footer></main></body></html>

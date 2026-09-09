@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Processes and threads overview｜RIN III</title><link rel="stylesheet" href="../../reader.css"><link rel="stylesheet" href="../source.css"></head>
+<body><nav class="site-nav" aria-label="站点导航"><a href="../index.html">← Android 基础 · 官方文档中文阅读版</a><a href="index.html">中文译文</a></nav>
+<main class="reader"><header class="chapter-header"><span class="chapter-kicker">第一周 · 第 3 天 · M08</span><h1>Processes and threads overview</h1><p class="byline"><a href="https://developer.android.com/guide/components/processes-and-threads?hl=en">Processes and threads overview · 官方英文原文</a></p><div class="title-rule"></div>
+<details class="source-details"><summary>阅读范围与原文目录</summary><p>正文全文，含进程、线程、工作线程、线程安全方法与进程间通信。</p><p>原文核对：2026-09-09。正文按上述范围的原文顺序翻译；代码和图示保留原文。</p><ul><li><a href="#Processes">Processes</a></li><li><a href="#Threads">Threads</a></li><li><a href="#WorkerThreads">Worker threads</a></li><li><a href="#ThreadSafe">Thread-safe methods</a></li><li><a href="#IPC">Interprocess communication</a></li></ul></details><nav class="chapter-switcher" aria-label="章节导航"><a href="../saving/english.html">← 保存 UI 状态</a><a class="course-home" href="../index.html">全部章节</a><a href="../handler/english.html">Handler →</a></nav></header>
+<article class="translated-article"><div><p data-unit="threads-001">When an application component starts and the application doesn't have any other components
+running, the Android system starts a new Linux process for the application with a single thread of
+execution. By default, all components of the same application run in the same process and thread,
+called the <em>main</em> thread.</p><p data-unit="threads-002">If an application component starts and there is already a process
+for that application, because another component from the application already started, then the component
+starts within that process and uses the same thread of execution. However, you can arrange for
+different components in your application to run in separate processes, and you can create additional
+threads for any process.</p><p data-unit="threads-003">This document discusses how processes and threads work in an Android application.</p><h2 id="Processes" data-unit="threads-004">Processes</h2><p data-unit="threads-005">By default, all of an application's components run in the same process, and most applications
+don't change this. However, if you find that you need to control which process a certain
+component belongs to, you can do so in the manifest file.</p><p data-unit="threads-006">The manifest entry for each type of component element—<a href="https://developer.android.com/guide/topics/manifest/activity-element"><code>&lt;activity&gt;</code></a>, <a href="https://developer.android.com/guide/topics/manifest/service-element"><code>&lt;service&gt;</code></a>, <a href="https://developer.android.com/guide/topics/manifest/receiver-element"><code>&lt;receiver&gt;</code></a>, and <a href="https://developer.android.com/guide/topics/manifest/provider-element"><code>&lt;provider&gt;</code></a>—supports an <code>android:process</code> attribute that can specify a
+process the component runs in. You can set this attribute so that each component runs
+in its own process or so that some components share a process while others don't.</p><p data-unit="threads-007">You can also set
+<code>android:process</code> so that components of different applications run in the same
+process, provided that the applications share the same Linux user ID and are signed with the
+same certificates.</p><p data-unit="threads-008">The <a href="https://developer.android.com/guide/topics/manifest/application-element"><code>&lt;application&gt;</code></a>
+element also supports an <code>android:process</code> attribute, which you can use to set a
+default value that applies to all components.</p><p data-unit="threads-009">Android might decide to shut down a process at some point, when resources are
+required by other processes that are more immediately serving the user. Application
+components running in the process that's shut down are consequently destroyed.  A process is started
+again for those components when there's work for them to do.</p><p data-unit="threads-010">When deciding which processes to shut down, the Android system weighs their relative importance to
+the user.  For example, it more readily shuts down a process hosting activities that are no longer
+visible on screen, compared to a process hosting visible activities. The decision of whether to
+terminate a process, therefore, depends on the state of the components running in that process.</p><p data-unit="threads-011"> The details of the process lifecycle and its relationship to application states are discussed in
+<a href="https://developer.android.com/guide/topics/processes/process-lifecycle">Processes and app lifecycle</a>. </p><h2 id="Threads" data-unit="threads-012">Threads</h2><p data-unit="threads-013">When an application is launched, the system creates a thread of execution for the application,
+called the <em>main thread</em>. This thread is very important, because it is in charge of dispatching events to
+the appropriate user interface widgets, including drawing events. It is also
+almost always the thread in which your application interacts with components
+from the Android UI toolkit's <code><a href="https://developer.android.com/reference/android/widget/package-summary">android.widget</a></code> and
+<code><a href="https://developer.android.com/reference/android/view/package-summary">android.view</a></code> packages.
+For this reason, the main thread is sometimes
+called the <em>UI thread</em>. However, under special circumstances, an app's main
+thread might not be its UI thread. For more information, see <a href="https://developer.android.com/studio/write/annotations#thread-annotations">Thread
+annotations</a>.</p><p data-unit="threads-014">The system does <em>not</em> create a separate thread for each instance of a component. All
+components that run in the same process are instantiated in the UI thread, and system calls to
+each component are dispatched from that thread. Consequently, methods that respond to system
+callbacks—such as <code><a href="https://developer.android.com/reference/android/view/View#onKeyDown(int,%20android.view.KeyEvent)">onKeyDown()</a></code>
+to report user actions, or a lifecycle callback method—always run in the UI thread of the process.</p><p data-unit="threads-015">For example, when the user touches a button on the screen, your app's UI thread dispatches the
+touch event to the widget, which in turn sets its pressed state and posts an invalidate request to
+the event queue. The UI thread dequeues the request and notifies the widget to redraw
+itself.</p><p data-unit="threads-016">Unless you implement your application properly, this single-thread model
+can yield poor performance when your app performs intensive work in response to user interaction.
+Performing long operations in the UI thread, such as network access or
+database queries, blocks the whole UI. When the thread is blocked, no events can be dispatched,
+including drawing events.</p><p data-unit="threads-017">From the user's perspective, the
+application appears to stop responding. Even worse, if the UI thread is blocked for more than a few seconds,
+the user is presented with the "<a href="https://developer.android.com/guide/practices/responsiveness">application not
+responding</a>" (ANR) dialog. The user might then decide to quit your application or even uninstall
+it.</p><p data-unit="threads-018">Bear in mind that the Android UI toolkit is <em>not</em> thread-safe. So, don't manipulate
+your UI from a worker thread. Do all manipulation to your user interface from the UI
+thread. There are two rules to Android's single-thread model:</p><ol><li data-unit="threads-019">Don't block the UI thread.</li><li data-unit="threads-020">Don't access the Android UI toolkit from outside the UI thread.</li></ol><h3 id="WorkerThreads" data-unit="threads-021">Worker threads</h3><p data-unit="threads-022">Because of this single-thread model, it's vital to the responsiveness of your
+application's UI that you don't block the UI thread. If you have operations to perform
+that aren't instantaneous, make sure to do them in separate <em>background</em> or
+<em>worker</em> threads. Just remember that you can't update the UI from any thread other than
+the UI, or main, thread. </p><p data-unit="threads-023">To help you follow these rules, Android offers several ways to access the UI thread from other
+threads. Here is a list of methods that can help:</p><ul><li data-unit="threads-024"><code><a href="https://developer.android.com/reference/android/app/Activity#runOnUiThread(java.lang.Runnable)">Activity.runOnUiThread(Runnable)</a></code></li><li data-unit="threads-025"><code><a href="https://developer.android.com/reference/android/view/View#post(java.lang.Runnable)">View.post(Runnable)</a></code></li><li data-unit="threads-026"><code><a href="https://developer.android.com/reference/android/view/View#postDelayed(java.lang.Runnable,%20long)">View.postDelayed(Runnable,
+long)</a></code></li></ul><p data-unit="threads-027">The following examples demonstrate how to offload a task to a background thread and update the UI thread once the task is complete:</p><div class="code-variants"><section><h3 id="kotlin" data-unit="threads-028">Kotlin</h3><div></div><div class="code-block"><pre><code>// Kotlin coroutines implementation.
+fun onClick(v: View) {
+    // Launch a coroutine in the lifecycle scope (e.g., in an Activity or Fragment).
+    lifecycleScope.launch {
+        // Run the blocking task on the IO dispatcher.
+        val bitmap = withContext(Dispatchers.IO) {
+            BitmapFactory.decodeFile("image.png")
+        }
+        // Back on the main thread, update the UI.
+        imageView.setImageBitmap(bitmap)
+    }
+}</code></pre></div></section><section><h3 id="java" data-unit="threads-029">Java</h3><div></div><div class="code-block"><pre><code>// Java Executor implementation.
+// (executorService is assumed to be defined elsewhere).
+public void onClick(View v) {
+    executorService.execute(() -&gt; {
+        // Run the heavy task on a background thread.
+        Bitmap bitmap = BitmapFactory.decodeFile("image.png");
+
+        // Update the View on the UI thread.
+        imageView.post(() -&gt; imageView.setImageBitmap(bitmap));
+    });
+}</code></pre></div></section></div><p data-unit="threads-030">This implementation is thread-safe, because the background operation is done from a separate thread
+while the <code><a href="https://developer.android.com/reference/android/widget/ImageView">ImageView</a></code> is always manipulated from the UI thread.</p><p data-unit="threads-031">However, as the complexity of the operation grows, this kind of code can get complicated and
+difficult to maintain. To handle more complex interactions with a worker thread, you might consider
+using a <code><a href="https://developer.android.com/reference/android/os/Handler">Handler</a></code> in your worker thread
+to process messages delivered from the UI thread. For a full explanation of how to
+schedule work on background threads and communicate back to the UI thread, see
+<a href="https://developer.android.com/training/multiple-threads">Background Work Overview</a>.</p><h3 id="ThreadSafe" data-unit="threads-032">Thread-safe methods</h3><p data-unit="threads-033"> In some situations, the methods you implement are called from more than one thread, and
+therefore must be written to be thread-safe. </p><p data-unit="threads-034">This is primarily true for methods that can be called remotely, such as methods in a <a href="https://developer.android.com/guide/components/bound-services">bound service</a>. When a call on a
+method implemented in an <code><a href="https://developer.android.com/reference/android/os/IBinder">IBinder</a></code> originates in the same process in which the
+<code>IBinder</code> is running, the method is executed in the caller's thread.
+However, when the call originates in another process, the method executes in a thread chosen from
+a pool of threads that the system maintains in the same process as the <code>IBinder</code>.
+It's not executed in the UI thread of the process.</p><p data-unit="threads-035">For example, whereas a service's
+<code><a href="https://developer.android.com/reference/android/app/Service#onBind(android.content.Intent)">onBind()</a></code> method is called from the UI thread of the
+service's process, methods implemented in the object that <code>onBind()</code> returns, such as a
+subclass that implements remote procedure call (RPC) methods, are called from threads
+in the pool. Because a service can have more than one client, more than one pool thread can engage
+the same <code>IBinder</code> method at the same time, so <code>IBinder</code> methods must be
+implemented to be thread-safe.</p><p data-unit="threads-036"> Similarly, a content provider can receive data requests that originate in other processes.
+The <code><a href="https://developer.android.com/reference/android/content/ContentResolver">ContentResolver</a></code> and <code><a href="https://developer.android.com/reference/android/content/ContentProvider">ContentProvider</a></code>
+classes hide the details of how the interprocess communication (IPC) is managed,
+but the <code>ContentProvider</code> methods that respond to those requests—the methods
+<code><a href="https://developer.android.com/reference/android/content/ContentProvider#query(android.net.Uri,%20java.lang.String[],%20android.os.Bundle,%20android.os.CancellationSignal)">query()</a></code>,
+<code><a href="https://developer.android.com/reference/android/content/ContentProvider#insert(android.net.Uri,%20android.content.ContentValues)">insert()</a></code>,
+<code><a href="https://developer.android.com/reference/android/content/ContentProvider#delete(android.net.Uri,%20java.lang.String,%20java.lang.String[])">delete()</a></code>,
+<code><a href="https://developer.android.com/reference/android/content/ContentProvider#update(android.net.Uri,%20android.content.ContentValues,%20java.lang.String,%20java.lang.String[])">update()</a></code>,
+and <code><a href="https://developer.android.com/reference/android/content/ContentProvider#getType(android.net.Uri)">getType()</a></code>—are
+called from a pool of threads in the content provider's process, not the UI
+thread for the process.  Because these methods might be called from any number of threads at the
+same time, they too must be implemented to be thread-safe. </p><h2 id="IPC" data-unit="threads-037">Interprocess communication</h2><p data-unit="threads-038">Android offers a mechanism for IPC using RPCs, in which a method is called by an activity or other application
+component but executed remotely in another process, with any result returned back to the
+caller. This entails decomposing a method call and its data to a level the operating system can
+understand, transmitting it from the local process and address space to the remote process and
+address space, and then reassembling and reenacting the call there.</p><p data-unit="threads-039">Return values are then
+transmitted in the opposite direction.  Android provides all the code to perform these IPC
+transactions, so you can focus on defining and implementing the RPC programming interface.</p><p data-unit="threads-040">To perform IPC, your application must bind to a service using <code><a href="https://developer.android.com/reference/android/content/Context#bindService(android.content.Intent,%20android.content.ServiceConnection,%20int)">bindService()</a></code>. For more information, see the <a href="https://developer.android.com/guide/components/services">Services overview</a>.</p></div></article><nav class="chapter-switcher" aria-label="章节导航"><a href="../saving/english.html">← 保存 UI 状态</a><a class="course-home" href="../index.html">全部章节</a><a href="../handler/english.html">Handler →</a></nav><footer class="license-note"><p>本阅读版为 Android Developers 英文文档所选范围的非官方中文译文。原文由 Android Developers / Android Open Source Project 维护；原代码、原图及其标识保留。<a href="../NOTICE.html">来源与许可说明</a>。</p></footer></main></body></html>

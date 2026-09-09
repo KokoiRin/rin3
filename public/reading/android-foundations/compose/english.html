@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Thinking in Compose｜RIN III</title><link rel="stylesheet" href="../../reader.css"><link rel="stylesheet" href="../source.css"></head>
+<body><nav class="site-nav" aria-label="站点导航"><a href="../index.html">← Android 基础 · 官方文档中文阅读版</a><a href="index.html">中文译文</a></nav>
+<main class="reader"><header class="chapter-header"><span class="chapter-kicker">第一周 · 第 4 天 · M16</span><h1>Thinking in Compose</h1><p class="byline"><a href="https://developer.android.com/develop/ui/compose/mental-model?hl=en">Thinking in Compose · 官方英文原文</a></p><div class="title-rule"></div>
+<details class="source-details"><summary>阅读范围与原文目录</summary><p>引言；声明式编程范式；可组合函数示例；声明式范式转变。</p><p>原文核对：2026-09-09。正文按上述范围的原文顺序翻译；代码和图示保留原文。</p><ul><li><a href="#paradigm">The declarative programming paradigm</a></li><li><a href="#simple-example">An example composable function</a></li><li><a href="#declarative-paradigm-shift">The declarative paradigm shift</a></li></ul></details><nav class="chapter-switcher" aria-label="章节导航"><a href="../viewmodel/english.html">← ViewModel 概览</a><a class="course-home" href="../index.html">全部章节</a><a href="../coroutines/english.html">Android 上的 Kotlin 协程 →</a></nav></header>
+<article class="translated-article"><div><p data-unit="compose-001">Jetpack Compose is a modern declarative UI Toolkit for Android. Compose
+simplifies writing and maintaining your app UI by providing a
+<em>declarative API</em> that lets you render your app UI without imperatively
+mutating frontend views. This terminology needs some explanation, but the
+implications are important for your app design.</p><h2 id="paradigm" data-unit="compose-002">The declarative programming paradigm</h2><p data-unit="compose-003">Historically, an Android view hierarchy has been representable as a tree of UI
+widgets. As the state of the app changes because of things like user
+interactions, the UI hierarchy needs to be updated to display the current data.
+The most common way of updating the UI is to walk the tree using functions like
+<a href="https://developer.android.com/reference/android/view/View#findViewById(int)"><code>findViewById()</code></a>, and change
+nodes by calling methods like <code>button.setText(String)</code>,
+<code>container.addChild(View)</code>, or <code>img.setImageBitmap(Bitmap)</code>. These methods
+change the internal state of the widget.</p><p data-unit="compose-004">Manipulating views manually increases the likelihood of errors. If a piece of
+data is rendered in multiple places, you might forget to update one of the
+views that shows it. This can also lead to illegal states, when two updates
+conflict in an unexpected way. For example, an update might try to set a value
+of a node that was just removed from the UI. In general, the software
+maintenance complexity grows with the number of views that require updating.</p><p data-unit="compose-005">Over the last several years, the entire industry has started shifting to a
+declarative UI model, which simplifies building and updating user interfaces.</p><p data-unit="compose-006">The technique works by conceptually regenerating the entire screen from
+scratch, then applying only the necessary changes. This approach avoids the
+complexity of manually updating a stateful view hierarchy. Compose is a
+declarative UI framework.</p><p data-unit="compose-007">One challenge with regenerating the entire screen is that it is potentially
+expensive, in terms of time, computing power, and battery usage. To mitigate
+this cost, Compose intelligently chooses which parts of the UI need to be
+redrawn at any given time. This does have some implications for how you design
+your UI components, as discussed in <a href="https://developer.android.com/develop/ui/compose/mental-model?hl=en#recomposition">Recomposition</a>.</p><h2 id="simple-example" data-unit="compose-008">An example composable function</h2><p data-unit="compose-009">Using Compose, you can build your user interface by defining a set of
+<em>composable</em> functions that take in data and emit UI elements. An example
+is a <code>Greeting</code> widget, which takes in a <code>String</code> and emits a <code>Text</code> widget
+which displays a greeting message.</p><figure id="image-1"><img src="../assets/mmodel-simple.png" alt="A phone showing the text Hello World, and the code for the composable function that generates that
+  UI." loading="lazy"><figcaption data-unit="compose-010"><b>Figure 1.</b> A composable function that is passed data and uses it to
+render a text widget on the screen.</figcaption></figure><p data-unit="compose-011">A few noteworthy things about this function:</p><ul><li data-unit="compose-012"><strong>Annotation:</strong> The function is annotated with the <code>@Composable</code> annotation.
+All composable functions must have this annotation. This annotation informs
+the Compose compiler that this function is intended to convert data into UI.</li><li data-unit="compose-013"><strong>Data input:</strong> The function takes in data. Composable functions can accept
+parameters, which let the app logic describe the UI. In this case, our
+widget accepts a <code>String</code> so it can greet the user by name.</li><li data-unit="compose-014"><strong>UI display:</strong> The function displays text in the UI. It does so by calling
+the <code>Text()</code> composable function, which actually creates the text UI
+element. Composable functions emit UI hierarchy by calling other composable
+functions.</li><li data-unit="compose-015"><strong>No return value:</strong> The function doesn't return anything. Compose functions
+that emit UI don't need to return anything, because they describe the target
+screen state instead of constructing UI widgets.</li><li><p data-unit="compose-016"><strong>Properties:</strong> This function is fast,
+<a href="https://en.wikipedia.org/wiki/Idempotence#Computer_science_meaning" class="external">idempotent</a>, and free of <em>side-effects</em>.</p><ul><li data-unit="compose-017">The function behaves the same way when called multiple times with the
+same argument, and it does not use other values such as global variables
+or calls to <code>random()</code>.</li><li data-unit="compose-018">The function describes the UI without any side-effects, such as
+modifying properties or global variables.</li></ul><p data-unit="compose-019">In general, all composable functions must be written with these
+properties, for reasons discussed in <a href="https://developer.android.com/develop/ui/compose/mental-model?hl=en#recomposition">Recomposition</a>.</p></li></ul><h2 id="declarative-paradigm-shift" data-unit="compose-020">The declarative paradigm shift</h2><p data-unit="compose-021">With many imperative object-oriented UI toolkits, you initialize the UI by
+instantiating a tree of widgets. You often do this by inflating an XML layout
+file. Each widget maintains its own internal state, and exposes getter and
+setter methods that let the app logic interact with the widget.</p><p data-unit="compose-022">In Compose's declarative approach, widgets are relatively stateless and don't
+expose setter or getter functions. In fact, widgets are not exposed as objects.
+You update the UI by calling the same composable function with different
+arguments. This simplifies providing state to architectural patterns such as
+a <a href="https://developer.android.com/reference/androidx/lifecycle/ViewModel"><code>ViewModel</code></a>, as described in the
+<a href="https://developer.android.com/jetpack/guide">Guide to app architecture</a>. Then, your composables are
+responsible for transforming the current application state into a UI every time
+the observable data updates.</p><figure id="image-2"><img src="../assets/mmodel-flow-data.png" alt="Illustration of the flow of data in a Compose UI, from high-level objects down
+to their children." loading="lazy"><figcaption data-unit="compose-023"><b>Figure 2.</b> The app logic provides data to the top-level composable function.
+That function uses the data to describe the UI by calling other composables, and
+passes the appropriate data to those composables, and on down the hierarchy.</figcaption></figure><p data-unit="compose-024">When the user interacts with the UI, the UI raises events such as <code>onClick</code>.
+Those events should notify the app logic, which can then change the app's state.
+When the state changes, the composable functions are called again with the new
+data. This causes the UI elements to be redrawn--this process is called
+<em>recomposition</em>.</p><figure id="image-3"><img src="../assets/mmodel-flow-events.png" alt="Illustration of how UI elements respond to interaction, by triggering events that are handled by the app
+logic." loading="lazy"><figcaption data-unit="compose-025"><b>Figure 3.</b> The user interacted with a UI element, causing an event to be
+triggered. The app logic responds to the event, then the composable functions
+are automatically called again with new parameters, if necessary.</figcaption></figure></div></article><nav class="chapter-switcher" aria-label="章节导航"><a href="../viewmodel/english.html">← ViewModel 概览</a><a class="course-home" href="../index.html">全部章节</a><a href="../coroutines/english.html">Android 上的 Kotlin 协程 →</a></nav><footer class="license-note"><p>本阅读版为 Android Developers 英文文档所选范围的非官方中文译文。原文由 Android Developers / Android Open Source Project 维护；原代码、原图及其标识保留。<a href="../NOTICE.html">来源与许可说明</a>。</p></footer></main></body></html>

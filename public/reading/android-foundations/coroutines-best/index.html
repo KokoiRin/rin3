@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Android 协程最佳实践｜RIN III</title><link rel="stylesheet" href="../../reader.css"><link rel="stylesheet" href="../source.css"></head>
+<body><nav class="site-nav" aria-label="站点导航"><a href="../index.html">← Android 基础 · 官方文档中文阅读版</a><a href="english.html">英文对照</a></nav>
+<main class="reader"><header class="chapter-header"><span class="chapter-kicker">第一周 · 第 5 天 · M21</span><h1>Android 协程最佳实践</h1><p class="byline"><a href="https://developer.android.com/kotlin/coroutines/coroutines-best-practices?hl=en">Best practices for coroutines in Android · 官方英文原文</a></p><div class="title-rule"></div>
+<details class="source-details"><summary>阅读范围与原文目录</summary><p>挂起函数应可安全地从主线程调用；使协程可取消；注意异常。</p><p>原文核对：2026-09-09。正文按上述范围的原文顺序翻译；代码和图示保留原文。</p><ul><li><a href="#main-safe">挂起函数应可安全地从主线程调用</a></li><li><a href="#coroutine-cancellable">使协程可取消</a></li><li><a href="#exceptions">注意异常</a></li></ul></details><nav class="chapter-switcher" aria-label="章节导航"><a href="../lifecycle-coroutines/index.html">← 在感知生命周期的组件中使用 Kotlin 协程</a><a class="course-home" href="../index.html">全部章节</a><span></span></nav></header>
+<article class="translated-article"><div><h2 id="main-safe" data-unit="coroutines-best-001">挂起函数应可安全地从主线程调用</h2><p data-unit="coroutines-best-002">挂起函数应当是主线程安全的，也就是说，从主线程调用它们是安全的。如果某个类在协程中执行长时间运行的阻塞操作，它就有责任使用 <code>withContext</code> 将执行移出主线程。这适用于应用中的所有类，无论它位于架构的哪个部分。</p><p>
+
+
+
+
+
+
+</p><div></div><div class="code-block"><pre><code>class NewsRepository(private val ioDispatcher: CoroutineDispatcher) {
+
+    // As this operation is manually retrieving the news from the server
+    // using a blocking HttpURLConnection, it needs to move the execution
+    // to an IO dispatcher to make it main-safe
+    suspend fun fetchLatestNews(): List&lt;Article&gt; {
+        withContext(ioDispatcher) { /* ... implementation ... */ }
+    }
+}
+
+// This use case fetches the latest news and the associated author.
+class GetLatestNewsWithAuthorsUseCase(
+    private val newsRepository: NewsRepository,
+    private val authorsRepository: AuthorsRepository
+) {
+    // This method doesn't need to worry about moving the execution of the
+    // coroutine to a different thread as newsRepository is main-safe.
+    // The work done in the coroutine is lightweight as it only creates
+    // a list and add elements to it
+    suspend operator fun invoke(): Result&lt;List&lt;ArticleWithAuthor&gt;&gt; {
+        val news = newsRepository.fetchLatestNews()
+
+        val response = mutableListOf&lt;ArticleWithAuthor&gt;()
+        for (article in news) {
+            val author = authorsRepository.getAuthor(article.author)
+            response.add(ArticleWithAuthor(article, author))
+        }
+        return Result.Success(response)
+    }
+}CoroutinesBestPractices.kt</code></pre></div><p data-unit="coroutines-best-003">这种模式使应用更容易扩展，因为调用挂起函数的类无需担心哪种工作应该使用哪个 <code>Dispatcher</code>。这项职责属于实际执行工作的类。</p><h2 id="coroutine-cancellable" data-unit="coroutines-best-004">使协程可取消</h2><p data-unit="coroutines-best-005">协程的取消是协作式的，这意味着当协程的 <code>Job</code> 被取消时，协程要等到挂起或检查取消状态时才会被取消。如果在协程中执行阻塞操作，请确保协程是<em>可取消</em>的。</p><p data-unit="coroutines-best-006">例如，如果正在从磁盘读取多个文件，应在开始读取每个文件之前检查协程是否已被取消。检查取消状态的一种方式是调用 <a href="https://kotlin.github.io/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/ensure-active.html"><code>ensureActive</code></a> 函数。</p><p>
+
+
+
+
+
+
+</p><div></div><div class="code-block"><pre><code>someScope.launch {
+    for (file in files) {
+        ensureActive() // Check for cancellation
+        readFile(file)
+    }
+}CoroutinesBestPractices.kt</code></pre></div><p data-unit="coroutines-best-007"><code>kotlinx.coroutines</code> 中的所有挂起函数，例如 <code>withContext</code> 和 <code>delay</code>，都是可取消的。如果协程调用它们，就不需要做任何额外工作。</p><p data-unit="coroutines-best-008">有关协程取消的更多信息，请参阅<a href="https://medium.com/androiddevelopers/cancellation-in-coroutines-aa6b90163629">协程中的取消</a>博客文章。</p><h2 id="exceptions" data-unit="coroutines-best-009">注意异常</h2><p data-unit="coroutines-best-010">协程中抛出的未处理异常可能使应用崩溃。如果可能出现异常，应在通过 <code>viewModelScope</code> 或 <code>lifecycleScope</code> 创建的任何协程的函数体中捕获它们。</p><p>
+
+
+
+
+
+
+</p><div></div><div class="code-block"><pre><code>class LoginViewModel(
+    private val loginRepository: LoginRepository
+) : ViewModel() {
+
+    fun login(username: String, token: String) {
+        viewModelScope.launch {
+            try {
+                loginRepository.login(username, token)
+                // Update UI, user logged in successfully
+            } catch (exception: IOException) {
+                // Update UI, login attempt failed
+            }
+        }
+    }
+}CoroutinesBestPractices.kt</code></pre></div><aside class="prompt" data-unit="coroutines-best-011"><strong>注意：</strong>为了允许协程取消，不要吞掉 <code>CancellationException</code> 类型的异常（不要捕获它们，或者在捕获后始终重新抛出）。优先捕获 <code>IOException</code> 等具体异常类型，而不是 <code>Exception</code> 或 <code>Throwable</code> 等通用类型。</aside><p data-unit="coroutines-best-012">有关更多信息，请参阅<a href="https://medium.com/androiddevelopers/exceptions-in-coroutines-ce8da1ec060c">协程中的异常</a>博客文章，或 Kotlin 文档中的<a href="https://kotlinlang.org/docs/exception-handling.html">协程异常处理</a>。</p></div></article><nav class="chapter-switcher" aria-label="章节导航"><a href="../lifecycle-coroutines/index.html">← 在感知生命周期的组件中使用 Kotlin 协程</a><a class="course-home" href="../index.html">全部章节</a><span></span></nav><footer class="license-note"><p>本阅读版为 Android Developers 英文文档所选范围的非官方中文译文。原文由 Android Developers / Android Open Source Project 维护；原代码、原图及其标识保留。<a href="../NOTICE.html">来源与许可说明</a>。</p></footer></main></body></html>

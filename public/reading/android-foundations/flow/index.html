@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Android 上的 Kotlin Flow｜RIN III</title><link rel="stylesheet" href="../../reader.css"><link rel="stylesheet" href="../source.css"></head>
+<body><nav class="site-nav" aria-label="站点导航"><a href="../index.html">← Android 基础 · 官方文档中文阅读版</a><a href="english.html">英文对照</a></nav>
+<main class="reader"><header class="chapter-header"><span class="chapter-kicker">第一周 · 第 5 天 · M18</span><h1>Android 上的 Kotlin Flow</h1><p class="byline"><a href="https://developer.android.com/kotlin/flow?hl=en">Kotlin flows on Android · 官方英文原文</a></p><div class="title-rule"></div>
+<details class="source-details"><summary>阅读范围与原文目录</summary><p>引言；创建 Flow；修改数据流；从 Flow 收集。</p><p>原文核对：2026-09-09。正文按上述范围的原文顺序翻译；代码和图示保留原文。</p><ul><li><a href="#create">创建 Flow</a></li><li><a href="#modify">修改数据流</a></li><li><a href="#collect">从 Flow 收集</a></li></ul></details><nav class="chapter-switcher" aria-label="章节导航"><a href="../coroutines/index.html">← Android 上的 Kotlin 协程</a><a class="course-home" href="../index.html">全部章节</a><a href="../stateflow/index.html">StateFlow 与 SharedFlow →</a></nav></header>
+<article class="translated-article"><div><p data-unit="flow-001">在协程中，<em>Flow</em> 是一种可以按顺序发出多个值的类型，与只返回单个值的<em>挂起函数</em>不同。例如，可以使用 Flow 接收数据库的实时更新。</p><p data-unit="flow-002">Flow 构建于协程之上，可以提供多个值。从概念上说，Flow 是可以异步计算的<em>数据流</em>。发出的值必须具有相同类型。例如，<code>Flow&lt;Int&gt;</code> 是发出整数值的 Flow。</p><p data-unit="flow-003">Flow 与产生一系列值的 <code>Iterator</code> 非常相似，但它使用挂起函数异步生产和消费值。这意味着，例如，Flow 可以安全地发起网络请求来生成下一个值，而不阻塞主线程。</p><p data-unit="flow-004">数据流涉及三种实体：</p><ul><li data-unit="flow-005"><strong>生产者</strong>生产要添加到流中的数据。借助协程，Flow 也可以异步生产数据。</li><li data-unit="flow-006"><strong>（可选的）中间环节</strong>可以修改发到流中的每个值，或修改流本身。</li><li data-unit="flow-007"><strong>消费者</strong>消费流中的值。</li></ul><p></p><center><figure><img src="../assets/flow-entities.png" alt="entities involved in streams of data; consumer, optional
+              intermediaries, and producer" loading="lazy"><figcaption data-unit="flow-008"><strong>图 1。</strong>数据流中涉及的实体：消费者、可选的中间环节和生产者。</figcaption></figure></center><p data-unit="flow-009">在 Android 中，<em><a href="https://developer.android.com/jetpack/guide/data-layer#architecture">Repository</a></em> 通常是 UI 数据的生产者，而用户界面（UI）是最终显示数据的消费者。在其他情况下，UI 层是用户输入事件的生产者，层次结构中的其他层消费这些事件。生产者与消费者之间的层通常充当中间环节，修改数据流，使其满足下一层的要求。</p><h2 id="create" data-unit="flow-010">创建 Flow</h2><p data-unit="flow-011">要创建 Flow，请使用 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/flow.html">Flow 构建器</a> API。<code>flow</code> 构建器函数会创建一个新的 Flow，可以在其中使用 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-flow-collector/emit.html"><code>emit</code></a> 函数手动向数据流发出新值。</p><p data-unit="flow-012">在以下示例中，数据源以固定间隔自动获取最新新闻。由于挂起函数无法返回多个连续的值，数据源会创建并返回一个 Flow 来满足这一需求。在此情况下，数据源充当生产者。</p><p>
+
+
+
+
+
+
+</p><div></div><div class="code-block"><pre><code>class NewsRemoteDataSource(
+    private val newsApi: NewsApi,
+    private val refreshIntervalMs: Long = 5000
+) {
+    val latestNews: Flow&lt;List&lt;ArticleHeadline&gt;&gt; = flow {
+        while (true) {
+            val latestNews = newsApi.fetchLatestNews()
+            emit(latestNews) // Emits the result of the request to the flow
+            delay(refreshIntervalMs) // Suspends the coroutine for some time
+        }
+    }
+}
+
+// Interface that provides a way to make network requests with suspend functions
+interface NewsApi {
+    suspend fun fetchLatestNews(): List&lt;ArticleHeadline&gt;
+}Flow.kt</code></pre></div><p data-unit="flow-013"><code>flow</code> 构建器在协程内执行。因此，它可以使用同样的异步 API，但也存在一些限制：</p><ul><li data-unit="flow-014">Flow 是<em>顺序执行</em>的。由于生产者位于协程中，调用挂起函数时，生产者会挂起，直到挂起函数返回。在此示例中，生产者会挂起，直到 <code>fetchLatestNews</code> 网络请求完成。只有此后才会将结果发到流中。</li><li data-unit="flow-015">使用 <code>flow</code> 构建器时，生产者不能从另一个 <code>CoroutineContext</code> 中 <code>emit</code> 值。因此，不要通过创建新协程或使用 <code>withContext</code> 代码块，在不同的 <code>CoroutineContext</code> 中调用 <code>emit</code>。在这些情况下，可以使用 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/callback-flow.html"><code>callbackFlow</code></a> 等其他 Flow 构建器。</li></ul><h2 id="modify" data-unit="flow-016">修改数据流</h2><p data-unit="flow-017">中间环节可以使用<em>中间操作符</em>修改数据流，而不消费值。这些操作符是一些函数；将它们应用于数据流时，会建立一条操作链，直到将来消费值时才会执行。有关中间操作符的更多信息，请参阅 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-flow/">Flow 参考文档</a>。</p><p data-unit="flow-018">在以下示例中，Repository 层使用中间操作符 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/map.html"><code>map</code></a>，转换将要在 <code>View</code> 上显示的数据：</p><p>
+
+
+
+
+
+
+</p><div></div><div class="code-block"><pre><code>class NewsRepository(
+    private val newsRemoteDataSource: NewsRemoteDataSource,
+    private val userData: UserData
+) {
+    /**
+     * Returns the favorite latest news applying transformations on the flow.
+     * These operations are lazy and don't trigger the flow. They just transform
+     * the current value emitted by the flow at that point in time.
+     */
+    val favoriteLatestNews: Flow&lt;List&lt;ArticleHeadline&gt;&gt; =
+        newsRemoteDataSource.latestNews
+            // Intermediate operation to filter the list of favorite topics
+            .map { news -&gt; news.filter { userData.isFavoriteTopic(it) } }
+            // Intermediate operation to save the latest news in the cache
+            .onEach { news -&gt; saveInCache(news) }
+}Flow.kt</code></pre></div><p data-unit="flow-019">中间操作符可以依次应用，形成一条操作链；当条目发到 Flow 中时，操作链才会以惰性方式执行。请注意，仅对流应用中间操作符，不会启动 Flow 收集。</p><h2 id="collect" data-unit="flow-020">从 Flow 收集</h2><p data-unit="flow-021">使用<em>终止操作符</em>触发 Flow 开始监听值。要在流中的各个值发出时获取它们，请使用 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-flow/collect.html"><code>collect</code></a>。有关终止操作符的更多信息，请参阅 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-flow/">Flow 官方文档</a>。</p><p data-unit="flow-022">由于 <code>collect</code> 是挂起函数，它需要在协程中执行。它接收一个 lambda 参数，每出现一个新值，就会调用该 lambda。由于它是挂起函数，调用 <code>collect</code> 的协程可能会挂起，直到 Flow 关闭。</p><p data-unit="flow-023">接着前面的示例，下面是一个消费 Repository 层数据的简单 <code>ViewModel</code> 实现：</p><p>
+
+
+
+
+
+
+</p><div></div><div class="code-block"><pre><code>class LatestNewsViewModel(
+    private val newsRepository: NewsRepository
+) : ViewModel() {
+
+    init {
+        viewModelScope.launch {
+            // Trigger the flow and consume its elements using collect
+            newsRepository.favoriteLatestNews.collect { favoriteNews -&gt;
+                // Update UI with the latest favorite news
+            }
+        }
+    }
+}Flow.kt</code></pre></div><p data-unit="flow-024">收集 Flow 会触发生产者，它以固定间隔刷新最新新闻并发出网络请求结果。由于生产者通过 <code>while(true)</code> 循环始终保持活动，数据流会在 ViewModel 被清理、<code>viewModelScope</code> 被取消时关闭。</p><p data-unit="flow-025">Flow 收集可能因以下原因停止：</p><ul><li data-unit="flow-026">执行收集的协程被取消，如前面的示例所示。这也会停止底层生产者。</li><li data-unit="flow-027">生产者结束发出条目。在此情况下，数据流关闭，调用 <code>collect</code> 的协程恢复执行。</li></ul><p data-unit="flow-028">除非通过其他中间操作符另行指定，否则 Flow 是<em>冷的</em>、<em>惰性的</em>。这意味着，每次对 Flow 调用终止操作符时，生产者代码都会执行。在前面的示例中，存在多个 Flow 收集者，会导致数据源按照多个不同的固定间隔多次获取最新新闻。要在多个消费者同时收集时优化并共享 Flow，请使用 <a href="https://developer.android.com/kotlin/flow/stateflow-and-sharedflow#sharein"><code>shareIn</code></a> 操作符。</p></div></article><nav class="chapter-switcher" aria-label="章节导航"><a href="../coroutines/index.html">← Android 上的 Kotlin 协程</a><a class="course-home" href="../index.html">全部章节</a><a href="../stateflow/index.html">StateFlow 与 SharedFlow →</a></nav><footer class="license-note"><p>本阅读版为 Android Developers 英文文档所选范围的非官方中文译文。原文由 Android Developers / Android Open Source Project 维护；原代码、原图及其标识保留。<a href="../NOTICE.html">来源与许可说明</a>。</p></footer></main></body></html>

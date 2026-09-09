@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>StateFlow and SharedFlow｜RIN III</title><link rel="stylesheet" href="../../reader.css"><link rel="stylesheet" href="../source.css"></head>
+<body><nav class="site-nav" aria-label="站点导航"><a href="../index.html">← Android 基础 · 官方文档中文阅读版</a><a href="index.html">中文译文</a></nav>
+<main class="reader"><header class="chapter-header"><span class="chapter-kicker">第一周 · 第 5 天 · M19</span><h1>StateFlow and SharedFlow</h1><p class="byline"><a href="https://developer.android.com/kotlin/flow/stateflow-and-sharedflow?hl=en">StateFlow and SharedFlow · 官方英文原文</a></p><div class="title-rule"></div>
+<details class="source-details"><summary>阅读范围与原文目录</summary><p>引言；StateFlow（含与 Flow、LiveData 的比较）；使用 shareIn 将冷流转为热流；SharedFlow。</p><p>原文核对：2026-09-09。正文按上述范围的原文顺序翻译；代码和图示保留原文。</p><ul><li><a href="#stateflow">StateFlow</a></li><li><a href="#livedata">StateFlow, Flow, and LiveData</a></li><li><a href="#sharein">Making cold flows hot using shareIn</a></li><li><a href="#sharedflow">SharedFlow</a></li></ul></details><nav class="chapter-switcher" aria-label="章节导航"><a href="../flow/english.html">← Android 上的 Kotlin Flow</a><a class="course-home" href="../index.html">全部章节</a><a href="../lifecycle-coroutines/english.html">在感知生命周期的组件中使用 Kotlin 协程 →</a></nav></header>
+<article class="translated-article"><div><p data-unit="stateflow-001"><code>StateFlow</code> and <code>SharedFlow</code> are <a href="https://developer.android.com/kotlin/flow">Flow APIs</a>
+that enable flows to optimally emit state updates and emit values to multiple
+consumers.</p><h2 id="stateflow" data-unit="stateflow-002"><code>StateFlow</code></h2><p data-unit="stateflow-003"><a href="https://kotlin.github.io/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-state-flow/" class="external"><code>StateFlow</code></a>
+is a state-holder observable flow that emits the current and new state
+updates to its collectors. The current state value can also be read through its
+<a href="https://kotlin.github.io/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-state-flow/value.html" class="external"><code>value</code></a>
+property. To update state and send it to the flow, assign a new value to
+the <code>value</code> property of the
+<a href="https://kotlin.github.io/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-mutable-state-flow/index.html" class="external"><code>MutableStateFlow</code></a> class.</p><p data-unit="stateflow-004">In Android, <code>StateFlow</code> is a great fit for classes that need to maintain
+an observable mutable state.</p><p data-unit="stateflow-005">Following the examples from <a href="https://developer.android.com/kotlin/flow">Kotlin flows</a>, a <code>StateFlow</code>
+can be exposed from the <code>LatestNewsViewModel</code> so that the <code>View</code> can
+listen for UI state updates and inherently make the screen state survive
+configuration changes.</p><p>
+
+
+
+
+
+
+</p><div></div><div class="code-block"><pre><code>class LatestNewsViewModel(
+    private val newsRepository: NewsRepository
+) : ViewModel() {
+
+    // Backing property to avoid state updates from other classes
+    private val _uiState = MutableStateFlow(LatestNewsUiState.Success(emptyList()))
+    // The UI collects from this StateFlow to get its state updates
+    val uiState: StateFlow&lt;LatestNewsUiState&gt; = _uiState
+
+    init {
+        viewModelScope.launch {
+            newsRepository.favoriteLatestNews
+                // Update UI with the latest favorite news
+                // Writes to the value property of MutableStateFlow,
+                // adding a new element to the flow and updating all
+                // of its collectors
+                .collect { favoriteNews -&gt;
+                    _uiState.value = LatestNewsUiState.Success(favoriteNews)
+                }
+        }
+    }
+}
+
+// Represents different states for the LatestNews screen
+sealed class LatestNewsUiState {
+    data class Success(val news: List&lt;ArticleHeadline&gt;) : LatestNewsUiState()
+    data class Error(val exception: Throwable) : LatestNewsUiState()
+}StateFlowAndSharedFlow.kt</code></pre></div><p data-unit="stateflow-006">The class responsible for updating a <code>MutableStateFlow</code> is the producer,
+and all classes collecting from the <code>StateFlow</code> are the consumers. Unlike
+a <em>cold</em> flow built using the <code>flow</code> builder, a <code>StateFlow</code> is <em>hot</em>:
+collecting from the flow doesn't trigger any producer code. A <code>StateFlow</code>
+is always active and in memory, and it becomes eligible for garbage
+collection only when there are no other references to it from a garbage
+collection root.</p><p data-unit="stateflow-007">When a new consumer starts collecting from the flow, it receives the last
+state in the stream and any subsequent states. You can find this behavior
+in other observable classes like
+<a href="https://developer.android.com/topic/libraries/architecture/livedata"><code>LiveData</code></a>.</p><p data-unit="stateflow-008">The <code>View</code> listens for <code>StateFlow</code> as with any other flow:</p><p>
+
+
+
+
+
+
+</p><div></div><div class="code-block"><pre><code>class LatestNewsActivity : ComponentActivity() {
+    private val latestNewsViewModel: LatestNewsViewModel = TODO() // getViewModel()
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        // ...
+        // Start a coroutine in the lifecycle scope
+        lifecycleScope.launch {
+            // repeatOnLifecycle launches the block in a new coroutine every time the
+            // lifecycle is in the STARTED state (or above) and cancels it when it's STOPPED.
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                // Trigger the flow and start listening for values.
+                // Note that this happens when lifecycle is STARTED and stops
+                // collecting when the lifecycle is STOPPED
+                latestNewsViewModel.uiState.collect { uiState -&gt;
+                    // New value received
+                    when (uiState) {
+                        is LatestNewsUiState.Success -&gt; showFavoriteNews(uiState.news)
+                        is LatestNewsUiState.Error -&gt; showError(uiState.exception)
+                    }
+                }
+            }
+        }
+    }
+}StateFlowAndSharedFlow.kt</code></pre></div><aside class="prompt" data-type="warning"><p data-unit="stateflow-009"><b>Warning:</b> Never collect a flow from the UI directly from
+    <code>launch</code> or the <code>launchIn</code> extension
+    function if the UI needs to be updated. These functions process events even
+    when the view is not visible. This behavior can lead to app crashes.
+    To avoid that, use the <code>repeatOnLifecycle</code> API as shown above.
+  </p></aside><aside class="prompt" data-unit="stateflow-010"><strong>Note:</strong><span> The <code>repeatOnLifecycle</code> API is available only in versions of the
+<code>androidx.lifecycle:lifecycle-runtime-ktx:2.4.0</code> library and higher.</span></aside><p data-unit="stateflow-011">To convert any flow to a <code>StateFlow</code>, use the
+<a href="https://kotlin.github.io/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/state-in.html" class="external"><code>stateIn</code></a>
+intermediate operator.</p><aside class="prompt" data-unit="stateflow-012"><strong>Note:</strong><span> Testing <code>StateFlows</code>, especially when they're created with <code>stateIn</code>, can
+require some extra attention. For details, see the
+<a href="https://developer.android.com/kotlin/flow/test#stateflows">Testing Kotlin flows on Android</a> page.</span></aside><h3 id="livedata" data-unit="stateflow-013">StateFlow, Flow, and LiveData</h3><p data-unit="stateflow-014"><code>StateFlow</code> and <a href="https://developer.android.com/topic/libraries/architecture/livedata"><code>LiveData</code></a> have
+similarities. Both are observable data holder classes, and both follow
+a similar pattern when used in your app architecture.</p><p data-unit="stateflow-015">Note, however, that <code>StateFlow</code> and
+<a href="https://developer.android.com/topic/libraries/architecture/livedata"><code>LiveData</code></a> do behave differently:</p><ul><li data-unit="stateflow-016"><code>StateFlow</code> requires an initial state to be passed in to the constructor,
+while <code>LiveData</code> does not.</li><li data-unit="stateflow-017"><code>LiveData.observe()</code> automatically unregisters the consumer when the
+view goes to the <code>STOPPED</code> state, whereas collecting from a <code>StateFlow</code> or
+any other flow does not stop collecting automatically. To achieve the same
+behavior, you need to collect the flow from a <code>Lifecycle.repeatOnLifecycle</code>
+block.</li></ul><h2 id="sharein" data-unit="stateflow-018">Making cold flows hot using <code>shareIn</code></h2><p data-unit="stateflow-019"><code>StateFlow</code> is a <em>hot</em> flow—it remains in memory as long as the flow is
+collected or while any other references to it exist from a garbage collection
+root. You can turn cold flows hot by using the
+<a href="https://kotlin.github.io/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/share-in.html" class="external"><code>shareIn</code></a>
+operator.</p><p data-unit="stateflow-020">Using the <code>callbackFlow</code> created in <a href="https://developer.android.com/kotlin/flow">Kotlin flows</a> as an
+example, instead of having each collector create a new flow, you can share
+the data retrieved from Firestore between collectors by using <code>shareIn</code>.
+You need to pass in the following:</p><ul><li data-unit="stateflow-021">A <code>CoroutineScope</code> that is used to share the flow. This scope should live
+longer than any consumer to keep the shared flow alive as long as needed.</li><li data-unit="stateflow-022">The number of items to replay to each new collector.</li><li data-unit="stateflow-023">The start behavior policy.</li></ul><p>
+
+
+
+
+
+
+</p><div></div><div class="code-block"><pre><code>class NewsRemoteDataSource(
+    private val externalScope: CoroutineScope
+) {
+    val latestNews: Flow&lt;List&lt;ArticleHeadline&gt;&gt; = flow {
+        // ...
+    }.shareIn(
+        externalScope,
+        replay = 1,
+        started = SharingStarted.WhileSubscribed()
+    )
+}StateFlowAndSharedFlow.kt</code></pre></div><p data-unit="stateflow-024">In this example, the <code>latestNews</code> flow replays the last emitted item
+to a new collector and remains active as long as <code>externalScope</code> is
+alive and there are active collectors. The <code>SharingStarted.WhileSubscribed()</code>
+start policy keeps the upstream producer active while there are active
+subscribers. Other start policies are available, such as
+<code>SharingStarted.Eagerly</code> to start the producer immediately or
+<code>SharingStarted.Lazily</code> to start sharing after the first subscriber appears
+and keep the flow active forever.</p><aside class="prompt" data-unit="stateflow-025"><strong>Note:</strong><span> To learn more about patterns for <code>externalScope</code>, check out this
+<a href="https://medium.com/androiddevelopers/coroutines-patterns-for-work-that-shouldnt-be-cancelled-e26c40f142ad" class="external">article</a>.</span></aside><h2 id="sharedflow" data-unit="stateflow-026">SharedFlow</h2><p data-unit="stateflow-027">The <code>shareIn</code> function returns a <code>SharedFlow</code>, a hot flow that emits values
+to all consumers that collect from it. A <code>SharedFlow</code> is a
+highly-configurable generalization of <code>StateFlow</code>.</p><p data-unit="stateflow-028">You can create a <code>SharedFlow</code> without using <code>shareIn</code>. As an example, you
+could use a <code>SharedFlow</code> to send ticks to the rest of the app so that
+all the content refreshes periodically at the same time. Apart from
+fetching the latest news, you might also want to refresh the user
+information section with its favorite topics collection. In the following
+code snippet, a <code>TickHandler</code> exposes a <code>SharedFlow</code> so that other
+classes know when to refresh its content. As with <code>StateFlow</code>, use a
+backing property of type <code>MutableSharedFlow</code> in a class to send items
+to the flow:</p><p>
+
+
+
+
+
+
+</p><div></div><div class="code-block"><pre><code>// Class that centralizes when the content of the app needs to be refreshed
+class TickHandler(
+    private val externalScope: CoroutineScope,
+    private val tickIntervalMs: Long = 5000
+) {
+    // Backing property to avoid flow emissions from other classes
+    private val _tickFlow = MutableSharedFlow&lt;Unit&gt;(replay = 0)
+    val tickFlow: SharedFlow&lt;Unit&gt; = _tickFlow
+
+    init {
+        externalScope.launch {
+            while (true) {
+                _tickFlow.emit(Unit)
+                delay(tickIntervalMs)
+            }
+        }
+    }
+}StateFlowAndSharedFlow.kt</code></pre></div><p>
+
+
+
+
+
+
+</p><div></div><div class="code-block"><pre><code>class NewsRepository(
+    // ...
+    private val tickHandler: TickHandler,
+    private val externalScope: CoroutineScope
+) {
+    init {
+        externalScope.launch {
+            // Listen for tick updates
+            tickHandler.tickFlow.collect {
+                refreshLatestNews()
+            }
+        }
+    }
+
+    suspend fun refreshLatestNews() { /* ... */ }
+    // ...
+}StateFlowAndSharedFlow.kt</code></pre></div><p data-unit="stateflow-029">You can customize the <code>SharedFlow</code> behavior in the following ways:</p><ul><li data-unit="stateflow-030"><code>replay</code> lets you resend a number of previously-emitted values for new
+subscribers.</li><li data-unit="stateflow-031"><code>onBufferOverflow</code> lets you specify a policy for when the buffer
+is full of items to be sent. The default value is <code>BufferOverflow.SUSPEND</code>,
+which makes the caller suspend. Other options are <code>DROP_LATEST</code> or
+<code>DROP_OLDEST</code>.</li></ul><p data-unit="stateflow-032"><code>MutableSharedFlow</code> also has a <code>subscriptionCount</code> property that contains
+the number of active collectors so that you can optimize your business
+logic accordingly. <code>MutableSharedFlow</code> also contains a <code>resetReplayCache</code>
+function if you don't want to replay the latest information sent to the flow.</p></div></article><nav class="chapter-switcher" aria-label="章节导航"><a href="../flow/english.html">← Android 上的 Kotlin Flow</a><a class="course-home" href="../index.html">全部章节</a><a href="../lifecycle-coroutines/english.html">在感知生命周期的组件中使用 Kotlin 协程 →</a></nav><footer class="license-note"><p>本阅读版为 Android Developers 英文文档所选范围的非官方中文译文。原文由 Android Developers / Android Open Source Project 维护；原代码、原图及其标识保留。<a href="../NOTICE.html">来源与许可说明</a>。</p></footer></main></body></html>

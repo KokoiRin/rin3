@@ -1,0 +1,323 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Tasks and the back stack｜RIN III</title><link rel="stylesheet" href="../../reader.css"><link rel="stylesheet" href="../source.css"></head>
+<body><nav class="site-nav" aria-label="站点导航"><a href="../index.html">← Android 基础 · 官方文档中文阅读版</a><a href="index.html">中文译文</a></nav>
+<main class="reader"><header class="chapter-header"><span class="chapter-kicker">第一周 · 第 2 天 · M05</span><h1>Tasks and the back stack</h1><p class="byline"><a href="https://developer.android.com/guide/components/activities/tasks-and-back-stack?hl=en">Tasks and the back stack · 官方英文原文</a></p><div class="title-rule"></div>
+<details class="source-details"><summary>阅读范围与原文目录</summary><p>正文全部主要章节：任务及其返回栈的生命周期；管理任务，含启动模式、常见 flags、任务关联性、清理返回栈与启动任务。</p><p>原文核对：2026-09-09。正文按上述范围的原文顺序翻译；代码和图示保留原文。</p><ul><li><a href="#life-cycle">Lifecycle of a task and its back stack</a></li><li><a href="#back-press-behavior">Back tap behavior for root launcher activities</a></li><li><a href="#background-foreground">Background and foreground tasks</a></li><li><a href="#multiple-instances">Multiple activity instances</a></li><li><a href="#multi-window">Multi-window environments</a></li><li><a href="#recap">Lifecycle recap</a></li><li><a href="#ManagingTasks">Manage tasks</a></li><li><a href="#TaskLaunchModes">Define launch modes</a></li><li><a href="#Affinities">Handle affinities</a></li><li><a href="#Clearing">Clear the back stack</a></li><li><a href="#Starting">Start a task</a></li></ul></details><nav class="chapter-switcher" aria-label="章节导航"><a href="../intents/english.html">← Intent 与 Intent Filter</a><a class="course-home" href="../index.html">全部章节</a><a href="../lifecycle/english.html">Activity 生命周期 →</a></nav></header>
+<article class="translated-article"><div><p data-unit="tasks-001">A <em>task</em> is a collection of activities that users interact with when trying to
+do something in your app. These activities are arranged in a stack called the
+<em>back stack</em> in the order in which each activity is opened.</p><p data-unit="tasks-002">For example, an email app
+might have one activity to show a list of new messages. When the user selects a
+message, a new activity opens to view that message. This new activity is added
+to the back stack. Then, when the user taps or gestures Back, that new activity
+finishes and is popped off the stack.</p><p class="clear">
+
+</p><h2 id="life-cycle" data-unit="tasks-003">Lifecycle of a task and its back stack</h2><p data-unit="tasks-004">The device Home screen is the starting place for most tasks. When a user touches
+the icon for an app or shortcut in the app launcher or on the Home screen,
+that app's task comes to the foreground. If no task exists for the app, then a
+new task is created and the <a href="https://developer.android.com/guide/components/activities/intro-activities#tcoa">main
+activity</a> for that app opens
+as the root activity in the stack.</p><p data-unit="tasks-005">When the current activity starts another, the new activity is pushed on the top
+of the stack and takes focus. The previous activity remains in the stack, but is
+stopped. When an activity is stopped, the system retains the current state of its
+user interface. When the user performs the back action, the current activity is
+popped from the top of the stack and destroyed. The
+previous activity resumes, and the previous state of its UI is restored.</p><p data-unit="tasks-006">Activities in the
+stack are never rearranged, only pushed onto and popped from the stack as they are
+started by the current activity and dismissed by the user
+through the Back button or gesture. Therefore, the back stack operates as
+a <em>last in, first out</em> object structure. Figure 1 shows a timeline with
+activities being pushed onto and popped from a back stack.</p><figure><img src="../assets/diagram_backstack.png" alt="官方原图" class="android-image-dark-theme-background" loading="lazy"><figcaption data-unit="tasks-007"><b>Figure 1.</b> A representation of how each new activity in a
+    task adds an item to the back stack. When the user taps or gestures
+    Back, the current activity is destroyed and the previous activity
+    resumes.</figcaption></figure><p data-unit="tasks-008">As the user continues to tap or gesture Back, each activity in the stack
+is popped off to reveal the previous one, until the user returns to the Home
+screen or to whichever activity was running when the task began. When all
+activities are removed from the stack, the task no longer exists.</p><h3 id="back-press-behavior" data-unit="tasks-009">Back tap behavior for root launcher activities</h3><p data-unit="tasks-010">Root launcher activities are activities that declare an <a href="https://developer.android.com/reference/android/content/IntentFilter">intent
+filter</a> with both
+<a href="https://developer.android.com/reference/android/content/Intent#ACTION_MAIN"><code>ACTION_MAIN</code></a> and
+<a href="https://developer.android.com/reference/android/content/Intent#CATEGORY_LAUNCHER"><code>CATEGORY_LAUNCHER</code></a>.
+These activities are unique because they act as entry points into your app from
+the app launcher and are used to <a href="https://developer.android.com/guide/components/activities/tasks-and-back-stack?hl=en#Starting">start a task</a>.</p><p data-unit="tasks-011">When a user taps or gestures Back from a root launcher activity, the system
+handles the event differently depending on the version of Android that the
+device is running.</p><dl><dt id="back-press-legacy" data-unit="tasks-012">System behavior on Android 11 and lower</dt><dd data-unit="tasks-013">The system finishes the activity.</dd><dt id="back-press-12" data-unit="tasks-014">System behavior on Android 12 and higher</dt><dd><p data-unit="tasks-015">The system moves the activity and its task to the background instead of
+finishing the activity. This behavior matches the default system behavior when
+navigating out of an app using the Home button or gesture.</p><p data-unit="tasks-016">In most cases, this behavior means that users can more quickly resume your app
+from a <a href="https://developer.android.com/topic/performance/vitals/launch-time#warm">warm state</a>, instead of
+having to completely restart the app from a <a href="https://developer.android.com/topic/performance/vitals/launch-time#cold">cold
+state</a>.</p><p data-unit="tasks-017">If you need to <a href="https://developer.android.com/guide/navigation/navigation-custom-back">provide custom back navigation</a>,
+we recommend using the AndroidX Activity APIs rather than overriding
+<code>onBackPressed()</code>. The AndroidX Activity APIs automatically defer to the
+appropriate system behavior if there are no components intercepting the system
+Back tap.</p><p data-unit="tasks-018">However, if your app overrides
+<a href="https://developer.android.com/reference/android/app/Activity#onBackPressed()"><code>onBackPressed()</code></a> to handle
+Back navigation and finish the activity, update your implementation to call
+through to <code>super.onBackPressed()</code> instead of finishing. Calling
+<code>super.onBackPressed()</code> moves the activity and its task to the background when
+appropriate and provides a more consistent navigation experience for users
+across apps.</p></dd></dl><h3 id="background-foreground" data-unit="tasks-019">Background and foreground tasks</h3><figure class="attempt-right"><img src="../assets/diagram_multitasking.png" alt="官方原图" class="android-image-dark-theme-background" loading="lazy"><figcaption data-unit="tasks-020"><b>Figure 2.</b> Two tasks: Task B receives user interaction in
+    the foreground, while Task A is in the background, waiting to
+    resume.</figcaption></figure><p data-unit="tasks-021">A task is a cohesive unit that can move to the <em>background</em> when a user begins a
+new task or goes to the Home screen. While in the background, all the activities
+in the task are stopped, but the back stack for the task remains intact—the task
+loses focus while another task takes place, as shown in figure 2. A
+task can then return to the <em>foreground</em> so users can pick up where they left
+off.</p><p data-unit="tasks-022">Consider the following task flow for current Task A that
+has three activities in its stack, including two under the current activity:</p><ol><li><p data-unit="tasks-023">The user uses the Home button or gesture, then starts a new app from the
+app launcher.</p><p data-unit="tasks-024">When the Home screen appears, Task A goes into the background. When the new
+app starts, the system starts a task for that app (Task B) with its own stack
+of activities.</p></li><li><p data-unit="tasks-025">After interacting with that app, the user returns Home again and selects the
+app that originally started Task A.</p><p data-unit="tasks-026">Now, Task A comes to the foreground—all three activities in its stack are
+intact, and the activity at the top of the stack resumes. At this point, the
+user can also switch back to Task B by going Home and selecting the app icon
+that started that task or by selecting the app's task from the <a href="https://developer.android.com/guide/components/recents">Recents
+screen</a>.</p></li></ol><aside class="prompt" data-unit="tasks-027"><strong>Note:</strong><span> Multiple tasks can be held in the background at once. However, if the user
+runs many background tasks at the same time, the system might begin
+destroying background activities to recover memory. If this happens, the activity
+states are lost.</span></aside><h3 id="multiple-instances" data-unit="tasks-028">Multiple activity instances</h3><figure class="attempt-right"><img src="../assets/diagram_multiple_instances.png" alt="官方原图" class="android-image-dark-theme-background" loading="lazy"><figcaption data-unit="tasks-029"><b>Figure 3.</b> A single activity can be instantiated multiple
+    times.</figcaption></figure><p data-unit="tasks-030">Because the activities in the back stack are never rearranged, if your app
+lets users start a particular activity from more than one activity, a new
+instance of that activity is created and pushed onto the stack, rather than
+bringing any previous instance of the activity to the top. As such, one
+activity in your app might be instantiated multiple times, even from different
+tasks, as shown in figure 3.</p><p data-unit="tasks-031">If the user navigates backward using the Back
+button or gesture, the instances of the activity are revealed in the order they
+opened, each with its own UI state. However, you can modify this
+behavior if you don't want an activity instantiated more than once. Learn
+more about this in the section about <a href="https://developer.android.com/guide/components/activities/tasks-and-back-stack?hl=en#ManagingTasks">managing
+tasks</a>.</p><h3 id="multi-window" data-unit="tasks-032">Multi-window environments</h3><p data-unit="tasks-033">When apps run simultaneously in a <a href="https://developer.android.com/guide/topics/ui/multi-window">multi-windowed
+environment</a>, supported in Android 7.0 (API
+level 24) and higher, the system manages tasks separately for each window. Each
+window can have multiple tasks. The same holds true for <a href="https://developer.android.com/topic/arc">Android apps running on
+Chromebooks</a>: the system manages tasks, or groups of tasks, on a
+per-window basis.</p><h3 id="recap" data-unit="tasks-034">Lifecycle recap</h3><p data-unit="tasks-035">To summarize the default behavior for activities and tasks:</p><ul><li><p data-unit="tasks-036">When Activity A starts Activity B, Activity A is stopped but the system
+retains its state, such as its scroll position and any text entered into forms. If
+the user taps or uses the Back gesture while in Activity B, Activity A
+resumes with its state restored.</p></li><li><p data-unit="tasks-037">When the user leaves a task using the Home button or gesture, the current
+activity is stopped and its task goes into the background. The system retains
+the state of every activity in the task. If the user later resumes the task by
+selecting the launcher icon that began the task, the task comes to the
+foreground and resumes the activity at the top of the stack.</p></li><li><p data-unit="tasks-038">If the user taps or gestures Back, the current activity is popped from
+the stack and destroyed. The previous activity in the stack resumes. When
+an activity is destroyed, the system <em>does not</em> retain the activity's state.</p><p data-unit="tasks-039"><a href="https://developer.android.com/guide/components/activities/tasks-and-back-stack?hl=en#back-press-behavior">This behavior is different for root launcher activities</a>
+when your app is running on a device that runs Android 12 or higher.</p></li><li><p data-unit="tasks-040">Activities can be instantiated multiple times, even from other tasks.</p></li></ul><aside class="prompt" data-unit="tasks-041"><strong>Note:</strong><span> For more about how to design your app's navigation structure for Android,
+see <a href="https://developer.android.com/guide/navigation/navigation-design-graph">Design navigation graphs</a>.</span></aside><h2 id="ManagingTasks" data-unit="tasks-042">Manage tasks</h2><p data-unit="tasks-043">Android manages tasks and the back stack by placing
+all activities started in succession in the same task, in a last in, first
+out stack. This works great for most apps, and you usually don't have to worry about
+how your activities are associated with tasks or how they exist in the back
+stack.</p><p data-unit="tasks-044">However, you might decide that you want to interrupt the normal behavior.
+For example, you might want an activity in your app to begin a new task when it is
+started,
+instead of being placed within the current task. Or, when you start an
+activity, you might want to bring forward an existing instance of it, instead of
+creating a new instance on top of the back stack. Or you might
+want your back stack to be cleared of all activities except for the root activity
+when the user leaves the task.</p><p data-unit="tasks-045">You can do these things and more using attributes in the
+<a href="https://developer.android.com/guide/topics/manifest/activity-element"><code>&lt;activity&gt;</code></a> manifest element
+and flags in the intent that you pass to
+<a href="https://developer.android.com/reference/android/app/Activity#startActivity(android.content.Intent)"><code>startActivity()</code></a>.</p><aside class="prompt" data-unit="tasks-046"><strong>Caution:</strong><span> Most apps don't interrupt the default behavior for activities and
+tasks. If you determine that it's necessary for your activity to modify the
+default behaviors, use caution and test the usability of the activity
+during launch and when navigating back to it from other activities and tasks
+with the Back button or gesture. Also, test for navigation behaviors
+that might conflict with the user's expectations.</span></aside><p data-unit="tasks-047">These are the principal <code>&lt;activity&gt;</code> attributes that you can use to manage tasks:</p><ul><li data-unit="tasks-048"><a href="https://developer.android.com/guide/topics/manifest/activity-element#aff"><code>taskAffinity</code></a></li><li data-unit="tasks-049"><a href="https://developer.android.com/guide/topics/manifest/activity-element#lmode"><code>launchMode</code></a></li><li data-unit="tasks-050"><a href="https://developer.android.com/guide/topics/manifest/activity-element#reparent"><code>allowTaskReparenting</code></a></li><li data-unit="tasks-051"><a href="https://developer.android.com/guide/topics/manifest/activity-element#clear"><code>clearTaskOnLaunch</code></a></li><li data-unit="tasks-052"><a href="https://developer.android.com/guide/topics/manifest/activity-element#always"><code>alwaysRetainTaskState</code></a></li><li data-unit="tasks-053"><a href="https://developer.android.com/guide/topics/manifest/activity-element#finish"><code>finishOnTaskLaunch</code></a></li></ul><p data-unit="tasks-054">And these are the principal intent flags that you can use:</p><ul><li data-unit="tasks-055"><a href="https://developer.android.com/reference/android/content/Intent#FLAG_ACTIVITY_NEW_TASK"><code>FLAG_ACTIVITY_NEW_TASK</code></a></li><li data-unit="tasks-056"><a href="https://developer.android.com/reference/android/content/Intent#FLAG_ACTIVITY_CLEAR_TOP"><code>FLAG_ACTIVITY_CLEAR_TOP</code></a></li><li data-unit="tasks-057"><a href="https://developer.android.com/reference/android/content/Intent#FLAG_ACTIVITY_SINGLE_TOP"><code>FLAG_ACTIVITY_SINGLE_TOP</code></a></li></ul><p data-unit="tasks-058">The following sections discuss how to use these manifest attributes
+and intent flags to define how activities associate with tasks and how they
+behave in the back stack.</p><p data-unit="tasks-059">Also discussed are the considerations for how tasks and activities
+are represented and managed in the Recents screen. Normally, you let the
+system define how your task and activities are represented in the
+Recents screen, and you don't need to modify this behavior. For more
+information, see <a href="https://developer.android.com/guide/components/recents">Recents screen</a>.</p><h3 id="TaskLaunchModes" data-unit="tasks-060">Define launch modes</h3><p data-unit="tasks-061">Launch modes let you define how a new instance of an activity is associated
+with the current task. You can define launch modes in two ways, described
+in the sections that follow:</p><ul><li><p data-unit="tasks-062"><a href="https://developer.android.com/guide/components/activities/tasks-and-back-stack?hl=en#ManifestForTasks">Using the manifest file</a></p><p data-unit="tasks-063">When you declare an activity in your manifest file, you can specify how the
+activity associates with tasks when it starts.</p></li><li><p data-unit="tasks-064"><a href="https://developer.android.com/guide/components/activities/tasks-and-back-stack?hl=en#IntentFlagsForTasks">Using intent flags</a></p><p data-unit="tasks-065">When you call
+<a href="https://developer.android.com/reference/android/app/Activity#startActivity(android.content.Intent)"><code>startActivity()</code></a>,
+you can include a flag in the
+<a href="https://developer.android.com/reference/android/content/Intent"><code>Intent</code></a> that declares how (or whether)
+the new activity associates with the current task.</p></li></ul><p data-unit="tasks-066">So, if Activity A starts Activity B, Activity B can define in its manifest
+how it associates with the current task, and Activity A can use an intent flag
+to request how Activity B can associate with current task.</p><p data-unit="tasks-067">If both
+activities define how Activity B associates with a task, then Activity A's
+request, as defined in the intent, is honored over Activity B's request, as
+defined in its manifest.</p><aside class="prompt" data-unit="tasks-068"><strong>Note:</strong><span> Some launch modes available for the manifest file aren't available as
+flags for an intent. Likewise, some launch modes available as flags for an
+intent can't be defined in the manifest.</span></aside><h4 id="ManifestForTasks" data-unit="tasks-069">Define launch modes using the manifest file</h4><p data-unit="tasks-070">When declaring an activity in your manifest file, you can specify how the
+activity associates with a task using the
+<a href="https://developer.android.com/guide/topics/manifest/activity-element"><code>&lt;activity&gt;</code></a> element's
+<a href="https://developer.android.com/guide/topics/manifest/activity-element#lmode"><code>launchMode</code></a> attribute.</p><p data-unit="tasks-071">There are five launch modes you can assign to the <code>launchMode</code> attribute:</p><ol><li><dl><dt data-unit="tasks-072"><code>"standard"</code></dt><dd data-unit="tasks-073">The default mode. The system creates a new instance of the activity in the task
+it was started from and routes the intent to it. The activity can be
+instantiated multiple times, each instance can belong to different tasks, and
+one task can have multiple instances.</dd></dl></li><li><dl><dt data-unit="tasks-074"><code>"singleTop"</code></dt><dd data-unit="tasks-075">If an instance of the activity already exists at the top of the current task,
+the system routes the intent to that instance through a call to its
+<a href="https://developer.android.com/reference/android/app/Activity#onNewIntent(android.content.Intent)"><code>onNewIntent()</code></a>
+method, rather than creating a new instance of the activity. The activity is
+instantiated multiple times, each instance can belong to different tasks,
+and one task can have multiple instances (but only if the activity at the top
+of the back stack is <em>not</em> an existing instance of the activity).</dd></dl><p data-unit="tasks-076">For example, suppose a task's back stack consists of root activity A with
+activities B, C, and D on top (so the stack is A-B-C-D, with D on top). An intent
+arrives for an activity of type D. If D has the default <code>"standard"</code> launch
+mode, a new instance of the class is launched, and the stack becomes A-B-C-D-D.
+However, if D's launch mode is <code>"singleTop"</code>, the existing instance of D
+receives the intent through <code>onNewIntent()</code>,
+because it's at the top of the stack, and the stack remains A-B-C-D. If,
+on the other hand, an
+intent arrives for an activity of type B, then a new instance of B is added to
+the stack even if its launch mode is <code>"singleTop"</code>.</p><aside class="prompt" data-unit="tasks-077"><strong>Note:</strong><span> When a new instance of an activity is created, the user can tap or
+gesture Back to return to the previous activity. But when an existing
+instance of an activity handles a new intent, the user can't tap or
+gesture Back to return to the state of the activity before the new intent
+arrived in <code>onNewIntent()</code>.</span></aside></li><li><dl><dt data-unit="tasks-078"><code>"singleTask"</code></dt><dd data-unit="tasks-079">The system creates the activity at the root of a new task or locates the
+activity on an existing task with the same affinity. If an instance of the
+activity already exists, the system routes the
+intent to the existing instance through a call to its
+<a href="https://developer.android.com/reference/android/app/Activity#onNewIntent(android.content.Intent)"><code>onNewIntent()</code></a>
+method, rather than creating a new instance. Meanwhile all of the other
+activities on top of it are destroyed.</dd></dl><aside class="prompt" data-unit="tasks-080"><strong>Note:</strong><span> Although the activity starts in a new task, the Back button and gesture
+still return the user to the previous activity.</span></aside></li><li><dl><dt data-unit="tasks-081"><code>"singleInstance"</code>.</dt><dd data-unit="tasks-082">The behavior is the same as for <code>"singleTask"</code>, except that the system doesn't launch any other
+activities into the task holding the instance. The activity is always the
+single and only member of its task. Any activities started by this one open in
+a separate task.</dd></dl></li><li><dl><dt data-unit="tasks-083"><code>"singleInstancePerTask"</code>.</dt><dd data-unit="tasks-084">The activity can only run as the root activity of the task, the first
+activity that created the task, and therefore there can only be one instance
+of this activity in a task. In contrast to the <code>singleTask</code> launch mode, this
+activity can be started in multiple instances in different tasks if the
+<a href="https://developer.android.com/reference/android/content/Intent#FLAG_ACTIVITY_MULTIPLE_TASK"><code>FLAG_ACTIVITY_MULTIPLE_TASK</code></a>
+or <a href="https://developer.android.com/reference/android/content/Intent#FLAG_ACTIVITY_NEW_DOCUMENT"><code>FLAG_ACTIVITY_NEW_DOCUMENT</code></a>
+flag is set.</dd></dl></li></ol><aside class="prompt" data-unit="tasks-085"><strong>Note:</strong><span> <code>"singleTask"</code> and <code>"singleInstancePerTask"</code> remove all activities
+  that are above the starting activity from the task. For example, suppose a
+  task consists of root activity A with activities B and C. The task is A-B-C,
+  with C
+  on top. An intent arrives for an activity of type A. If A's launch mode is
+  <code>"singleTask"</code> or <code>"singleInstancePerTask"</code>, the existing instance of A
+  receives the intent through <code>onNewIntent()</code>.
+  B and C are finished, and the task is now A.</span></aside><p data-unit="tasks-086">As another example, the Android Browser app declares that the web browser
+activity always opens in its own task by specifying the <code>singleTask</code>
+launch mode in the <code>&lt;activity&gt;</code>
+element. This means that if your app issues an intent to open the Android
+Browser, its activity is <em>not</em> placed in the same task as your app. Instead,
+either a new task starts for the Browser or, if the Browser already has a task
+running in the background, that task is brought forward to handle the new
+intent.</p><p data-unit="tasks-087">Regardless of whether an activity starts in a new task or in the same task as
+the activity that started it, the Back button and gesture always take the
+user to the previous activity. However, if you start an activity that
+specifies
+the <code>singleTask</code> launch mode and an instance of that activity exists in a
+background task, then that whole task is brought to the foreground. At this point,
+the back stack includes all activities from the task brought forward at the
+top of the stack. Figure 4 shows this type of scenario.</p><figure><img src="../assets/diagram_backstack_singletask_multiactivity.png" alt="官方原图" class="android-image-dark-theme-background" loading="lazy"><figcaption data-unit="tasks-088"><b>Figure 4.</b> A representation of how an activity with launch
+    mode <code>"singleTask"</code> is added to the back stack. If the activity
+    is already part of a background task with its own back stack, then that
+    entire back stack also comes forward, on top of the current
+    task.</figcaption></figure><p data-unit="tasks-089">For more information about using launch modes in the manifest file, see the
+<a href="https://developer.android.com/guide/topics/manifest/activity-element"><code>&lt;activity&gt;</code></a> element documentation.</p><aside class="prompt" data-unit="tasks-090"><strong>Note:</strong><span> The behaviors that you specify for your activity with the
+<code>launchMode</code> attribute can be
+overridden by flags included with the intent that start your activity, as
+discussed in the next section.</span></aside><h4 id="IntentFlagsForTasks" data-unit="tasks-091">Define launch modes using Intent flags</h4><p data-unit="tasks-092">When starting an activity, you can modify the default association of an activity
+to its task by including flags in the intent that you deliver to
+<a href="https://developer.android.com/reference/android/app/Activity#startActivity(android.content.Intent)"><code>startActivity()</code></a>.
+The flags you can use to modify the default behavior are the following:</p><dl><dt data-unit="tasks-093"><a href="https://developer.android.com/reference/android/content/Intent#FLAG_ACTIVITY_NEW_TASK"><code>FLAG_ACTIVITY_NEW_TASK</code></a></dt><dd><p data-unit="tasks-094">The system starts the activity in a new task. If a task is already running for the
+activity being started, that task is brought to the foreground with its
+last state restored, and the activity receives the new intent in
+<a href="https://developer.android.com/reference/android/app/Activity#onNewIntent(android.content.Intent)"><code>onNewIntent()</code></a>.</p><p data-unit="tasks-095">This produces the same behavior as the <code>"singleTask"</code>
+<a href="https://developer.android.com/guide/topics/manifest/activity-element#lmode"><code>launchMode</code></a> value discussed
+in the preceding section.</p></dd><dt data-unit="tasks-096"><a href="https://developer.android.com/reference/android/content/Intent#FLAG_ACTIVITY_SINGLE_TOP"><code>FLAG_ACTIVITY_SINGLE_TOP</code></a></dt><dd><p data-unit="tasks-097">If the activity being started is the current activity, at the top of the back
+stack, then the existing instance receives a call to
+<code>onNewIntent()</code> instead of creating a new instance of the activity.</p><p data-unit="tasks-098">This produces the same behavior as the <code>"singleTop"</code>
+<code>launchMode</code> value discussed in the preceding section.</p></dd><dt data-unit="tasks-099"><a href="https://developer.android.com/reference/android/content/Intent#FLAG_ACTIVITY_CLEAR_TOP"><code>FLAG_ACTIVITY_CLEAR_TOP</code></a></dt><dd><p data-unit="tasks-100">If the activity being started is already running in the current task,
+then—instead of launching a new instance of that activity—the
+system destroys all the other activities on top of it. The intent is
+delivered to the resumed instance of the activity, now on top, through
+<code>onNewIntent()</code>.</p><p data-unit="tasks-101">There is no value for the <code>launchMode</code> attribute that produces this behavior.</p><p data-unit="tasks-102"><code>FLAG_ACTIVITY_CLEAR_TOP</code> is most often used in conjunction with
+<code>FLAG_ACTIVITY_NEW_TASK</code>. When used together, these flags
+locate an existing activity in another task and put it in a position
+where it can respond to the intent.</p><aside class="prompt" data-unit="tasks-103"><strong>Note:</strong><span> If the launch mode of the designated activity is <code>"standard"</code>, it too
+is removed from the stack and a new instance is launched in its place to handle
+the incoming intent.  That's because a new instance is always created for a
+new intent when the launch mode is <code>"standard"</code>.</span></aside></dd></dl><h3 id="Affinities" data-unit="tasks-104">Handle affinities</h3><p data-unit="tasks-105">An <em>affinity</em> indicates which task an activity "prefers" to belong to. By
+default, all the activities from the same app have an affinity for each other:
+they "prefer" to be in the same task.</p><p data-unit="tasks-106">However, you can modify the default affinity for an activity. Activities defined
+in different apps can share an affinity, and activities defined in the same app
+can be assigned different task affinities.</p><p data-unit="tasks-107">You can modify an activity's affinity using the <a href="https://developer.android.com/guide/topics/manifest/activity-element#aff"><code>taskAffinity</code></a>
+attribute of the <a href="https://developer.android.com/guide/topics/manifest/activity-element"><code>&lt;activity&gt;</code></a>
+element.</p><p data-unit="tasks-108">The <code>taskAffinity</code> attribute takes a string value that must be different than
+the default package name
+declared in the <a href="https://developer.android.com/guide/topics/manifest/manifest-element"><code>&lt;manifest&gt;</code></a>
+element, because the system uses that name to identify the default task
+affinity for the app.</p><p data-unit="tasks-109">The affinity comes into play in two circumstances:</p><ol><li><p data-unit="tasks-110">When the intent that launches an activity contains the
+<a href="https://developer.android.com/reference/android/content/Intent#FLAG_ACTIVITY_NEW_TASK"><code>FLAG_ACTIVITY_NEW_TASK</code></a>
+flag.</p><p data-unit="tasks-111">A new activity, by default, is launched into the task of the activity that
+called
+<a href="https://developer.android.com/reference/android/app/Activity#startActivity(android.content.Intent)"><code>startActivity()</code></a>.
+It's pushed onto the same back stack as the caller.</p><p data-unit="tasks-112">However, if the intent passed to <code>startActivity()</code> contains the
+<code>FLAG_ACTIVITY_NEW_TASK</code>
+flag, the system looks for a different task to house the new activity. Often,
+this is a new task. However, it doesn't have to be. If there's an
+existing task with the same affinity as the new activity, the activity
+is launched into that task. If not, it begins a new task.</p><p data-unit="tasks-113">If this flag causes an activity to begin a new task and the user uses the
+Home button or gesture to leave it, there must be some way for the user to
+navigate back to the task. Some entities, such as the notification manager,
+always start activities in an external task, never as part of their own, so
+they always put <code>FLAG_ACTIVITY_NEW_TASK</code> in the intents they pass to
+<code>startActivity()</code>.</p><p data-unit="tasks-114">If an external entity that might
+use this flag can invoke your activity, take care that the user has an
+independent way to get back to
+the task that's started, such as with a launcher icon, where the root activity of
+the task has a
+<a href="https://developer.android.com/reference/android/content/Intent#CATEGORY_LAUNCHER"><code>CATEGORY_LAUNCHER</code></a>
+intent filter.  For more information, see the section about <a href="https://developer.android.com/guide/components/activities/tasks-and-back-stack?hl=en#Starting">starting tasks</a>.</p></li><li><p data-unit="tasks-115">When an activity has its <a href="https://developer.android.com/guide/topics/manifest/activity-element#reparent"><code>allowTaskReparenting</code></a>
+attribute set to <code>"true"</code>.</p><p data-unit="tasks-116">In this case, the activity can move from the task it starts in to the task it has
+an affinity for when that task comes to the foreground.</p><p data-unit="tasks-117">For example, suppose an activity that reports weather conditions in
+selected cities is defined as part of a travel app.  It has the same affinity
+as other activities in the same app, the default app affinity, and it can
+be re-parented with this attribute.</p><p data-unit="tasks-118">When one of your activities starts the
+weather reporter activity, it initially belongs to the same task as your
+activity. However, when the travel app's task comes to the foreground, the
+weather reporter activity is reassigned to that task and displayed within it.</p></li></ol><aside class="prompt" data-unit="tasks-119"><strong>Note:</strong><span> If an APK file contains more than one "app" from the user's point of view,
+you probably want to use the <a href="https://developer.android.com/guide/topics/manifest/activity-element#aff"><code>taskAffinity</code></a>
+attribute to assign different affinities to the activities associated with each
+"app".</span></aside><h3 id="Clearing" data-unit="tasks-120">Clear the back stack</h3><p data-unit="tasks-121">If the user leaves a task for a long time, the system clears the task of all
+activities except the root activity. When the user returns to the task,
+only the root activity is restored. The system behaves this way based on the
+assumption that after an
+extended amount of time users have abandoned what they were doing
+before and are returning to the task to begin something new.</p><p data-unit="tasks-122">There are some activity attributes that you can use to modify this behavior:</p><dl><dt data-unit="tasks-123"><a href="https://developer.android.com/guide/topics/manifest/activity-element#always"><code>alwaysRetainTaskState</code></a></dt><dd data-unit="tasks-124">When this attribute is set to <code>"true"</code> in the root activity of a task, the
+default behavior just described does not happen. The task retains all
+activities in its stack even after a long period.</dd><dt data-unit="tasks-125"><a href="https://developer.android.com/guide/topics/manifest/activity-element#clear"><code>clearTaskOnLaunch</code></a></dt><dd><p data-unit="tasks-126">When this attribute is set to <code>"true"</code> in the root activity of a task, the task
+is cleared down to the root activity whenever the user leaves the task and
+returns to it.  In other words, it's the opposite of
+<code>alwaysRetainTaskState</code>. The
+user always returns to the task in its initial state, even after leaving the
+task for only a moment.</p><aside class="prompt" data-unit="tasks-127"><strong>Note:</strong><span> This attribute is ignored if
+<a href="https://developer.android.com/reference/android/content/Intent#FLAG_ACTIVITY_RESET_TASK_IF_NEEDED"><code>FLAG_ACTIVITY_RESET_TASK_IF_NEEDED</code></a>
+isn't set.</span></aside></dd><dt data-unit="tasks-128"><a href="https://developer.android.com/guide/topics/manifest/activity-element#finish"><code>finishOnTaskLaunch</code></a></dt><dd><p data-unit="tasks-129">This attribute is like <code>clearTaskOnLaunch</code>,
+but it operates on a single activity, not an entire task.  It can also cause
+any activity to finish except for the root activity.  When it's set to
+<code>"true"</code>, the activity remains part of the task only for the current session.
+If the user leaves and then returns to the task, it is no longer present.</p><aside class="prompt" data-unit="tasks-130"><strong>Note:</strong><span> This attribute is ignored if
+<a href="https://developer.android.com/reference/android/content/Intent#FLAG_ACTIVITY_RESET_TASK_IF_NEEDED"><code>FLAG_ACTIVITY_RESET_TASK_IF_NEEDED</code></a>
+isn't set.</span></aside></dd></dl><h3 id="Starting" data-unit="tasks-131">Start a task</h3><p data-unit="tasks-132">You can set up an activity as the entry point for a task by giving it an intent
+filter with <code>"android.intent.action.MAIN"</code> as the specified action and
+<code>"android.intent.category.LAUNCHER"</code> as the specified category:</p><div></div><div class="code-block"><pre><code>&lt;activity ... &gt;
+    &lt;intent-filter ... &gt;
+        &lt;action android:name="android.intent.action.MAIN" /&gt;
+        &lt;category android:name="android.intent.category.LAUNCHER" /&gt;
+    &lt;/intent-filter&gt;
+    ...
+&lt;/activity&gt;
+</code></pre></div><p data-unit="tasks-133">An intent filter of this kind causes an icon and label for the activity to
+display in the app launcher, giving users a way to launch the activity and to
+return to the task it creates any time after it launches.</p><p data-unit="tasks-134">This second ability is important. Users must be able to leave a task and then
+come back to it later using this activity launcher. For this reason, only use
+the two
+launch modes that mark activities as always initiating a task, <code>"singleTask"</code>
+and <code>"singleInstance"</code>, when the activity has an
+<a href="https://developer.android.com/reference/android/content/Intent#ACTION_MAIN"><code>ACTION_MAIN</code></a> and a
+<a href="https://developer.android.com/reference/android/content/Intent#CATEGORY_LAUNCHER"><code>CATEGORY_LAUNCHER</code></a>
+filter.</p><p data-unit="tasks-135">Imagine, for example, what might happen if the filter were missing: an
+intent launches a <code>"singleTask"</code> activity, initiating a new task, and the user
+spends some time working in that task. The user then uses the Home button or
+gesture. The task is now sent to the background and is not visible. Now the user
+has no way to return to the task, because it is not represented in the app
+launcher.</p><p data-unit="tasks-136">For those cases where you don't want the user to be able to return to an
+activity, set the <a href="https://developer.android.com/guide/topics/manifest/activity-element"><code>&lt;activity&gt;</code></a>
+element's <a href="https://developer.android.com/guide/topics/manifest/activity-element#finish"><code>finishOnTaskLaunch</code></a>
+to <code>"true"</code>.  For more information, see the section on <a href="https://developer.android.com/guide/components/activities/tasks-and-back-stack?hl=en#Clearing">clearing the back stack</a>.</p><p data-unit="tasks-137">Further information about how tasks and activities are represented and managed
+in the Recents screen is available in <a href="https://developer.android.com/guide/components/activities/recents">Recents
+screen</a>.</p></div></article><nav class="chapter-switcher" aria-label="章节导航"><a href="../intents/english.html">← Intent 与 Intent Filter</a><a class="course-home" href="../index.html">全部章节</a><a href="../lifecycle/english.html">Activity 生命周期 →</a></nav><footer class="license-note"><p>本阅读版为 Android Developers 英文文档所选范围的非官方中文译文。原文由 Android Developers / Android Open Source Project 维护；原代码、原图及其标识保留。<a href="../NOTICE.html">来源与许可说明</a>。</p></footer></main></body></html>

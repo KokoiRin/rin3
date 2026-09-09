@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Layouts in views｜RIN III</title><link rel="stylesheet" href="../../reader.css"><link rel="stylesheet" href="../source.css"></head>
+<body><nav class="site-nav" aria-label="站点导航"><a href="../index.html">← Android 基础 · 官方文档中文阅读版</a><a href="index.html">中文译文</a></nav>
+<main class="reader"><header class="chapter-header"><span class="chapter-kicker">第一周 · 第 4 天 · M11</span><h1 id="layouts-in-views" data-unit="layouts-001">Layouts in views</h1><p class="byline"><a href="https://developer.android.com/develop/ui/views/layout/declaring-layout?hl=en">Layouts in views · 官方英文原文</a></p><div class="title-rule"></div>
+<details class="source-details"><summary>阅读范围与原文目录</summary><p>引言；编写 XML；加载 XML 资源；属性（含 ID 与布局参数）。</p><p>原文核对：2026-09-09。正文按上述范围的原文顺序翻译；代码和图示保留原文。</p><ul><li><a href="#write">Write the XML</a></li><li><a href="#load">Load the XML resource</a></li><li><a href="#attributes">Attributes</a></li><li><a href="#id">ID</a></li><li><a href="#layout-params">Layout parameters</a></li></ul></details><nav class="chapter-switcher" aria-label="章节导航"><a href="../memory/english.html">← 内存管理概览</a><a class="course-home" href="../index.html">全部章节</a><a href="../drawing/english.html">Android 如何绘制 View →</a></nav></header>
+<article class="translated-article"><div><div class="android-page-banner android-page-banner-image-bottom-right"><div class="android-page-banner-content"><div class="android-page-banner-title" data-unit="layouts-002">
+        Try the Compose way
+      </div><div class="android-page-banner-description" data-unit="layouts-003">
+        Jetpack Compose is the recommended UI toolkit for Android. Learn how to work with layouts in Compose.
+      </div><div class="android-page-banner-cta" data-unit="layouts-004">
+        <a href="https://developer.android.com/develop/ui/compose/layouts/basics">
+          Learn Compose layout basics →
+        </a>
+      </div></div><div class="android-page-banner-media">
+      <picture>
+
+          <source class="devsite-dark-theme" alt="">
+
+        <img alt="官方原图" class="android-page-banner-image" src="../assets/android-compose-ui-logo.png" loading="lazy">
+      </source></picture>
+    </div></div><p data-unit="layouts-005">A layout defines the structure for a user interface in your app, such as in
+an
+<a href="https://developer.android.com/guide/components/activities">activity</a>. All elements in the
+layout are built using a hierarchy of
+<code><a href="https://developer.android.com/reference/android/view/View">View</a></code> and
+<code><a href="https://developer.android.com/reference/android/view/ViewGroup">ViewGroup</a></code>
+objects. A <code>View</code> usually draws something the user can see and
+interact with. A <code>ViewGroup</code> is an invisible container that defines
+the layout structure for <code>View</code> and other <code>ViewGroup</code>
+objects, as shown in figure 1.</p><figure><img src="../assets/viewgroup_2x.png" alt="官方原图" loading="lazy"><figcaption data-unit="layouts-006"><b>Figure 1.</b> Illustration of a view hierarchy, which defines a
+  UI layout.</figcaption></figure><p data-unit="layouts-007"><code>View</code> objects are often called <i>widgets</i> and can be one of
+many subclasses, such as
+<code><a href="https://developer.android.com/reference/android/widget/Button">Button</a></code> or
+<code><a href="https://developer.android.com/reference/android/widget/TextView">TextView</a></code>. The
+<code>ViewGroup</code> objects are usually called <i>layouts</i> and can be one
+of many types that provide a different layout structure, such as
+<code><a href="https://developer.android.com/reference/android/widget/LinearLayout">LinearLayout</a></code>
+or
+<a href="https://developer.android.com/reference/androidx/constraintlayout/widget/ConstraintLayout"><code>ConstraintLayout</code></a>.</p><p data-unit="layouts-008">You can declare a layout in two ways:</p><ul><li data-unit="layouts-009"><b>Declare UI elements in XML.</b> Android provides a straightforward XML
+  vocabulary that corresponds to the <code>View</code> classes and subclasses,
+  such as those for widgets and layouts. You can also use Android Studio's
+  <a href="https://developer.android.com/studio/write/layout-editor">Layout Editor</a> to build your XML
+  layout using a drag-and-drop interface.</li><li data-unit="layouts-010"><b>Instantiate layout elements at runtime.</b> Your app can create
+  <code>View</code> and <code>ViewGroup</code> objects and manipulate their
+  properties programmatically. </li></ul><p data-unit="layouts-011">Declaring your UI in XML lets you separate the presentation of your app from
+the code that controls its behavior. Using XML files also makes it easier to
+provide different layouts for different screen sizes and orientations. This is
+discussed further in
+<a href="https://developer.android.com/training/multiscreen/screensizes">Support different screen
+sizes</a>.</p><p data-unit="layouts-012">The Android framework gives you the flexibility to use either or both of
+these methods to build your app's UI. For example, you can declare your app's
+default layouts in XML, and then modify the layout at runtime.</p><aside class="prompt" data-unit="layouts-013">
+  <b>Tip:</b> To debug your layout at runtime, use the
+  <a href="https://developer.android.com/studio/debug/layout-inspector">Layout Inspector</a> tool.
+</aside><h2 id="write" data-unit="layouts-014">Write the XML</h2><p data-unit="layouts-015">Using Android's XML vocabulary, you can quickly design UI layouts and the
+screen elements they contain, in the same way that you create web pages in HTML
+with a series of nested elements.</p><p data-unit="layouts-016">Each layout file must contain exactly one root element, which must be a
+<code>View</code> or <code>ViewGroup</code> object. After you define the root
+element, you can add additional layout objects or widgets as child elements to
+gradually build a <code>View</code> hierarchy that defines your layout. For
+example, here's an XML layout that uses a vertical <code>LinearLayout</code> to
+hold a <code>TextView</code> and a <code>Button</code>:</p><div></div><div class="code-block"><pre><code>&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              android:layout_width="match_parent"
+              android:layout_height="match_parent"
+              android:orientation="vertical" &gt;
+    &lt;TextView android:id="@+id/text"
+              android:layout_width="wrap_content"
+              android:layout_height="wrap_content"
+              android:text="Hello, I am a TextView" /&gt;
+    &lt;Button android:id="@+id/button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Hello, I am a Button" /&gt;
+&lt;/LinearLayout&gt;</code></pre></div><p data-unit="layouts-017">After you declare your layout in XML, save the file with the
+<code>.xml</code> extension in your Android project's <code>res/layout/</code>
+directory so it properly compiles.</p><p data-unit="layouts-018">For more information about the syntax for a layout XML file, see
+<a href="https://developer.android.com/guide/topics/resources/layout-resource">Layout resource</a>.</p><h2 id="load" data-unit="layouts-019">Load the XML resource</h2><p data-unit="layouts-020">When you compile your app, each XML layout file is compiled into a
+<code>View</code> resource. Load the layout resource in your app's
+<code><a href="https://developer.android.com/reference/android/app/Activity#onCreate(android.os.Bundle)">Activity.onCreate()</a></code>
+callback implementation. Do so by calling
+<code><a href="https://developer.android.com/reference/android/app/Activity#setContentView(int)">setContentView()</a></code>,
+passing it the reference to your layout resource in the form:
+<code>R.layout.<em>layout_file_name</em></code>. For example, if your XML
+layout is saved as <code>main_layout.xml</code>, load it for your
+<code>Activity</code> as follows:</p><div><div class="ds-selector-tabs"><section><h3 id="kotlin" data-unit="layouts-021">Kotlin</h3><div></div><div class="code-block"><pre><code>fun onCreate(savedInstanceState: Bundle) {
+    super.onCreate(savedInstanceState)
+    setContentView(R.layout.main_layout)
+}</code></pre></div></section><section><h3 id="java" data-unit="layouts-022">Java</h3><div></div><div class="code-block"><pre><code>public void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.main_layout);
+}</code></pre></div></section></div></div><p data-unit="layouts-023">The Android framework calls the <code>onCreate()</code> callback method in
+your <code>Activity</code> when the <code>Activity</code> launches. For more
+information about activity lifecycles, see
+<a href="https://developer.android.com/guide/components/activities#Lifecycle">Introduction to
+activities</a>.</p><h2 id="attributes" data-unit="layouts-024">Attributes</h2><p data-unit="layouts-025">Every <code>View</code> and <code>ViewGroup</code> object supports its own
+variety of XML attributes. Some attributes are specific to a <code>View</code>
+object. For example, <code>TextView</code> supports the <code>textSize</code>
+attribute. However, these attributes are also inherited by any <code>View</code>
+objects that extend this class. Some are common to all <code>View</code>
+objects, because they are inherited from the root <code>View</code> class, like
+the <code>id</code> attribute. Other attributes are considered <i>layout
+parameters</i>, which are attributes that describe certain layout orientations
+of the <code>View</code> object, as defined by that object's parent
+<code>ViewGroup</code> object.</p><h3 id="id" data-unit="layouts-026">ID</h3><p data-unit="layouts-027">Any <code>View</code> object can have an integer ID associated with it to
+uniquely identify the <code>View</code> within the tree. When the app is
+compiled, this ID is referenced as an integer, but the ID is typically assigned
+in the layout XML file as a string in the <code>id</code> attribute. This is an
+XML attribute common to all <code>View</code> objects, and it is defined by the
+<code>View</code> class. You use it very often. The syntax for an ID inside an
+XML tag is the following:</p><div></div><div class="code-block"><pre><code>android:id="@+id/my_button"</code></pre></div><p data-unit="layouts-028">The  <i>at</i> symbol (@) at the beginning of the string indicates that
+the XML parser parses and expands the rest of the ID string and identifies it as
+an ID resource. The <i>plus</i> symbol (+) means this is a new resource name
+that must be created and added to your resources in the <code>R.java</code>
+file.</p><p data-unit="layouts-029">The Android framework offers many other ID resources. When referencing an
+Android resource ID, you don't need the <i>plus</i> symbol, but you must add the
+<code>android</code> package namespace as follows:</p><div></div><div class="code-block"><pre><code>android:id="@android:id/empty"</code></pre></div><p data-unit="layouts-030">The <code>android</code> package namespace indicates that you're referencing
+an ID from the <code>android.R</code> resources class, rather than the local
+resources class.</p><p data-unit="layouts-031">To create views and reference them from your app, you can use a common
+pattern as follows:</p><ol><li><span data-unit="layouts-032">Define a view in the layout file and assign it a unique ID, as in the
+  following example:
+</span><div></div><div class="code-block"><pre><code>&lt;Button android:id="@+id/my_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/my_button_text"/&gt;</code></pre></div></li><li><span data-unit="layouts-033">Create an instance of the view object and capture it from the layout,
+  typically in the
+  <code><a href="https://developer.android.com/reference/android/app/Activity#onCreate(android.os.Bundle)">onCreate()</a></code>
+  method, as shown in the following example:
+
+</span><div><div class="ds-selector-tabs"><section><h3 id="kotlin" data-unit="layouts-034">Kotlin</h3><div></div><div class="code-block"><pre><code>val myButton: Button = findViewById(R.id.my_button)</code></pre></div></section><section><h3 id="java" data-unit="layouts-035">Java</h3><div></div><div class="code-block"><pre><code>Button myButton = (Button) findViewById(R.id.my_button);</code></pre></div></section></div></div></li></ol><p data-unit="layouts-036">Defining IDs for view objects is important when creating a
+<code><a href="https://developer.android.com/reference/android/widget/RelativeLayout">RelativeLayout</a></code>.
+In a relative layout, sibling views can define their layout relative to another
+sibling view, which is referenced by the unique ID.</p><p data-unit="layouts-037">An ID doesn't need to be unique throughout the entire tree, but it must be
+unique within the part of the tree you search. It might often be the entire
+tree, so it's best to make it unique when possible.</p><h3 id="layout-params" data-unit="layouts-038">Layout parameters</h3><p data-unit="layouts-039">XML layout attributes named <code>layout_<em>something</em></code> define
+layout parameters for the <code>View</code> that are appropriate for the
+<code>ViewGroup</code> it resides in.</p><p data-unit="layouts-040">Every <code>ViewGroup</code> class implements a nested class that extends
+<code><a href="https://developer.android.com/reference/android/view/ViewGroup.LayoutParams">ViewGroup.LayoutParams</a></code>.
+This subclass contains property types that define the size and position of each
+child view, as appropriate for the view group. As shown in figure 2, the parent
+view group defines layout parameters for each child view, including the child
+view group.</p><figure><img src="../assets/layoutparams.png" alt="官方原图" loading="lazy"><figcaption data-unit="layouts-041"><b>Figure 2.</b> Visualization of a view hierarchy with layout
+  parameters associated with each view.</figcaption></figure><p data-unit="layouts-042">Every <code>LayoutParams</code> subclass has its own syntax for setting
+values. Each child element must define a <code>LayoutParams</code> that is
+appropriate for its parent, though it might also define a different
+<code>LayoutParams</code> for its own children.</p><p data-unit="layouts-043">All view groups include a width and height, using <code>layout_width</code>
+and <code>layout_height</code>, and each view is required to define them. Many
+<code>LayoutParams</code> include optional margins and borders.</p><p>
+
+</p><p data-unit="layouts-044">You can specify width and height with exact measurements, but you might not
+want to do this often. More often, you use one of these constants to set the
+width or height:</p><ul><li data-unit="layouts-045"><code>wrap_content</code>: tells your view to size itself to the
+  dimensions required by its content.</li><li data-unit="layouts-046"><code>match_parent</code>: tells your view to become as big as its parent
+  view group allows.</li></ul><p data-unit="layouts-047">In general, we don't recommend specifying a layout width and height using
+absolute units such as pixels. A better approach is using relative measurements,
+such as density-independent pixel units (dp), <code>wrap_content</code>, or
+<code>match_parent</code>, because it helps your app display properly across a
+variety of device screen sizes. The accepted measurement types are defined in
+<a href="https://developer.android.com/guide/topics/resources/layout-resource">Layout resource</a>.</p></div></article><nav class="chapter-switcher" aria-label="章节导航"><a href="../memory/english.html">← 内存管理概览</a><a class="course-home" href="../index.html">全部章节</a><a href="../drawing/english.html">Android 如何绘制 View →</a></nav><footer class="license-note"><p>本阅读版为 Android Developers 英文文档所选范围的非官方中文译文。原文由 Android Developers / Android Open Source Project 维护；原代码、原图及其标识保留。<a href="../NOTICE.html">来源与许可说明</a>。</p></footer></main></body></html>

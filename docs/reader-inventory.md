@@ -42,3 +42,10 @@ KaTeX 的 `public/reading/_shared/katex/` 是第三方数学排版资源，不�
 4. 章节继续增加前，为每个书系建立结构化章节清单，再决定是否引入 HTML 生成器。
 
 这四项涉及页面视觉或发布行为，应逐项做截图与静态构建验证，不与资源清理混在一次大改中。
+
+
+## 2026-09-09：Android 官方文档中文阅读版
+
+新增 `public/reading/android-foundations/`：21 篇中文、21 篇英文对照、目录和许可说明，共 44 个 HTML 页面。文章入口为 `content/computer-science/android-foundations.md`。上述 2026-08-29 数字保留为当时快照。
+
+正文复用 `public/reading/reader.css`，KaTeX 复用 `_shared/katex/`；本系列 `source.css` 仅处理官方原文推荐横幅和标题署名，原图放在系列 `assets/` 中。已接入 `check:course-readers` 与内容契约检查。

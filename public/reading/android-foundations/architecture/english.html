@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Guide to app architecture｜RIN III</title><link rel="stylesheet" href="../../reader.css"><link rel="stylesheet" href="../source.css"></head>
+<body><nav class="site-nav" aria-label="站点导航"><a href="../index.html">← Android 基础 · 官方文档中文阅读版</a><a href="index.html">中文译文</a></nav>
+<main class="reader"><header class="chapter-header"><span class="chapter-kicker">第一周 · 第 4 天 · M14</span><h1>Guide to app architecture</h1><p class="byline"><a href="https://developer.android.com/topic/architecture?hl=en">Guide to app architecture · 官方英文原文</a></p><div class="title-rule"></div>
+<details class="source-details"><summary>阅读范围与原文目录</summary><p>通用架构原则；推荐的应用架构，含现代架构与 UI 层、数据层、领域层。</p><p>原文核对：2026-09-09。正文按上述范围的原文顺序翻译；代码和图示保留原文。</p><ul><li><a href="#common-principles">Common architectural principles</a></li><li><a href="#separation-of-concerns">Separation of concerns</a></li><li><a href="#adaptive">Adaptive layouts</a></li><li><a href="#drive-ui-from-model">Drive UI from data models</a></li><li><a href="#single-source-of-truth">Single source of truth</a></li><li><a href="#unidirectional-data-flow">Unidirectional data flow</a></li><li><a href="#recommended-app-arch">Recommended app architecture</a></li><li><a href="#modern-app-architecture">Modern app architecture</a></li><li><a href="#ui-layer">UI layer</a></li><li><a href="#data-layer">Data layer</a></li><li><a href="#domain-layer">Domain layer</a></li></ul></details><nav class="chapter-switcher" aria-label="章节导航"><a href="../touch/english.html">← 管理 ViewGroup 中的触摸事件</a><a class="course-home" href="../index.html">全部章节</a><a href="../viewmodel/english.html">ViewModel 概览 →</a></nav></header>
+<article class="translated-article"><div><h2 id="common-principles" data-unit="architecture-001">Common architectural principles</h2><p data-unit="architecture-002">If you can't use app components to store application data and state, how
+should you design your app?</p><p data-unit="architecture-003">As Android apps grow in size, it's important to define an architecture that
+lets the app scale. A well-designed app architecture defines the boundaries
+between parts of the app and the responsibilities each part has.</p><h3 id="separation-of-concerns" data-unit="architecture-004">Separation of concerns</h3><p data-unit="architecture-005">Design your app architecture to follow a few specific principles.</p><p data-unit="architecture-006">The most important principle is <a href="https://en.wikipedia.org/wiki/Separation_of_concerns">separation of concerns</a>:
+separating your app into methods, classes, files, packages, modules and layers
+that have clearly defined responsibilities and boundaries.</p><p data-unit="architecture-007">It's a common mistake to write all your code in an <a href="https://developer.android.com/guide/components/activities/intro-activities"><code>Activity</code></a>.</p><p data-unit="architecture-008">The primary role of an <code>Activity</code> is to host your app's UI. The
+Android OS controls their lifecycle, frequently destroying and recreating them
+in response to user actions like screen rotation or system events like low
+memory.</p><p data-unit="architecture-009">This ephemeral nature makes them unsuitable for holding application data or
+state. If you store data in an <code>Activity</code>, that data is lost when
+the component is recreated. To ensure data persistence and provide a stable user
+experience, don't entrust state to these UI components.</p><h3 id="adaptive" data-unit="architecture-010">Adaptive layouts</h3><p data-unit="architecture-011">Build apps that gracefully handle configuration changes, such as device
+<a href="https://developer.android.com/develop/ui/compose/layouts/adaptive/app-orientation-aspect-ratio-resizability">orientation changes</a> or changes in the size of the app window.
+Implement the adaptive <a href="https://developer.android.com/develop/ui/compose/layouts/adaptive/canonical-layouts">canonical layouts</a> to provide an
+optimal user experience on a variety of form factors.</p><h3 id="drive-ui-from-model" data-unit="architecture-012">Drive UI from data models</h3><p data-unit="architecture-013">Another important principle is to drive your UI from data models,
+preferably persistent models. Data models represent the data of an app. They're
+independent from the UI elements and other components in your app. This means
+that they are not tied to the UI and app component lifecycle but will still be
+destroyed when the OS removes the app's process from memory.</p><p data-unit="architecture-014">Persistent models are ideal for the following reasons:</p><ul><li><p data-unit="architecture-015">Users don't lose data if the Android OS destroys your app to free up
+resources.</p></li><li><p data-unit="architecture-016">Your app continues to work in cases when a network connection is
+intermittent or unavailable.</p></li></ul><p data-unit="architecture-017">Base your app architecture on data model classes to make your app robust and
+testable.</p><h3 id="single-source-of-truth" data-unit="architecture-018">Single source of truth</h3><p data-unit="architecture-019">When a new data type is defined in your app, assign a single source
+of truth (SSOT) to it. The SSOT is the <em>owner</em> of that data, and only the SSOT
+can modify or mutate it. To achieve this, the SSOT exposes the data using an
+immutable type; to modify the data, the SSOT exposes functions or receives
+events that other types can call.</p><p data-unit="architecture-020">This pattern has multiple benefits:</p><ul><li data-unit="architecture-021">Centralizes all changes to a particular type of data in one place</li><li data-unit="architecture-022">Protects the data so that other types cannot tamper with it</li><li data-unit="architecture-023">Makes changes to the data more traceable, so bugs are easier to spot</li></ul><p data-unit="architecture-024">In an offline-first application, the source of truth for application data is
+typically a database. In some other cases, the source of truth can be a
+<a href="https://developer.android.com/topic/libraries/architecture/viewmodel"><code>ViewModel</code></a>.</p><h3 id="unidirectional-data-flow" data-unit="architecture-025">Unidirectional data flow</h3><p data-unit="architecture-026">The <a href="https://developer.android.com/topic/architecture?hl=en#single-source-of-truth">single source of truth principle</a> is often used
+with the unidirectional data flow (UDF) pattern. In UDF, <strong>state</strong> flows in only
+one direction, typically from parent component to child component. The events
+that modify the data flow in the opposite direction.</p><p data-unit="architecture-027">In Android, state or data usually flow from the higher-scoped types of the
+hierarchy to the lower-scoped ones. Events are usually triggered from the
+lower-scoped types until they reach the SSOT for the corresponding data type.
+For example, application data usually flows from data sources to the UI. User
+events such as button presses flow from the UI to the SSOT where the
+application data is modified and exposed in an immutable type.</p><p data-unit="architecture-028">This pattern better maintains data consistency, is less prone to errors, is
+easier to debug, and provides all the benefits of the SSOT pattern.</p><p data-unit="architecture-029">For more information about UDF,
+see <a href="https://developer.android.com/develop/ui/compose/architecture#udf-compose">Unidirectional data flow in Jetpack Compose</a>.</p><h2 id="recommended-app-arch" data-unit="architecture-030">Recommended app architecture</h2><p data-unit="architecture-031">Considering common architectural principles, design each application with at
+least two layers:</p><ul><li data-unit="architecture-032"><strong>UI layer:</strong> Displays application data on the screen</li><li data-unit="architecture-033"><strong>Data layer:</strong> Contains the business logic of your app and exposes
+application data</li></ul><p data-unit="architecture-034">You can add an additional layer called the <em>domain layer</em> to simplify and reuse
+the interactions between the UI and data layers.</p><figure id="arch-overview"><img src="../assets/mad-arch-overview.png" alt="In a typical app architecture, the UI layer gets the application data
+    from the data layer or from the optional domain layer, which sits between
+    the UI layer and the data layer." loading="lazy"><figcaption data-unit="architecture-035">
+      <b>Figure 1.</b> Diagram of a typical app architecture.
+    </figcaption></figure><aside class="prompt" data-unit="architecture-036"><strong>Note:</strong><span> The arrows in the diagrams in this guide represent dependencies between
+classes. For example, the domain layer depends on data layer classes.</span></aside><h3 id="modern-app-architecture" data-unit="architecture-037">Modern app architecture</h3><p data-unit="architecture-038">A modern Android app architecture uses the following techniques (among
+others):</p><ul><li data-unit="architecture-039">Adaptive and layered architecture</li><li data-unit="architecture-040">Unidirectional data flow (UDF) in all layers of the app</li><li data-unit="architecture-041">UI layer with state holders to manage the complexity of the UI</li><li data-unit="architecture-042">Coroutines and flows</li><li data-unit="architecture-043">Dependency injection best practices</li></ul><p data-unit="architecture-044">For more information, see
+<a href="https://developer.android.com/topic/architecture/recommendations">Recommendations for Android architecture</a>.</p><h3 id="ui-layer" data-unit="architecture-045">UI layer</h3><p data-unit="architecture-046">The role of the UI layer (or <em>presentation layer</em>) is to display the application
+data on screen. Whenever the data changes, either due to user interaction
+(such as pressing a button) or external input (such as a network response), the
+UI updates to reflect the changes.</p><p data-unit="architecture-047">The UI layer comprises two types of constructs:</p><ul><li data-unit="architecture-048">UI elements that render the data on the screen. You build these elements
+using <a href="https://developer.android.com/jetpack/compose">Jetpack Compose</a> functions to support adaptive layouts.</li><li data-unit="architecture-049">State holders (such as <a href="https://developer.android.com/topic/libraries/architecture/viewmodel"><code>ViewModel</code></a>) that hold data, expose it
+to the UI, and handle logic. State holders should live for the same duration
+as the UI element they are providing state for. For example, a ViewModel for
+a screen should be retained in memory until the screen is removed from the
+app's navigation back stack.
+For more information, see <a href="https://developer.android.com/develop/ui/compose/state-lifespans">State Lifespans</a>.</li></ul><figure id="arch-overview-ui"><img src="../assets/mad-arch-overview-ui.png" alt="In a typical architecture, the UI layer's UI elements depend on state
+    holders, which in turn depend on classes from either the data layer or the
+    optional domain layer." loading="lazy"><figcaption data-unit="architecture-050">
+      <b>Figure 2.</b> The role of the UI layer in app architecture.
+    </figcaption></figure><p data-unit="architecture-051">For adaptive UIs, state holders such as <code>ViewModel</code> objects expose UI state that
+adapts to different <a href="https://developer.android.com/develop/ui/compose/layouts/adaptive/window-size-classes">window size classes</a>. You can use
+<code>currentWindowAdaptiveInfo()</code> to derive this UI state. Components like
+<code>NavigationSuiteScaffold</code> can then use this information to automatically switch
+between different navigation patterns (for example, <code>NavigationBar</code>,
+<code>NavigationRail</code>, or <code>NavigationDrawer</code>) based on the available screen space.</p><p data-unit="architecture-052">To learn more, see <a href="https://developer.android.com/jetpack/guide/ui-layer">UI layer</a> and
+<a href="https://developer.android.com/develop/ui/compose/architecture">Compose UI Architecture</a>.</p><p data-unit="architecture-053">For more information, about adaptive apps and navigation,
+see <a href="https://developer.android.com/develop/ui/compose/build-adaptive-apps">Build adaptive apps</a> and
+<a href="https://developer.android.com/develop/ui/compose/layouts/adaptive/build-adaptive-navigation">Build adaptive navigation</a>.</p><h3 id="data-layer" data-unit="architecture-054">Data layer</h3><p data-unit="architecture-055">The data layer of an app contains the <em>business logic</em>. Business logic is what
+gives value to your app—it comprises rules that determine how your app
+creates, stores, and changes data.</p><p data-unit="architecture-056">The data layer is made up of repositories, each of which can contain zero to
+many data sources. Create a repository class for each different type of
+data you handle in your app. For example, you might create a <code>MoviesRepository</code>
+class for data related to movies or a <code>PaymentsRepository</code> class for data
+related to payments.</p><figure id="arch-overview-data"><img src="../assets/mad-arch-overview-data.png" alt="In a typical architecture, the data layer's repositories provide data
+    to the rest of the app and depend on the data sources." loading="lazy"><figcaption data-unit="architecture-057">
+      <b>Figure 3.</b> The role of the data layer in app architecture.
+    </figcaption></figure><p data-unit="architecture-058">Repository classes are responsible for the following:</p><ul><li data-unit="architecture-059">Exposing data to the rest of the app</li><li data-unit="architecture-060">Centralizing changes to the data</li><li data-unit="architecture-061">Resolving conflicts between multiple data sources</li><li data-unit="architecture-062">Abstracting sources of data from the rest of the app</li><li data-unit="architecture-063">Containing business logic</li></ul><p data-unit="architecture-064">Each data source class has the responsibility of working with only one
+source of data, which can be a file, a network source, or a local database.
+Data-source classes are the bridge between the application and the system for
+data operations.</p><p data-unit="architecture-065">To learn more, see the <a href="https://developer.android.com/jetpack/guide/data-layer">data layer page</a>.</p><h3 id="domain-layer" data-unit="architecture-066">Domain layer</h3><p data-unit="architecture-067">The domain layer is an optional layer between the UI and data layers.</p><p data-unit="architecture-068">The domain layer is responsible for encapsulating complex business logic or
+simpler business logic that is reused by multiple view models. The domain layer
+is optional because not all apps have these requirements. Use it only when
+needed - for example, to handle complexity or favor reusability.</p><figure id="arch-overview-domain"><img src="../assets/mad-arch-overview-domain.png" alt="When it is included, the optional domain layer provides dependencies to
+    the UI layer and depends on the data layer." loading="lazy"><figcaption data-unit="architecture-069">
+      <b>Figure 4.</b> The role of the domain layer in app architecture.
+    </figcaption></figure><p data-unit="architecture-070">Classes in the domain layer are commonly called <em>use cases</em> or <em>interactors</em>.
+Each use case has responsibility for a single functionality. For
+example, your app could have a <code>GetTimeZoneUseCase</code> class if multiple view
+models rely on time zones to display the proper message on the screen.</p><p data-unit="architecture-071">To learn more, see the <a href="https://developer.android.com/jetpack/guide/domain-layer">domain layer page</a>.</p></div></article><nav class="chapter-switcher" aria-label="章节导航"><a href="../touch/english.html">← 管理 ViewGroup 中的触摸事件</a><a class="course-home" href="../index.html">全部章节</a><a href="../viewmodel/english.html">ViewModel 概览 →</a></nav><footer class="license-note"><p>本阅读版为 Android Developers 英文文档所选范围的非官方中文译文。原文由 Android Developers / Android Open Source Project 维护；原代码、原图及其标识保留。<a href="../NOTICE.html">来源与许可说明</a>。</p></footer></main></body></html>
