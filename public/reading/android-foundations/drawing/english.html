@@ -2,7 +2,7 @@
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>How Android draws views｜RIN III</title><link rel="stylesheet" href="../../reader.css"><link rel="stylesheet" href="../source.css"></head>
 <body><nav class="site-nav" aria-label="站点导航"><a href="../index.html">← Android 基础 · 官方文档中文阅读版</a><a href="index.html">中文译文</a></nav>
 <main class="reader"><header class="chapter-header"><span class="chapter-kicker">第一周 · 第 4 天 · M12</span><h1>How Android draws views</h1><p class="byline"><a href="https://developer.android.com/guide/topics/ui/how-android-draws?hl=en">How Android draws views · 官方英文原文</a></p><div class="title-rule"></div>
-<details class="source-details"><summary>阅读范围与原文目录</summary><p>引言；发起测量遍历；发起布局遍历。</p><p>原文核对：2026-09-09。正文按上述范围的原文顺序翻译；代码和图示保留原文。</p><ul><li><a href="#measure">Initiate a measure pass</a></li><li><a href="#layout">Initiate a layout pass</a></li></ul></details><nav class="chapter-switcher" aria-label="章节导航"><a href="../layouts/english.html">← View 中的布局</a><a class="course-home" href="../index.html">全部章节</a><a href="../touch/english.html">管理 ViewGroup 中的触摸事件 →</a></nav></header>
+<details class="source-details"><summary>原文目录与译文说明</summary><p>对应官方文档正文全文，包含全部章节、示例与正文中的补充资源链接；不包含站点导航、反馈和自动推荐组件。</p><p>原文核对：2026-09-09。正文全文按原文顺序翻译；代码、图示和视频保留原文。</p><ul><li><a href="#measure">Initiate a measure pass</a></li><li><a href="#layout">Initiate a layout pass</a></li><li><a href="#custom-logic">Implement a custom measurement and layout logic</a></li></ul></details><nav class="chapter-switcher" aria-label="章节导航"><a href="../layouts/english.html">← View 中的布局</a><a class="course-home" href="../index.html">全部章节</a><a href="../touch/english.html">管理 ViewGroup 中的触摸事件 →</a></nav></header>
 <article class="translated-article"><div><div class="android-page-banner android-page-banner-image-bottom-right"><div class="android-page-banner-content"><div class="android-page-banner-title" data-unit="drawing-001">
         Try the Compose way
       </div><div class="android-page-banner-description" data-unit="drawing-002">
@@ -81,4 +81,313 @@ one of three modes:</p><ul><li data-unit="drawing-018"><code><a href="https://de
       all of its descendants fit within this size.</li></ul><h2 id="layout" data-unit="drawing-021">Initiate a layout pass</h2><p data-unit="drawing-022">To initiate a layout, call
 <code><a href="https://developer.android.com/reference/android/view/View#requestLayout()">requestLayout()</a></code>. This
 method is typically called by a <code>View</code> on itself when it believes it can no longer fit
-within its bounds.</p></div></article><nav class="chapter-switcher" aria-label="章节导航"><a href="../layouts/english.html">← View 中的布局</a><a class="course-home" href="../index.html">全部章节</a><a href="../touch/english.html">管理 ViewGroup 中的触摸事件 →</a></nav><footer class="license-note"><p>本阅读版为 Android Developers 英文文档所选范围的非官方中文译文。原文由 Android Developers / Android Open Source Project 维护；原代码、原图及其标识保留。<a href="../NOTICE.html">来源与许可说明</a>。</p></footer></main></body></html>
+within its bounds.</p><h2 id="custom-logic" data-unit="drawing-023">Implement a custom measurement and layout logic</h2><p data-unit="drawing-024">If you want to implement a custom measurement or layout logic, override the methods where the logic
+is implemented:
+<code><a href="https://developer.android.com/reference/android/view/View#onMeasure(int,%20int)">onMeasure(int, int)</a></code>
+and
+<code><a href="https://developer.android.com/reference/android/view/View#onLayout(boolean,%20int,%20int,%20int,%20int)">onLayout(boolean, int, int, int, int)</a></code>.
+These methods are called by <code>measure(int, int)</code> and
+<code>layout(int, int, int, int)</code>, respectively. Don't try to override the
+<code>measure(int, int)</code> or <code>layout(int, int)</code> methods—both of these methods
+are <code>final</code>, so they can't be overridden.</p><p data-unit="drawing-025">The following example shows how to do this in the
+<a href="https://github.com/android/user-interface-samples/blob/main/WindowManager/app/src/main/java/com/example/windowmanagersample/SplitLayout.kt" class="external">`SplitLayout`</a>
+class from the
+<a href="https://github.com/android/user-interface-samples/tree/main/WindowManager" class="external">WindowManager</a>
+sample app. If the <code>SplitLayout</code> has two or more child views, and the display has a fold,
+then it positions the two child views on either side of the fold. The following example shows a use
+case for overriding the measurement and layout, but for production, use
+<code><a href="https://developer.android.com/reference/androidx/slidingpanelayout/widget/SlidingPaneLayout">SlidingPaneLayout</a></code>
+if you want this behavior.</p><div><div class="ds-selector-tabs"><section><h3 id="kotlin" data-unit="drawing-026">Kotlin</h3><div></div><div class="code-block"><pre><code>/**
+ * An example of split-layout for two views, separated by a display
+ * feature that goes across the window. When both start and end views are
+ * added, it checks whether there are display features that separate the area
+ * in two—such as a fold or hinge—and places them side-by-side or
+ * top-bottom.
+ */
+class SplitLayout : FrameLayout {
+   private var windowLayoutInfo: WindowLayoutInfo? = null
+   private var startViewId = 0
+   private var endViewId = 0
+
+   private var lastWidthMeasureSpec: Int = 0
+   private var lastHeightMeasureSpec: Int = 0
+
+   ...
+
+   fun updateWindowLayout(windowLayoutInfo: WindowLayoutInfo) {
+      this.windowLayoutInfo = windowLayoutInfo
+      requestLayout()
+   }
+
+   override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
+      val startView = findStartView()
+      val endView = findEndView()
+      val splitPositions = splitViewPositions(startView, endView)
+
+      if (startView != null &amp;&amp; endView != null &amp;&amp; splitPositions != null) {
+            val startPosition = splitPositions[0]
+            val startWidthSpec = MeasureSpec.makeMeasureSpec(startPosition.width(), EXACTLY)
+            val startHeightSpec = MeasureSpec.makeMeasureSpec(startPosition.height(), EXACTLY)
+            startView.measure(startWidthSpec, startHeightSpec)
+            startView.layout(
+               startPosition.left, startPosition.top, startPosition.right,
+               startPosition.bottom
+            )
+
+            val endPosition = splitPositions[1]
+            val endWidthSpec = MeasureSpec.makeMeasureSpec(endPosition.width(), EXACTLY)
+            val endHeightSpec = MeasureSpec.makeMeasureSpec(endPosition.height(), EXACTLY)
+            endView.measure(endWidthSpec, endHeightSpec)
+            endView.layout(
+               endPosition.left, endPosition.top, endPosition.right,
+               endPosition.bottom
+            )
+      } else {
+            super.onLayout(changed, left, top, right, bottom)
+      }
+   }
+
+   /**
+   * Gets the position of the split for this view.
+   * @return A rect that defines of split, or {@code null} if there is no split.
+   */
+   private fun splitViewPositions(startView: View?, endView: View?): Array? {
+      if (windowLayoutInfo == null || startView == null || endView == null) {
+            return null
+      }
+
+      // Calculate the area for view's content with padding.
+      val paddedWidth = width - paddingLeft - paddingRight
+      val paddedHeight = height - paddingTop - paddingBottom
+
+      windowLayoutInfo?.displayFeatures
+            ?.firstOrNull { feature -&gt; isValidFoldFeature(feature) }
+            ?.let { feature -&gt;
+               getFeaturePositionInViewRect(feature, this)?.let {
+                  if (feature.bounds.left == 0) { // Horizontal layout.
+                        val topRect = Rect(
+                           paddingLeft, paddingTop,
+                           paddingLeft + paddedWidth, it.top
+                        )
+                        val bottomRect = Rect(
+                           paddingLeft, it.bottom,
+                           paddingLeft + paddedWidth, paddingTop + paddedHeight
+                        )
+
+                        if (measureAndCheckMinSize(topRect, startView) &amp;&amp;
+                           measureAndCheckMinSize(bottomRect, endView)
+                        ) {
+                           return arrayOf(topRect, bottomRect)
+                        }
+                  } else if (feature.bounds.top == 0) { // Vertical layout.
+                        val leftRect = Rect(
+                           paddingLeft, paddingTop,
+                           it.left, paddingTop + paddedHeight
+                        )
+                        val rightRect = Rect(
+                           it.right, paddingTop,
+                           paddingLeft + paddedWidth, paddingTop + paddedHeight
+                        )
+
+                        if (measureAndCheckMinSize(leftRect, startView) &amp;&amp;
+                           measureAndCheckMinSize(rightRect, endView)
+                        ) {
+                           return arrayOf(leftRect, rightRect)
+                        }
+                  }
+               }
+            }
+
+      // You previously tried to fit the children and measure them. Since they
+      // don't fit, measure again to update the stored values.
+      measure(lastWidthMeasureSpec, lastHeightMeasureSpec)
+      return null
+   }
+
+   override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
+      super.onMeasure(widthMeasureSpec, heightMeasureSpec)
+      lastWidthMeasureSpec = widthMeasureSpec
+      lastHeightMeasureSpec = heightMeasureSpec
+   }
+
+   /**
+   * Measures a child view and sees if it fits in the provided rect.
+   * This method calls [View.measure] on the child view, which updates its
+   * stored values for measured width and height. If the view ends up with
+   * different values, measure again.
+   */
+   private fun measureAndCheckMinSize(rect: Rect, childView: View): Boolean {
+      val widthSpec = MeasureSpec.makeMeasureSpec(rect.width(), AT_MOST)
+      val heightSpec = MeasureSpec.makeMeasureSpec(rect.height(), AT_MOST)
+      childView.measure(widthSpec, heightSpec)
+      return childView.measuredWidthAndState and MEASURED_STATE_TOO_SMALL == 0 &amp;&amp;
+               childView.measuredHeightAndState and MEASURED_STATE_TOO_SMALL == 0
+   }
+
+   private fun isValidFoldFeature(displayFeature: DisplayFeature) =
+      (displayFeature as? FoldingFeature)?.let { feature -&gt;
+            getFeaturePositionInViewRect(feature, this) != null
+      } ?: false
+}</code></pre></div></section><section><h3 id="java" data-unit="drawing-027">Java</h3><div></div><div class="code-block"><pre><code>/**
+* An example of split-layout for two views, separated by a display feature
+* that goes across the window. When both start and end views are added, it checks
+* whether there are display features that separate the area in two—such as
+* fold or hinge—and places them side-by-side or top-bottom.
+*/
+public class SplitLayout extends FrameLayout {
+   @Nullable
+   private WindowLayoutInfo windowLayoutInfo = null;
+   private int startViewId = 0;
+   private int endViewId = 0;
+
+   private int lastWidthMeasureSpec = 0;
+   private int lastHeightMeasureSpec = 0;
+
+   ...
+
+   void updateWindowLayout(WindowLayoutInfo windowLayoutInfo) {
+      this.windowLayoutInfo = windowLayoutInfo;
+      requestLayout();
+   }
+
+   @Override
+   protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
+      @Nullable
+      View startView = findStartView();
+      @Nullable
+      View endView = findEndView();
+      @Nullable
+      List splitPositions = splitViewPositions(startView, endView);
+
+      if (startView != null &amp;&amp; endView != null &amp;&amp; splitPositions != null) {
+            Rect startPosition = splitPositions.get(0);
+            int startWidthSpec = MeasureSpec.makeMeasureSpec(startPosition.width(), EXACTLY);
+            int startHeightSpec = MeasureSpec.makeMeasureSpec(startPosition.height(), EXACTLY);
+            startView.measure(startWidthSpec, startHeightSpec);
+            startView.layout(
+                  startPosition.left,
+                  startPosition.top,
+                  startPosition.right,
+                  startPosition.bottom
+            );
+
+            Rect endPosition = splitPositions.get(1);
+            int endWidthSpec = MeasureSpec.makeMeasureSpec(endPosition.width(), EXACTLY);
+            int endHeightSpec = MeasureSpec.makeMeasureSpec(endPosition.height(), EXACTLY);
+            startView.measure(endWidthSpec, endHeightSpec);
+            startView.layout(
+                  endPosition.left,
+                  endPosition.top,
+                  endPosition.right,
+                  endPosition.bottom
+            );
+      } else {
+            super.onLayout(changed, left, top, right, bottom);
+      }
+   }
+
+   /**
+   * Gets the position of the split for this view.
+   * @return A rect that defines of split, or {@code null} if there is no split.
+   */
+   @Nullable
+   private List splitViewPositions(@Nullable View startView, @Nullable View endView) {
+      if (windowLayoutInfo == null || startView == null || endView == null) {
+            return null;
+      }
+
+      int paddedWidth = getWidth() - getPaddingLeft() - getPaddingRight();
+      int paddedHeight = getHeight() - getPaddingTop() - getPaddingBottom();
+
+      List displayFeatures = windowLayoutInfo.getDisplayFeatures();
+
+      @Nullable
+      DisplayFeature feature = displayFeatures
+               .stream()
+               .filter(item -&gt;
+                  isValidFoldFeature(item)
+               )
+               .findFirst()
+               .orElse(null);
+
+      if (feature != null) {
+            Rect position = SampleToolsKt.getFeaturePositionInViewRect(feature, this, true);
+            Rect featureBounds = feature.getBounds();
+            if (featureBounds.left == 0) { // Horizontal layout.
+               Rect topRect = new Rect(
+                        getPaddingLeft(),
+                        getPaddingTop(),
+                        getPaddingLeft() + paddedWidth,
+                        position.top
+               );
+               Rect bottomRect = new Rect(
+                        getPaddingLeft(),
+                        position.bottom,
+                        getPaddingLeft() + paddedWidth,
+                        getPaddingTop() + paddedHeight
+               );
+               if (measureAndCheckMinSize(topRect, startView) &amp;&amp;
+                        measureAndCheckMinSize(bottomRect, endView)) {
+                  ArrayList rects = new ArrayList();
+                  rects.add(topRect);
+                  rects.add(bottomRect);
+                  return rects;
+               }
+            } else if (featureBounds.top == 0) { // Vertical layout.
+               Rect leftRect = new Rect(
+                        getPaddingLeft(),
+                        getPaddingTop(),
+                        position.left,
+                        getPaddingTop() + paddedHeight
+               );
+               Rect rightRect = new Rect(
+                        position.right,
+                        getPaddingTop(),
+                        getPaddingLeft() + paddedWidth,
+                        getPaddingTop() + paddedHeight
+               );
+               if (measureAndCheckMinSize(leftRect, startView) &amp;&amp;
+                        measureAndCheckMinSize(rightRect, endView)) {
+                  ArrayList rects = new ArrayList();
+                  rects.add(leftRect);
+                  rects.add(rightRect);
+                  return rects;
+               }
+            }
+      }
+
+      // You previously tried to fit the children and measure them. Since
+      // they don't fit, measure again to update the stored values.
+      measure(lastWidthMeasureSpec, lastHeightMeasureSpec);
+      return null;
+   }
+
+   @Override
+   protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+      super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+      lastWidthMeasureSpec = widthMeasureSpec;
+      lastHeightMeasureSpec = heightMeasureSpec;
+   }
+
+   /**
+   * Measures a child view and sees if it fits in the provided rect.
+   * This method calls [View.measure] on the child view, which updates
+   * its stored values for measured width and height. If the view ends up with
+   * different values, measure again.
+   */
+   private boolean measureAndCheckMinSize(Rect rect, View childView) {
+      int widthSpec = MeasureSpec.makeMeasureSpec(rect.width(), AT_MOST);
+      int heightSpec = MeasureSpec.makeMeasureSpec(rect.height(), AT_MOST);
+      childView.measure(widthSpec, heightSpec);
+      return (childView.getMeasuredWidthAndState() &amp; MEASURED_STATE_TOO_SMALL) == 0 &amp;&amp;
+               (childView.getMeasuredHeightAndState() &amp; MEASURED_STATE_TOO_SMALL) == 0;
+   }
+
+   private boolean isValidFoldFeature(DisplayFeature displayFeature) {
+      if (displayFeature instanceof FoldingFeature) {
+            return SampleToolsKt.getFeaturePositionInViewRect(displayFeature, this, true) != null;
+      } else {
+            return false;
+      }
+   }
+}</code></pre></div></section></div></div></div></article><nav class="chapter-switcher" aria-label="章节导航"><a href="../layouts/english.html">← View 中的布局</a><a class="course-home" href="../index.html">全部章节</a><a href="../touch/english.html">管理 ViewGroup 中的触摸事件 →</a></nav><footer class="license-note"><p>本阅读版为 Android Developers 英文文档正文全文的非官方中文译文。原文由 Android Developers / Android Open Source Project 维护；原代码、原图及其标识保留。<a href="../NOTICE.html">来源与许可说明</a>。</p></footer></main></body></html>

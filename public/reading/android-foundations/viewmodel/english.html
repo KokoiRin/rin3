@@ -4,7 +4,7 @@
 <main class="reader"><header class="chapter-header"><span class="chapter-kicker">第一周 · 第 4 天 · M15</span><h1 id="viewmodel_overview" class="page-title" data-unit="viewmodel-001">ViewModel overview
 
   <span class="dac-jetpack"><span>Part of <a href="https://developer.android.com/jetpack">Android Jetpack</a>.</span></span></h1><p class="byline"><a href="https://developer.android.com/topic/libraries/architecture/viewmodel?hl=en">ViewModel overview Part of Android Jetpack. · 官方英文原文</a></p><div class="title-rule"></div>
-<details class="source-details"><summary>阅读范围与原文目录</summary><p>引言；ViewModel 的优势；实现 ViewModel；ViewModel 的生命周期（至清理依赖项之前）；最佳实践。</p><p>原文核对：2026-09-09。正文按上述范围的原文顺序翻译；代码和图示保留原文。</p><ul><li><a href="#viewmodel-benefits">ViewModel benefits</a></li><li><a href="#persistence">Persistence</a></li><li><a href="#access-business">Access to business logic</a></li><li><a href="#implement-viewmodel">Implement a ViewModel</a></li><li><a href="#use-coroutines">Use coroutines with ViewModel</a></li><li><a href="#lifecycle">The lifecycle of a ViewModel</a></li><li><a href="#best-practices">Best practices</a></li></ul></details><nav class="chapter-switcher" aria-label="章节导航"><a href="../architecture/english.html">← 应用架构指南</a><a class="course-home" href="../index.html">全部章节</a><a href="../compose/english.html">以 Compose 的方式思考 →</a></nav></header>
+<details class="source-details"><summary>原文目录与译文说明</summary><p>对应官方文档正文全文，包含全部章节、示例与正文中的补充资源链接；不包含站点导航、反馈和自动推荐组件。</p><p>原文核对：2026-09-09。正文全文按原文顺序翻译；代码、图示和视频保留原文。</p><ul><li><a href="#viewmodel-benefits">ViewModel benefits</a></li><li><a href="#persistence">Persistence</a></li><li><a href="#access-business">Access to business logic</a></li><li><a href="#implement-viewmodel">Implement a ViewModel</a></li><li><a href="#use-coroutines">Use coroutines with ViewModel</a></li><li><a href="#lifecycle">The lifecycle of a ViewModel</a></li><li><a href="#clear-dependencies">Clearing ViewModel dependencies</a></li><li><a href="#best-practices">Best practices</a></li><li><a href="#further-information">Further information</a></li><li><a href="#additional-resources">Additional resources</a></li><li><a href="#documentation">Documentation</a></li><li><a href="#views">Views content</a></li><li><a href="#samples">Samples</a></li></ul></details><nav class="chapter-switcher" aria-label="章节导航"><a href="../architecture/english.html">← 应用架构指南</a><a class="course-home" href="../index.html">全部章节</a><a href="../compose/english.html">以 Compose 的方式思考 →</a></nav></header>
 <article class="translated-article"><div><p>
 
 
@@ -123,19 +123,63 @@ diagram illustrates the states of an activity.</p><figure><img src="../assets/vi
 activity object's <a href="https://developer.android.com/reference/android/app/Activity#onCreate(android.os.Bundle)"><code>onCreate()</code></a> method. The system may call
 <a href="https://developer.android.com/reference/android/app/Activity#onCreate(android.os.Bundle)"><code>onCreate()</code></a> several times throughout the existence of an activity, such
 as when a device screen is rotated. The <a href="https://developer.android.com/reference/androidx/lifecycle/ViewModel"><code>ViewModel</code></a> exists from when you
-first request a <a href="https://developer.android.com/reference/androidx/lifecycle/ViewModel"><code>ViewModel</code></a> until the activity is finished and destroyed.</p><h2 id="best-practices" data-unit="viewmodel-044">Best practices</h2><p data-unit="viewmodel-045">The following are several key best practices you should follow when implementing
-ViewModel:</p><ul><li data-unit="viewmodel-046">Because of <a href="https://developer.android.com/topic/libraries/architecture/viewmodel#lifecycle">their scoping</a>, use ViewModels as implementation details of a
+first request a <a href="https://developer.android.com/reference/androidx/lifecycle/ViewModel"><code>ViewModel</code></a> until the activity is finished and destroyed.</p><h3 id="clear-dependencies" data-unit="viewmodel-044">Clearing ViewModel dependencies</h3><p data-unit="viewmodel-045">The ViewModel calls the <a href="https://developer.android.com/reference/androidx/lifecycle/ViewModel#onCleared()"><code>onCleared</code></a> method when the <code>ViewModelStoreOwner</code>
+destroys it in the course of its lifecycle. This allows you to clean up any work
+or dependencies that follow the ViewModel's lifecycle.</p><p data-unit="viewmodel-046">The following example shows an alternative to <a href="https://developer.android.com/topic/libraries/architecture/coroutines#viewmodelscope"><code>viewModelScope</code></a>.
+<code>viewModelScope</code> is a built-in <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-coroutine-scope/" class="external"><code>CoroutineScope</code></a> that
+automatically follows the ViewModel's lifecycle. The ViewModel uses it to
+trigger business-related operations. If you want to use a custom scope instead
+of <code>viewModelScope</code> for <a href="https://developer.android.com/kotlin/coroutines/test">easier testing</a>, the ViewModel can receive a
+<code>CoroutineScope</code> as a dependency in its constructor. When the
+<code>ViewModelStoreOwner</code> clears the ViewModel at the end of its lifecycle, the
+ViewModel also cancels the <code>CoroutineScope</code>.</p><div></div><div class="code-block"><pre><code>class MyViewModel(
+    private val coroutineScope: CoroutineScope =
+        CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+) : ViewModel() {
+
+    // Other ViewModel logic ...
+
+    override fun onCleared() {
+        coroutineScope.cancel()
+    }
+}
+</code></pre></div><p data-unit="viewmodel-047">From lifecycle <a href="https://developer.android.com/jetpack/androidx/releases/lifecycle#version_25_2">version 2.5</a> and above,
+you can pass one or more <code>Closeable</code>
+objects to the ViewModel's constructor that automatically closes when the
+ViewModel instance is cleared.</p><div></div><div class="code-block"><pre><code>class CloseableCoroutineScope(
+    context: CoroutineContext = SupervisorJob() + Dispatchers.Main.immediate
+) : Closeable, CoroutineScope {
+    override val coroutineContext: CoroutineContext = context
+    override fun close() {
+        coroutineContext.cancel()
+   }
+}
+
+class MyViewModel(
+    private val coroutineScope: CoroutineScope = CloseableCoroutineScope()
+) : ViewModel(coroutineScope) {
+    // Other ViewModel logic ...
+}
+</code></pre></div><h2 id="best-practices" data-unit="viewmodel-048">Best practices</h2><p data-unit="viewmodel-049">The following are several key best practices you should follow when implementing
+ViewModel:</p><ul><li data-unit="viewmodel-050">Because of <a href="https://developer.android.com/topic/libraries/architecture/viewmodel#lifecycle">their scoping</a>, use ViewModels as implementation details of a
 screen level state holder. Don't use them as state holders of reusable UI
 components such as chip groups or forms. Otherwise, you'd get the same
 ViewModel instance in different usages of the same UI component under the same
-ViewModelStoreOwner unless you use an explicit view model key per chip.</li><li data-unit="viewmodel-047">ViewModels shouldn't know about the UI implementation details. Keep the names
+ViewModelStoreOwner unless you use an explicit view model key per chip.</li><li data-unit="viewmodel-051">ViewModels shouldn't know about the UI implementation details. Keep the names
 of the methods the ViewModel API exposes and those of the UI state fields as
 generic as possible. In this way, your ViewModel can accommodate any type of
-UI: a mobile phone, foldable, tablet, or even a Chromebook!</li><li data-unit="viewmodel-048">As they can potentially live longer than the <code>ViewModelStoreOwner</code>, ViewModels
+UI: a mobile phone, foldable, tablet, or even a Chromebook!</li><li data-unit="viewmodel-052">As they can potentially live longer than the <code>ViewModelStoreOwner</code>, ViewModels
 shouldn't hold any references of lifecycle-related APIs such as the <code>Context</code>
-or <code>Resources</code> to prevent memory leaks.</li><li data-unit="viewmodel-049">Don't pass ViewModels to other classes, functions or other UI components.
+or <code>Resources</code> to prevent memory leaks.</li><li data-unit="viewmodel-053">Don't pass ViewModels to other classes, functions or other UI components.
 Because the platform manages them, you should keep them as close to it as you
 can—close to your Activity, screen level composable function, or
 Navigation destination.
 This prevents lower level components from accessing more data and logic than
-they need.</li></ul></div></article><nav class="chapter-switcher" aria-label="章节导航"><a href="../architecture/english.html">← 应用架构指南</a><a class="course-home" href="../index.html">全部章节</a><a href="../compose/english.html">以 Compose 的方式思考 →</a></nav><footer class="license-note"><p>本阅读版为 Android Developers 英文文档所选范围的非官方中文译文。原文由 Android Developers / Android Open Source Project 维护；原代码、原图及其标识保留。<a href="../NOTICE.html">来源与许可说明</a>。</p></footer></main></body></html>
+they need.</li></ul><h2 id="further-information" data-unit="viewmodel-054">Further information</h2><p data-unit="viewmodel-055">As your data grows more complex, you might choose to have a separate class just
+to load the data. The purpose of <a href="https://developer.android.com/reference/androidx/lifecycle/ViewModel"><code>ViewModel</code></a> is to encapsulate the data for
+a UI controller to let the data survive configuration changes. For information
+about how to load, persist, and manage data across configuration changes, see
+<a href="https://developer.android.com/topic/libraries/architecture/saving-states">Saved UI States</a>.</p><p data-unit="viewmodel-056">The <a href="https://developer.android.com/topic/libraries/architecture/guide#fetching_data">Guide to Android App Architecture</a> suggests building a repository class
+to handle these functions.</p><h2 id="additional-resources" data-unit="viewmodel-057">Additional resources</h2><p data-unit="viewmodel-058">For further information about the <code>ViewModel</code> class, consult the following
+resources.</p><h3 id="documentation" data-unit="viewmodel-059">Documentation</h3><ul><li data-unit="viewmodel-060"><a href="https://developer.android.com/topic/architecture/ui-layer">UI layer</a></li><li data-unit="viewmodel-061"><a href="https://developer.android.com/topic/architecture/ui-layer/events">UI Events</a></li><li data-unit="viewmodel-062"><a href="https://developer.android.com/topic/architecture/ui-layer/stateholders">State holders and UI State</a></li><li data-unit="viewmodel-063"><a href="https://developer.android.com/topic/architecture/ui-layer/state-production">State production</a></li><li data-unit="viewmodel-064"><a href="https://developer.android.com/topic/architecture/data-layer">Data layer</a></li></ul><h3 id="views" data-unit="viewmodel-065">Views content</h3><ul><li data-unit="viewmodel-066"><a href="https://developer.android.com/topic/libraries/architecture/views/viewmodel">ViewModel overview (Views)</a></li></ul><h3 id="samples" data-unit="viewmodel-067">Samples</h3><p><devsite-dynamic-content>
+</devsite-dynamic-content></p></div></article><nav class="chapter-switcher" aria-label="章节导航"><a href="../architecture/english.html">← 应用架构指南</a><a class="course-home" href="../index.html">全部章节</a><a href="../compose/english.html">以 Compose 的方式思考 →</a></nav><footer class="license-note"><p>本阅读版为 Android Developers 英文文档正文全文的非官方中文译文。原文由 Android Developers / Android Open Source Project 维护；原代码、原图及其标识保留。<a href="../NOTICE.html">来源与许可说明</a>。</p></footer></main></body></html>

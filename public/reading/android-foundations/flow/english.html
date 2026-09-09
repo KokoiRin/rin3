@@ -2,8 +2,11 @@
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Kotlin flows on Android｜RIN III</title><link rel="stylesheet" href="../../reader.css"><link rel="stylesheet" href="../source.css"></head>
 <body><nav class="site-nav" aria-label="站点导航"><a href="../index.html">← Android 基础 · 官方文档中文阅读版</a><a href="index.html">中文译文</a></nav>
 <main class="reader"><header class="chapter-header"><span class="chapter-kicker">第一周 · 第 5 天 · M18</span><h1>Kotlin flows on Android</h1><p class="byline"><a href="https://developer.android.com/kotlin/flow?hl=en">Kotlin flows on Android · 官方英文原文</a></p><div class="title-rule"></div>
-<details class="source-details"><summary>阅读范围与原文目录</summary><p>引言；创建 Flow；修改数据流；从 Flow 收集。</p><p>原文核对：2026-09-09。正文按上述范围的原文顺序翻译；代码和图示保留原文。</p><ul><li><a href="#create">Creating a flow</a></li><li><a href="#modify">Modifying the stream</a></li><li><a href="#collect">Collecting from a flow</a></li></ul></details><nav class="chapter-switcher" aria-label="章节导航"><a href="../coroutines/english.html">← Android 上的 Kotlin 协程</a><a class="course-home" href="../index.html">全部章节</a><a href="../stateflow/english.html">StateFlow 与 SharedFlow →</a></nav></header>
-<article class="translated-article"><div><p data-unit="flow-001">In coroutines, a <em>flow</em> is a type that can emit multiple values
+<details class="source-details"><summary>原文目录与译文说明</summary><p>对应官方文档正文全文，包含全部章节、示例与正文中的补充资源链接；不包含站点导航、反馈和自动推荐组件。</p><p>原文核对：2026-09-09。正文全文按原文顺序翻译；代码、图示和视频保留原文。</p><ul><li><a href="#create">Creating a flow</a></li><li><a href="#modify">Modifying the stream</a></li><li><a href="#collect">Collecting from a flow</a></li><li><a href="#exceptions">Catching unexpected exceptions</a></li><li><a href="#context">Executing in a different CoroutineContext</a></li><li><a href="#jetpack">Flows in Jetpack libraries</a></li><li><a href="#callback">Convert callback-based APIs to flows</a></li><li><a href="#more">Additional flow resources</a></li></ul></details><nav class="chapter-switcher" aria-label="章节导航"><a href="../coroutines/english.html">← Android 上的 Kotlin 协程</a><a class="course-home" href="../index.html">全部章节</a><a href="../stateflow/english.html">StateFlow 与 SharedFlow →</a></nav></header>
+<article class="translated-article"><div><div class="video-wrapper">
+  <iframe class="devsite-embedded-youtube-video" allowfullscreen="" src="https://www.youtube-nocookie.com/embed/fSB6_KE95bU" title="官方原视频" loading="lazy">
+  </iframe>
+</div><p data-unit="flow-001">In coroutines, a <em>flow</em> is a type that can emit multiple values
 sequentially, as opposed to <em>suspend functions</em> that return only
 a single value. For example, you can use a flow to receive live
 updates from a database.</p><p data-unit="flow-002">Flows are built on top of coroutines and can provide multiple values.
@@ -54,7 +57,7 @@ as the producer.</p><p>
 // Interface that provides a way to make network requests with suspend functions
 interface NewsApi {
     suspend fun fetchLatestNews(): List&lt;ArticleHeadline&gt;
-}Flow.kt</code></pre></div><p data-unit="flow-013">The <code>flow</code> builder is executed within a coroutine. Thus, it benefits
+}</code></pre><div class="code-caption"><a href="https://github.com/android/snippets/blob/14ba9933f6d32671db9e0621bf1a099aa29565c4/kotlin/src/main/kotlin/com/example/android/basics/flow/Flow.kt#L43-L59" class="gc-analytics-event"><span class="devsite-syntax-n">Flow</span><span class="devsite-syntax-p">.</span><span class="devsite-syntax-na">kt</span></a></div></div><p data-unit="flow-013">The <code>flow</code> builder is executed within a coroutine. Thus, it benefits
 from the same asynchronous APIs, but some restrictions apply:</p><ul><li data-unit="flow-014">Flows are <em>sequential</em>. As the producer is in a coroutine, when calling
 a suspend function, the producer suspends until the suspend function
 returns. In the example, the producer suspends until the <code>fetchLatestNews</code>
@@ -92,7 +95,7 @@ to transform the data to be displayed on the <code>View</code>:</p><p>
             .map { news -&gt; news.filter { userData.isFavoriteTopic(it) } }
             // Intermediate operation to save the latest news in the cache
             .onEach { news -&gt; saveInCache(news) }
-}Flow.kt</code></pre></div><p data-unit="flow-019">Intermediate operators can be applied one after the other, forming a chain
+}</code></pre><div class="code-caption"><a href="https://github.com/android/snippets/blob/14ba9933f6d32671db9e0621bf1a099aa29565c4/kotlin/src/main/kotlin/com/example/android/basics/flow/Flow.kt#L63-L78" class="gc-analytics-event"><span class="devsite-syntax-n">Flow</span><span class="devsite-syntax-p">.</span><span class="devsite-syntax-na">kt</span></a></div></div><p data-unit="flow-019">Intermediate operators can be applied one after the other, forming a chain
 of operations that are executed lazily when an item is emitted into the
 flow. Note that simply applying an intermediate operator to a stream does
 not start the flow collection.</p><h2 id="collect" data-unit="flow-020">Collecting from a flow</h2><p data-unit="flow-021">Use a <em>terminal operator</em> to trigger the flow to start listening for
@@ -122,7 +125,7 @@ a <code>ViewModel</code> consuming the data from the repository layer:</p><p>
             }
         }
     }
-}Flow.kt</code></pre></div><p data-unit="flow-024">Collecting the flow triggers the producer that refreshes the latest news
+}</code></pre><div class="code-caption"><a href="https://github.com/android/snippets/blob/14ba9933f6d32671db9e0621bf1a099aa29565c4/kotlin/src/main/kotlin/com/example/android/basics/flow/Flow.kt#L82-L94" class="gc-analytics-event"><span class="devsite-syntax-n">Flow</span><span class="devsite-syntax-p">.</span><span class="devsite-syntax-na">kt</span></a></div></div><p data-unit="flow-024">Collecting the flow triggers the producer that refreshes the latest news
 and emits the result of the network request on a fixed interval. As the
 producer remains always active with the <code>while(true)</code> loop, the stream
 of data will be closed when the ViewModel is cleared and
@@ -134,4 +137,187 @@ terminal operator is called on the flow. In the previous example,
 having multiple flow collectors causes the data source to fetch the
 latest news multiple times on different fixed intervals. To optimize and
 share a flow when multiple consumers collect at the same time, use the
-<a href="https://developer.android.com/kotlin/flow/stateflow-and-sharedflow#sharein"><code>shareIn</code></a> operator.</p></div></article><nav class="chapter-switcher" aria-label="章节导航"><a href="../coroutines/english.html">← Android 上的 Kotlin 协程</a><a class="course-home" href="../index.html">全部章节</a><a href="../stateflow/english.html">StateFlow 与 SharedFlow →</a></nav><footer class="license-note"><p>本阅读版为 Android Developers 英文文档所选范围的非官方中文译文。原文由 Android Developers / Android Open Source Project 维护；原代码、原图及其标识保留。<a href="../NOTICE.html">来源与许可说明</a>。</p></footer></main></body></html>
+<a href="https://developer.android.com/kotlin/flow/stateflow-and-sharedflow#sharein"><code>shareIn</code></a> operator.</p><h2 id="exceptions" data-unit="flow-029">Catching unexpected exceptions</h2><p data-unit="flow-030">The implementation of the producer can come from a third party library.
+This means that it can throw unexpected exceptions. To handle these
+exceptions, use the
+<a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/catch.html" class="external"><code>catch</code></a>
+intermediate operator.</p><p>
+
+
+
+
+
+
+</p><div></div><div class="code-block"><pre><code>class LatestNewsViewModel(
+    private val newsRepository: NewsRepository
+) : ViewModel() {
+
+    init {
+        viewModelScope.launch {
+            newsRepository.favoriteLatestNews
+                // Intermediate catch operator. If an exception is thrown,
+                // catch and update the UI
+                .catch { exception -&gt; notifyError(exception) }
+                .collect { favoriteNews -&gt;
+                    // Update UI with the latest favorite news
+                }
+        }
+    }
+}</code></pre><div class="code-caption"><a href="https://github.com/android/snippets/blob/14ba9933f6d32671db9e0621bf1a099aa29565c4/kotlin/src/main/kotlin/com/example/android/basics/flow/Flow.kt#L99-L114" class="gc-analytics-event"><span class="devsite-syntax-n">Flow</span><span class="devsite-syntax-p">.</span><span class="devsite-syntax-na">kt</span></a></div></div><p data-unit="flow-031">In the previous example, when an exception occurs, the <code>collect</code>
+lambda isn't called, as a new item hasn't been received.</p><p data-unit="flow-032"><code>catch</code> can also <code>emit</code> items to the flow. The example repository
+layer could <code>emit</code> the cached values instead:</p><p>
+
+
+
+
+
+
+</p><div></div><div class="code-block"><pre><code>class NewsRepository(
+    // ...
+) {
+    val favoriteLatestNews: Flow&lt;List&lt;ArticleHeadline&gt;&gt; =
+        newsRemoteDataSource.latestNews
+            .map { news -&gt; news.filter { userData.isFavoriteTopic(it) } }
+            .onEach { news -&gt; saveInCache(news) }
+            // If an error happens, emit the last cached values
+            .catch { exception -&gt; emit(lastCachedNews()) }
+}</code></pre><div class="code-caption"><a href="https://github.com/android/snippets/blob/14ba9933f6d32671db9e0621bf1a099aa29565c4/kotlin/src/main/kotlin/com/example/android/basics/flow/Flow.kt#L120-L132" class="gc-analytics-event"><span class="devsite-syntax-n">Flow</span><span class="devsite-syntax-p">.</span><span class="devsite-syntax-na">kt</span></a></div></div><p data-unit="flow-033">In this example, when an exception occurs, the <code>collect</code> lambda is
+called, as a new item has been emitted to the stream because of the
+exception.</p><h2 id="context" data-unit="flow-034">Executing in a different CoroutineContext</h2><p data-unit="flow-035">By default, the producer of a <code>flow</code> builder executes in the
+<code>CoroutineContext</code> of the coroutine that collects from it, and as
+previously mentioned, it cannot <code>emit</code> values from a different
+<code>CoroutineContext</code>. This behavior might be undesirable in some cases.
+For instance, in the examples used throughout this topic, the repository
+layer shouldn't be performing operations on <code>Dispatchers.Main</code> that
+is used by <code>viewModelScope</code>.</p><p data-unit="flow-036">To change the <code>CoroutineContext</code> of a flow, use the intermediate operator
+<a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/flow-on.html" class="external"><code>flowOn</code></a>.
+<code>flowOn</code> changes the <code>CoroutineContext</code> of the <em>upstream flow</em>, meaning
+the producer and any intermediate operators applied <em>before (or above)</em>
+<code>flowOn</code>. The <em>downstream flow</em> (the intermediate operators <em>after</em> <code>flowOn</code>
+along with the consumer) is not affected and executes on the
+<code>CoroutineContext</code> used to <code>collect</code> from the flow. If there are
+multiple <code>flowOn</code> operators, each one changes the upstream from its
+current location.</p><p>
+
+
+
+
+
+
+</p><div></div><div class="code-block"><pre><code>class NewsRepository(
+    private val newsRemoteDataSource: NewsRemoteDataSource,
+    private val userData: UserData,
+    private val defaultDispatcher: CoroutineDispatcher
+) {
+    val favoriteLatestNews: Flow&lt;List&lt;ArticleHeadline&gt;&gt; =
+        newsRemoteDataSource.latestNews
+            .map { news -&gt; // Executes on the default dispatcher
+                news.filter { userData.isFavoriteTopic(it) }
+            }
+            .onEach { news -&gt; // Executes on the default dispatcher
+                saveInCache(news)
+            }
+            // flowOn affects the upstream flow ↑
+            .flowOn(defaultDispatcher)
+            // the downstream flow ↓ is not affected
+            .catch { exception -&gt; // Executes in the consumer's context
+                emit(lastCachedNews())
+            }
+}</code></pre><div class="code-caption"><a href="https://github.com/android/snippets/blob/14ba9933f6d32671db9e0621bf1a099aa29565c4/kotlin/src/main/kotlin/com/example/android/basics/flow/Flow.kt#L138-L157" class="gc-analytics-event"><span class="devsite-syntax-n">Flow</span><span class="devsite-syntax-p">.</span><span class="devsite-syntax-na">kt</span></a></div></div><p data-unit="flow-037">With this code, the <code>onEach</code> and <code>map</code> operators use the <code>defaultDispatcher</code>,
+whereas the <code>catch</code> operator and the consumer are executed on
+<code>Dispatchers.Main</code> used by <code>viewModelScope</code>.</p><p data-unit="flow-038">As the data source layer is doing I/O work, you should use a dispatcher
+that is optimized for I/O operations:</p><p>
+
+
+
+
+
+
+</p><div></div><div class="code-block"><pre><code>class NewsRemoteDataSource(
+    // ...
+    private val ioDispatcher: CoroutineDispatcher
+) {
+
+    val latestNews: Flow&lt;List&lt;ArticleHeadline&gt;&gt; = flow {
+        // Executes on the IO dispatcher
+        // ...
+    }
+        .flowOn(ioDispatcher)
+}</code></pre><div class="code-caption"><a href="https://github.com/android/snippets/blob/14ba9933f6d32671db9e0621bf1a099aa29565c4/kotlin/src/main/kotlin/com/example/android/basics/flow/Flow.kt#L163-L184" class="gc-analytics-event"><span class="devsite-syntax-n">Flow</span><span class="devsite-syntax-p">.</span><span class="devsite-syntax-na">kt</span></a></div></div><h2 id="jetpack" data-unit="flow-039">Flows in Jetpack libraries</h2><p data-unit="flow-040">Flow is integrated into many Jetpack libraries, and it's popular among
+Android third party libraries. Flow is a great fit for live data updates
+and endless streams of data.</p><p data-unit="flow-041">You can use
+<a href="https://medium.com/androiddevelopers/room-flow-273acffe5b57" class="external">Flow with Room</a>
+to be notified of changes in a database. When using
+<a href="https://developer.android.com/training/data-storage/room/accessing-data">data access objects (DAO)</a>,
+return a <code>Flow</code> type to get live updates.</p><p>
+
+
+
+
+
+
+</p><div></div><div class="code-block"><pre><code>@Dao
+abstract class ExampleDao {
+    @Query("SELECT * FROM Example")
+    abstract fun getExamples(): Flow&lt;List&lt;Example&gt;&gt;
+}</code></pre><div class="code-caption"><a href="https://github.com/android/snippets/blob/14ba9933f6d32671db9e0621bf1a099aa29565c4/kotlin/src/main/kotlin/com/example/android/basics/flow/Flow.kt#L190-L194" class="gc-analytics-event"><span class="devsite-syntax-n">Flow</span><span class="devsite-syntax-p">.</span><span class="devsite-syntax-na">kt</span></a></div></div><p data-unit="flow-042">Every time there's a change in the <code>Example</code> table, a new list is emitted
+with the new items in the database.</p><h2 id="callback" data-unit="flow-043">Convert callback-based APIs to flows</h2><p data-unit="flow-044"><a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/callback-flow.html" class="external"><code>callbackFlow</code></a>
+is a flow builder that lets you convert callback-based APIs into flows.
+As an example, the <a href="https://firebase.google.com/docs/firestore/quickstart#kotlin+ktx">Firebase Firestore</a>
+Android APIs use callbacks.</p><aside class="prompt" data-unit="flow-045"><strong>Note:</strong><span> Starting in <a href="https://firebase.google.com/support/release-notes/android#firestore-ktx_v24-3-0">version 24.3.0</a>,
+firestore-ktx includes
+<a href="https://firebase.google.com/docs/reference/kotlin/com/google/firebase/firestore/ktx/package-summary#snapshots"><code>snapshots()</code></a>
+extensions that return a <code>Flow</code>, so you don't need to perform this conversion
+yourself for this specific API.</span></aside><p data-unit="flow-046">To convert these APIs to flows and listen for Firestore database updates, you
+can use the following code:</p><div></div><div class="code-block"><pre><code>class FirestoreUserEventsDataSource(
+    private val firestore: FirebaseFirestore
+) {
+    // Method to get user events from the Firestore database
+    fun getUserEvents(): Flow&lt;UserEvents&gt; = callbackFlow {
+
+        // Reference to use in Firestore
+        var eventsCollection: CollectionReference? = null
+        try {
+            eventsCollection = FirebaseFirestore.getInstance()
+                .collection("collection")
+                .document("app")
+        } catch (e: Throwable) {
+            // If Firebase cannot be initialized, close the stream of data
+            // flow consumers will stop collecting and the coroutine will resume
+            close(e)
+        }
+
+        // Registers callback to firestore, which will be called on new events
+        val subscription = eventsCollection?.addSnapshotListener { snapshot, _ -&gt;
+            if (snapshot == null) { return@addSnapshotListener }
+            // Sends events to the flow! Consumers will get the new events
+            try {
+                trySend(snapshot.getEvents())
+            } catch (e: Throwable) {
+                // Event couldn't be sent to the flow
+            }
+        }
+
+        // The callback inside awaitClose will be executed when the flow is
+        // either closed or cancelled.
+        // In this case, remove the callback from Firestore
+        awaitClose { subscription?.remove() }
+    }
+}
+</code></pre></div><p data-unit="flow-047">Unlike the <code>flow</code> builder, <code>callbackFlow</code>
+allows values to be emitted from a different <code>CoroutineContext</code> with the
+<a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.channels/-send-channel/send.html" class="external"><code>send</code></a>
+function or outside a coroutine with the
+<a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.channels/-send-channel/try-send.html" class="external"><code>trySend</code></a>
+function.</p><p data-unit="flow-048">Internally, <code>callbackFlow</code> uses a
+<a href="https://kotlinlang.org/docs/channels.html" class="external">channel</a>,
+which is conceptually very similar to a blocking
+<a href="https://en.wikipedia.org/wiki/Queue_(abstract_data_type)" class="external">queue</a>.
+A channel is configured with a <em>capacity</em>, the maximum number of elements
+that can be buffered. The channel created in <code>callbackFlow</code> has a default
+capacity of 64 elements. When you try to add a new element to a full
+channel, <code>send</code> suspends the producer until there's space for the new
+element, whereas <code>trySend</code> does not add the element to the channel and returns
+<code>false</code> immediately.</p><p data-unit="flow-049"><code>trySend</code> immediately adds the specified element to the channel,
+only if this doesn't violate its capacity restrictions, and then returns the
+successful result.</p><h2 id="more" data-unit="flow-050">Additional flow resources</h2><ul><li data-unit="flow-051"><a href="https://developer.android.com/kotlin/flow/test">Testing Kotlin flows on Android</a></li><li data-unit="flow-052"><a href="https://developer.android.com/kotlin/flow/stateflow-and-sharedflow"><code>StateFlow</code> and <code>SharedFlow</code></a></li><li data-unit="flow-053"><a href="https://developer.android.com/kotlin/coroutines/additional-resources">Additional resources for Kotlin coroutines and flow</a></li></ul></div></article><nav class="chapter-switcher" aria-label="章节导航"><a href="../coroutines/english.html">← Android 上的 Kotlin 协程</a><a class="course-home" href="../index.html">全部章节</a><a href="../stateflow/english.html">StateFlow 与 SharedFlow →</a></nav><footer class="license-note"><p>本阅读版为 Android Developers 英文文档正文全文的非官方中文译文。原文由 Android Developers / Android Open Source Project 维护；原代码、原图及其标识保留。<a href="../NOTICE.html">来源与许可说明</a>。</p></footer></main></body></html>

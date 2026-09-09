@@ -2,20 +2,24 @@
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Use Kotlin coroutines with lifecycle-aware components｜RIN III</title><link rel="stylesheet" href="../../reader.css"><link rel="stylesheet" href="../source.css"></head>
 <body><nav class="site-nav" aria-label="站点导航"><a href="../index.html">← Android 基础 · 官方文档中文阅读版</a><a href="index.html">中文译文</a></nav>
 <main class="reader"><header class="chapter-header"><span class="chapter-kicker">第一周 · 第 5 天 · M20</span><h1>Use Kotlin coroutines with lifecycle-aware components</h1><p class="byline"><a href="https://developer.android.com/topic/libraries/architecture/coroutines?hl=en">Use Kotlin coroutines with lifecycle-aware components · 官方英文原文</a></p><div class="title-rule"></div>
-<details class="source-details"><summary>阅读范围与原文目录</summary><p>引言；感知生命周期的协程作用域；感知生命周期的 Flow 收集，含并行收集多个 Flow。</p><p>原文核对：2026-09-09。正文按上述范围的原文顺序翻译；代码和图示保留原文。</p><ul><li><a href="#lifecycle-aware">Lifecycle-aware coroutine scopes</a></li><li><a href="#viewmodelscope">ViewModelScope</a></li><li><a href="#composition-bound-scopes">Composition-bound scopes</a></li><li><a href="#lifecycle-aware-flow-collection">Lifecycle-aware flow collection</a></li><li><a href="#parallel">Parallel collection of multiple flows</a></li></ul></details><nav class="chapter-switcher" aria-label="章节导航"><a href="../stateflow/english.html">← StateFlow 与 SharedFlow</a><a class="course-home" href="../index.html">全部章节</a><a href="../coroutines-best/english.html">Android 协程最佳实践 →</a></nav></header>
+<details class="source-details"><summary>原文目录与译文说明</summary><p>对应官方文档正文全文，包含全部章节、示例与正文中的补充资源链接；不包含站点导航、反馈和自动推荐组件。</p><p>原文核对：2026-09-09。正文全文按原文顺序翻译；代码、图示和视频保留原文。</p><ul><li><a href="#dependencies">Add dependencies</a></li><li><a href="#lifecycle-aware">Lifecycle-aware coroutine scopes</a></li><li><a href="#viewmodelscope">ViewModelScope</a></li><li><a href="#composition-bound-scopes">Composition-bound scopes</a></li><li><a href="#lifecycle-aware-flow-collection">Lifecycle-aware flow collection</a></li><li><a href="#parallel">Parallel collection of multiple flows</a></li><li><a href="#calculate-values">Calculate values asynchronously using Flows</a></li><li><a href="#resources">Additional resources</a></li><li><a href="#views">Views content</a></li><li><a href="#samples">Samples</a></li></ul></details><nav class="chapter-switcher" aria-label="章节导航"><a href="../stateflow/english.html">← StateFlow 与 SharedFlow</a><a class="course-home" href="../index.html">全部章节</a><a href="../coroutines-best/english.html">Android 协程最佳实践 →</a></nav></header>
 <article class="translated-article"><div><p data-unit="lifecycle-coroutines-001"><a href="https://developer.android.com/kotlin/coroutines">Kotlin coroutines</a> provide an API that lets you write asynchronous
 code. With Kotlin coroutines, you can define a <a href="https://kotlin.github.io/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-coroutine-scope/"><code>CoroutineScope</code></a>, which
 helps you to manage when your coroutines should run. Each asynchronous operation
 runs within a particular scope.</p><p data-unit="lifecycle-coroutines-002"><a href="https://developer.android.com/topic/libraries/architecture/lifecycle">Lifecycle-aware components</a> provide first-class support for coroutines for
 logical scopes in your app. This document explains how to use coroutines
-effectively with lifecycle-aware components.</p><h2 id="lifecycle-aware" data-unit="lifecycle-coroutines-003">Lifecycle-aware coroutine scopes</h2><p data-unit="lifecycle-coroutines-004">Compose and the Lifecycle libraries provide the following built-in scopes that
-you can use in your app.</p><h3 id="viewmodelscope" data-unit="lifecycle-coroutines-005">ViewModelScope</h3><p data-unit="lifecycle-coroutines-006">A <code>ViewModelScope</code> is defined for each <a href="https://developer.android.com/topic/libraries/architecture/viewmodel"><code>ViewModel</code></a> in your app. Any
+effectively with lifecycle-aware components.</p><h2 id="dependencies" data-unit="lifecycle-coroutines-003">Add dependencies</h2><p data-unit="lifecycle-coroutines-004">The built-in coroutine scopes described in this topic are contained in the
+Lifecycle API. Be sure to add the appropriate dependencies when using these
+scopes.</p><ul><li data-unit="lifecycle-coroutines-005">For ViewModel utilities in Compose, use
+<code>implementation("androidx.lifecycle:lifecycle-viewmodel-compose:$lifecycle_version")</code>.</li><li data-unit="lifecycle-coroutines-006">For Lifecycle utilities in Compose, use
+<code>implementation("androidx.lifecycle:lifecycle-runtime-compose:$lifecycle_version")</code>.</li></ul><h2 id="lifecycle-aware" data-unit="lifecycle-coroutines-007">Lifecycle-aware coroutine scopes</h2><p data-unit="lifecycle-coroutines-008">Compose and the Lifecycle libraries provide the following built-in scopes that
+you can use in your app.</p><h3 id="viewmodelscope" data-unit="lifecycle-coroutines-009">ViewModelScope</h3><p data-unit="lifecycle-coroutines-010">A <code>ViewModelScope</code> is defined for each <a href="https://developer.android.com/topic/libraries/architecture/viewmodel"><code>ViewModel</code></a> in your app. Any
 coroutine launched in this scope is automatically canceled if the <code>ViewModel</code> is
 cleared. Coroutines are useful here for when you have work that needs to be done
 only if the <code>ViewModel</code> is active. For example, if you are computing some data
 for a layout, you should scope the work to the <code>ViewModel</code> so that if the
 <code>ViewModel</code> is cleared, the work is canceled automatically to avoid consuming
-resources.</p><p data-unit="lifecycle-coroutines-007">You can access the <code>CoroutineScope</code> of a <code>ViewModel</code> through the
+resources.</p><p data-unit="lifecycle-coroutines-011">You can access the <code>CoroutineScope</code> of a <code>ViewModel</code> through the
 <code>viewModelScope</code> property of the <code>ViewModel</code>, as shown in the following example:</p><div></div><div class="code-block"><pre><code>class MyViewModel: ViewModel() {
     init {
         viewModelScope.launch {
@@ -23,25 +27,25 @@ resources.</p><p data-unit="lifecycle-coroutines-007">You can access the <code>C
         }
     }
 }
-</code></pre></div><p data-unit="lifecycle-coroutines-008">For more advanced use cases, you can pass a custom <code>CoroutineScope</code> directly
+</code></pre></div><p data-unit="lifecycle-coroutines-012">For more advanced use cases, you can pass a custom <code>CoroutineScope</code> directly
 into the ViewModel's constructor to replace the default <code>viewModelScope</code>. This
-approach offers more control and flexibility, particularly for:</p><ul><li><p data-unit="lifecycle-coroutines-009">Testing: It lets you inject a <code>TestScope</code>, making it easier to control time
-and verify coroutine behavior in unit tests.</p></li><li><p data-unit="lifecycle-coroutines-010">Custom configuration: You can configure the scope with a specific
+approach offers more control and flexibility, particularly for:</p><ul><li><p data-unit="lifecycle-coroutines-013">Testing: It lets you inject a <code>TestScope</code>, making it easier to control time
+and verify coroutine behavior in unit tests.</p></li><li><p data-unit="lifecycle-coroutines-014">Custom configuration: You can configure the scope with a specific
 <code>CoroutineDispatcher</code> (like <code>Dispatchers.Default</code> for heavy computation) or
 a custom <code>CoroutineExceptionHandler</code> before the ViewModel even starts its
-work.</p></li></ul><h3 id="composition-bound-scopes" data-unit="lifecycle-coroutines-011">Composition-bound scopes</h3><p data-unit="lifecycle-coroutines-012">Side effects such as animations, network calls, or timers must be scoped to the
+work.</p></li></ul><h3 id="composition-bound-scopes" data-unit="lifecycle-coroutines-015">Composition-bound scopes</h3><p data-unit="lifecycle-coroutines-016">Side effects such as animations, network calls, or timers must be scoped to the
 lifecycle of the composable. This way, when a composable leaves the screen
 (exits the composition), any running coroutines are automatically canceled to
-prevent memory leaks.</p><p data-unit="lifecycle-coroutines-013">Compose provides the <a href="https://developer.android.com/reference/kotlin/androidx/compose/runtime/package-summary#LaunchedEffect(kotlin.Any,kotlin.coroutines.SuspendFunction1)"><code>LaunchedEffect</code></a> API to handle Composition scoping
-declaratively.</p><p data-unit="lifecycle-coroutines-014"><code>LaunchedEffect</code> creates a <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-coroutine-scope/"><code>CoroutineScope</code></a> that lets you run suspend
+prevent memory leaks.</p><p data-unit="lifecycle-coroutines-017">Compose provides the <a href="https://developer.android.com/reference/kotlin/androidx/compose/runtime/package-summary#LaunchedEffect(kotlin.Any,kotlin.coroutines.SuspendFunction1)"><code>LaunchedEffect</code></a> API to handle Composition scoping
+declaratively.</p><p data-unit="lifecycle-coroutines-018"><code>LaunchedEffect</code> creates a <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-coroutine-scope/"><code>CoroutineScope</code></a> that lets you run suspend
 functions. The scope is tied to the Composition lifecycle of the composable, not
-the Lifecycle of the host Activity.</p><ul><li data-unit="lifecycle-coroutines-015">Enter: The coroutine starts when the composable enters the composition.</li><li data-unit="lifecycle-coroutines-016">Exit: The coroutine is canceled when the composable leaves the composition.</li><li data-unit="lifecycle-coroutines-017">Relaunch: If any key passed to <code>LaunchedEffect</code> changes, the existing
-coroutine is canceled and a new one is launched.</li></ul><aside class="prompt" data-unit="lifecycle-coroutines-018"><strong>Note:</strong><span> Because <code>LaunchedEffect</code> is tied to the Composition, it can run even if
+the Lifecycle of the host Activity.</p><ul><li data-unit="lifecycle-coroutines-019">Enter: The coroutine starts when the composable enters the composition.</li><li data-unit="lifecycle-coroutines-020">Exit: The coroutine is canceled when the composable leaves the composition.</li><li data-unit="lifecycle-coroutines-021">Relaunch: If any key passed to <code>LaunchedEffect</code> changes, the existing
+coroutine is canceled and a new one is launched.</li></ul><aside class="prompt" data-unit="lifecycle-coroutines-022"><strong>Note:</strong><span> Because <code>LaunchedEffect</code> is tied to the Composition, it can run even if
 the composable is not currently visible to the user. For example, a
 <code>HorizontalPager</code> often composes neighboring pages off-screen to prepare for a
 swipe. If your side effect relies on the user actually viewing the screen (like
 an analytics event), use standard Lifecycle-aware APIs (like
-<code>LifecycleEventEffect</code>) instead of <code>LaunchedEffect</code>.</span></aside><p data-unit="lifecycle-coroutines-019">The following example demonstrates how to use <code>LaunchedEffect</code> to create a
+<code>LifecycleEventEffect</code>) instead of <code>LaunchedEffect</code>.</span></aside><p data-unit="lifecycle-coroutines-023">The following example demonstrates how to use <code>LaunchedEffect</code> to create a
 pulsing animation. The coroutine is tied to the composable's presence in the
 composition and reacts to configuration changes:</p><p>
 
@@ -55,13 +59,13 @@ LaunchedEffect(pulseRateMs) { // Restart the effect when the pulse rate changes
         alpha.animateTo(0f)
         alpha.animateTo(1f)
     }
-}SideEffectsSnippets.kt</code></pre></div><p data-unit="lifecycle-coroutines-020">For more information on <code>LaunchedEffect</code>, see <a href="https://developer.android.com/develop/ui/compose/side-effects#launchedeffect">Side-effects in Compose</a>.</p><h2 id="lifecycle-aware-flow-collection" data-unit="lifecycle-coroutines-021">Lifecycle-aware flow collection</h2><p data-unit="lifecycle-coroutines-022">To safely collect flows in Jetpack Compose, use the
+}</code></pre><div class="code-caption"><a href="https://github.com/android/snippets/blob/70cc63249a4bb73f782bed92f3340af744c9c5d4/compose/snippets/src/main/java/com/example/compose/snippets/sideeffects/SideEffectsSnippets.kt#L65-L75" class="gc-analytics-event"><span class="devsite-syntax-n">SideEffectsSnippets</span><span class="devsite-syntax-p">.</span><span class="devsite-syntax-na">kt</span></a></div></div><p data-unit="lifecycle-coroutines-024">For more information on <code>LaunchedEffect</code>, see <a href="https://developer.android.com/develop/ui/compose/side-effects#launchedeffect">Side-effects in Compose</a>.</p><h2 id="lifecycle-aware-flow-collection" data-unit="lifecycle-coroutines-025">Lifecycle-aware flow collection</h2><p data-unit="lifecycle-coroutines-026">To safely collect flows in Jetpack Compose, use the
 <a href="https://developer.android.com/reference/kotlin/androidx/lifecycle/compose/package-summary#extension-functions"><code>collectAsStateWithLifecycle</code></a> API. This single function converts a <code>Flow</code>
 into a Compose <code>State</code> object and automatically manages the lifecycle
 subscription for you. By default, collection begins when the lifecycle is
 <code>STARTED</code> and stops when the lifecycle is <code>STOPPED</code>. To override this default
 behavior, pass in the <code>minActiveState</code> parameter with the lifecycle method you
-want, like <code>Lifecycle.State.RESUMED</code>.</p><p data-unit="lifecycle-coroutines-023">The following example demonstrates how to collect a ViewModel's <code>StateFlow</code> in a
+want, like <code>Lifecycle.State.RESUMED</code>.</p><p data-unit="lifecycle-coroutines-027">The following example demonstrates how to collect a ViewModel's <code>StateFlow</code> in a
 composable:</p><p>
 
 </p><div></div><div class="code-block"><pre><code>@Composable
@@ -85,7 +89,7 @@ private fun ConversationScreen(
 
     MessagesList(messages, onSendMessage)
     /* ... */
-}StateHoistingSnippets.kt</code></pre></div><h3 id="parallel" data-unit="lifecycle-coroutines-024">Parallel collection of multiple flows</h3><p data-unit="lifecycle-coroutines-025">In Compose, you can collect multiple flows in parallel by declaring multiple
+}</code></pre><div class="code-caption"><a href="https://github.com/android/snippets/blob/70cc63249a4bb73f782bed92f3340af744c9c5d4/compose/snippets/src/main/java/com/example/compose/snippets/state/StateHoistingSnippets.kt#L187-L208" class="gc-analytics-event"><span class="devsite-syntax-n">StateHoistingSnippets</span><span class="devsite-syntax-p">.</span><span class="devsite-syntax-na">kt</span></a></div></div><h3 id="parallel" data-unit="lifecycle-coroutines-028">Parallel collection of multiple flows</h3><p data-unit="lifecycle-coroutines-029">In Compose, you can collect multiple flows in parallel by declaring multiple
 state variables. Because <code>collectAsStateWithLifecycle</code> manages its own
 underlying scope, parallel collection is handled automatically:</p><div></div><div class="code-block"><pre><code>@Composable
 fun DashboardScreen(viewModel: DashboardViewModel = viewModel()) {
@@ -95,4 +99,20 @@ fun DashboardScreen(viewModel: DashboardViewModel = viewModel()) {
 
     // ...
 }
-</code></pre></div></div></article><nav class="chapter-switcher" aria-label="章节导航"><a href="../stateflow/english.html">← StateFlow 与 SharedFlow</a><a class="course-home" href="../index.html">全部章节</a><a href="../coroutines-best/english.html">Android 协程最佳实践 →</a></nav><footer class="license-note"><p>本阅读版为 Android Developers 英文文档所选范围的非官方中文译文。原文由 Android Developers / Android Open Source Project 维护；原代码、原图及其标识保留。<a href="../NOTICE.html">来源与许可说明</a>。</p></footer></main></body></html>
+</code></pre></div><h2 id="calculate-values" data-unit="lifecycle-coroutines-030">Calculate values asynchronously using Flows</h2><p data-unit="lifecycle-coroutines-031">When you need to calculate values asynchronously, use <code>StateFlow</code> with the
+<code>stateIn</code> operator.</p><p data-unit="lifecycle-coroutines-032">The following snippet uses a standard <code>Flow</code> converted to a <code>StateFlow</code>. The
+<a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-while-subscribed.html"><code>WhileSubscribed(5000)</code></a> parameter keeps the subscription active for five
+seconds after the UI disappears to handle configuration changes.</p><div></div><div class="code-block"><pre><code>val uiState: StateFlow&lt;Result&gt; = flow {
+    emit(repository.fetchData())
+}
+.stateIn(
+    scope = viewModelScope,
+    started = SharingStarted.WhileSubscribed(5_000),
+    initialValue = Result.Loading
+)
+</code></pre></div><p data-unit="lifecycle-coroutines-033">Use <code>collectAsStateWithLifecycle</code> to convert the collected values into Compose
+<a href="https://developer.android.com/reference/kotlin/androidx/compose/runtime/State"><code>State</code></a>, so that your UI can reactively update whenever the data changes.</p><aside class="prompt" data-unit="lifecycle-coroutines-034"><strong>Note:</strong><span> For one-off asynchronous UI tasks that don't need to survive configuration
+changes (like decoding a bitmap or loading a localized string), you can use the
+<a href="https://developer.android.com/reference/kotlin/androidx/compose/runtime/package-summary#produceState(kotlin.Any,kotlin.coroutines.SuspendFunction1)"><code>produceState</code></a> API directly in your composable. However, for loading
+screen data, <code>StateFlow</code> and <code>ViewModel</code> are recommended.</span></aside><p data-unit="lifecycle-coroutines-035">For more information about state, see <a href="https://developer.android.com/develop/ui/compose/state">State and Jetpack Compose</a>.</p><h2 id="resources" data-unit="lifecycle-coroutines-036">Additional resources</h2><h3 id="views" data-unit="lifecycle-coroutines-037">Views content</h3><ul><li data-unit="lifecycle-coroutines-038"><a href="https://developer.android.com/topic/libraries/architecture/views/coroutines-views">Use Kotlin coroutines with lifecycle-aware components (Views)</a></li></ul><h2 id="samples" data-unit="lifecycle-coroutines-039">Samples</h2><p><devsite-dynamic-content>
+</devsite-dynamic-content></p></div></article><nav class="chapter-switcher" aria-label="章节导航"><a href="../stateflow/english.html">← StateFlow 与 SharedFlow</a><a class="course-home" href="../index.html">全部章节</a><a href="../coroutines-best/english.html">Android 协程最佳实践 →</a></nav><footer class="license-note"><p>本阅读版为 Android Developers 英文文档正文全文的非官方中文译文。原文由 Android Developers / Android Open Source Project 维护；原代码、原图及其标识保留。<a href="../NOTICE.html">来源与许可说明</a>。</p></footer></main></body></html>

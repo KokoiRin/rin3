@@ -2,8 +2,109 @@
 <html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>以 Compose 的方式思考｜RIN III</title><link rel="stylesheet" href="../../reader.css"><link rel="stylesheet" href="../source.css"></head>
 <body><nav class="site-nav" aria-label="站点导航"><a href="../index.html">← Android 基础 · 官方文档中文阅读版</a><a href="english.html">英文对照</a></nav>
 <main class="reader"><header class="chapter-header"><span class="chapter-kicker">第一周 · 第 4 天 · M16</span><h1>以 Compose 的方式思考</h1><p class="byline"><a href="https://developer.android.com/develop/ui/compose/mental-model?hl=en">Thinking in Compose · 官方英文原文</a></p><div class="title-rule"></div>
-<details class="source-details"><summary>阅读范围与原文目录</summary><p>引言；声明式编程范式；可组合函数示例；声明式范式转变。</p><p>原文核对：2026-09-09。正文按上述范围的原文顺序翻译；代码和图示保留原文。</p><ul><li><a href="#paradigm">声明式编程范式</a></li><li><a href="#simple-example">可组合函数示例</a></li><li><a href="#declarative-paradigm-shift">声明式范式转变</a></li></ul></details><nav class="chapter-switcher" aria-label="章节导航"><a href="../viewmodel/index.html">← ViewModel 概览</a><a class="course-home" href="../index.html">全部章节</a><a href="../coroutines/index.html">Android 上的 Kotlin 协程 →</a></nav></header>
-<article class="translated-article"><div><p data-unit="compose-001">Jetpack Compose 是面向 Android 的现代声明式 UI 工具包。Compose 提供了<em>声明式 API</em>，使你无需以命令式方式修改前端 View，就可以渲染应用 UI，从而简化应用 UI 的编写与维护。这些术语需要一些解释，但其含义对于应用设计很重要。</p><h2 id="paradigm" data-unit="compose-002">声明式编程范式</h2><p data-unit="compose-003">过去，Android View 层次结构可以表示为一棵 UI 控件树。当应用状态因用户交互等因素而变化时，需要更新 UI 层次结构，以显示当前数据。最常见的 UI 更新方式是使用 <a href="https://developer.android.com/reference/android/view/View#findViewById(int)"><code>findViewById()</code></a> 等函数遍历树，并调用 <code>button.setText(String)</code>、<code>container.addChild(View)</code> 或 <code>img.setImageBitmap(Bitmap)</code> 等方法更改节点。这些方法会改变控件的内部状态。</p><p data-unit="compose-004">手动操作 View 会增加出错的可能性。如果某项数据在多个位置渲染，你可能会忘记更新其中一个显示它的 View。当两个更新以意想不到的方式发生冲突时，也可能导致非法状态。例如，某次更新可能尝试给一个刚从 UI 中移除的节点设置值。通常，软件维护的复杂性会随需要更新的 View 数量而增长。</p><p data-unit="compose-005">过去几年，整个行业开始转向声明式 UI 模型，它简化了用户界面的构建和更新。</p><p data-unit="compose-006">从概念上说，这项技术会从头重新生成整个屏幕，然后只应用必要的变更。这种方式避免了手动更新有状态 View 层次结构的复杂性。Compose 是一个声明式 UI 框架。</p><p data-unit="compose-007">重新生成整个屏幕的一个挑战是，它在时间、计算能力和电量消耗方面可能代价高昂。为了减轻这种成本，Compose 会智能地选择在任意时刻需要重新绘制哪些 UI 部分。这确实会影响 UI 组件的设计方式，<a href="https://developer.android.com/develop/ui/compose/mental-model?hl=en#recomposition">重组</a>一节对此有所讨论。</p><h2 id="simple-example" data-unit="compose-008">可组合函数示例</h2><p data-unit="compose-009">使用 Compose，可以通过定义一组接收数据并发出 UI 元素的<em>可组合</em>函数来构建用户界面。例如，<code>Greeting</code> 控件接收一个 <code>String</code>，并发出一个显示问候消息的 <code>Text</code> 控件。</p><figure id="image-1"><img src="../assets/mmodel-simple.png" alt="A phone showing the text Hello World, and the code for the composable function that generates that
+<details class="source-details"><summary>原文目录与译文说明</summary><p>对应官方文档正文全文，包含全部章节、示例与正文中的补充资源链接；不包含站点导航、反馈和自动推荐组件。</p><p>原文核对：2026-09-09。正文全文按原文顺序翻译；代码、图示和视频保留原文。</p><ul><li><a href="#paradigm">声明式编程范式</a></li><li><a href="#simple-example">可组合函数示例</a></li><li><a href="#declarative-paradigm-shift">声明式范式转变</a></li><li><a href="#dynamic">动态内容</a></li><li><a href="#recomposition">重组</a></li><li><a href="#skips">重组会尽可能跳过内容</a></li><li><a href="#optimistic">重组是乐观的</a></li><li><a href="#frequent">可组合函数可能频繁运行</a></li><li><a href="#parallel">可组合函数可能并行运行</a></li><li><a href="#any-order">可组合函数可以按任意顺序执行</a></li><li><a href="#learn-more">了解更多</a></li><li><a href="#videos">视频</a></li></ul></details><nav class="chapter-switcher" aria-label="章节导航"><a href="../viewmodel/index.html">← ViewModel 概览</a><a class="course-home" href="../index.html">全部章节</a><a href="../coroutines/index.html">Android 上的 Kotlin 协程 →</a></nav></header>
+<article class="translated-article"><div><div class="video-wrapper">
+  <iframe class="devsite-embedded-youtube-video" allowfullscreen="" src="https://www.youtube-nocookie.com/embed/4zf30a34OOA" title="官方原视频" loading="lazy">
+  </iframe>
+</div><p data-unit="compose-001">Jetpack Compose 是面向 Android 的现代声明式 UI 工具包。Compose 提供了<em>声明式 API</em>，使你无需以命令式方式修改前端 View，就可以渲染应用 UI，从而简化应用 UI 的编写与维护。这些术语需要一些解释，但其含义对于应用设计很重要。</p><h2 id="paradigm" data-unit="compose-002">声明式编程范式</h2><p data-unit="compose-003">过去，Android View 层次结构可以表示为一棵 UI 控件树。当应用状态因用户交互等因素而变化时，需要更新 UI 层次结构，以显示当前数据。最常见的 UI 更新方式是使用 <a href="https://developer.android.com/reference/android/view/View#findViewById(int)"><code>findViewById()</code></a> 等函数遍历树，并调用 <code>button.setText(String)</code>、<code>container.addChild(View)</code> 或 <code>img.setImageBitmap(Bitmap)</code> 等方法更改节点。这些方法会改变控件的内部状态。</p><p data-unit="compose-004">手动操作 View 会增加出错的可能性。如果某项数据在多个位置渲染，你可能会忘记更新其中一个显示它的 View。当两个更新以意想不到的方式发生冲突时，也可能导致非法状态。例如，某次更新可能尝试给一个刚从 UI 中移除的节点设置值。通常，软件维护的复杂性会随需要更新的 View 数量而增长。</p><p data-unit="compose-005">过去几年，整个行业开始转向声明式 UI 模型，它简化了用户界面的构建和更新。</p><p data-unit="compose-006">从概念上说，这项技术会从头重新生成整个屏幕，然后只应用必要的变更。这种方式避免了手动更新有状态 View 层次结构的复杂性。Compose 是一个声明式 UI 框架。</p><p data-unit="compose-007">重新生成整个屏幕的一个挑战是，它在时间、计算能力和电量消耗方面可能代价高昂。为了减轻这种成本，Compose 会智能地选择在任意时刻需要重新绘制哪些 UI 部分。这确实会影响 UI 组件的设计方式，<a href="https://developer.android.com/develop/ui/compose/mental-model?hl=en#recomposition">重组</a>一节对此有所讨论。</p><h2 id="simple-example" data-unit="compose-008">可组合函数示例</h2><p data-unit="compose-009">使用 Compose，可以通过定义一组接收数据并发出 UI 元素的<em>可组合</em>函数来构建用户界面。例如，<code>Greeting</code> 控件接收一个 <code>String</code>，并发出一个显示问候消息的 <code>Text</code> 控件。</p><figure id="image-1"><img src="../assets/mmodel-simple.png" alt="A phone showing the text Hello World, and the code for the composable function that generates that
   UI." loading="lazy"><figcaption data-unit="compose-010"><strong>图 1。</strong>一个接收数据并使用它在屏幕上渲染文本控件的可组合函数。</figcaption></figure><p data-unit="compose-011">关于此函数，有几点值得注意：</p><ul><li data-unit="compose-012"><strong>注解：</strong>函数标有 <code>@Composable</code> 注解。所有可组合函数都必须具有此注解。该注解会告知 Compose 编译器，此函数旨在将数据转换为 UI。</li><li data-unit="compose-013"><strong>数据输入：</strong>函数接收数据。可组合函数可以接受参数，让应用逻辑能够描述 UI。在此例中，控件接收一个 <code>String</code>，从而可以按用户姓名问候用户。</li><li data-unit="compose-014"><strong>UI 显示：</strong>函数在 UI 中显示文本。它通过调用 <code>Text()</code> 可组合函数实现这一点，后者实际创建文本 UI 元素。可组合函数通过调用其他可组合函数发出 UI 层次结构。</li><li data-unit="compose-015"><strong>没有返回值：</strong>函数不返回任何内容。发出 UI 的 Compose 函数不需要返回任何内容，因为它们描述的是目标屏幕状态，而不是构造 UI 控件。</li><li><p data-unit="compose-016"><strong>特性：</strong>此函数快速、<a href="https://en.wikipedia.org/wiki/Idempotence#Computer_science_meaning">幂等</a>，且没有<em>副作用</em>。</p><ul><li data-unit="compose-017">使用相同参数多次调用时，函数的行为相同；它不使用全局变量或 <code>random()</code> 调用等其他值。</li><li data-unit="compose-018">函数描述 UI，而不产生任何副作用，例如修改属性或全局变量。</li></ul><p data-unit="compose-019">通常，所有可组合函数都必须具备这些特性，原因见<a href="https://developer.android.com/develop/ui/compose/mental-model?hl=en#recomposition">重组</a>一节。</p></li></ul><h2 id="declarative-paradigm-shift" data-unit="compose-020">声明式范式转变</h2><p data-unit="compose-021">在许多命令式面向对象 UI 工具包中，通过实例化一棵控件树来初始化 UI。通常，这通过展开一个 XML 布局文件完成。每个控件维护自己的内部状态，并公开 getter 和 setter 方法，让应用逻辑与控件交互。</p><p data-unit="compose-022">在 Compose 的声明式方式中，控件相对无状态，并且不公开 setter 或 getter 函数。事实上，控件并不作为对象公开。通过以不同参数调用同一个可组合函数来更新 UI。这简化了为 <a href="https://developer.android.com/reference/androidx/lifecycle/ViewModel"><code>ViewModel</code></a> 等架构模式提供状态的过程，如<a href="https://developer.android.com/jetpack/guide">应用架构指南</a>所述。随后，每当可观察数据更新时，可组合项都负责将当前应用状态转换为 UI。</p><figure id="image-2"><img src="../assets/mmodel-flow-data.png" alt="Illustration of the flow of data in a Compose UI, from high-level objects down
 to their children." loading="lazy"><figcaption data-unit="compose-023"><strong>图 2。</strong>应用逻辑向顶层可组合函数提供数据。该函数通过调用其他可组合项来使用这些数据描述 UI，并将适当的数据传递给这些可组合项，再沿层次结构继续向下传递。</figcaption></figure><p data-unit="compose-024">用户与 UI 交互时，UI 会发出 <code>onClick</code> 等事件。这些事件应通知应用逻辑，应用逻辑随后可以更改应用状态。状态变化时，可组合函数会用新数据再次被调用。这会使 UI 元素重新绘制——这个过程称为<em>重组</em>。</p><figure id="image-3"><img src="../assets/mmodel-flow-events.png" alt="Illustration of how UI elements respond to interaction, by triggering events that are handled by the app
-logic." loading="lazy"><figcaption data-unit="compose-025"><strong>图 3。</strong>用户与某个 UI 元素交互，触发了一个事件。应用逻辑响应此事件，随后在必要时，系统会使用新参数自动再次调用可组合函数。</figcaption></figure></div></article><nav class="chapter-switcher" aria-label="章节导航"><a href="../viewmodel/index.html">← ViewModel 概览</a><a class="course-home" href="../index.html">全部章节</a><a href="../coroutines/index.html">Android 上的 Kotlin 协程 →</a></nav><footer class="license-note"><p>本阅读版为 Android Developers 英文文档所选范围的非官方中文译文。原文由 Android Developers / Android Open Source Project 维护；原代码、原图及其标识保留。<a href="../NOTICE.html">来源与许可说明</a>。</p></footer></main></body></html>
+logic." loading="lazy"><figcaption data-unit="compose-025"><strong>图 3。</strong>用户与某个 UI 元素交互，触发了一个事件。应用逻辑响应此事件，随后在必要时，系统会使用新参数自动再次调用可组合函数。</figcaption></figure><h2 id="dynamic" data-unit="compose-026">动态内容</h2><p data-unit="compose-027">由于可组合函数使用 Kotlin 而不是 XML 编写，它们可以像任何其他 Kotlin 代码一样动态。例如，假设你希望构建一个向一组用户问好的 UI：</p><p>
+
+</p><div></div><div class="code-block"><pre><code>@Composable
+fun Greeting(names: List&lt;String&gt;) {
+    for (name in names) {
+        Text("Hello $name")
+    }
+}</code></pre><div class="code-caption"><a href="https://github.com/android/snippets/blob/70cc63249a4bb73f782bed92f3340af744c9c5d4/compose/snippets/src/main/java/com/example/compose/snippets/mentalmodel/ThinkingInComposeSnippets.kt#L37-L42" class="gc-analytics-event"><span class="devsite-syntax-n">ThinkingInComposeSnippets</span><span class="devsite-syntax-p">.</span><span class="devsite-syntax-na">kt</span></a></div></div><p data-unit="compose-028">此函数接收一个姓名列表，并为每个用户生成问候。可组合函数可以相当复杂。可以使用 <code>if</code> 语句决定是否显示某个 UI 元素，可以使用循环，也可以调用辅助函数。底层语言的全部灵活性都可供使用。这种能力和灵活性是 Jetpack Compose 的主要优势之一。</p><h2 id="recomposition" data-unit="compose-029">重组</h2><p data-unit="compose-030">在命令式 UI 模型中，要更改控件，需要调用控件的 setter，改变其内部状态。在 Compose 中，则用新数据再次调用可组合函数。这会使函数发生<em>重组</em>——必要时，函数发出的控件会使用新数据重新绘制。Compose 框架能够智能地只重组发生变化的组件。</p><p data-unit="compose-031">例如，考虑以下显示按钮的可组合函数：</p><p>
+
+</p><div></div><div class="code-block"><pre><code>@Composable
+fun ClickCounter(clicks: Int, onClick: () -&gt; Unit) {
+    Button(onClick = onClick) {
+        Text("I've been clicked $clicks times")
+    }
+}</code></pre><div class="code-caption"><a href="https://github.com/android/snippets/blob/70cc63249a4bb73f782bed92f3340af744c9c5d4/compose/snippets/src/main/java/com/example/compose/snippets/mentalmodel/ThinkingInComposeSnippets.kt#L46-L51" class="gc-analytics-event"><span class="devsite-syntax-n">ThinkingInComposeSnippets</span><span class="devsite-syntax-p">.</span><span class="devsite-syntax-na">kt</span></a></div></div><p data-unit="compose-032">每次点击按钮，调用方都会更新 <code>clicks</code> 的值。Compose 会再次调用包含 <code>Text</code> 函数的 lambda 来显示新值；这个过程称为<em>重组</em>。不依赖此值的其他函数不会重组。</p><p data-unit="compose-033">如前所述，重组整棵 UI 树可能产生较高的计算开销，消耗计算能力和电量。Compose 通过这种<em>智能重组</em>解决此问题。</p><p data-unit="compose-034">重组是在输入变化时再次调用可组合函数的过程。Compose 根据新输入进行重组时，只调用可能发生变化的函数或 lambda，并跳过其他部分。跳过参数未改变的函数或 lambda，能够使重组高效进行。</p><p data-unit="compose-035">切勿依赖执行可组合函数产生的副作用，因为该函数的重组可能被跳过。否则，用户可能遇到奇怪且不可预测的应用行为。副作用是任何对应用其余部分可见的变化。例如，以下操作都是危险的副作用：</p><ul><li data-unit="compose-036">写入共享对象的属性</li><li data-unit="compose-037">更新 <code>ViewModel</code> 中的可观察对象</li><li data-unit="compose-038">更新共享偏好设置</li></ul><p data-unit="compose-039">可组合函数可能频繁到每一帧都重新执行，例如渲染动画时。可组合函数应足够快，以避免动画卡顿。如果需要读取共享偏好设置等高开销操作，请在后台协程中执行，并将结果作为参数传给可组合函数。</p><p data-unit="compose-040">例如，以下代码创建一个可组合项，用于更新 <code>SharedPreferences</code> 中的值。可组合项自身不应读写共享偏好设置。相反，代码将读写操作移到 <code>ViewModel</code> 中的后台协程里。应用逻辑传入当前值，以及用于触发更新的回调。</p><p>
+
+</p><div></div><div class="code-block"><pre><code>@Composable
+fun SharedPrefsToggle(
+    text: String,
+    value: Boolean,
+    onValueChanged: (Boolean) -&gt; Unit
+) {
+    Row {
+        Text(text)
+        Checkbox(checked = value, onCheckedChange = onValueChanged)
+    }
+}</code></pre><div class="code-caption"><a href="https://github.com/android/snippets/blob/70cc63249a4bb73f782bed92f3340af744c9c5d4/compose/snippets/src/main/java/com/example/compose/snippets/mentalmodel/ThinkingInComposeSnippets.kt#L55-L65" class="gc-analytics-event"><span class="devsite-syntax-n">ThinkingInComposeSnippets</span><span class="devsite-syntax-p">.</span><span class="devsite-syntax-na">kt</span></a></div></div><p data-unit="compose-041">本文讨论了使用 Compose 时需要注意的若干事项：</p><ul><li data-unit="compose-042">重组会尽可能跳过可组合函数和 lambda。</li><li data-unit="compose-043">重组是乐观的，可能被取消。</li><li data-unit="compose-044">可组合函数可能运行得非常频繁，例如动画的每一帧。</li><li data-unit="compose-045">可组合函数可以并行执行。</li><li data-unit="compose-046">可组合函数可以按任意顺序执行。</li></ul><p data-unit="compose-047">以下各节介绍如何构建可组合函数以支持重组。在所有情况下，最佳实践都是使可组合函数快速、幂等且没有副作用。</p><h3 id="skips" data-unit="compose-048">重组会尽可能跳过内容</h3><p data-unit="compose-049">当 UI 的某些部分失效时，Compose 会尽力只重组需要更新的部分。因此，它可能直接重新运行某个 <code>Button</code> 的可组合函数，而不执行 UI 树中位于其上方或下方的任何可组合项。</p><p data-unit="compose-050">每个可组合函数和 lambda 都可能独立重组。以下示例展示了渲染列表时，重组如何跳过某些元素：</p><p>
+
+</p><div></div><div class="code-block"><pre><code>/**
+ * Display a list of names the user can click with a header
+ */
+@Composable
+fun NamePicker(
+    header: String,
+    names: List&lt;String&gt;,
+    onNameClicked: (String) -&gt; Unit
+) {
+    Column {
+        // this will recompose when [header] changes, but not when [names] changes
+        Text(header, style = MaterialTheme.typography.bodyLarge)
+        HorizontalDivider()
+
+        // LazyColumn is the Compose version of a RecyclerView.
+        // The lambda passed to items() is similar to a RecyclerView.ViewHolder.
+        LazyColumn {
+            items(names) { name -&gt;
+                // When an item's [name] updates, the adapter for that item
+                // will recompose. This will not recompose when [header] changes
+                NamePickerItem(name, onNameClicked)
+            }
+        }
+    }
+}
+
+/**
+ * Display a single name the user can click.
+ */
+@Composable
+private fun NamePickerItem(name: String, onClicked: (String) -&gt; Unit) {
+    Text(name, Modifier.clickable(onClick = { onClicked(name) }))
+}</code></pre><div class="code-caption"><a href="https://github.com/android/snippets/blob/70cc63249a4bb73f782bed92f3340af744c9c5d4/compose/snippets/src/main/java/com/example/compose/snippets/mentalmodel/ThinkingInComposeSnippets.kt#L130-L162" class="gc-analytics-event"><span class="devsite-syntax-n">ThinkingInComposeSnippets</span><span class="devsite-syntax-p">.</span><span class="devsite-syntax-na">kt</span></a></div></div><p data-unit="compose-051">这些作用域中的任何一个，都可能成为一次重组期间唯一执行的部分。<code>header</code> 变化时，Compose 可能跳到 <code>Column</code> 的 lambda，而不执行其任何父级。执行 <code>Column</code> 时，如果 <code>names</code> 未变化，Compose 也可能选择跳过 <code>LazyColumn</code> 中的条目。</p><p data-unit="compose-052">再次强调，所有可组合函数或 lambda 都应没有副作用。需要执行副作用时，请从回调中触发。</p><h3 id="optimistic" data-unit="compose-053">重组是乐观的</h3><p data-unit="compose-054">每当 Compose 认为某个可组合项的参数可能发生变化时，就会开始重组。重组是<em>乐观的</em>，意味着 Compose 预期在参数再次变化之前完成重组。如果参数在重组完成之前<em>确实</em>发生变化，Compose 可能取消该次重组，并使用新参数重新开始。</p><p data-unit="compose-055">重组被取消时，Compose 会丢弃该次重组产生的 UI 树。如果存在依赖 UI 已显示的副作用，那么即使组合被取消，副作用也已经生效。这可能导致应用状态不一致。</p><p data-unit="compose-056">请确保所有可组合函数和 lambda 都是幂等且无副作用的，以应对乐观重组。</p><h3 id="frequent" data-unit="compose-057">可组合函数可能频繁运行</h3><p data-unit="compose-058">某些情况下，可组合函数可能在 UI 动画的每一帧运行。如果函数执行读取设备存储等高开销操作，就可能造成 UI 卡顿。</p><p data-unit="compose-059">例如，如果控件尝试读取设备设置，就可能每秒读取数百次，对应用性能造成灾难性的影响。</p><p data-unit="compose-060">如果可组合函数需要数据，请为这些数据定义参数。这样就可以将高开销工作移到组合之外的其他线程，并通过 <code>mutableStateOf</code> 或 <code>LiveData</code> 将结果作为参数传入可组合函数。</p><h3 id="parallel" data-unit="compose-061">可组合函数可能并行运行</h3><aside class="prompt" data-unit="compose-062"><strong>注意：</strong>目前可组合函数还不能并行运行，但应以多线程方式编写 Compose 代码。未来 Compose 可能采用多线程。</aside><p data-unit="compose-063">Compose 可以通过并行运行可组合函数来优化重组。这将使 Compose 能够利用多个核心，并以较低优先级运行当前未显示在屏幕上的可组合函数。</p><p data-unit="compose-064">这种优化意味着可组合函数可能在后台线程池中执行。如果可组合函数调用 <code>ViewModel</code> 上的某个函数，Compose 可能同时从多个线程调用该函数。</p><p data-unit="compose-065">为确保应用行为正确，所有可组合函数都应没有副作用。应从 <code>onClick</code> 等始终在 UI 线程上执行的回调中触发副作用。</p><p data-unit="compose-066">调用可组合函数时，其执行线程可能与调用方不同。因此，应避免在可组合 lambda 中修改变量：这类代码既不具备线程安全性，也是可组合 lambda 不允许产生的副作用。</p><p data-unit="compose-067">以下示例展示了一个显示列表及其数量的可组合项：</p><p>
+
+</p><div></div><div class="code-block"><pre><code>@Composable
+fun ListComposable(myList: List&lt;String&gt;) {
+    Row(horizontalArrangement = Arrangement.SpaceBetween) {
+        Column {
+            for (item in myList) {
+                Text("Item: $item")
+            }
+        }
+        Text("Count: ${myList.size}")
+    }
+}</code></pre><div class="code-caption"><a href="https://github.com/android/snippets/blob/70cc63249a4bb73f782bed92f3340af744c9c5d4/compose/snippets/src/main/java/com/example/compose/snippets/mentalmodel/ThinkingInComposeSnippets.kt#L97-L107" class="gc-analytics-event"><span class="devsite-syntax-n">ThinkingInComposeSnippets</span><span class="devsite-syntax-p">.</span><span class="devsite-syntax-na">kt</span></a></div></div><p data-unit="compose-068">此代码没有副作用，将输入列表转换为 UI，很适合显示小型列表。不过，如果函数写入局部变量，代码就既不线程安全，也不正确：</p><p>
+
+</p><div></div><div class="code-block"><pre><code>@Composable
+fun ListWithBug(myList: List&lt;String&gt;) {
+    var items = 0
+
+    Row(horizontalArrangement = Arrangement.SpaceBetween) {
+        Column {
+            for (item in myList) {
+                Card {
+                    Text("Item: $item")
+                    items++ // Avoid! Side-effect of the column recomposing.
+                }
+            }
+        }
+        Text("Count: $items")
+    }
+}</code></pre><div class="code-caption"><a href="https://github.com/android/snippets/blob/70cc63249a4bb73f782bed92f3340af744c9c5d4/compose/snippets/src/main/java/com/example/compose/snippets/mentalmodel/ThinkingInComposeSnippets.kt#L111-L126" class="gc-analytics-event"><span class="devsite-syntax-n">ThinkingInComposeSnippets</span><span class="devsite-syntax-p">.</span><span class="devsite-syntax-na">kt</span></a></div></div><p data-unit="compose-069">此示例中，每次重组都会修改 <code>items</code>，可能发生在动画的每一帧，或列表更新时。无论哪种情况，UI 都会显示错误的计数。因此，Compose 不支持这类写入；禁止这些写入，才能允许框架切换线程来执行可组合 lambda。</p><h3 id="any-order" data-unit="compose-070">可组合函数可以按任意顺序执行</h3><aside class="prompt" data-unit="compose-071"><strong>注意：</strong>Compose 在主线程上运行，但从设计之初就考虑了多线程，我们不保证未来仍保持单线程模型。因此，应始终按照可组合项可能在多个线程上运行的方式编写它们。</aside><p data-unit="compose-072">查看可组合函数的代码时，你可能以为代码会按出现顺序运行，但事实未必如此。如果可组合函数包含对其他可组合函数的调用，这些函数可能按任意顺序运行。Compose 可以识别某些 UI 元素比其他元素优先级更高，并先绘制它们。</p><p data-unit="compose-073">例如，假设使用以下代码，在标签页布局中绘制三个屏幕：</p><p>
+
+</p><div></div><div class="code-block"><pre><code>@Composable
+fun ButtonRow() {
+    MyFancyNavigation {
+        StartScreen()
+        MiddleScreen()
+        EndScreen()
+    }
+}</code></pre><div class="code-caption"><a href="https://github.com/android/snippets/blob/70cc63249a4bb73f782bed92f3340af744c9c5d4/compose/snippets/src/main/java/com/example/compose/snippets/mentalmodel/ThinkingInComposeSnippets.kt#L86-L93" class="gc-analytics-event"><span class="devsite-syntax-n">ThinkingInComposeSnippets</span><span class="devsite-syntax-p">.</span><span class="devsite-syntax-na">kt</span></a></div></div><p data-unit="compose-074">对 <code>StartScreen</code>、<code>MiddleScreen</code> 和 <code>EndScreen</code> 的调用可能按任意顺序发生。这意味着，例如不能让 <code>StartScreen()</code> 设置某个全局变量（副作用），然后让 <code>MiddleScreen()</code> 利用该变化。相反，每个函数都需要自包含。</p><h2 id="learn-more" data-unit="compose-075">了解更多</h2><p data-unit="compose-076">如需进一步了解如何以 Compose 的方式思考以及可组合函数，请参阅以下补充资源。</p><h3 id="videos" data-unit="compose-077">视频</h3><ul><li data-unit="compose-078"><a href="https://www.youtube.com/watch?v=fFLBCgoHHys">可组合函数 — MAD Skills</a></li></ul></div></article><nav class="chapter-switcher" aria-label="章节导航"><a href="../viewmodel/index.html">← ViewModel 概览</a><a class="course-home" href="../index.html">全部章节</a><a href="../coroutines/index.html">Android 上的 Kotlin 协程 →</a></nav><footer class="license-note"><p>本阅读版为 Android Developers 英文文档正文全文的非官方中文译文。原文由 Android Developers / Android Open Source Project 维护；原代码、原图及其标识保留。<a href="../NOTICE.html">来源与许可说明</a>。</p></footer></main></body></html>

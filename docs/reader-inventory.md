@@ -48,4 +48,6 @@ KaTeX 的 `public/reading/_shared/katex/` 是第三方数学排版资源，不�
 
 新增 `public/reading/android-foundations/`：21 篇中文、21 篇英文对照、目录和许可说明，共 44 个 HTML 页面。文章入口为 `content/computer-science/android-foundations.md`。上述 2026-08-29 数字保留为当时快照。
 
-正文复用 `public/reading/reader.css`，KaTeX 复用 `_shared/katex/`；本系列 `source.css` 仅处理官方原文推荐横幅和标题署名，原图放在系列 `assets/` 中。已接入 `check:course-readers` 与内容契约检查。
+正文复用 `public/reading/reader.css`，KaTeX 复用 `_shared/katex/`；本系列 `source.css` 处理原文提示、标题署名、代码来源链接和视频排版，原图放在系列 `assets/` 中。已接入 `check:course-readers` 与内容契约检查。
+
+2026-09-09 全文修订：21 篇均覆盖对应官方文档正文全文（含 Handler 构造器、方法摘要与方法参考），不再按首周计划截取章节。`coverage.json` 从完整原文正文生成，记录来源、原始快照 SHA-256、全部标题和文本单元；`tests/android-reader-completeness.test.mjs` 校验中英文页面的完整单元序列、标题、代码数量和图片，防止再次退化为节选。原始正文与英文输出的文字、代码、图片一致性另由文稿目录中的全文校验脚本验证。

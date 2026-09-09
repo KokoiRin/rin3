@@ -2,7 +2,7 @@
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Layouts in views｜RIN III</title><link rel="stylesheet" href="../../reader.css"><link rel="stylesheet" href="../source.css"></head>
 <body><nav class="site-nav" aria-label="站点导航"><a href="../index.html">← Android 基础 · 官方文档中文阅读版</a><a href="index.html">中文译文</a></nav>
 <main class="reader"><header class="chapter-header"><span class="chapter-kicker">第一周 · 第 4 天 · M11</span><h1 id="layouts-in-views" data-unit="layouts-001">Layouts in views</h1><p class="byline"><a href="https://developer.android.com/develop/ui/views/layout/declaring-layout?hl=en">Layouts in views · 官方英文原文</a></p><div class="title-rule"></div>
-<details class="source-details"><summary>阅读范围与原文目录</summary><p>引言；编写 XML；加载 XML 资源；属性（含 ID 与布局参数）。</p><p>原文核对：2026-09-09。正文按上述范围的原文顺序翻译；代码和图示保留原文。</p><ul><li><a href="#write">Write the XML</a></li><li><a href="#load">Load the XML resource</a></li><li><a href="#attributes">Attributes</a></li><li><a href="#id">ID</a></li><li><a href="#layout-params">Layout parameters</a></li></ul></details><nav class="chapter-switcher" aria-label="章节导航"><a href="../memory/english.html">← 内存管理概览</a><a class="course-home" href="../index.html">全部章节</a><a href="../drawing/english.html">Android 如何绘制 View →</a></nav></header>
+<details class="source-details"><summary>原文目录与译文说明</summary><p>对应官方文档正文全文，包含全部章节、示例与正文中的补充资源链接；不包含站点导航、反馈和自动推荐组件。</p><p>原文核对：2026-09-09。正文全文按原文顺序翻译；代码、图示和视频保留原文。</p><ul><li><a href="#write">Write the XML</a></li><li><a href="#load">Load the XML resource</a></li><li><a href="#attributes">Attributes</a></li><li><a href="#id">ID</a></li><li><a href="#layout-params">Layout parameters</a></li><li><a href="#Position">Layout position</a></li><li><a href="#SizePaddingMargins">Size, padding, and margins</a></li><li><a href="#CommonLayouts">Common layouts</a></li><li><a href="#AdapterViews">Build dynamic lists</a></li><li><a href="#FillingTheLayout">Fill an adapter view with data</a></li><li><a href="#HandlingUserSelections">Handle click events</a></li><li><a href="#additional-resources">Additional resources</a></li></ul></details><nav class="chapter-switcher" aria-label="章节导航"><a href="../memory/english.html">← 内存管理概览</a><a class="course-home" href="../index.html">全部章节</a><a href="../drawing/english.html">Android 如何绘制 View →</a></nav></header>
 <article class="translated-article"><div><div class="android-page-banner android-page-banner-image-bottom-right"><div class="android-page-banner-content"><div class="android-page-banner-title" data-unit="layouts-002">
         Try the Compose way
       </div><div class="android-page-banner-description" data-unit="layouts-003">
@@ -156,4 +156,200 @@ absolute units such as pixels. A better approach is using relative measurements,
 such as density-independent pixel units (dp), <code>wrap_content</code>, or
 <code>match_parent</code>, because it helps your app display properly across a
 variety of device screen sizes. The accepted measurement types are defined in
-<a href="https://developer.android.com/guide/topics/resources/layout-resource">Layout resource</a>.</p></div></article><nav class="chapter-switcher" aria-label="章节导航"><a href="../memory/english.html">← 内存管理概览</a><a class="course-home" href="../index.html">全部章节</a><a href="../drawing/english.html">Android 如何绘制 View →</a></nav><footer class="license-note"><p>本阅读版为 Android Developers 英文文档所选范围的非官方中文译文。原文由 Android Developers / Android Open Source Project 维护；原代码、原图及其标识保留。<a href="../NOTICE.html">来源与许可说明</a>。</p></footer></main></body></html>
+<a href="https://developer.android.com/guide/topics/resources/layout-resource">Layout resource</a>.</p><h2 id="Position" data-unit="layouts-048">Layout position</h2><p data-unit="layouts-049">A view has rectangular geometry. It has a location, expressed as a pair of
+<em>left</em> and <em>top</em> coordinates, and two dimensions, expressed as a
+width and height. The unit for location and dimensions is the pixel.</p><p data-unit="layouts-050">You can retrieve the location of a view by invoking the methods
+<code><a href="https://developer.android.com/reference/android/view/View#getLeft()">getLeft()</a></code>
+and
+<code><a href="https://developer.android.com/reference/android/view/View#getTop()">getTop()</a></code>.
+The former returns the left (<i>x</i>) coordinate of the rectangle representing
+the view. The latter returns the top (<i>y</i>) coordinate of the rectangle
+representing the view. These methods return the location of the view relative to
+its parent. For example, when <code>getLeft()</code> returns 20, this means the
+view is located 20 pixels to the right of the left edge of its direct
+parent.</p><p data-unit="layouts-051">In addition, there are convenience methods to avoid unnecessary computations:
+namely
+<code><a href="https://developer.android.com/reference/android/view/View#getRight()">getRight()</a></code>
+and
+<code><a href="https://developer.android.com/reference/android/view/View#getBottom()">getBottom()</a></code>.
+These methods return the coordinates of the right and bottom edges of the
+rectangle representing the view. For example, calling <code>getRight()</code> is
+similar to the following computation: <code>getLeft() + getWidth()</code>.</p><h2 id="SizePaddingMargins" data-unit="layouts-052">Size, padding, and margins</h2><p data-unit="layouts-053">The size of a view is expressed with a width and height. A view has two pairs
+of width and height values.</p><p data-unit="layouts-054">The first pair is known as <em>measured width</em> and
+<em>measured height</em>. These dimensions define how big a view wants to be
+within its parent. You can obtain the measured dimensions by calling
+<code><a href="https://developer.android.com/reference/android/view/View#getMeasuredWidth()">getMeasuredWidth()</a></code>
+and
+<code><a href="https://developer.android.com/reference/android/view/View#getMeasuredHeight()">getMeasuredHeight()</a></code>.</p><p data-unit="layouts-055">The second pair is known as <em>width</em> and <em>height</em>, or sometimes
+<em>drawing width</em> and <em>drawing height</em>. These dimensions define the
+actual size of the view on screen, at drawing time and after layout. These
+values might, but don't have to, differ from the measured width and height. You
+can obtain the width and height by calling
+<code><a href="https://developer.android.com/reference/android/view/View#getWidth()">getWidth()</a></code>
+and
+<code><a href="https://developer.android.com/reference/android/view/View#getHeight()">getHeight()</a></code>.</p><p data-unit="layouts-056">To measure its dimensions, a view takes into account its padding. The padding
+is expressed in pixels for the left, top, right and bottom parts of the view.
+You can use padding to offset the content of the view by a specific number of
+pixels. For instance, a left padding of two pushes the view's content two pixels
+to the right of the left edge. You can set padding using the
+<code><a href="https://developer.android.com/reference/android/view/View#setPadding(int,%20int,%20int,%20int)">setPadding(int, int, int, int)</a></code>
+method and query it by calling
+<code><a href="https://developer.android.com/reference/android/view/View#getPaddingLeft()">getPaddingLeft()</a></code>,
+<code><a href="https://developer.android.com/reference/android/view/View#getPaddingTop()">getPaddingTop()</a></code>,
+<code><a href="https://developer.android.com/reference/android/view/View#getPaddingRight()">getPaddingRight()</a></code>,
+and
+<code><a href="https://developer.android.com/reference/android/view/View#getPaddingBottom()">getPaddingBottom()</a></code>.</p><p data-unit="layouts-057">Although a view can define a padding, it doesn't support margins. However,
+view groups do support margins. See
+<code><a href="https://developer.android.com/reference/android/view/ViewGroup">ViewGroup</a></code> and
+<code><a href="https://developer.android.com/reference/android/view/ViewGroup.MarginLayoutParams">ViewGroup.MarginLayoutParams</a></code>
+for more information.</p><p data-unit="layouts-058">For more information about dimensions, see
+<a href="https://developer.android.com/guide/topics/resources/more-resources#Dimension">Dimension</a>.</p><p data-unit="layouts-059">Besides setting margins and padding programmatically, you can also set them
+in your XML layouts, as shown in the following example:</p><div></div><div class="code-block"><pre><code>  &lt;?xml version="1.0" encoding="utf-8"?&gt;
+  &lt;LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="vertical" &gt;
+      &lt;TextView android:id="@+id/text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_margin="16dp"
+                android:padding="8dp"
+                android:text="Hello, I am a TextView" /&gt;
+      &lt;Button android:id="@+id/button"
+              android:layout_width="wrap_content"
+              android:layout_height="wrap_content"
+              android:layout_marginTop="16dp"
+              android:paddingBottom="4dp"
+              android:paddingEnd="8dp"
+              android:paddingStart="8dp"
+              android:paddingTop="4dp"
+              android:text="Hello, I am a Button" /&gt;
+  &lt;/LinearLayout&gt;
+  </code></pre></div><p data-unit="layouts-060">The preceding example shows margin and padding being applied. The
+<code>TextView</code> has uniform margins and padding applied all around, and
+the <code>Button</code> shows how you can apply them independently to different
+edges.</p><aside class="prompt" data-unit="layouts-061">
+  <b>Note:</b> It is good practice to use <code>paddingStart</code>,
+  <code>paddingEnd</code>, <code>layout_marginStart</code>, and
+  <code>layout_marginEnd</code> instead of <code>paddingLeft</code>,
+  <code>paddingRight</code>, <code>layout_marginLeft</code>, and
+  <code>layout_marginRight</code>, as these behave better with both
+  left-to-right and right-to-left language scripts.
+</aside><h2 id="CommonLayouts" data-unit="layouts-062">Common layouts</h2><p data-unit="layouts-063">Each subclass of the <code>ViewGroup</code> class provides a unique way to
+display the views you nest within it. The most flexible layout type, and the one
+that provides the best tools for keeping your layout hierarchy shallow, is
+<code><a href="https://developer.android.com/develop/ui/views/layout/constraint-layout">ConstraintLayout</a></code>.
+
+</p><p data-unit="layouts-064">The following are some of the common layout types built into the Android
+platform.</p><aside class="prompt" data-unit="layouts-065">
+  <b>Note:</b> Although you can nest one or more layouts within another layout
+  to achieve your UI design, keep your layout hierarchy as shallow as possible.
+  Your layout draws faster if it has fewer nested layouts. A wide view hierarchy
+  is better than a deep view hierarchy.
+</aside><div class="layout first"><span data-unit="layouts-066">
+  <b><a href="https://developer.android.com/develop/ui/views/layout/linear">Create a linear layout</a></b>
+  <a href="https://developer.android.com/develop/ui/views/layout/linear"><img src="../assets/linearlayout-small.png" alt="官方原图" loading="lazy"></a>
+  </span><p data-unit="layouts-067">Organizes its children into a single horizontal or vertical row and creates
+  a scrollbar if the length of the window exceeds the length of the screen.</p></div><div class="layout"><span data-unit="layouts-068">
+  <b><a href="https://developer.android.com/guide/webapps/webview">Build web apps in WebView</a></b>
+  <a href="https://developer.android.com/guide/webapps/webview"><img src="../assets/webview-small.png" alt="官方原图" loading="lazy"></a>
+  </span><p data-unit="layouts-069">Displays web pages.</p></div><h2 id="AdapterViews" data-unit="layouts-070">Build dynamic lists</h2><p data-unit="layouts-071">When the content for your layout is dynamic or not pre-determined, you can
+use
+<code><a href="https://developer.android.com/develop/ui/views/layout/recyclerview">RecyclerView</a></code> or
+a subclass of
+<code><a href="https://developer.android.com/develop/ui/views/layout/binding">AdapterView</a></code>.
+<code>RecyclerView</code> is generally the better option, because it uses memory
+more efficiently than <code>AdapterView</code>.</p><p data-unit="layouts-072">Common layouts possible with <code>RecyclerView</code> and
+<code>AdapterView</code> include the following:</p><div class="layout first"><span data-unit="layouts-073"><b><a href="https://developer.android.com/develop/ui/views/layout/recyclerview">List</a></b>
+    <a href="https://developer.android.com/develop/ui/views/layout/recyclerview"><img src="../assets/listview-small.png" alt="官方原图" loading="lazy"></a>
+    </span><p data-unit="layouts-074">Displays a scrolling single column list.</p></div><div class="layout"><span data-unit="layouts-075"><b><a href="https://developer.android.com/develop/ui/views/layout/recyclerview">Grid</a></b>
+    <a href="https://developer.android.com/develop/ui/views/layout/recyclerview"><img src="../assets/gridview-small.png" alt="官方原图" loading="lazy"></a>
+    </span><p data-unit="layouts-076">Displays a scrolling grid of columns and rows.</p></div><p data-unit="layouts-077"><code>RecyclerView</code> offers more possibilities and
+the option to
+<a href="https://developer.android.com/develop/ui/views/layout/recyclerview#plan-your-layout">create a custom
+layout manager</a>.</p><h3 id="FillingTheLayout" data-unit="layouts-078">Fill an adapter view with data</h3><p data-unit="layouts-079">You can populate an
+<code><a href="https://developer.android.com/reference/android/widget/AdapterView">AdapterView</a></code>
+such as <code><a href="https://developer.android.com/reference/android/widget/ListView">ListView</a></code>
+or
+<code><a href="https://developer.android.com/reference/android/widget/GridView">GridView</a></code> by
+binding the <code>AdapterView</code> instance to an
+<code><a href="https://developer.android.com/reference/android/widget/Adapter">Adapter</a></code>,
+which retrieves data from an external source and creates a <code>View</code>
+that represents each data entry.</p><p data-unit="layouts-080">Android provides several subclasses of <code>Adapter</code> that are useful
+for retrieving different kinds of data and building views for an
+<code>AdapterView</code>. The two most common adapters are:</p><dl><dt data-unit="layouts-081"><code><a href="https://developer.android.com/reference/android/widget/ArrayAdapter">ArrayAdapter</a></code></dt><dd><span data-unit="layouts-082">Use this adapter when your data source is an array. By default,
+    <code>ArrayAdapter</code> creates a view for each array item by calling
+    <code><a href="https://developer.android.com/reference/java/lang/Object#toString()">toString()</a></code>
+    on each item and placing the contents in a <code>TextView</code>.
+    </span><p data-unit="layouts-083">For example, if you have an array of strings you want to display in a
+    <code>ListView</code>, initialize a new <code>ArrayAdapter</code> using a
+    constructor to specify the layout for each string and the string array:</p><div><div class="ds-selector-tabs"><section><h3 id="kotlin" data-unit="layouts-084">Kotlin</h3><div></div><div class="code-block"><pre><code>    val adapter = ArrayAdapter&lt;String&gt;(this, android.R.layout.simple_list_item_1, myStringArray)
+    </code></pre></div></section><section><h3 id="java" data-unit="layouts-085">Java</h3><div></div><div class="code-block"><pre><code>    ArrayAdapter&lt;String&gt; adapter = new ArrayAdapter&lt;String&gt;(this,
+            android.R.layout.simple_list_item_1, myStringArray);
+    </code></pre></div></section></div></div><p data-unit="layouts-086">The arguments for this constructor are the following:</p><ul><li data-unit="layouts-087">Your app
+      <code><a href="https://developer.android.com/reference/android/content/Context">Context</a></code></li><li data-unit="layouts-088">The layout that contains a <code>TextView</code> for each string in the
+      array</li><li data-unit="layouts-089">The string array</li></ul><p data-unit="layouts-090">Then call
+    <code><a href="https://developer.android.com/reference/android/widget/AdapterView#setAdapter(T)">setAdapter()</a></code>
+    on your <code>ListView</code>:</p><div><div class="ds-selector-tabs"><section><h3 id="kotlin" data-unit="layouts-091">Kotlin</h3><div></div><div class="code-block"><pre><code>    val listView: ListView = findViewById(R.id.listview)
+    listView.adapter = adapter
+    </code></pre></div></section><section><h3 id="java" data-unit="layouts-092">Java</h3><div></div><div class="code-block"><pre><code>    ListView listView = (ListView) findViewById(R.id.listview);
+    listView.setAdapter(adapter);
+    </code></pre></div></section></div></div><p data-unit="layouts-093">To customize the appearance of each item you can override the
+    <code>toString()</code> method for the objects in your array. Or, to create
+    a view for each item that's something other than a
+    <code>TextView</code>—for example, if you want an
+    <code><a href="https://developer.android.com/reference/android/widget/ImageView">ImageView</a></code>
+    for each array item—extend the <code>ArrayAdapter</code> class and
+    override
+    <code><a href="https://developer.android.com/reference/android/widget/ArrayAdapter#getView(int,%20android.view.View,%20android.view.ViewGroup)">getView()</a></code>
+    to return the type of view you want for each item.</p></dd><dt data-unit="layouts-094"><code><a href="https://developer.android.com/reference/android/widget/SimpleCursorAdapter">SimpleCursorAdapter</a></code></dt><dd><span data-unit="layouts-095">Use this adapter when your data comes from a
+    <code><a href="https://developer.android.com/reference/android/database/Cursor">Cursor</a></code>.
+    When using <code>SimpleCursorAdapter</code>, specify a layout to use for
+    each row in the <code>Cursor</code> and which columns in the
+    <code>Cursor</code> you want inserted into the views of the layout you want.
+    For example, if you want to create a list of people's names and phone
+    numbers, you can perform a query that returns a <code>Cursor</code>
+    containing a row for each person and columns for the names and numbers. You
+    then create a string array specifying which columns from the
+    <code>Cursor</code> you want in the layout for each result and an integer
+    array specifying the corresponding views that each column need to be
+    placed:
+
+    </span><div><div class="ds-selector-tabs"><section><h3 id="kotlin" data-unit="layouts-096">Kotlin</h3><div></div><div class="code-block"><pre><code>    val fromColumns = arrayOf(ContactsContract.Data.DISPLAY_NAME,
+                              ContactsContract.CommonDataKinds.Phone.NUMBER)
+    val toViews = intArrayOf(R.id.display_name, R.id.phone_number)
+    </code></pre></div></section><section><h3 id="java" data-unit="layouts-097">Java</h3><div></div><div class="code-block"><pre><code>    String[] fromColumns = {ContactsContract.Data.DISPLAY_NAME,
+                            ContactsContract.CommonDataKinds.Phone.NUMBER};
+    int[] toViews = {R.id.display_name, R.id.phone_number};
+    </code></pre></div></section></div></div><p data-unit="layouts-098">When you instantiate the <code>SimpleCursorAdapter</code>, pass the
+    layout to use for each result, the <code>Cursor</code> containing the
+    results, and these two arrays:</p><div><div class="ds-selector-tabs"><section><h3 id="kotlin" data-unit="layouts-099">Kotlin</h3><div></div><div class="code-block"><pre><code>    val adapter = SimpleCursorAdapter(this,
+            R.layout.person_name_and_number, cursor, fromColumns, toViews, 0)
+    val listView = getListView()
+    listView.adapter = adapter
+    </code></pre></div></section><section><h3 id="java" data-unit="layouts-100">Java</h3><div></div><div class="code-block"><pre><code>    SimpleCursorAdapter adapter = new SimpleCursorAdapter(this,
+            R.layout.person_name_and_number, cursor, fromColumns, toViews, 0);
+    ListView listView = getListView();
+    listView.setAdapter(adapter);
+    </code></pre></div></section></div></div><p data-unit="layouts-101">The <code>SimpleCursorAdapter</code> then creates a view for each row in
+    the <code>Cursor</code> using the provided layout by inserting each
+    <code>fromColumns</code> item into the corresponding <code>toViews</code>
+    view.</p></dd></dl><p data-unit="layouts-102">If during the course of your app's life you change the underlying data that
+is read by your adapter, call
+<code><a href="https://developer.android.com/reference/android/widget/ArrayAdapter#notifyDataSetChanged()">notifyDataSetChanged()</a></code>.
+This notifies the attached view that the data has been changed and it refreshes
+itself.</p><h3 id="HandlingUserSelections" data-unit="layouts-103">Handle click events</h3><p data-unit="layouts-104">You can respond to click events on each item in an <code>AdapterView</code>
+by implementing the
+<code><a href="https://developer.android.com/reference/android/widget/AdapterView.OnItemClickListener">AdapterView.OnItemClickListener</a></code>
+interface. For example:</p><div><div class="ds-selector-tabs"><section><h3 id="kotlin" data-unit="layouts-105">Kotlin</h3><div></div><div class="code-block"><pre><code>listView.onItemClickListener = AdapterView.OnItemClickListener { parent, view, position, id -&gt;
+    // Do something in response to the click.
+}</code></pre></div></section><section><h3 id="java" data-unit="layouts-106">Java</h3><div></div><div class="code-block"><pre><code>// Create a message handling object as an anonymous class.
+private OnItemClickListener messageClickedHandler = new OnItemClickListener() {
+    public void onItemClick(AdapterView parent, View v, int position, long id) {
+        // Do something in response to the click.
+    }
+};
+
+listView.setOnItemClickListener(messageClickedHandler);</code></pre></div></section></div></div><h2 id="additional-resources" data-unit="layouts-107">Additional resources</h2><p data-unit="layouts-108">See how layouts are used in the
+<a class="external" href="https://github.com/googlesamples/android-sunflower">Sunflower
+demo app</a> on GitHub.</p></div></article><nav class="chapter-switcher" aria-label="章节导航"><a href="../memory/english.html">← 内存管理概览</a><a class="course-home" href="../index.html">全部章节</a><a href="../drawing/english.html">Android 如何绘制 View →</a></nav><footer class="license-note"><p>本阅读版为 Android Developers 英文文档正文全文的非官方中文译文。原文由 Android Developers / Android Open Source Project 维护；原代码、原图及其标识保留。<a href="../NOTICE.html">来源与许可说明</a>。</p></footer></main></body></html>
