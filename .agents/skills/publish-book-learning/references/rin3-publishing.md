@@ -1,68 +1,32 @@
-# RIN III publishing reference
+# 站点接入与发布
 
-仅在用户要求把书籍阅读器接入当前 RIN III 仓库时使用。下文路径均相对于仓库根目录。
+仅在需要把阅读器接入 RIN III 时使用，路径相对于仓库根目录。先阅读当前 `AGENTS.md` 和 `docs/reader-inventory.md`，检查 Git 状态，保留其他修改。
 
-## Current content boundary
+## 文件归属
 
-- 整书学习记录：`content/<section>/<book-slug>.md`
-- 分章阅读器：`public/reading/<book-slug>/<chapter-slug>/index.html`
-- 统一阅读样式：`public/reading/reader.css`
-- 本地公式资源：`public/reading/_shared/katex/`
-- 静态导出：Next.js
-- 线上 base path：`/rin3`
-- 部署：推送 `main` 后由 `.github/workflows/deploy-pages.yml` 发布
+| 内容 | 路径 |
+| --- | --- |
+| 整书学习记录（需要时） | `content/<section>/<book-slug>.md` |
+| 分章阅读器 | `public/reading/<book-slug>/<chapter-slug>/index.html` |
+| 共享样式 | `public/reading/reader.css` |
+| 本地公式资源 | `public/reading/_shared/katex/` |
 
-同一本书默认只在分区首页占一个文章入口。新章节追加到整书学习记录中的章节链接、阶段理解和当前总结，不再创建新的章节文章。
+同一本书需要学习记录时，维护一个整书入口，汇集章节链接与实际形成的理解，不为每章新建文章或虚构学习进度。单篇文档沿用所在系列的组织方式。
 
-## Inspect before changing
+## 链接与兼容
 
-重新读取：
+- 整书文章链接到章节，例如 `../../reading/book-slug/chapter-N/`。
+- 章节链接回整书文章，例如 `../../../software-engineering/book-slug/`；返回首页可用 `../../../`。
+- 同时核对本地访问和 `/rin3` 路径前缀。合并既有入口时，保留承诺兼容的旧链接；静态跳转页不进入文章目录。
 
-- `AGENTS.md`
-- `README.md`
-- `next.config.ts`
-- `lib/site/sections.ts`
-- `.github/workflows/deploy-pages.yml`
-- `tests/rendered-html.test.mjs`
+## 验证与交付
 
-检查 Git 状态，保留用户和其他任务的修改。
-
-## Relative links
-
-整书文章链接到章节阅读器：
-
-```markdown
-[第 N 章：标题 →](../../reading/book-slug/chapter-N/)
-```
-
-章节阅读器返回整书文章：
-
-```html
-<a href="../../../software-engineering/book-slug/">← 返回整本书学习记录</a>
-<a href="../../../">RIN III</a>
-```
-
-若把已发布的章节文章合并为整书文章，可在旧路径下放置轻量静态跳转页，避免旧链接直接 404；跳转页不进入内容 catalog。
-
-## Verification
-
-根据改动风险选择验证，但至少证明：
-
-- 分区首页只出现一个整书入口；
-- 整书文章链接到所有已发布章节；
-- 每个章节阅读器回到整书文章；
-- 每个章节阅读器引用统一的 `/reading/reader.css`，不再复制整套页面样式；
-- 旧 URL 若承诺兼容，确实指向新入口；
-- `/rin3` 前缀下静态资源和链接可达。
-
-部署等价命令：
+按当前仓库约定运行相关内容检查。发布前核对章节互链、样式、公式和其他资源可达；检查入口以 `package.json` 为准。需要模拟当前静态部署环境时，可使用：
 
 ```bash
 env GITHUB_ACTIONS=true NEXT_PUBLIC_BASE_PATH=/rin3 npm test
 ```
 
-本地预览和线上 HTTP 检查分别报告，不把构建成功当成部署成功。
+提交、推送和部署按用户明确授权执行，只暂存本次相关文件。部署机制以 `.github/workflows/deploy-pages.yml` 为准；当前为推送 `main` 后发布。
 
-## Git boundary
-
-只暂存本次内容、阅读器、兼容跳转和相关测试。不要暂存 `tsconfig.tsbuildinfo` 等构建缓存。只有用户明确要求时才提交、推送或部署。
+区分本地检查、浏览器预览与线上验证。构建成功不能证明部署成功；实际发布后再验证线上链接。
