@@ -411,3 +411,20 @@ test("keeps the entrance copy English-only", async () => {
   const html = await readOutput("index.html");
   assert.doesNotMatch(html, /\p{Script=Han}/u);
 });
+
+test("Me links to the deployed Glimpse app and its assets stay inside the Pages prefix", async () => {
+  const listing = await readOutput("me/index.html");
+  const article = await readOutput("me/glimpse/index.html");
+  const app = await readOutput("apps/glimpse/index.html");
+  assert.match(listing, new RegExp(`href="${basePath}/me/glimpse/"`));
+  const articleUrl = new URL(`https://example.com${basePath}/me/glimpse/`);
+  const appUrl = new URL("../../apps/glimpse/", articleUrl);
+  assert.equal(appUrl.pathname, `${basePath}/apps/glimpse/`);
+  assert.match(article, /href="\.\.\/\.\.\/apps\/glimpse\/"/);
+  assert.match(app, /href="\.\.\/\.\.\/me\/glimpse\/"/);
+  assert.doesNotMatch(app, /localhost|192\.168\.|同一个 Wi-Fi|Mac 预览/);
+  for (const asset of ["app.js", "cards.js", "style.css", "icon.svg"]) {
+    assert.ok((await readOutput(`apps/glimpse/${asset}`)).length > 0);
+    assert.equal(new URL(`./${asset}`, appUrl).pathname, `${basePath}/apps/glimpse/${asset}`);
+  }
+});
