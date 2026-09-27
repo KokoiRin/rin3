@@ -6,6 +6,7 @@ import { createFeed, swipeDirection } from './navigation.js';
 const main = document.querySelector('#main');
 const dialog = document.querySelector('#about');
 const KEY = 'rin-glimpse-events-v1';
+const menuDialog = document.querySelector('#menu-dialog');
 const historyDialog = document.querySelector('#history-dialog');
 // Storage can be denied even when the page itself is usable.
 const storage = {getItem:key=>localStorage.getItem(key),setItem:(key,value)=>localStorage.setItem(key,value),removeItem:key=>localStorage.removeItem(key)};
@@ -20,7 +21,7 @@ const escape = value => String(value).replace(/[&<>"']/g, c => ({'&':'&amp;','<'
 const byId = id => document.getElementById(id);
 const on = (id, fn) => byId(id)?.addEventListener('click', fn);
 function pauseClock() { if (activeSince !== null) elapsed += performance.now() - activeSince; activeSince = null; }
-function resumeClock() { if (activeSince === null && !document.hidden && !dialog.open && !historyDialog.open) activeSince = performance.now(); }
+function resumeClock() { if (activeSince === null && !document.hidden && !dialog.open && !historyDialog.open && !menuDialog.open) activeSince = performance.now(); }
 function record(action, extra = {}) {
   pauseClock();
   events.push({session, cardId:current?.id ?? null, type:current?.type ?? null, action, energy, at:new Date().toISOString(), activeMs:Math.round(elapsed), ...extra});
@@ -46,12 +47,12 @@ function startRound() {
 }
 function showCard(revisit = false) {
  current = feed.current;
- if (!current) { end(true); return; }
+ if (!current) { end(); return; }
  view = 'feed'; renderFeed(); record('impression', { revisit });
 }
 function nextCard() {
  record('next');
- if (!feed.next()) { end(true); return; }
+ if (!feed.next()) { end(); return; }
  showCard(); focusHeading();
 }
 function previousCard() {
@@ -59,36 +60,44 @@ function previousCard() {
  record('previous'); feed.previous(); showCard(true); focusHeading();
 }
 function renderFeed() {
+ main.className='feed-view';
  const c=current;
  const known=feedback.get(c.id);
  pointerStart=null;
- main.innerHTML=`<section class="intro"><div><p class="eyebrow">留一点空白，给偶然</p><h1>现在，碰一下这个。</h1></div><div class="energy" aria-label="内容强度"><button id="any" aria-pressed="${energy==='any'}">随便来</button><button id="low" aria-pressed="${energy==='low'}">轻松点</button></div></section><article class="card" aria-label="${escape(c.title.replace('\n',''))}"><div class="visual">${art(c)}</div><div class="card-content"><div class="meta"><span>${c.type}</span><span>${c.time}</span>${known?.opens?'<span>看过</span>':''}</div><p class="concept-path">${escape(c.parent)}</p><h2>${escape(c.title)}</h2><p class="teaser">${escape(c.teaser)}</p><button class="primary" id="open">${escape(c.action)} <span aria-hidden="true">↗</span></button></div></article>${feedbackControls()}<div class="switch-row"><button class="quiet previous" id="previous" ${feed.hasPrevious?'':'disabled'}>← 上一张</button><span class="hint">左右滑动，随时回看</span><button class="quiet skip" id="skip">下一张 →</button></div>`;
+ main.innerHTML=`<div class="feed-toolbar"><h1 class="sr-only">碰一下</h1><div class="energy" aria-label="内容强度"><button id="any" aria-pressed="${energy==='any'}">随便来</button><button id="low" aria-pressed="${energy==='low'}">轻松点</button></div></div><article class="card" aria-label="${escape(c.title.replace('\n',''))}"><div class="visual">${art(c)}</div><div class="card-content"><div class="meta"><span>${c.type}</span><span>${c.time}</span>${known?.opens?'<span>看过</span>':''}</div><p class="concept-path">${escape(c.parent)}</p><h2>${escape(c.title)}</h2><p class="teaser">${escape(c.teaser)}</p><button class="primary" id="open">${escape(c.action)} <span aria-hidden="true">↗</span></button></div><div class="card-tools"><button class="quiet arrow" id="previous" aria-label="上一张" ${feed.hasPrevious?'':'disabled'}>←</button>${feedbackControls()}<button class="quiet arrow" id="skip" aria-label="下一张">→</button></div></article>`;
  bindFeedback();
  on('open',()=>{feedback.open(c);record('open');view='trial';history.pushState({trial:true},'','#try');renderTrial();focusHeading();});
  on('skip',nextCard); on('previous',previousCard);
  for(const mode of ['any','low']) on(mode,()=>{if(energy===(mode==='any'?'any':'low'))return;record('context_change',{to:mode});energy=mode;startRound();});
  const surface=main.querySelector('.card');
+ let suppressClick=false;
  surface.addEventListener('pointerdown', event => {
-  if (event.isPrimary === false || event.button !== 0 || event.target.closest('button,a')) return;
-  pointerStart = { x:event.clientX, y:event.clientY, id:event.pointerId };
-  surface.setPointerCapture?.(event.pointerId);
+  if (event.isPrimary === false || event.button !== 0) return;
+  suppressClick=false;
+  pointerStart = { x:event.clientX, y:event.clientY, id:event.pointerId, interactive:!!event.target.closest('button,a') };
+  if(!pointerStart.interactive)surface.setPointerCapture?.(event.pointerId);
  });
  surface.addEventListener('pointerup', event => {
   if (!pointerStart || event.pointerId !== pointerStart.id) return;
   const direction = swipeDirection(pointerStart, { x:event.clientX, y:event.clientY });
+  const interactive=pointerStart.interactive;
+  suppressClick=Math.hypot(event.clientX-pointerStart.x,event.clientY-pointerStart.y)>12;
   pointerStart = null;
-  if (view !== 'feed' || dialog.open || historyDialog.open) return;
+  if(interactive)return;
+  if (view !== 'feed' || dialog.open || historyDialog.open || menuDialog.open) return;
   if (direction === 'next') nextCard();
   if (direction === 'previous') previousCard();
  });
- surface.addEventListener('pointercancel', () => { pointerStart = null; });
+ surface.addEventListener('pointercancel', () => { pointerStart = null; suppressClick=true; });
+ surface.addEventListener('click',event=>{if(suppressClick){event.preventDefault();event.stopPropagation();suppressClick=false;}},true);
 
 }
 function renderTrial() {
+ main.className='trial-view';
  const c=current;
- main.innerHTML=`<article class="trial"><button class="quiet back" id="back">← 回到卡片</button><p class="eyebrow">${c.type} / ${c.time}</p><p class="concept-path">${escape(c.parent)}</p><h2>${escape(c.trialTitle)}</h2><p class="prose">${escape(c.trial)}</p>${c.widget||c.choices?'<div class="widget" id="widget"></div>':''}<div class="trial-actions"><button class="primary" id="continue">${escape(c.moreTitle)} <span aria-hidden="true">↓</span></button><button class="quiet" id="quit">到这里就好 ↗</button></div><div id="more"></div>${feedbackControls()}<p class="source">${escape(c.source)}${c.link?`<br><a href="${c.link}" target="_blank" rel="noopener noreferrer" id="external">${c.linkLabel} ↗</a>`:''}</p></article>`;
+ main.innerHTML=`<article class="trial"><button class="quiet back" id="back">← 回到卡片</button><p class="eyebrow">${c.type} / ${c.time}</p><p class="concept-path">${escape(c.parent)}</p><h2>${escape(c.trialTitle)}</h2><p class="prose">${escape(c.trial)}</p>${c.widget||c.choices?'<div class="widget" id="widget"></div>':''}<div class="trial-actions"><button class="primary" id="continue">${escape(c.moreTitle)} <span aria-hidden="true">↓</span></button></div><div id="more"></div>${feedbackControls()}<p class="source">${escape(c.source)}${c.link?`<br><a href="${c.link}" target="_blank" rel="noopener noreferrer" id="external">${c.linkLabel} ↗</a>`:''}</p></article>`;
  bindFeedback();
- on('back',()=>history.back());on('quit',()=>end());
+ on('back',()=>history.back());
  on('continue',()=>{record('continue');byId('more').innerHTML=`<section class="more"><h3>${escape(c.moreTitle)}</h3><p>${escape(c.more)}</p></section>`;byId('continue').disabled=true;byId('continue').textContent='已经展开在下面';byId('more').scrollIntoView({block:'nearest',behavior:'auto'});});
  on('external',()=>record('external_open'));
  renderWidget(c.widget);
@@ -145,14 +154,15 @@ function renderRecords() {
  });
 }
 
-function end(exhausted=false) {
- if(view!=='end')record(exhausted?'deck_end':'quit',{from:view});
+function end() {
+ if(view!=='end')record('deck_end',{from:view});
+ main.className='end-view';
  view='end'; history.replaceState(null,'',location.pathname);
- main.innerHTML=`<section class="end"><div class="symbol" aria-hidden="true">✳</div><p class="eyebrow">留白也是一种选择</p><h2>${exhausted?'这几张，先到这里。':'那就，先这样。'}</h2><p>${exhausted?'这轮可看的卡片到这里了。也可以从“我的记录”找回之前的内容。':'可以把手机放下，也可以去做刚才想做的事。'}<br>现在可以直接关掉这一页。</p>${exhausted&&feed.current?'<button class="quiet" id="return-last">← 回看最后一张</button><br>':''}<button class="secondary" id="restart">${exhausted?'再随便看看':'再碰一下'} ↗</button></section>`;
+ main.innerHTML=`<section class="end"><div class="symbol" aria-hidden="true">✳</div><p class="eyebrow">留白也是一种选择</p><h2>这几张，先到这里。</h2><p>这轮可看的卡片到这里了。也可以从右上角菜单里的“我的记录”找回之前的内容。<br>现在可以直接关掉这一页。</p>${feed.current?'<button class="quiet" id="return-last">← 回看最后一张</button><br>':''}<button class="secondary" id="restart">再随便看看 ↗</button></section>`;
  on('restart',()=>{startRound();focusHeading();});on('return-last',()=>{showCard(true);focusHeading();});focusHeading();
 }
 window.addEventListener('keydown',event=>{
- if(view!=='feed'||dialog.open||historyDialog.open||event.altKey||event.metaKey||event.ctrlKey||event.shiftKey||event.target?.closest?.('input,textarea,select,[contenteditable]'))return;
+ if(view!=='feed'||dialog.open||historyDialog.open||menuDialog.open||event.altKey||event.metaKey||event.ctrlKey||event.shiftKey||event.target?.closest?.('input,textarea,select,[contenteditable]'))return;
  if(event.key==='ArrowLeft'){event.preventDefault();previousCard();}
  if(event.key==='ArrowRight'){event.preventDefault();nextCard();}
 });
@@ -160,15 +170,16 @@ window.addEventListener('popstate',()=>{if(view==='trial'){record('back');view='
 window.addEventListener('pagehide',()=>{if(view!=='end')record('page_leave',{from:view});pauseClock();});
 window.addEventListener('pageshow',resumeClock);
 document.addEventListener('visibilitychange',()=>{if(document.hidden){if(view!=='end')record('background',{from:view});pauseClock();}else resumeClock();});
-on('leave',()=>end());
-on('records',()=>{pauseClock();renderRecords();historyDialog.showModal();});
+on('menu-toggle',()=>{pauseClock();menuDialog.showModal();});
+menuDialog.addEventListener('close',resumeClock);
+on('records',()=>{menuDialog.close();pauseClock();renderRecords();historyDialog.showModal();});
 function refreshFeedbackAfterDialog() {
  if(view==='feed')renderFeed();
  if(view==='trial'){const reaction=feedback.get(current.id)?.reaction;byId('like')?.setAttribute('aria-pressed',String(reaction==='like'));byId('dislike')?.setAttribute('aria-pressed',String(reaction==='dislike'));if(byId('feedback-note'))byId('feedback-note').textContent=reaction==='like'?'已标记喜欢':reaction==='dislike'?'下轮不再主动推荐':'';}
  resumeClock();
 }
 historyDialog.addEventListener('close',refreshFeedbackAfterDialog);
-on('data',()=>{pauseClock();dialog.showModal();byId('storage-status').textContent=storageAvailable&&feedback.available?'记录只保存在这个浏览器。看过与反馈会保留；操作明细最多保留最近 2,000 条。':'浏览器暂时不能保存记录；当前体验仍然可用，可以导出本次记录。';});
+on('data',()=>{menuDialog.close();pauseClock();dialog.showModal();byId('storage-status').textContent=storageAvailable&&feedback.available?'记录只保存在这个浏览器。看过与反馈会保留；操作明细最多保留最近 2,000 条。':'浏览器暂时不能保存记录；当前体验仍然可用，可以导出本次记录。';});
 dialog.addEventListener('close',refreshFeedbackAfterDialog);
 let exportUrl;
 on('export',()=>{

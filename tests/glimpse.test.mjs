@@ -29,7 +29,7 @@ test('a reload keeps records and avoids the immediately previous card',()=>{
  const h=boot();const previous=h.events().at(-1).cardId;const next=boot({saved:h.store.get('rin-glimpse-events-v1')});assert.equal(next.events().length,2);assert.notEqual(next.events().at(-1).cardId,previous);
 });
 test('blocked browser storage still allows opening and ending an experience',()=>{
- const h=boot({blocked:true});assert.doesNotThrow(()=>{h.node('open').click();h.node('quit').click();});assert.match(h.node('#main').innerHTML,/先这样/);
+ const h=boot({blocked:true});assert.doesNotThrow(()=>{h.node('open').click();h.handlers.popstate();for(let i=0;i<14;i++)h.node('skip').click();});assert.match(h.node('#main').innerHTML,/这几张/);
 });
 test('time in the background is not counted as active experience time',()=>{
  const h=boot();h.tick(2000);h.document.hidden=true;h.handlers.visibilitychange();h.tick(60000);h.document.hidden=false;h.handlers.visibilitychange();h.tick(1000);h.node('skip').click();assert.equal(h.events().find(e=>e.action==='background').activeMs,2000);assert.equal(h.events().find(e=>e.action==='next').activeMs,1000);
@@ -46,4 +46,23 @@ test('clearing feedback updates the open detail when the data dialog closes',()=
  h.node('data').click();h.node('clear').click();h.node('#about').close();
  assert.equal(h.node('like').attributes['aria-pressed'],'false');
  assert.equal(h.node('feedback-note').textContent,'');
+});
+
+test('menu exposes records and data while pausing card keyboard navigation',()=>{
+ const h=boot();const first=h.events().at(-1).cardId;
+ h.node('menu-toggle').click();assert.equal(h.node('#menu-dialog').open,true);
+ h.handlers.keydown({key:'ArrowRight'});assert.equal(h.events().at(-1).cardId,first);
+ h.node('records').click();assert.equal(h.node('#menu-dialog').open,false);assert.equal(h.node('#history-dialog').open,true);
+ h.node('#history-dialog').close();h.node('menu-toggle').click();h.node('data').click();assert.equal(h.node('#about').open,true);
+});
+
+test('dragging from a card button suppresses its click without changing cards',()=>{
+ const h=boot(),surface=h.node('child'),id=h.events().at(-1).cardId;
+ surface.pointerdown({button:0,pointerId:1,clientX:100,clientY:200,target:{closest:()=>({})}});
+ surface.pointerup({pointerId:1,clientX:250,clientY:210});
+ let prevented=false,stopped=false;surface.click({preventDefault(){prevented=true;},stopPropagation(){stopped=true;}});
+ assert(prevented&&stopped);assert.equal(h.events().at(-1).cardId,id);
+ surface.pointerdown({button:0,pointerId:2,clientX:100,clientY:200,target:{closest:()=>({})}});
+ surface.pointerup({pointerId:2,clientX:101,clientY:200});
+ surface.click({preventDefault(){assert.fail('normal tap should work');},stopPropagation(){}});
 });
