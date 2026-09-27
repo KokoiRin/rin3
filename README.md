@@ -13,6 +13,14 @@ npm run dev
 
 访问 `http://localhost:3000`。
 
+## 安装到手机桌面
+
+通过 Android Chrome 打开 HTTPS 正式站点，在菜单中选择安装应用。若此前添加的是普通网页快捷方式，先移除旧图标再安装，从新图标启动验证。站内页面以独立窗口显示；外部链接仍可能显示浏览器工具栏。
+
+`public/manifest.webmanifest` 使用 `standalone` 显示模式，启动页和应用范围均为清单所在目录（本地 `/`、GitHub Pages `/rin3/`）。桌面图标由现有樱花封面居中裁切为 PNG；本次只提供安装入口，不包含离线缓存。
+
+Next 页面通过根布局关联清单。新增独立 HTML 阅读器时，也需要在 `<head>` 内用相对路径引用同一份清单，例如章节页的 `<link rel="manifest" href="../../../manifest.webmanifest">`。`test:build` 会检查所有导出 HTML 的清单地址、应用范围和图标。
+
 ## 新增文章
 
 文章按分区放在 `content/` 下：

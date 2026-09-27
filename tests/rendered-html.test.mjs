@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFile, stat } from "node:fs/promises";
+import { readFile, readdir, stat } from "node:fs/promises";
 import test from "node:test";
 
 const basePath = process.env.GITHUB_ACTIONS === "true" ? "/rin3" : "";
@@ -7,6 +7,49 @@ const basePath = process.env.GITHUB_ACTIONS === "true" ? "/rin3" : "";
 async function readOutput(relativePath) {
   return readFile(new URL(`../out/${relativePath}`, import.meta.url), "utf8");
 }
+
+test("所有导出页面关联同一个独立窗口应用，阅读器和 Slides 保持在应用范围内", async () => {
+  const root = new URL(`https://example.com${basePath}/`);
+  const manifestUrl = new URL("manifest.webmanifest", root);
+  const manifest = JSON.parse(await readOutput("manifest.webmanifest"));
+  assert.equal(manifest.name, "RIN III");
+  assert.equal(manifest.display, "standalone");
+  assert.equal(manifest.prefer_related_applications ?? false, false);
+
+  // 同一份静态清单在本地根目录和 Pages 子目录均从首页启动。
+  for (const prefix of ["/", "/rin3/"]) {
+    const deployedRoot = new URL(prefix, root);
+    const deployedManifest = new URL("manifest.webmanifest", deployedRoot);
+    assert.equal(new URL(manifest.start_url, deployedManifest).href, deployedRoot.href);
+    assert.equal(new URL(manifest.scope, deployedManifest).href, deployedRoot.href);
+  }
+
+  const files = await readdir(new URL("../out/", import.meta.url), { recursive: true });
+  const pages = files.filter((file) => file.endsWith(".html"));
+  assert.ok(pages.length > 0);
+  for (const file of pages) {
+    const html = await readOutput(file);
+    const links = html.match(/<link\b[^>]*\brel="manifest"[^>]*>/gi) ?? [];
+    assert.equal(links.length, 1, `${file}: exactly one manifest link`);
+    const href = links[0].match(/\bhref="([^"]+)"/)?.[1];
+    assert.ok(href, `${file}: manifest href`);
+    const pageUrl = new URL(file, root);
+    assert.equal(new URL(href, pageUrl).href, manifestUrl.href, file);
+    assert.ok(pageUrl.href.startsWith(new URL(manifest.scope, manifestUrl).href), file);
+  }
+
+  for (const size of [192, 512]) {
+    const icon = manifest.icons.find((entry) => entry.sizes === `${size}x${size}`);
+    assert.ok(icon, `missing ${size}px install icon`);
+    assert.equal(icon.type, "image/png");
+    const iconUrl = new URL(icon.src, manifestUrl);
+    assert.ok(iconUrl.href.startsWith(root.href));
+    const png = await readFile(new URL(`../out/${iconUrl.href.slice(root.href.length)}`, import.meta.url));
+    assert.equal(png.subarray(0, 8).toString("hex"), "89504e470d0a1a0a");
+    assert.equal(png.readUInt32BE(16), size);
+    assert.equal(png.readUInt32BE(20), size);
+  }
+});
 
 test("exports the three learning gates with deploy-safe paths", async () => {
   const html = await readOutput("index.html");

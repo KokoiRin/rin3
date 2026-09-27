@@ -16,6 +16,8 @@ const mimeTypes = new Map([
   [".html", "text/html; charset=utf-8"],
   [".js", "text/javascript; charset=utf-8"],
   [".json", "application/json; charset=utf-8"],
+  [".webmanifest", "application/manifest+json; charset=utf-8"],
+  [".png", "image/png"],
   [".svg", "image/svg+xml"],
   [".webp", "image/webp"],
   [".woff2", "font/woff2"],
@@ -100,6 +102,42 @@ after(async () => {
   await new Promise((resolveClose, reject) => {
     server?.close((error) => error ? reject(error) : resolveClose());
   });
+});
+
+test("[PWA-INSTALL-001] Chrome 从首页和独立阅读器识别同一个可安装的应用清单", async () => {
+  // 普通 Playwright context 是隐身模式，Chrome 会因此拒绝安装。
+  const context = await chromium.launchPersistentContext("", {
+    headless: true,
+    ...(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH
+      ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH }
+      : {}),
+  });
+  const page = await context.newPage();
+  const session = await page.context().newCDPSession(page);
+  try {
+    for (const route of ["/", "/reading/android-foundations/", "/reading/android-foundations/fundamentals/index.html"]) {
+      await page.goto(`${origin}${basePath}${route}`);
+      const result = await session.send("Page.getAppManifest");
+      assert.equal(result.url, `${origin}${basePath}/manifest.webmanifest`);
+      assert.deepEqual(result.errors, []);
+      const manifest = JSON.parse(result.data);
+      assert.equal(manifest.display, "standalone");
+      assert.equal(new URL(manifest.start_url, result.url).href, `${origin}${basePath}/`);
+      const { installabilityErrors } = await session.send("Page.getInstallabilityErrors");
+      assert.deepEqual(installabilityErrors, []);
+      for (const icon of manifest.icons) {
+        const dimensions = await page.evaluate(async (src) => {
+          const image = new Image();
+          image.src = src;
+          await image.decode();
+          return `${image.naturalWidth}x${image.naturalHeight}`;
+        }, new URL(icon.src, result.url).href);
+        assert.equal(dimensions, icon.sizes);
+      }
+    }
+  } finally {
+    await context.close();
+  }
 });
 
 // 直接打开生产静态导出，守住 Reveal ready、唯一活动页和播放器计数同步。
