@@ -423,7 +423,7 @@ test("Me links to the deployed Glimpse app and its assets stay inside the Pages 
   assert.match(article, /href="\.\.\/\.\.\/apps\/glimpse\/"/);
   assert.match(app, /href="\.\.\/\.\.\/me\/glimpse\/"/);
   assert.doesNotMatch(app, /localhost|192\.168\.|同一个 Wi-Fi|Mac 预览/);
-  for (const asset of ["app.js", "cards.js", "style.css", "icon.svg"]) {
+  for (const asset of ["app.js", "cards.js", "navigation.js", "feedback.js", "style.css", "icon.svg"]) {
     assert.ok((await readOutput(`apps/glimpse/${asset}`)).length > 0);
     assert.equal(new URL(`./${asset}`, appUrl).pathname, `${basePath}/apps/glimpse/${asset}`);
   }
