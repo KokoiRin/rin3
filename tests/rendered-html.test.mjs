@@ -412,19 +412,16 @@ test("keeps the entrance copy English-only", async () => {
   assert.doesNotMatch(html, /\p{Script=Han}/u);
 });
 
-test("Me links to the deployed Glimpse app and its assets stay inside the Pages prefix", async () => {
+test("Me keeps its Glimpse introduction and the old app entrance redirects to the independent site", async () => {
   const listing = await readOutput("me/index.html");
   const article = await readOutput("me/glimpse/index.html");
-  const app = await readOutput("apps/glimpse/index.html");
+  const entrance = await readOutput("apps/glimpse/index.html");
   assert.match(listing, new RegExp(`href="${basePath}/me/glimpse/"`));
-  const articleUrl = new URL(`https://example.com${basePath}/me/glimpse/`);
-  const appUrl = new URL("../../apps/glimpse/", articleUrl);
-  assert.equal(appUrl.pathname, `${basePath}/apps/glimpse/`);
   assert.match(article, /href="\.\.\/\.\.\/apps\/glimpse\/"/);
-  assert.match(app, /href="\.\.\/\.\.\/me\/glimpse\/"/);
-  assert.doesNotMatch(app, /localhost|192\.168\.|同一个 Wi-Fi|Mac 预览/);
+  assert.match(entrance, /http-equiv="refresh" content="0; url=https:\/\/kokoirin\.github\.io\/Glimpse\/"/);
+  assert.match(entrance, /href="https:\/\/kokoirin\.github\.io\/Glimpse\/"/);
+  assert.match(entrance, /location\.replace\('https:\/\/kokoirin\.github\.io\/Glimpse\/'\)/);
   for (const asset of ["app.js", "cards.js", "navigation.js", "feedback.js", "style.css", "icon.svg"]) {
-    assert.ok((await readOutput(`apps/glimpse/${asset}`)).length > 0);
-    assert.equal(new URL(`./${asset}`, appUrl).pathname, `${basePath}/apps/glimpse/${asset}`);
+    await assert.rejects(readOutput(`apps/glimpse/${asset}`), { code: "ENOENT" });
   }
 });
