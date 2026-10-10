@@ -1,0 +1,493 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>HTTP 缓存 · 网络请求阅读材料</title><link rel="stylesheet" href="../../reader.css"><link rel="stylesheet" href="../source.css"><link rel="manifest" href="../../../manifest.webmanifest"></head><body><nav class="site-nav"><a href="../index.html">← 网络请求 · 从一次请求开始</a><a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Caching">MDN 原文 ↗</a></nav><main class="reader"><header class="chapter-header"><span class="chapter-kicker">N06 · 中文阅读版</span><h1>HTTP 缓存</h1><p class="byline">HTTP caching · Mozilla Contributors</p><div class="title-rule"></div><p class="edition-nav"><strong aria-current="page">中文阅读版</strong> · <a href="english.html">英文对照</a> · <a href="literal.html">第一轮直译稿</a></p><aside class="learning-note"><span class="note-kind">编者导读 · 不属于原文</span><p><strong>什么时候能直接用旧响应，什么时候还要问服务器？</strong></p><p>先读到“不要缓存”及其几个小节，就能串起 private、max-age、ETag、304、no-cache 和 no-store。后面的刷新、请求合并和常见模式可以分第二次读；全文都保留在本页。</p><details class="editor-notes"><summary>阅读前的版本与适用范围校注（4 条）</summary><p>最关键的区分：no-cache 允许存储，但复用前需要验证；no-store 不允许存储当前响应。304 是验证结果，不是重新传回完整资源。</p><p>严格的新鲜度判断是 current_age < freshness_lifetime；相等时已经不再新鲜。原文只分别写“小于”和“大于”，遗漏了等号边界。启发式新鲜度通常参考 Date 与 Last-Modified 的时间差，不是任意设一个固定缓存时长。参见 <a href="https://www.rfc-editor.org/rfc/rfc9111.html#section-4.2">RFC 9111，第 4.2 节</a>。</p><p>正文中删除缓存的限制，针对通用 HTTP 缓存机制；受管理的 CDN 可以有自己的清除 API，文章后半段也专门解释了这一点。浏览器刷新、bfcache 和 Fetch 的 cache 选项，不等同于原生客户端的缓存 API。</p><p>“主资源”一节说不想存储 HTML，措辞容易造成误解。结合其 no-cache 示例，应理解为不希望未经验证就使用旧 HTML；no-cache 本身依然允许存储。正文忠实保留这一原文表述。</p></details></aside><details class="source-details"><summary>本篇目录与翻译范围</summary><p>对应上述英文文章正文全文，保留原文顺序、表格、示例、原图和“另请参阅”。代码及图中英文保持原样。编者说明与原文分开；历史表述未在译文中静默改写。</p><ul><li class="toc-h2"><a href="#types_of_caches">缓存的类型</a></li><li class="toc-h3"><a href="#private_caches">私有缓存</a></li><li class="toc-h3"><a href="#shared_cache">共享缓存</a></li><li class="toc-h4"><a href="#proxy_caches">代理缓存</a></li><li class="toc-h4"><a href="#managed_caches">受管理的缓存</a></li><li class="toc-h2"><a href="#heuristic_caching">启发式缓存</a></li><li class="toc-h2"><a href="#fresh_and_stale_based_on_age">根据 age 判断新鲜与陈旧</a></li><li class="toc-h2"><a href="#expires_or_max-age">Expires 与 max-age</a></li><li class="toc-h2"><a href="#vary">Vary</a></li><li class="toc-h2"><a href="#validation">验证</a></li><li class="toc-h3"><a href="#if-modified-since">If-Modified-Since</a></li><li class="toc-h3"><a href="#etagif-none-match">ETag 与 If-None-Match</a></li><li class="toc-h3"><a href="#force_revalidation">强制重新验证</a></li><li class="toc-h2"><a href="#dont_cache">不要缓存</a></li><li class="toc-h3"><a href="#do_not_share_with_others">不要与其他人共享</a></li><li class="toc-h3"><a href="#provide_up-to-date_content_every_time">每次都提供最新内容</a></li><li class="toc-h3"><a href="#dealing_with_outdated_implementations">应对过时的实现</a></li><li class="toc-h3"><a href="#whats_lost_by_no-store">使用 no-store 会失去什么</a></li><li class="toc-h2"><a href="#reload_and_force_reload">重新加载与强制重新加载</a></li><li class="toc-h3"><a href="#reload">重新加载</a></li><li class="toc-h3"><a href="#force_reload">强制重新加载</a></li><li class="toc-h3"><a href="#avoiding_revalidation">避免重新验证</a></li><li class="toc-h2"><a href="#deleting_stored_responses">删除存储的响应</a></li><li class="toc-h2"><a href="#request_collapse">请求合并</a></li><li class="toc-h2"><a href="#common_caching_patterns">常见缓存模式</a></li><li class="toc-h3"><a href="#default_settings">默认设置</a></li><li class="toc-h3"><a href="#cache_busting">缓存破坏（Cache Busting）</a></li><li class="toc-h3"><a href="#validation_2">验证</a></li><li class="toc-h3"><a href="#main_resources">主资源</a></li><li class="toc-h3"><a href="#more_about_managed_caches">进一步了解受管理的缓存</a></li><li class="toc-h2"><a href="#see_also">另请参阅</a></li></ul></details><nav class="chapter-switcher" aria-label="章节导航"><a href="../05-tls/index.html">← 传输层安全 TLS</a><a class="course-home" href="../index.html">全部章节</a><a href="../07-evolution/index.html">HTTP 的演进 →</a></nav></header><article class="translated-article"><section class="content-section">
+<p data-unit="06-cache-001">HTTP 缓存会保存某次请求对应的响应。后续请求到来时，就可以复用这份响应。</p>
+<p data-unit="06-cache-002">复用有几个好处。首先，请求不必再到达源服务器；缓存离客户端越近，响应通常就越快。最典型的例子，是浏览器把自己请求得到的响应缓存在本地。</p>
+<p data-unit="06-cache-003">其次，源服务器不必再次处理请求：省去解析与路由、根据 Cookie 恢复会话、查询数据库，以及模板渲染等工作。这就减轻了服务器负载。</p>
+<p data-unit="06-cache-004">缓存的正确运行，对系统健康至关重要。</p>
+</section><section aria-labelledby="types_of_caches" class="content-section">
+<h2 class="heading" data-unit="06-cache-005" id="types_of_caches"><a class="heading-anchor" href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Caching#types_of_caches">缓存的类型</a></h2>
+<p data-unit="06-cache-006">在 <a class="external" href="https://httpwg.org/specs/rfc9111.html" target="_blank" title="External link (opens in new tab)">HTTP 缓存</a>规范中，缓存主要分为两类：<strong>私有缓存</strong>和<strong>共享缓存</strong>。</p>
+</section><section aria-labelledby="private_caches" class="content-section">
+<h3 class="heading" data-unit="06-cache-007" id="private_caches"><a class="heading-anchor" href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Caching#private_caches">私有缓存</a></h3>
+<p data-unit="06-cache-008">私有缓存与某个特定客户端绑定，典型例子是浏览器缓存。由于存储的响应不会与其他客户端共享，私有缓存可以保存针对该用户的个性化响应。</p>
+<p data-unit="06-cache-009">另一方面，如果将个性化内容存储在私有缓存以外的缓存中，其他用户就可能获取这些内容，从而造成意外的信息泄露。</p>
+<p data-unit="06-cache-010">如果响应包含用户的个性化内容，而且只允许存入私有缓存，就必须明确指定 <code>private</code> 指令。</p>
+<div class="code-example"><div class="example-header"><span class="language-name">http</span></div><pre class="brush: http notranslate"><code>Cache-Control: private
+</code></pre></div>
+<p data-unit="06-cache-011">个性化内容通常由 Cookie 控制，但“有 Cookie”不一定等于“私有”。因此，单靠 Cookie，不会把响应自动标记为私有。</p>
+</section><section aria-labelledby="shared_cache" class="content-section">
+<h3 class="heading" data-unit="06-cache-012" id="shared_cache"><a class="heading-anchor" href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Caching#shared_cache">共享缓存</a></h3>
+<p data-unit="06-cache-013">共享缓存位于客户端与服务器之间，可以存储能够在用户之间共享的响应。共享缓存还可以进一步分为<strong>代理缓存</strong>和<strong>受管理的缓存</strong>。</p>
+<h4 data-unit="06-cache-014" id="proxy_caches">代理缓存</h4>
+<p data-unit="06-cache-015">除了访问控制功能，一些代理还实现了缓存，以减少流出网络的流量。服务开发者通常不管理它们，因此必须通过合适的 HTTP 标头等方式进行控制。不过，过去一些过时的代理缓存实现，例如不能正确理解 HTTP 缓存标准的实现，经常给开发者造成问题。</p>
+<p data-unit="06-cache-016">下面这样的<strong>大杂烩标头</strong>，试图绕过那些“老旧且不再更新的代理缓存”实现；它们无法理解当前 HTTP 缓存规范中的 <code>no-store</code> 等指令。</p>
+<div class="code-example"><div class="example-header"><span class="language-name">http</span></div><pre class="brush: http notranslate"><code>Cache-Control: no-store, no-cache, max-age=0, must-revalidate, proxy-revalidate
+</code></pre></div>
+<p data-unit="06-cache-017">然而，近年来 HTTPS 越来越普及，客户端与服务器之间的通信经过加密，在很多情况下，路径中的代理缓存只能通过隧道转发响应，无法充当缓存。在这种场景下，就不必担心那些连响应内容都看不到的过时代理缓存实现。</p>
+<p data-unit="06-cache-018">另一方面，如果某个 <a href="https://developer.mozilla.org/en-US/docs/Glossary/TLS">TLS</a> 桥接代理在 PC 上安装由组织管理的 <a href="https://developer.mozilla.org/en-US/docs/Glossary/Certificate_authority">CA（证书颁发机构）</a>签发的证书，以中间人的方式解密全部通信，并进行访问控制等操作，那么它就可以查看响应内容并缓存。不过，近年来 <a href="https://developer.mozilla.org/en-US/docs/Web/Security/Defenses/Certificate_Transparency">CT（证书透明度）</a>已经广泛使用，一些浏览器只接受带有 SCT（签名证书时间戳）的证书，因此这种方法需要应用企业策略。在这种受控环境中，不必担心代理缓存“过时且不再更新”。</p>
+<h4 data-unit="06-cache-019" id="managed_caches">受管理的缓存</h4>
+<p data-unit="06-cache-020">受管理的缓存由服务开发者明确部署，用来减轻源服务器负载，并高效分发内容。例如反向代理、CDN，以及与 Cache API 配合使用的 service worker。</p>
+<p data-unit="06-cache-021">具体能怎样管理缓存，要看所用产品。多数情况下，可以结合 <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Cache-Control"><code>Cache-Control</code></a> 标头、配置文件或控制台来控制它。</p>
+<p data-unit="06-cache-022">例如，HTTP 缓存规范基本上没有定义显式删除缓存的方法，但使用受管理的缓存时，可以随时通过控制台操作、API 调用、重启等方式删除存储的响应。这让更主动的缓存策略成为可能。</p>
+<p data-unit="06-cache-023">也可以不遵循标准 HTTP 缓存规范的协议，改为显式操作。例如，可以指定下面的设置，让私有缓存和代理缓存不参与缓存，同时使用自己的策略，只在受管理的缓存中存储内容。</p>
+<div class="code-example"><div class="example-header"><span class="language-name">http</span></div><pre class="brush: http notranslate"><code>Cache-Control: no-store
+</code></pre></div>
+<p data-unit="06-cache-024">例如，Varnish Cache 使用 VCL（Varnish 配置语言，一种 <a href="https://developer.mozilla.org/en-US/docs/Glossary/DSL/Domain_specific_language">DSL</a>）逻辑处理缓存存储；service worker 与 Cache API 配合，则允许你使用 JavaScript 创建这种逻辑。</p>
+<p data-unit="06-cache-025">因此，受管理的缓存有意忽略 <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Cache-Control#no-store"><code>no-store</code></a>，不必直接理解成它“不合标准”。真正需要做的是：少用把各种指令堆在一起的大杂烩标头，读清楚所用缓存的文档，按它提供的机制正确控制缓存。</p>
+<p data-unit="06-cache-026">请注意，一些 CDN 提供仅对自身生效的专用标头，例如 <code>Surrogate-Control</code>。目前，正在推进定义 <a class="external" href="https://httpwg.org/specs/rfc9213.html" target="_blank" title="External link (opens in new tab)"><code>CDN-Cache-Control</code></a> 标头的工作，以便将其标准化。</p>
+<p><img alt="Types of caches, including a private cache in the browser, a shared (proxy) cache, a reverse proxy cache, and a shared (managed) cache in a CDN, leading to the origin server's cache" data-original-src="https://mdn.github.io/shared-assets/images/diagrams/http/cache/type-of-cache.svg" loading="eager" src="../assets/85f0eb4310fe.svg"/></p>
+</section><section aria-labelledby="heuristic_caching" class="content-section">
+<h2 class="heading" data-unit="06-cache-027" id="heuristic_caching"><a class="heading-anchor" href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Caching#heuristic_caching">启发式缓存</a></h2>
+<p data-unit="06-cache-028">HTTP 的设计倾向于尽可能缓存。因此，即使没有给出 <code>Cache-Control</code>，只要满足某些条件，响应仍会被存储和复用。这称为<strong>启发式缓存</strong>。</p>
+<p data-unit="06-cache-029">例如，看看下面的响应。它最后一次更新是在一年前。</p>
+<div class="code-example"><div class="example-header"><span class="language-name">http</span></div><pre class="brush: http notranslate"><code>HTTP/1.1 200 OK
+Content-Type: text/html
+Content-Length: 1024
+Date: Tue, 22 Feb 2022 22:22:22 GMT
+Last-Modified: Tue, 22 Feb 2021 22:22:22 GMT
+
+&lt;!doctype html&gt;
+…
+</code></pre></div>
+<p data-unit="06-cache-030">按经验推断，整整一年都没有更新的内容，在之后的一段时间内也不会更新。因此，客户端会存储这个响应，尽管没有 <code>max-age</code>，并在一段时间内复用。复用多久由实现决定，但规范建议大约为存储时已有时长的 10%，本例中为 0.1 年。</p>
+<p data-unit="06-cache-031">启发式缓存是在 <code>Cache-Control</code> 支持广泛普及之前采用的变通方法。原则上，所有响应都应显式指定 <code>Cache-Control</code> 标头。</p>
+</section><section aria-labelledby="fresh_and_stale_based_on_age" class="content-section">
+<h2 class="heading" data-unit="06-cache-032" id="fresh_and_stale_based_on_age"><a class="heading-anchor" href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Caching#fresh_and_stale_based_on_age">根据 age 判断新鲜与陈旧</a></h2>
+<p data-unit="06-cache-033">存储的 HTTP 响应有两种状态：<strong>新鲜</strong>（fresh）和<strong>陈旧</strong>（stale）。<em>新鲜</em>通常表示响应仍然有效，可以复用；<em>陈旧</em>表示缓存的响应已经过期。</p>
+<p data-unit="06-cache-034">区分新鲜和陈旧，要看 <strong>age</strong>，也就是响应生成后已经过去了多久。这类似其他缓存机制中的 <a href="https://developer.mozilla.org/en-US/docs/Glossary/TTL">TTL</a>。</p>
+<p data-unit="06-cache-035">看下面的响应示例，604800 秒等于一周：</p>
+<div class="code-example"><div class="example-header"><span class="language-name">http</span></div><pre class="brush: http notranslate"><code>HTTP/1.1 200 OK
+Content-Type: text/html
+Content-Length: 1024
+Date: Tue, 22 Feb 2022 22:22:22 GMT
+Cache-Control: max-age=604800
+
+&lt;!doctype html&gt;
+…
+</code></pre></div>
+<p data-unit="06-cache-036">保存该响应的缓存，会计算自响应生成以来经过的时间，并将结果作为响应的 <em>age</em>。</p>
+<p data-unit="06-cache-037">对于这个响应，<code>max-age</code> 的含义如下：</p>
+<ul>
+<li data-unit="06-cache-038">如果响应的 age <em>小于</em>一周，响应就是<em>新鲜的</em>。</li>
+<li data-unit="06-cache-039">如果响应的 age <em>大于</em>一周，响应就是<em>陈旧的</em>。</li>
+</ul>
+<p data-unit="06-cache-040">只要存储的响应仍然新鲜，就会用它来满足客户端请求。</p>
+<p data-unit="06-cache-041">响应存储在共享缓存中时，可以将响应的 age 告诉客户端。接着上面的例子，如果共享缓存已经保存响应一天，它就会向后续客户端请求发送下面的响应。</p>
+<div class="code-example"><div class="example-header"><span class="language-name">http</span></div><pre class="brush: http notranslate"><code>HTTP/1.1 200 OK
+Content-Type: text/html
+Content-Length: 1024
+Date: Tue, 22 Feb 2022 22:22:22 GMT
+Cache-Control: max-age=604800
+Age: 86400
+
+&lt;!doctype html&gt;
+…
+</code></pre></div>
+<p data-unit="06-cache-042">客户端收到后，会认为响应还能保持新鲜 518400 秒。这个值，就是 <code>max-age</code> 减去 <code>Age</code>。</p>
+</section><section aria-labelledby="expires_or_max-age" class="content-section">
+<h2 class="heading" data-unit="06-cache-043" id="expires_or_max-age"><a class="heading-anchor" href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Caching#expires_or_max-age">Expires 与 max-age</a></h2>
+<p data-unit="06-cache-044">在 HTTP/1.0 中，新鲜度曾通过 <code>Expires</code> 标头指定。</p>
+<p data-unit="06-cache-045"><code>Expires</code> 标头使用明确的时间点来指定缓存的有效期，而不是指定一段经过的时间。</p>
+<div class="code-example"><div class="example-header"><span class="language-name">http</span></div><pre class="brush: http notranslate"><code>Expires: Tue, 28 Feb 2022 22:22:22 GMT
+</code></pre></div>
+<p data-unit="06-cache-046">不过，这种时间格式难以解析，曾发现许多实现错误，而且有人可以故意调整系统时钟来制造问题。因此，HTTP/1.1 的 <code>Cache-Control</code> 采用了用来指定经过时长的 <code>max-age</code>。</p>
+<p data-unit="06-cache-047">如果同时提供 <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Expires"><code>Expires</code></a> 和 <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Cache-Control#max-age"><code>Cache-Control: max-age</code></a>，规范规定优先使用 <code>max-age</code>。因此，在 HTTP/1.1 已经广泛使用的今天，没有必要再提供 <code>Expires</code>。</p>
+</section><section aria-labelledby="vary" class="content-section">
+<h2 class="heading" data-unit="06-cache-048" id="vary"><a class="heading-anchor" href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Caching#vary">Vary</a></h2>
+<p data-unit="06-cache-049">响应之间的区分，基本上依据各自的 URL：</p>
+<figure class="table-container"><div class="table-wrapper"><table>
+<thead>
+<tr>
+<th data-unit="06-cache-050">URL</th>
+<th data-unit="06-cache-051">响应体</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td data-unit="06-cache-052"><code>https://example.com/index.html</code></td>
+<td data-unit="06-cache-053"><code>&lt;!doctype html&gt;...</code></td>
+</tr>
+<tr>
+<td data-unit="06-cache-054"><code>https://example.com/style.css</code></td>
+<td data-unit="06-cache-055"><code>body { ...</code></td>
+</tr>
+<tr>
+<td data-unit="06-cache-056"><code>https://example.com/script.js</code></td>
+<td data-unit="06-cache-057"><code>function main () { ...</code></td>
+</tr>
+</tbody>
+</table></div></figure>
+<p data-unit="06-cache-058">但 URL 一样，返回内容也可能不同。尤其在内容协商中，服务器可以根据请求标头 <code>Accept</code>、<code>Accept-Language</code>、<code>Accept-Encoding</code> 的不同值，返回不同内容。</p>
+<p data-unit="06-cache-059">例如，针对带有 <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Accept-Language"><code>Accept-Language: en</code></a> 标头的请求返回并缓存了英文内容后，就不应该再将它用于带有 <code>Accept-Language: ja</code> 请求标头的请求。这时，可以将 <code>Accept-Language</code> 加入 <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Vary"><code>Vary</code></a> 标头的值，让响应按语言分别缓存。</p>
+<div class="code-example"><div class="example-header"><span class="language-name">http</span></div><pre class="brush: http notranslate"><code>Vary: Accept-Language
+</code></pre></div>
+<p data-unit="06-cache-060">这样，缓存查找使用的键就变成“响应 URL 加 <code>Accept-Language</code> 请求标头”，而不再只有 URL。</p>
+<figure class="table-container"><div class="table-wrapper"><table>
+<thead>
+<tr>
+<th data-unit="06-cache-061">URL</th>
+<th data-unit="06-cache-062"><code>Accept-Language</code></th>
+<th data-unit="06-cache-063">响应体</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td data-unit="06-cache-064"><code>https://example.com/index.html</code></td>
+<td data-unit="06-cache-065"><code>ja-JP</code></td>
+<td data-unit="06-cache-066"><code>&lt;!doctype html&gt;...</code></td>
+</tr>
+<tr>
+<td data-unit="06-cache-067"><code>https://example.com/index.html</code></td>
+<td data-unit="06-cache-068"><code>en-US</code></td>
+<td data-unit="06-cache-069"><code>&lt;!doctype html&gt;...</code></td>
+</tr>
+<tr>
+<td data-unit="06-cache-070"><code>https://example.com/style.css</code></td>
+<td data-unit="06-cache-071"><code>ja-JP</code></td>
+<td data-unit="06-cache-072"><code>body { ...</code></td>
+</tr>
+<tr>
+<td data-unit="06-cache-073"><code>https://example.com/script.js</code></td>
+<td data-unit="06-cache-074"><code>ja-JP</code></td>
+<td data-unit="06-cache-075"><code>function main () { ...</code></td>
+</tr>
+</tbody>
+</table></div></figure>
+<p data-unit="06-cache-076">此外，如果根据用户代理优化内容，例如实现响应式设计，你可能会想将 <code>User-Agent</code> 加入 <code>Vary</code> 标头的值。但 <code>User-Agent</code> 请求标头通常存在非常多的变化，会显著降低缓存被复用的机会。因此，如果可能，应考虑通过特性检测改变行为，而不是依据 <code>User-Agent</code> 请求标头。</p>
+<p data-unit="06-cache-077">对于使用 Cookie、希望防止别人复用缓存中个性化内容的应用，应指定 <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Cache-Control#private"><code>Cache-Control: private</code></a>，而不是在 <code>Vary</code> 中指定 Cookie。</p>
+</section><section aria-labelledby="validation" class="content-section">
+<h2 class="heading" data-unit="06-cache-078" id="validation"><a class="heading-anchor" href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Caching#validation">验证</a></h2>
+<p data-unit="06-cache-079">响应变陈旧，不等于立即丢弃。HTTP 允许缓存询问源服务器，确认后把响应重新变为新鲜状态。这个过程叫<strong>验证</strong>（validation），也叫<strong>重新验证</strong>（revalidation）。</p>
+<p data-unit="06-cache-080">验证通过包含 <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/If-Modified-Since"><code>If-Modified-Since</code></a> 或 <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/If-None-Match"><code>If-None-Match</code></a> 请求标头的<strong>条件请求</strong>完成。</p>
+</section><section aria-labelledby="if-modified-since" class="content-section">
+<h3 class="heading" data-unit="06-cache-081" id="if-modified-since"><a class="heading-anchor" href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Caching#if-modified-since">If-Modified-Since</a></h3>
+<p data-unit="06-cache-082">下面的响应生成于 22:22:22，<code>max-age</code> 为 1 小时，因此可以知道，在 23:22:22 之前它都是新鲜的。</p>
+<div class="code-example"><div class="example-header"><span class="language-name">http</span></div><pre class="brush: http notranslate"><code>HTTP/1.1 200 OK
+Content-Type: text/html
+Content-Length: 1024
+Date: Tue, 22 Feb 2022 22:22:22 GMT
+Last-Modified: Tue, 22 Feb 2022 22:00:00 GMT
+Cache-Control: max-age=3600
+
+&lt;!doctype html&gt;
+…
+</code></pre></div>
+<p data-unit="06-cache-083">到 23:22:22 时，响应变成陈旧状态，缓存不能再直接复用。所以下面的请求展示了客户端如何发送带有 <code>If-Modified-Since</code> 请求标头的请求，询问服务器在指定时间之后是否发生过变化。</p>
+<div class="code-example"><div class="example-header"><span class="language-name">http</span></div><pre class="brush: http notranslate"><code>GET /index.html HTTP/1.1
+Host: example.com
+Accept: text/html
+If-Modified-Since: Tue, 22 Feb 2022 22:00:00 GMT
+</code></pre></div>
+<p data-unit="06-cache-084">如果内容自指定时间以来没有变化，服务器就会返回 <code>304 Not Modified</code>。</p>
+<p data-unit="06-cache-085">由于响应仅表示“没有变化”，所以没有响应体，只有状态码，传输体积非常小。</p>
+<div class="code-example"><div class="example-header"><span class="language-name">http</span></div><pre class="brush: http notranslate"><code>HTTP/1.1 304 Not Modified
+Content-Type: text/html
+Date: Tue, 22 Feb 2022 23:22:22 GMT
+Last-Modified: Tue, 22 Feb 2022 22:00:00 GMT
+Cache-Control: max-age=3600
+</code></pre></div>
+<p data-unit="06-cache-086">客户端收到这个响应后，就将存储的陈旧响应重新变为新鲜状态，并可以在接下来的一小时内复用它。</p>
+<p data-unit="06-cache-087">服务器可以从操作系统的文件系统中获取修改时间，对于提供静态文件的情况，这相对容易。不过也存在一些问题，例如时间格式复杂、难以解析，以及分布式服务器难以同步文件更新时间。</p>
+<p data-unit="06-cache-088">为解决这些问题，<a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/ETag"><code>ETag</code></a> 响应标头被标准化，作为一种替代方案。</p>
+</section><section aria-labelledby="etagif-none-match" class="content-section">
+<h3 class="heading" data-unit="06-cache-089" id="etagif-none-match"><a class="heading-anchor" href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Caching#etagif-none-match">ETag 与 If-None-Match</a></h3>
+<p data-unit="06-cache-090"><code>ETag</code> 是服务器生成的一个值。规范不规定它的生成方法，因此服务器可以自行选择，例如使用响应体内容的哈希值，或者资源的版本号。</p>
+<p data-unit="06-cache-091">例如，如果 <code>ETag</code> 标头采用哈希值，且 <code>index.html</code> 资源的哈希值为 <code>33a64df5</code>，响应就如下所示：</p>
+<div class="code-example"><div class="example-header"><span class="language-name">http</span></div><pre class="brush: http notranslate"><code>HTTP/1.1 200 OK
+Content-Type: text/html
+Content-Length: 1024
+Date: Tue, 22 Feb 2022 22:22:22 GMT
+ETag: "33a64df5"
+Cache-Control: max-age=3600
+
+&lt;!doctype html&gt;
+…
+</code></pre></div>
+<p data-unit="06-cache-092">响应变陈旧后，客户端把缓存中的 <code>ETag</code> 响应标头值，填入新的 <code>If-None-Match</code> 请求标头，询问服务器资源有没有变化：</p>
+<div class="code-example"><div class="example-header"><span class="language-name">http</span></div><pre class="brush: http notranslate"><code>GET /index.html HTTP/1.1
+Host: example.com
+Accept: text/html
+If-None-Match: "33a64df5"
+</code></pre></div>
+<p data-unit="06-cache-093">如果服务器为所请求资源确定的 <code>ETag</code> 标头值，与请求中的 <code>If-None-Match</code> 值相同，就会返回 <code>304 Not Modified</code>。</p>
+<p data-unit="06-cache-094">如果服务器发现资源现在应该对应另一个 <code>ETag</code> 值，就改为返回 <code>200 OK</code>，并带上最新资源。</p>
+<div class="notecard note">
+<p data-unit="06-cache-095"><strong>备注：</strong>RFC 9110 建议，服务器在可能的情况下，应为 <code>200</code> 响应同时发送 <code>ETag</code> 和 <code>Last-Modified</code>。缓存重新验证时，如果同时出现 <code>If-Modified-Since</code> 和 <code>If-None-Match</code>，则优先使用 <code>If-None-Match</code> 进行验证。如果只考虑缓存，你可能觉得 <code>Last-Modified</code> 没有必要。但 <code>Last-Modified</code> 不只对缓存有用：它是标准 HTTP 标头，内容管理系统（CMS）用它显示最后修改时间，爬虫用它调整抓取频率，此外还有其他用途。因此，从整个 HTTP 生态考虑，同时提供 <code>ETag</code> 和 <code>Last-Modified</code> 更好。</p>
+</div>
+</section><section aria-labelledby="force_revalidation" class="content-section">
+<h3 class="heading" data-unit="06-cache-096" id="force_revalidation"><a class="heading-anchor" href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Caching#force_revalidation">强制重新验证</a></h3>
+<p data-unit="06-cache-097">如果不希望直接复用响应，而是希望总能从服务器获取最新内容，可以使用 <code>no-cache</code> 指令强制验证。</p>
+<p data-unit="06-cache-098">像下面这样，在响应中同时加入 <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Cache-Control#no-cache"><code>Cache-Control: no-cache</code></a>、<a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Last-Modified"><code>Last-Modified</code></a> 和 <code>ETag</code>，客户端就会在所请求资源已更新时收到 <code>200 OK</code> 响应；否则，如果资源未更新，就会收到 <code>304 Not Modified</code> 响应。</p>
+<div class="code-example"><div class="example-header"><span class="language-name">http</span></div><pre class="brush: http notranslate"><code>HTTP/1.1 200 OK
+Content-Type: text/html
+Content-Length: 1024
+Date: Tue, 22 Feb 2022 22:22:22 GMT
+Last-Modified: Tue, 22 Feb 2022 22:00:00 GMT
+ETag: "deadbeef"
+Cache-Control: no-cache
+
+&lt;!doctype html&gt;
+…
+</code></pre></div>
+<div class="notecard note">
+<p data-unit="06-cache-099"><strong>备注：</strong><code>no-cache</code> 及 <code>max-age=0, must-revalidate</code> 等等效设置，不保证历史记录导航也会重新验证，例如点击<kbd>后退</kbd>按钮时。使用前进／后退缓存（<a href="https://developer.mozilla.org/en-US/docs/Glossary/bfcache">bfcache</a>）时，浏览器会直接恢复页面快照；即便没用 bfcache，也可能直接使用缓存响应。<a class="external" href="https://httpwg.org/specs/rfc7234.html#history.lists" target="_blank" title="External link (opens in new tab)">规范允许这样做</a>，因为返回历史页面通常被视为恢复过去的会话快照，而非发起一次新的页面请求。</p>
+</div>
+<p data-unit="06-cache-100">经常有人说，<code>max-age=0</code> 与 <code>must-revalidate</code> 的组合，与 <code>no-cache</code> 含义相同。</p>
+<div class="code-example"><div class="example-header"><span class="language-name">http</span></div><pre class="brush: http notranslate"><code>Cache-Control: max-age=0, must-revalidate
+</code></pre></div>
+<p data-unit="06-cache-101"><code>max-age=0</code> 让响应立即变陈旧；<code>must-revalidate</code> 要求陈旧响应先重新验证，再复用。两者放在一起，看起来便与 <code>no-cache</code> 含义相同。</p>
+<p data-unit="06-cache-102">然而，<code>max-age=0</code> 的这种用法，是许多 HTTP/1.1 之前的实现无法处理 <code>no-cache</code> 指令所留下的历史痕迹；为了应对这个限制，当时使用 <code>max-age=0</code> 作为变通方案。</p>
+<p data-unit="06-cache-103">现在，符合 HTTP/1.1 的服务器已广泛部署，没有理由继续使用 <code>max-age=0</code> 与 <code>must-revalidate</code> 的组合；应直接使用 <code>no-cache</code>。</p>
+</section><section aria-labelledby="dont_cache" class="content-section">
+<h2 class="heading" data-unit="06-cache-104" id="dont_cache"><a class="heading-anchor" href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Caching#dont_cache">不要缓存</a></h2>
+<p data-unit="06-cache-105"><code>no-cache</code> 并不是“不允许存储”。它要求的是：存下来的响应，每次复用前都必须重新验证。</p>
+<p data-unit="06-cache-106">如果不希望响应存储在任何缓存中，请使用 <code>no-store</code>。</p>
+<div class="code-example"><div class="example-header"><span class="language-name">http</span></div><pre class="brush: http notranslate"><code>Cache-Control: no-store
+</code></pre></div>
+<p data-unit="06-cache-107">不过，一般而言，实践中的“不要缓存”要求，通常对应以下情况：</p>
+<ul>
+<li data-unit="06-cache-108">出于隐私原因，不希望指定客户端以外的任何人存储响应。</li>
+<li data-unit="06-cache-109">希望始终提供最新信息。</li>
+<li data-unit="06-cache-110">不知道过时的实现会产生什么行为。</li>
+</ul>
+<p data-unit="06-cache-111">在这些情况下，<code>no-store</code> 不一定是最合适的指令。</p>
+<p data-unit="06-cache-112">下面几节会更详细地讨论这些情况。</p>
+</section><section aria-labelledby="do_not_share_with_others" class="content-section">
+<h3 class="heading" data-unit="06-cache-113" id="do_not_share_with_others"><a class="heading-anchor" href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Caching#do_not_share_with_others">不要与其他人共享</a></h3>
+<p data-unit="06-cache-114">如果包含个性化内容的响应，意外地对使用同一缓存的其他用户可见，就会出问题。</p>
+<p data-unit="06-cache-115">此时，使用 <code>private</code> 指令，就能让个性化响应只存储在指定客户端中，不泄露给缓存的其他用户。</p>
+<div class="code-example"><div class="example-header"><span class="language-name">http</span></div><pre class="brush: http notranslate"><code>Cache-Control: private
+</code></pre></div>
+</section><section aria-labelledby="provide_up-to-date_content_every_time" class="content-section">
+<h3 class="heading" data-unit="06-cache-116" id="provide_up-to-date_content_every_time"><a class="heading-anchor" href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Caching#provide_up-to-date_content_every_time">每次都提供最新内容</a></h3>
+<p data-unit="06-cache-117"><code>no-store</code> 能阻止当前响应被存储，却不会删除同一 URL 下此前已经存储的响应。</p>
+<p data-unit="06-cache-118">换句话说，如果某个 URL 已经存储了旧响应，返回 <code>no-store</code> 并不会阻止这个旧响应被复用。</p>
+<p data-unit="06-cache-119">不过，<code>no-cache</code> 指令会强制客户端在复用任何存储的响应之前，先发送验证请求。</p>
+<div class="code-example"><div class="example-header"><span class="language-name">http</span></div><pre class="brush: http notranslate"><code>Cache-Control: no-cache
+</code></pre></div>
+<p data-unit="06-cache-120">即使服务器不支持条件请求，也可以使用 <code>200 OK</code>，让客户端每次访问服务器、获取最新响应。</p>
+</section><section aria-labelledby="dealing_with_outdated_implementations" class="content-section">
+<h3 class="heading" data-unit="06-cache-121" id="dealing_with_outdated_implementations"><a class="heading-anchor" href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Caching#dealing_with_outdated_implementations">应对过时的实现</a></h3>
+<p data-unit="06-cache-122">为了绕过忽略 <code>no-store</code> 的过时实现，你可能会看到下面这样的大杂烩标头。</p>
+<div class="code-example"><div class="example-header"><span class="language-name">http</span></div><pre class="brush: http notranslate"><code>Cache-Control: no-store, no-cache, max-age=0, must-revalidate, proxy-revalidate
+</code></pre></div>
+<p data-unit="06-cache-123"><a class="external" href="https://learn.microsoft.com/en-us/previous-versions/troubleshoot/browsers/connectivity-navigation/how-to-prevent-caching" target="_blank" title="External link (opens in new tab)">建议</a>使用 <code>no-cache</code> 作为应对此类过时实现的替代方式。从一开始就提供 <code>no-cache</code> 也没有问题，因为服务器始终会收到请求。</p>
+<p data-unit="06-cache-124">如果担心的是共享缓存，还可以加入 <code>private</code>，确保不会发生意外缓存：</p>
+<div class="code-example"><div class="example-header"><span class="language-name">http</span></div><pre class="brush: http notranslate"><code>Cache-Control: no-cache, private
+</code></pre></div>
+</section><section aria-labelledby="whats_lost_by_no-store" class="content-section">
+<h3 class="heading" data-unit="06-cache-125" id="whats_lost_by_no-store"><a class="heading-anchor" href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Caching#whats_lost_by_no-store">使用 <code>no-store</code> 会失去什么</a></h3>
+<p data-unit="06-cache-126">你可能认为，添加 <code>no-store</code> 是退出缓存的正确方式。</p>
+<p data-unit="06-cache-127">不过，不建议随意广泛使用 <code>no-store</code>，因为这样会失去 HTTP 和浏览器提供的许多优势，包括浏览器的前进／后退缓存。</p>
+<p data-unit="06-cache-128">因此，为了享受 Web 平台完整功能带来的好处，应优先组合使用 <code>no-cache</code> 和 <code>private</code>。</p>
+</section><section aria-labelledby="reload_and_force_reload" class="content-section">
+<h2 class="heading" data-unit="06-cache-129" id="reload_and_force_reload"><a class="heading-anchor" href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Caching#reload_and_force_reload">重新加载与强制重新加载</a></h2>
+<p data-unit="06-cache-130">不仅响应，请求也可以执行验证。</p>
+<p data-unit="06-cache-131"><strong>重新加载</strong>和<strong>强制重新加载</strong>，是由浏览器端发起验证的常见例子。</p>
+</section><section aria-labelledby="reload" class="content-section">
+<h3 class="heading" data-unit="06-cache-132" id="reload"><a class="heading-anchor" href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Caching#reload">重新加载</a></h3>
+<p data-unit="06-cache-133">为了恢复损坏的窗口显示，或者更新到资源的最新版本，浏览器向用户提供重新加载功能。</p>
+<p data-unit="06-cache-134">浏览器重新加载时发送的 HTTP 请求，简化后如下：</p>
+<div class="code-example"><div class="example-header"><span class="language-name">http</span></div><pre class="brush: http notranslate"><code>GET / HTTP/1.1
+Host: example.com
+Cache-Control: max-age=0
+If-None-Match: "deadbeef"
+If-Modified-Since: Tue, 22 Feb 2022 20:20:20 GMT
+</code></pre></div>
+<p data-unit="06-cache-135">Chrome、Edge 和 Firefox 的请求与上面非常相似；Safari 的请求会略有不同。</p>
+<p data-unit="06-cache-136">请求中的 <code>max-age=0</code> 指令指定“复用 age 小于或等于 0 的响应”，因此实际上不会复用中间存储的响应。</p>
+<p data-unit="06-cache-137">于是，请求通过 <code>If-None-Match</code> 和 <code>If-Modified-Since</code> 进行验证。</p>
+<p data-unit="06-cache-138"><a class="external" href="https://fetch.spec.whatwg.org/#http-network-or-cache-fetch" target="_blank" title="External link (opens in new tab)">Fetch</a> 标准也规定了这种行为。在 JavaScript 中调用 <code>fetch()</code>，把缓存模式设为 <code>no-cache</code>，就能重现它。这里应使用的模式不是 <code>reload</code>：</p>
+<div class="code-example"><div class="example-header"><span class="language-name">js</span></div><pre class="brush: js notranslate"><code>// Note: "reload" is not the right mode for a normal reload; "no-cache" is
+fetch("/", { cache: "no-cache" });
+</code></pre></div>
+</section><section aria-labelledby="force_reload" class="content-section">
+<h3 class="heading" data-unit="06-cache-139" id="force_reload"><a class="heading-anchor" href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Caching#force_reload">强制重新加载</a></h3>
+<p data-unit="06-cache-140">浏览器出于向后兼容的原因，在重新加载时使用 <code>max-age=0</code>，因为许多 HTTP/1.1 之前的过时实现无法理解 <code>no-cache</code>。不过，如今在这个场景中使用 <code>no-cache</code> 已经没有问题；<strong>强制重新加载</strong>则是绕过缓存响应的另一种方式。</p>
+<p data-unit="06-cache-141">浏览器<strong>强制重新加载</strong>时，HTTP 请求如下：</p>
+<div class="code-example"><div class="example-header"><span class="language-name">http</span></div><pre class="brush: http notranslate"><code>GET / HTTP/1.1
+Host: example.com
+Pragma: no-cache
+Cache-Control: no-cache
+</code></pre></div>
+<p data-unit="06-cache-142">Chrome、Edge 和 Firefox 的请求与上面非常相似；Safari 的请求会略有不同。</p>
+<p data-unit="06-cache-143">由于这不是带有 <code>no-cache</code> 的条件请求，所以可以确定，会从源服务器得到 <code>200 OK</code>。</p>
+<p data-unit="06-cache-144"><a class="external" href="https://fetch.spec.whatwg.org/#http-network-or-cache-fetch" target="_blank" title="External link (opens in new tab)">Fetch</a> 标准也定义了这种行为。可以在 JavaScript 中调用 <code>fetch()</code>，并将缓存模式设为 <code>reload</code> 来重现。注意，不是 <code>force-reload</code>：</p>
+<div class="code-example"><div class="example-header"><span class="language-name">js</span></div><pre class="brush: js notranslate"><code>// Note: "reload" — rather than "no-cache" — is the right mode for a "force reload"
+fetch("/", { cache: "reload" });
+</code></pre></div>
+</section><section aria-labelledby="avoiding_revalidation" class="content-section">
+<h3 class="heading" data-unit="06-cache-145" id="avoiding_revalidation"><a class="heading-anchor" href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Caching#avoiding_revalidation">避免重新验证</a></h3>
+<p data-unit="06-cache-146">永不改变的内容，适合设置很长的 <code>max-age</code>，并配合 cache busting：把版本号、哈希值等放进请求 URL，用不同 URL 区分不同版本。</p>
+<p data-unit="06-cache-147">然而，用户重新加载时，即使服务器知道内容不可变，仍会发送重新验证请求。</p>
+<p data-unit="06-cache-148">为了防止这种情况，可以使用 <code>immutable</code> 指令，明确表示内容不会改变，所以无需重新验证。</p>
+<div class="code-example"><div class="example-header"><span class="language-name">http</span></div><pre class="brush: http notranslate"><code>Cache-Control: max-age=31536000, immutable
+</code></pre></div>
+<p data-unit="06-cache-149">这样可以避免重新加载时发生不必要的重新验证。</p>
+<p data-unit="06-cache-150">注意，<a class="external" href="https://blog.chromium.org/2017/01/reload-reloaded-faster-and-leaner-page_26.html" target="_blank" title="External link (opens in new tab)">Chrome 已经改变了实现</a>：它没有通过实现这个指令来处理，而是在重新加载时，不对子资源进行重新验证。</p>
+</section><section aria-labelledby="deleting_stored_responses" class="content-section">
+<h2 class="heading" data-unit="06-cache-151" id="deleting_stored_responses"><a class="heading-anchor" href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Caching#deleting_stored_responses">删除存储的响应</a></h2>
+<p data-unit="06-cache-152">对于设置了很长 <code>max-age</code>、已经存储在中间服务器上的响应，没有办法将它们删除。</p>
+<p data-unit="06-cache-153">假设来自 <code>https://example.com/</code> 的以下响应已被存储。</p>
+<div class="code-example"><div class="example-header"><span class="language-name">http</span></div><pre class="brush: http notranslate"><code>HTTP/1.1 200 OK
+Content-Type: text/html
+Content-Length: 1024
+Cache-Control: max-age=31536000
+
+&lt;!doctype html&gt;
+…
+</code></pre></div>
+<p data-unit="06-cache-154">你也许想在服务器认为这份响应过期后将它覆盖。但响应已经被缓存，后续请求不再到达服务器，此时服务器就无法直接干预它。</p>
+<p data-unit="06-cache-155">规范提到的一种方法，是使用 <code>POST</code> 这样的不安全方法，向同一个 URL 发送请求，但对许多客户端来说，这很难做到。</p>
+<p data-unit="06-cache-156"><a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Clear-Site-Data#cache"><code>Clear-Site-Data: cache</code></a> 标头及其指令值可用于清除浏览器缓存，但对中间缓存没有作用。否则，除非用户手动执行重新加载、强制重新加载或清除历史记录，响应会一直保留在浏览器缓存中，直到 <code>max-age</code> 过期。</p>
+<p data-unit="06-cache-157">缓存减少了服务器收到的请求，也让服务器失去了对这个 URL 的控制。如果不想失去控制，例如资源经常更新，就应添加 <code>no-cache</code>，让请求始终到达服务器，由服务器返回预期响应。</p>
+</section><section aria-labelledby="request_collapse" class="content-section">
+<h2 class="heading" data-unit="06-cache-158" id="request_collapse"><a class="heading-anchor" href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Caching#request_collapse">请求合并</a></h2>
+<p data-unit="06-cache-159">共享缓存主要位于源服务器之前，目的是减少到达源服务器的流量。</p>
+<p data-unit="06-cache-160">多个相同请求同时到达共享缓存时，缓存可以只向源站发出一个请求，再把得到的结果交给所有客户端。这叫<em><strong>请求合并</strong></em>（request collapse）。</p>
+<p data-unit="06-cache-161">请求合并发生在请求同时到达时，所以即使响应中给出了 <code>max-age=0</code> 或 <code>no-cache</code>，响应仍然会被复用。</p>
+<p data-unit="06-cache-162">如果响应是针对某个特定用户的个性化内容，而你不希望它在请求合并时被共享，就应加入 <code>private</code> 指令：</p>
+<p><img alt="Request collapse shown as multiple clients sending GET requests and a cache consolidating them into one GET to the origin. The origin server responds with a 200 OK that the cache shares back to all clients." data-original-src="https://mdn.github.io/shared-assets/images/diagrams/http/cache/request-collapse.svg" loading="eager" src="../assets/5c0abf16b6bc.svg"/></p>
+</section><section aria-labelledby="common_caching_patterns" class="content-section">
+<h2 class="heading" data-unit="06-cache-163" id="common_caching_patterns"><a class="heading-anchor" href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Caching#common_caching_patterns">常见缓存模式</a></h2>
+<p data-unit="06-cache-164"><code>Cache-Control</code> 规范中有许多指令，全部理解可能很困难。但大多数网站的需求，用少数几种模式组合就能覆盖。</p>
+<p data-unit="06-cache-165">本节介绍设计缓存时的常见模式。</p>
+</section><section aria-labelledby="default_settings" class="content-section">
+<h3 class="heading" data-unit="06-cache-166" id="default_settings"><a class="heading-anchor" href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Caching#default_settings">默认设置</a></h3>
+<p data-unit="06-cache-167">前面提到，没有 <code>Cache-Control</code> 并不表示“不缓存”。此时仍可能按启发式规则隐式缓存。</p>
+<p data-unit="06-cache-168">为避免启发式缓存，最好为所有响应显式提供默认的 <code>Cache-Control</code> 标头。</p>
+<p data-unit="06-cache-169">为确保默认情况下始终传输资源的最新版本，通常会让默认的 <code>Cache-Control</code> 值包含 <code>no-cache</code>：</p>
+<div class="code-example"><div class="example-header"><span class="language-name">http</span></div><pre class="brush: http notranslate"><code>Cache-Control: no-cache
+</code></pre></div>
+<p data-unit="06-cache-170">此外，如果服务使用 Cookie 或其他登录方式，内容针对每个用户进行个性化处理，还必须提供 <code>private</code>，防止与其他用户共享：</p>
+<div class="code-example"><div class="example-header"><span class="language-name">http</span></div><pre class="brush: http notranslate"><code>Cache-Control: no-cache, private
+</code></pre></div>
+</section><section aria-labelledby="cache_busting" class="content-section">
+<h3 class="heading" data-unit="06-cache-171" id="cache_busting"><a class="heading-anchor" href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Caching#cache_busting">缓存破坏（Cache Busting）</a></h3>
+<p data-unit="06-cache-172">最适合缓存的是内容不变的静态文件。对于内容<em>会</em>更新的资源，常见做法是在每次更新时换一个 URL。这样，每个 URL 下的那一版资源就能缓存得更久。</p>
+<p data-unit="06-cache-173">例如，考虑下面的 HTML：</p>
+<div class="code-example"><div class="example-header"><span class="language-name">html</span></div><pre class="brush: html notranslate"><code>&lt;script src="bundle.js"&gt;&lt;/script&gt;
+&lt;link rel="stylesheet" href="build.css" /&gt;
+&lt;body&gt;
+  hello
+&lt;/body&gt;
+</code></pre></div>
+<p data-unit="06-cache-174">在现代 Web 开发中，JavaScript 和 CSS 资源会随着开发不断更新。如果客户端使用的 JavaScript 与 CSS 版本不同步，显示就会出问题。</p>
+<p data-unit="06-cache-175">所以，上面的 HTML 使得使用 <code>max-age</code> 缓存 <code>bundle.js</code> 和 <code>build.css</code> 很困难。</p>
+<p data-unit="06-cache-176">因此，可以通过带有可变部分的 URL 提供 JavaScript 和 CSS，这部分基于版本号或哈希值生成。下面展示几种方式。</p>
+<pre class="brush: plain notranslate"># version in filename
+bundle.v123.js
+
+# version in query
+bundle.js?v=123
+
+# hash in filename
+bundle.YsAIAAAA-QG4G6kCMAMBAAAAAAAoK.js
+
+# hash in query
+bundle.js?v=YsAIAAAA-QG4G6kCMAMBAAAAAAAoK
+</pre>
+<p data-unit="06-cache-177">因为缓存根据 URL 区分资源，所以资源更新时，只要 URL 发生变化，就不会再次复用旧缓存。</p>
+<div class="code-example"><div class="example-header"><span class="language-name">html</span></div><pre class="brush: html notranslate"><code>&lt;script src="bundle.v123.js"&gt;&lt;/script&gt;
+&lt;link rel="stylesheet" href="build.v123.css" /&gt;
+&lt;body&gt;
+  hello
+&lt;/body&gt;
+</code></pre></div>
+<p data-unit="06-cache-178">采用这种设计，JavaScript 和 CSS 资源都可以缓存很长时间。那么，<code>max-age</code> 应设多长？QPACK 规范提供了一个答案。</p>
+<p data-unit="06-cache-179"><a class="external" href="https://datatracker.ietf.org/doc/html/rfc9204" target="_blank" title="External link (opens in new tab)">QPACK</a> 是压缩 HTTP 标头字段的标准，其中定义了包含常用字段值的表。</p>
+<p data-unit="06-cache-180">下面列出一些常用的缓存标头值。</p>
+<pre class="brush: plain notranslate">36 cache-control max-age=0
+37 cache-control max-age=604800
+38 cache-control max-age=2592000
+39 cache-control no-cache
+40 cache-control no-store
+41 cache-control public, max-age=31536000
+</pre>
+<p data-unit="06-cache-181">如果选择其中一个带编号的选项，通过 HTTP/3 传输时，就可以将值压缩为 1 字节。</p>
+<p data-unit="06-cache-182">编号 <code>37</code>、<code>38</code> 和 <code>41</code> 分别对应一周、一个月和一年。</p>
+<p data-unit="06-cache-183">缓存加入新条目时会淘汰旧条目。因此，即使把 <code>max-age</code> 设为一周，响应也未必能在缓存里保留到一周以后。实际使用中，在这些时长里选哪一个，差异没有那么大。</p>
+<p data-unit="06-cache-184">注意，编号 <code>41</code> 的 <code>max-age</code> 最长，为一年，但同时带有 <code>public</code>。</p>
+<p data-unit="06-cache-185"><code>public</code> 的作用是，即使存在 <code>Authorization</code> 标头，也允许存储响应。</p>
+<div class="notecard note">
+<p data-unit="06-cache-186"><strong>备注：</strong>只有在设置了 <code>Authorization</code> 标头、却仍需要存储响应时，才应使用 <code>public</code> 指令。其他情况下不需要，因为只要给出 <code>max-age</code>，响应就会存储在共享缓存中。</p>
+</div>
+<p data-unit="06-cache-187">因此，如果响应通过基本身份认证进行个性化处理，<code>public</code> 的存在可能带来问题。如果担心这一点，可以选择第二长的值 <code>38</code>，即一个月。</p>
+<div class="code-example"><div class="example-header"><span class="language-name">http</span></div><pre class="brush: http notranslate"><code># response for bundle.v123.js
+
+# If you never personalize responses via Authorization
+Cache-Control: public, max-age=31536000
+
+# If you can't be certain
+Cache-Control: max-age=2592000
+</code></pre></div>
+</section><section aria-labelledby="validation_2" class="content-section">
+<h3 class="heading" data-unit="06-cache-188" id="validation_2"><a class="heading-anchor" href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Caching#validation_2">验证</a></h3>
+<p data-unit="06-cache-189">不要忘记设置 <code>Last-Modified</code> 和 <code>ETag</code> 标头，这样重新加载时就不必重新传输资源。对于预先构建好的静态文件，生成这些标头很容易。</p>
+<p data-unit="06-cache-190">这里的 <code>ETag</code> 值可以是文件的哈希值。</p>
+<div class="code-example"><div class="example-header"><span class="language-name">http</span></div><pre class="brush: http notranslate"><code># response for bundle.v123.js
+Last-Modified: Tue, 22 Feb 2022 20:20:20 GMT
+ETag: "YsAIAAAA-QG4G6kCMAMBAAAAAAAoK"
+</code></pre></div>
+<p data-unit="06-cache-191">此外，还可以加入 <code>immutable</code>，防止重新加载时进行验证。</p>
+<p data-unit="06-cache-192">组合后的结果如下。</p>
+<div class="code-example"><div class="example-header"><span class="language-name">http</span></div><pre class="brush: http notranslate"><code># bundle.v123.js
+HTTP/1.1 200 OK
+Content-Type: text/javascript
+Content-Length: 1024
+Cache-Control: public, max-age=31536000, immutable
+Last-Modified: Tue, 22 Feb 2022 20:20:20 GMT
+ETag: "YsAIAAAA-QG4G6kCMAMBAAAAAAAoK"
+</code></pre></div>
+<p data-unit="06-cache-193"><strong>缓存破坏</strong>（cache busting）的做法是：内容变了，就换 URL。这样，每个版本的响应都能长期缓存；图片等所有子资源都可以采用这种方式。</p>
+<div class="notecard note">
+<p data-unit="06-cache-194"><strong>备注：</strong>评估 <code>immutable</code> 与 QPACK 的配合使用时，如果担心 <code>immutable</code> 会改变 QPACK 提供的预定义值，可以考虑将 <code>Cache-Control</code> 的值拆成两行，让 <code>immutable</code> 部分单独编码。不过，这取决于具体 QPACK 实现采用的编码算法。</p>
+</div>
+<div class="code-example"><div class="example-header"><span class="language-name">http</span></div><pre class="brush: http notranslate"><code>Cache-Control: public, max-age=31536000
+Cache-Control: immutable
+</code></pre></div>
+</section><section aria-labelledby="main_resources" class="content-section">
+<h3 class="heading" data-unit="06-cache-195" id="main_resources"><a class="heading-anchor" href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Caching#main_resources">主资源</a></h3>
+<p data-unit="06-cache-196">与子资源不同，主资源不能以相同方式给 URL 添加版本等信息，因此无法使用缓存破坏技术。</p>
+<p data-unit="06-cache-197">如果下面的 HTML 本身被存储，即使服务器端更新了内容，也无法显示最新版本。</p>
+<div class="code-example"><div class="example-header"><span class="language-name">html</span></div><pre class="brush: html notranslate"><code>&lt;script src="bundle.v123.js"&gt;&lt;/script&gt;
+&lt;link rel="stylesheet" href="build.v123.css" /&gt;
+&lt;body&gt;
+  hello
+&lt;/body&gt;
+</code></pre></div>
+<p data-unit="06-cache-198">这种情况下，<code>no-cache</code> 比 <code>no-store</code> 更合适，因为我们不想存储 HTML，而只想让它始终保持最新。</p>
+<p data-unit="06-cache-199">此外，添加 <code>Last-Modified</code> 和 <code>ETag</code> 可以让客户端发送条件请求；如果 HTML 没有更新，就能返回 <code>304 Not Modified</code>：</p>
+<div class="code-example"><div class="example-header"><span class="language-name">http</span></div><pre class="brush: http notranslate"><code>HTTP/1.1 200 OK
+Content-Type: text/html
+Content-Length: 1024
+Cache-Control: no-cache
+Last-Modified: Tue, 22 Feb 2022 20:20:20 GMT
+ETag: "AAPuIbAOdvAGEETbgAAAAAAABAAE"
+</code></pre></div>
+<p data-unit="06-cache-200">这种设置适合非个性化 HTML，但如果响应通过 Cookie 实现个性化，例如登录之后的响应，不要忘记同时指定 <code>private</code>：</p>
+<div class="code-example"><div class="example-header"><span class="language-name">http</span></div><pre class="brush: http notranslate"><code>HTTP/1.1 200 OK
+Content-Type: text/html
+Content-Length: 1024
+Cache-Control: no-cache, private
+Last-Modified: Tue, 22 Feb 2022 20:20:20 GMT
+ETag: "AAPuIbAOdvAGEETbgAAAAAAABAAE"
+Set-Cookie: __Host-SID=AHNtAyt3fvJrUL5g5tnGwER; Secure; Path=/; HttpOnly
+</code></pre></div>
+<p data-unit="06-cache-201">同样的设置也适用于 <code>favicon.ico</code>、<code>manifest.json</code>、<code>.well-known</code>，以及无法通过缓存破坏改变 URL 的 API 端点。</p>
+<p data-unit="06-cache-202">大多数 Web 内容，都可以用上面介绍的两种模式的组合覆盖。</p>
+</section><section aria-labelledby="more_about_managed_caches" class="content-section">
+<h3 class="heading" data-unit="06-cache-203" id="more_about_managed_caches"><a class="heading-anchor" href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Caching#more_about_managed_caches">进一步了解受管理的缓存</a></h3>
+<p data-unit="06-cache-204">使用前面介绍的方法，子资源可以通过缓存破坏长时间缓存，但主资源，通常是 HTML 文档，不可以。</p>
+<p data-unit="06-cache-205">主资源难以缓存，是因为只靠 HTTP 缓存规范的标准指令，服务器内容更新时，无法主动删除已有缓存。</p>
+<p data-unit="06-cache-206">不过，部署 CDN 或 service worker 等受管理的缓存后，就可以做到。</p>
+<p data-unit="06-cache-207">例如，CDN 如果提供清缓存的 API 或控制台操作，就可以先缓存主资源，再在服务器内容更新时显式清除对应缓存，从而采用更积极的缓存策略。</p>
+<p data-unit="06-cache-208">如果 service worker 能在服务器发生更新时删除 Cache API 中的内容，它也可以实现同样的效果。</p>
+<p data-unit="06-cache-209">更多信息请参阅所用 CDN 的文档，以及 <a href="https://developer.mozilla.org/en-US/docs/Web/API/Service_Worker_API">service worker 文档</a>。</p>
+</section><section aria-labelledby="see_also" class="content-section">
+<h2 class="heading" data-unit="06-cache-210" id="see_also"><a class="heading-anchor" href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Caching#see_also">另请参阅</a></h2>
+<ul>
+<li data-unit="06-cache-211"><a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Cache-Control"><code>Cache-Control</code> HTTP 标头</a></li>
+<li data-unit="06-cache-212"><a class="external" href="https://datatracker.ietf.org/doc/html/RFC9111" target="_blank" title="External link (opens in new tab)">RFC 9111：超文本传输协议（HTTP/1.1）：缓存</a></li>
+<li data-unit="06-cache-213"><a class="external" href="https://mnot.net/cache_docs/" target="_blank" title="External link (opens in new tab)">缓存教程——Mark Nottingham</a></li>
+</ul>
+</section></article><nav class="chapter-switcher" aria-label="章节导航"><a href="../05-tls/index.html">← 传输层安全 TLS</a><a class="course-home" href="../index.html">全部章节</a><a href="../07-evolution/index.html">HTTP 的演进 →</a></nav><footer class="license-note"><p>原文：<a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Caching">HTTP caching</a>，© Mozilla Contributors。原文快照：2026-09-29。本非官方阅读版由 Codex 翻译并逐句润色；另附独立编者导读与校注。正文全文、代码、原图及链接保留，不含 MDN 站点导航、反馈和页脚。</p><p>文档与译文采用 <a href="https://creativecommons.org/licenses/by-sa/2.5/">CC BY-SA 2.5</a>；代码许可及完整来源说明见 <a href="../NOTICE.html">来源与许可</a>。</p></footer></main></body></html>

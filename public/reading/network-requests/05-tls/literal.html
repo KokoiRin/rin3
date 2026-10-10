@@ -1,0 +1,63 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>传输层安全 TLS · 网络请求阅读材料</title><link rel="stylesheet" href="../../reader.css"><link rel="stylesheet" href="../source.css"><link rel="manifest" href="../../../manifest.webmanifest"></head><body><nav class="site-nav"><a href="../index.html">← 网络请求 · 从一次请求开始</a><a href="https://developer.mozilla.org/en-US/docs/Web/Security/Defenses/Transport_Layer_Security">MDN 原文 ↗</a></nav><main class="reader"><header class="chapter-header"><span class="chapter-kicker">N05 · 第一轮直译稿</span><h1>传输层安全 TLS</h1><p class="byline">Transport Layer Security (TLS) · Mozilla Contributors</p><div class="title-rule"></div><p class="edition-nav"><a href="index.html">中文阅读版</a> · <a href="english.html">英文对照</a> · <strong aria-current="page">第一轮直译稿</strong></p><aside class="learning-note"><span class="note-kind">编者导读 · 不属于原文</span><p><strong>HTTPS 除了加密，还怎样确认对面真的是目标服务器？</strong></p><p>先抓住加密、完整性和身份认证这三件事。TLS 层的客户端证书认证，与业务接口里的登录 token 不是同一个概念。</p><details class="editor-notes"><summary>阅读前的版本与适用范围校注（2 条）</summary><p>原文把密码套件概括为包含密钥协商、认证、加密等算法，这对理解早期版本有帮助，但 TLS 1.3 已把认证和密钥交换机制与密码套件分离。握手中的密钥也不是简单在网络上传送一把裸密钥。参见 <a href="https://www.rfc-editor.org/rfc/rfc8446.html#section-1.2">RFC 8446，第 1.2 节</a>。</p><p>混合内容、自动升级请求、HSTS 预加载等段落描述的是浏览器行为。原生 Android 网络库是否采用类似策略，需要分别确认，不能假设与浏览器一致。证书校验失败时，关闭校验并不能解决身份可信的问题。</p></details></aside><details class="source-details"><summary>本篇目录与翻译范围</summary><p>对应上述英文文章正文全文，保留原文顺序、表格、示例、原图和“另请参阅”。代码及图中英文保持原样。编者说明与原文分开；历史表述未在译文中静默改写。</p><ul><li class="toc-h2"><a href="#tls_handshake">TLS 握手</a></li><li class="toc-h2"><a href="#configuring_tls">配置 TLS</a></li><li class="toc-h2"><a href="#server_authentication">服务器身份认证</a></li><li class="toc-h2"><a href="#mixed_content">混合内容</a></li><li class="toc-h2"><a href="#upgrading_http_connections">升级 HTTP 连接</a></li><li class="toc-h2"><a href="#see_also">另请参阅</a></li></ul></details><nav class="chapter-switcher" aria-label="章节导航"><a href="../04-connections/literal.html">← HTTP/1.x 的连接管理</a><a class="course-home" href="../index.html">全部章节</a><a href="../06-cache/literal.html">HTTP 缓存 →</a></nav></header><article class="translated-article"><section class="content-section">
+<p data-unit="05-tls-001">传输层安全（Transport Layer Security，TLS）是一种协议，让客户端能够通过不可信的网络，与服务器安全通信。它最主要的用途是保护 Web 上的 HTTP 连接；由此得到的协议称为 <a href="https://developer.mozilla.org/en-US/docs/Glossary/HTTPS">HTTPS</a>。</p>
+<p data-unit="05-tls-002">TLS 从三个方面保护网络连接：</p>
+<ul>
+<li data-unit="05-tls-003"><strong>加密</strong>：客户端与服务器交换的数据在传输过程中经过加密，因此攻击者无法读取。</li>
+<li data-unit="05-tls-004"><strong>完整性</strong>：数据在客户端与服务器之间传输时，攻击者无法在不被发现的情况下偷偷修改它。</li>
+<li data-unit="05-tls-005"><strong>身份认证</strong>：客户端与服务器都能够向对方证明，自己确实是所声称的实体。在 Web 上，服务器通常会向客户端证明身份，但客户端通常不会向服务器证明身份。</li>
+</ul>
+<p data-unit="05-tls-006">特别是，HTTPS 可以防御<a href="https://developer.mozilla.org/en-US/docs/Web/Security/Attacks/MITM">中间人（MITM）</a>攻击。在这种攻击中，攻击者插入用户浏览器与其连接的服务器之间，读取并修改双方交换的流量。</p>
+<p data-unit="05-tls-007">浏览器认为，通过 HTTPS 提供的页面构成<a href="https://developer.mozilla.org/en-US/docs/Web/Security/Defenses/Secure_Contexts">安全上下文</a>。许多功能强大的 Web API，只能由运行在安全上下文中的代码使用。</p>
+<p data-unit="05-tls-008"><strong>所有网站都应通过 HTTPS 提供全部页面和子资源，并实施服务器身份认证。</strong></p>
+</section><section aria-labelledby="tls_handshake" class="content-section">
+<h2 class="heading" data-unit="05-tls-009" id="tls_handshake"><a class="heading-anchor" href="https://developer.mozilla.org/en-US/docs/Web/Security/Defenses/Transport_Layer_Security#tls_handshake">TLS 握手</a></h2>
+<p data-unit="05-tls-010">客户端使用 TLS 连接服务器时，最初的<em>握手</em>会设定协议的安全参数：</p>
+<ul>
+<li data-unit="05-tls-011">客户端与服务器就使用哪个 TLS 版本达成一致。当前 TLS 版本为 1.3（<a class="external" href="https://datatracker.ietf.org/doc/html/rfc8446" target="_blank" title="External link (opens in new tab)">RFC 8446</a>），也是使用最广泛的版本。一些网站仍在使用 TLS 1.2，而 TLS 1.1 和 1.0 已经不应继续使用。</li>
+<li data-unit="05-tls-012">客户端与服务器就要使用的<a href="https://developer.mozilla.org/en-US/docs/Glossary/Cipher_suite">密码套件</a>达成一致；它定义双方用于密钥协商、身份认证、加密和消息认证的算法。</li>
+<li data-unit="05-tls-013">客户端与服务器可以选择相互认证。客户端认证是客户端向服务器证明自己的身份，除了某些专用应用，在 Web 上很少使用。但是，服务器认证——服务器向客户端证明自己的身份——是 Web 安全的基础组成部分。</li>
+<li data-unit="05-tls-014">客户端与服务器就用于加密和解密消息的<a href="https://developer.mozilla.org/en-US/docs/Glossary/Symmetric-key_cryptography">秘密密钥</a>达成一致。</li>
+</ul>
+<p data-unit="05-tls-015">握手之后，客户端与服务器使用秘密密钥加密和解密所有消息，包括 HTTP 标头与消息体。</p>
+</section><section aria-labelledby="configuring_tls" class="content-section">
+<h2 class="heading" data-unit="05-tls-016" id="configuring_tls"><a class="heading-anchor" href="https://developer.mozilla.org/en-US/docs/Web/Security/Defenses/Transport_Layer_Security#configuring_tls">配置 TLS</a></h2>
+<p data-unit="05-tls-017">选择正确的 TLS 服务器配置，会显著影响连接的安全性。特别是，它决定使用的 TLS 版本和密码算法。如果需要配置自己的服务器，可以参考 Mozilla 的 <a class="external" href="https://wiki.mozilla.org/Security/Server_Side_TLS#Recommended_configurations" target="_blank" title="External link (opens in new tab)">TLS 推荐配置</a>等资源。</p>
+<p data-unit="05-tls-018">Mozilla 还提供了 <a class="external" href="https://ssl-config.mozilla.org/" target="_blank" title="External link (opens in new tab)">TLS 配置生成器</a>，可以为许多不同的 Web 服务器生成配置文件。</p>
+</section><section aria-labelledby="server_authentication" class="content-section">
+<h2 class="heading" data-unit="05-tls-019" id="server_authentication"><a class="heading-anchor" href="https://developer.mozilla.org/en-US/docs/Web/Security/Defenses/Transport_Layer_Security#server_authentication">服务器身份认证</a></h2>
+<p data-unit="05-tls-020">为支持服务器身份认证，网站必须拥有<a href="https://developer.mozilla.org/en-US/docs/Glossary/Digital_certificate">数字证书</a>。证书包含与网站私钥对应的公钥副本，并对其施加<a href="https://developer.mozilla.org/en-US/docs/Glossary/Digital_signature">数字签名</a>。这将网站的密钥与域名绑定，使浏览器能够确定自己确实在连接例如“<a class="external" href="https://example.com" target="_blank" title="External link (opens in new tab)">https://example.com</a>”这样的网站。</p>
+<p data-unit="05-tls-021"><a class="external" href="https://letsencrypt.org/" target="_blank" title="External link (opens in new tab)">Let's Encrypt</a> 是一家广泛使用的非营利证书颁发机构，提供免费的 TLS 证书。</p>
+<p data-unit="05-tls-022">现代网站托管服务会默认或通过配置选项，为你提供 HTTPS 支持。在这种情况下，托管服务很可能会代你管理证书并配置服务器。</p>
+</section><section aria-labelledby="mixed_content" class="content-section">
+<h2 class="heading" data-unit="05-tls-023" id="mixed_content"><a class="heading-anchor" href="https://developer.mozilla.org/en-US/docs/Web/Security/Defenses/Transport_Layer_Security#mixed_content">混合内容</a></h2>
+<p data-unit="05-tls-024">网站不仅应当对主文档使用 HTTPS，也应当对加载的所有子资源使用 HTTPS，例如脚本、样式表、图片和字体。如果网站通过 HTTPS 加载主文档，却通过 HTTP 加载其中任何子资源，就称为<a href="https://developer.mozilla.org/en-US/docs/Web/Security/Defenses/Mixed_content">混合内容</a>。</p>
+<p data-unit="05-tls-025">例如，从 <code>https://example.org</code> 提供的文档如果包含以下内容，就会构成混合内容：</p>
+<div class="code-example"><div class="example-header"><span class="language-name">html</span></div><pre class="brush: html notranslate"><code>&lt;img src="http://example.org/my-image.png" /&gt;
+</code></pre></div>
+<p data-unit="05-tls-026">混合内容不安全，因为子资源没有得到 HTTPS 的保护，攻击者不仅能读取它们，还可能修改它们。这可能破坏整个页面的完整性！例如，可以想象攻击者修改脚本，让它执行有害行为。其他资源虽然不如脚本危险，但仍存在风险：例如，攻击者可以修改图片，让用户感到困惑或受到误导。</p>
+<p data-unit="05-tls-027">因此，浏览器不允许安全页面加载不安全的子资源。它们会根据子资源的类型，将加载请求升级为 HTTPS，或者彻底阻止请求。</p>
+<p data-unit="05-tls-028">如果无法修改代码，使其从 HTTPS URL 加载资源，例如 HTML 已经归档，那么服务器可以设置包含 <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/CSP#upgrading_insecure_requests"><code>upgrade-insecure-requests</code></a> 指令的<a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/CSP">内容安全策略</a>，浏览器就会自动将这些请求升级为 HTTPS。</p>
+<p data-unit="05-tls-029">更多细节请参阅<a href="https://developer.mozilla.org/en-US/docs/Web/Security/Defenses/Mixed_content">混合内容</a>。</p>
+</section><section aria-labelledby="upgrading_http_connections" class="content-section">
+<h2 class="heading" data-unit="05-tls-030" id="upgrading_http_connections"><a class="heading-anchor" href="https://developer.mozilla.org/en-US/docs/Web/Security/Defenses/Transport_Layer_Security#upgrading_http_connections">升级 HTTP 连接</a></h2>
+<p data-unit="05-tls-031">即使网站只通过 HTTPS 提供服务，用户仍可能通过 HTTP 请求它，例如在地址栏中输入 <code>http://example.org</code>。为了让网站在这种情况下也能正常工作，应监听 HTTP 请求，并使用 <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status/301">301 Moved Permanently</a> 响应，重定向到 HTTPS 版本。</p>
+<p data-unit="05-tls-032">不过，这给了攻击者拦截最初交互、阻止升级到 HTTPS 的机会。这有时称为 <em>SSL 剥离</em>攻击；<a href="https://developer.mozilla.org/en-US/docs/Glossary/SSL">SSL</a> 是 TLS 的前身。</p>
+<p data-unit="05-tls-033">为降低此类攻击的风险，服务器还应发送 <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Strict-Transport-Security"><code>Strict-Transport-Security</code></a> HTTP 响应标头，也就是 HSTS。它告诉客户端，网站希望使用 HTTPS，并让浏览器在之后的访问中直接通过 HTTPS 连接，即使用户使用的是 HTTP URL。</p>
+<p data-unit="05-tls-034">使用 HSTS 后，除浏览器第一次尝试连接网站之外，可以防止 SSL 剥离攻击。由于 HSTS 会过期，浏览器中的 HSTS 记录过期后的第一次连接也属于例外。为了在首次连接或 HSTS 记录过期时仍保护网站，Chrome 维护了一份称为 <a class="external" href="https://hstspreload.org/" target="_blank" title="External link (opens in new tab)">HSTS 预加载列表</a>的域名清单。如果域名在清单中，Chrome 就始终将 HTTP 请求升级为 HTTPS，效果相当于服务器已经发送过 HSTS 标头。Safari 和 Firefox 也有类似行为，它们使用从 Chrome 清单衍生的列表。</p>
+</section><section aria-labelledby="see_also" class="content-section">
+<h2 class="heading" data-unit="05-tls-035" id="see_also"><a class="heading-anchor" href="https://developer.mozilla.org/en-US/docs/Web/Security/Defenses/Transport_Layer_Security#see_also">另请参阅</a></h2>
+<ul>
+<li><span data-extra-unit="05-tls-extra-001">测试 HTTPS/TLS 配置：
+</span><ul>
+<li data-unit="05-tls-036"><a href="https://developer.mozilla.org/en-US/observatory">Mozilla HTTP Observatory</a></li>
+<li data-unit="05-tls-037"><a class="external" href="https://www.ssllabs.com/ssltest/" target="_blank" title="External link (opens in new tab)">SSL Labs</a></li>
+</ul>
+</li>
+<li><span data-extra-unit="05-tls-extra-002">推荐的 TLS 配置：
+</span><ul>
+<li data-unit="05-tls-038"><a class="external" href="https://ssl-config.mozilla.org/" target="_blank" title="External link (opens in new tab)">Mozilla 推荐配置</a></li>
+<li data-unit="05-tls-039"><a class="external" href="https://cipherlist.eu/" target="_blank" title="External link (opens in new tab)">Cipherlist.eu 推荐的 TLS 配置</a></li>
+</ul>
+</li>
+</ul>
+</section></article><nav class="chapter-switcher" aria-label="章节导航"><a href="../04-connections/literal.html">← HTTP/1.x 的连接管理</a><a class="course-home" href="../index.html">全部章节</a><a href="../06-cache/literal.html">HTTP 缓存 →</a></nav><footer class="license-note"><p>原文：<a href="https://developer.mozilla.org/en-US/docs/Web/Security/Defenses/Transport_Layer_Security">Transport Layer Security (TLS)</a>，© Mozilla Contributors。原文快照：2026-09-29。本非官方阅读版由 Codex 翻译并逐句润色；另附独立编者导读与校注。正文全文、代码、原图及链接保留，不含 MDN 站点导航、反馈和页脚。</p><p>文档与译文采用 <a href="https://creativecommons.org/licenses/by-sa/2.5/">CC BY-SA 2.5</a>；代码许可及完整来源说明见 <a href="../NOTICE.html">来源与许可</a>。</p></footer></main></body></html>

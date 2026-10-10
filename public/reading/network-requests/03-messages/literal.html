@@ -1,0 +1,235 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>HTTP 消息 · 网络请求阅读材料</title><link rel="stylesheet" href="../../reader.css"><link rel="stylesheet" href="../source.css"><link rel="manifest" href="../../../manifest.webmanifest"></head><body><nav class="site-nav"><a href="../index.html">← 网络请求 · 从一次请求开始</a><a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Messages">MDN 原文 ↗</a></nav><main class="reader"><header class="chapter-header"><span class="chapter-kicker">N03 · 第一轮直译稿</span><h1>HTTP 消息</h1><p class="byline">HTTP messages · Mozilla Contributors</p><div class="title-rule"></div><p class="edition-nav"><a href="index.html">中文阅读版</a> · <a href="english.html">英文对照</a> · <strong aria-current="page">第一轮直译稿</strong></p><aside class="learning-note"><span class="note-kind">编者导读 · 不属于原文</span><p><strong>抓包里每一行是什么，状态码、标头和 JSON 又是什么关系？</strong></p><p>这是最适合对照工作日志阅读的一篇。先学 HTTP/1.1 的可读格式，再理解 HTTP/2 如何用帧传送同样的语义。正文中的命令、消息和代码保持原文。</p><details class="editor-notes"><summary>阅读前的版本与适用范围校注（3 条）</summary><p>原文“只有 POST、PUT、PATCH 请求有消息体”过于绝对。是否允许、有什么语义，需要按具体方法与规范判断；例如 OPTIONS 可以携带内容，而 GET 内容没有通用定义的语义，不应据此随意给 GET 加请求体。参见 <a href="https://www.rfc-editor.org/rfc/rfc9110.html#name-method-definitions">RFC 9110，第 9.3 节</a>。</p><p>authority 在这里是 URI 中定位服务器的组成部分，不是登录授权。HTTP/1.x 的普通源站请求常用路径加 Host，HTTP/2 则使用 :authority 等伪标头。</p><p>原文的“六条连接”是浏览器中常见的实现策略，不是 HTTP 的通用限制。HTTP/2 解决 HTTP 层的串行等待，仍可能受到 TCP 丢包造成的跨流阻塞。具体客户端的连接数和池配置，应查看所用网络库。</p></details></aside><details class="source-details"><summary>本篇目录与翻译范围</summary><p>对应上述英文文章正文全文，保留原文顺序、表格、示例、原图和“另请参阅”。代码及图中英文保持原样。编者说明与原文分开；历史表述未在译文中静默改写。</p><ul><li class="toc-h2"><a href="#anatomy_of_an_http_message">HTTP 消息的组成</a></li><li class="toc-h2"><a href="#http_requests">HTTP 请求</a></li><li class="toc-h3"><a href="#request_targets">请求目标</a></li><li class="toc-h3"><a href="#request_headers">请求标头</a></li><li class="toc-h3"><a href="#request_body">请求体</a></li><li class="toc-h2"><a href="#http_responses">HTTP 响应</a></li><li class="toc-h3"><a href="#response_headers">响应标头</a></li><li class="toc-h3"><a href="#response_body">响应体</a></li><li class="toc-h2"><a href="#http2_messages">HTTP/2 消息</a></li><li class="toc-h3"><a href="#pseudo-headers">伪标头</a></li><li class="toc-h2"><a href="#conclusion">结论</a></li><li class="toc-h2"><a href="#see_also">另请参阅</a></li></ul></details><nav class="chapter-switcher" aria-label="章节导航"><a href="../02-overview/literal.html">← HTTP 概览</a><a class="course-home" href="../index.html">全部章节</a><a href="../04-connections/literal.html">HTTP/1.x 的连接管理 →</a></nav></header><article class="translated-article"><section class="content-section">
+<p data-unit="03-messages-001"><strong>HTTP 消息</strong>是 HTTP 协议中服务器与客户端交换数据的机制。消息有两种：客户端发送的<strong>请求</strong>，用来触发服务器上的操作；以及<strong>响应</strong>，即服务器针对请求发送的答复。</p>
+<p data-unit="03-messages-002">开发者很少、甚至从不从零构造 HTTP 消息。浏览器、代理或 Web 服务器等应用，使用专门的软件可靠而高效地创建 HTTP 消息。消息的创建或转换方式，由浏览器中的 API、代理或服务器的配置文件，以及其他接口控制。</p>
+<p data-unit="03-messages-003">在 HTTP/2 之前的 HTTP 协议版本中，消息基于文本；熟悉格式之后，阅读和理解相对直接。在 HTTP/2 中，消息被包裹在二进制帧中，阅读起来稍难一些。不过，协议的底层语义相同，因此你可以基于 HTTP/1.x 消息的文本格式，学习 HTTP 消息的结构和含义，并将这种理解应用到 HTTP/2 及后续版本。</p>
+<p data-unit="03-messages-004">为方便阅读，本指南采用 HTTP/1.1 消息，并用 HTTP/1.1 格式解释 HTTP 消息的结构。最后一节会指出描述 HTTP/2 时可能需要了解的一些差异。</p>
+<div class="notecard note">
+<p data-unit="03-messages-005"><strong>备注：</strong>例如，你可以在浏览器开发者工具的 <strong>Network</strong> 标签页中查看 HTTP 消息，也可以使用 <a class="external" href="https://curl.se/" target="_blank" title="External link (opens in new tab)">curl</a> 等命令行工具，将 HTTP 消息输出到控制台。</p>
+</div>
+</section><section aria-labelledby="anatomy_of_an_http_message" class="content-section">
+<h2 class="heading" data-unit="03-messages-006" id="anatomy_of_an_http_message"><a class="heading-anchor" href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Messages#anatomy_of_an_http_message">HTTP 消息的组成</a></h2>
+<p data-unit="03-messages-007">为了理解 HTTP 消息如何工作，我们来查看 HTTP/1.1 消息并分析其结构。下图展示了 HTTP/1.1 消息的样子：</p>
+<p><img alt="Requests and responses share a common structure in HTTP" data-original-src="https://mdn.github.io/shared-assets/images/diagrams/http/messages/http-message-anatomy.svg" loading="eager" src="../assets/4617c1bfb31f.svg"/></p>
+<p data-unit="03-messages-008">请求和响应具有相似的结构：</p>
+<ol>
+<li data-unit="03-messages-009"><em>起始行</em>是一行文本，描述 HTTP 版本，以及请求方法或请求结果。</li>
+<li data-unit="03-messages-010">一组可选的 <em>HTTP 标头</em>，包含描述消息的元数据。例如，资源请求可以列出允许的资源格式；响应则可以用标头指出实际返回的格式。</li>
+<li data-unit="03-messages-011">一个空行，表示消息的元数据已经结束。</li>
+<li data-unit="03-messages-012">一个可选的<em>消息体</em>，包含与消息关联的数据。这可能是请求中要发送给服务器的 POST 数据，也可能是响应中返回给客户端的某个资源。消息是否包含消息体，由起始行和 HTTP 标头决定。</li>
+</ol>
+<p data-unit="03-messages-013">HTTP 消息的起始行和标头，合称请求的<em>头部</em>（head）；其后承载内容的部分称为<em>消息体</em>（body）。</p>
+</section><section aria-labelledby="http_requests" class="content-section">
+<h2 class="heading" data-unit="03-messages-014" id="http_requests"><a class="heading-anchor" href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Messages#http_requests">HTTP 请求</a></h2>
+<p data-unit="03-messages-015">来看下面的 HTTP <code>POST</code> 请求示例：用户在网页上提交表单后，会发送这样的请求。</p>
+<div class="code-example"><div class="example-header"><span class="language-name">http</span></div><pre class="brush: http notranslate"><code>POST /users HTTP/1.1
+Host: example.com
+Content-Type: application/x-www-form-urlencoded
+Content-Length: 49
+
+name=FirstName+LastName&amp;email=bsmth%40example.com
+</code></pre></div>
+<p data-unit="03-messages-016">HTTP/1.x 请求中的起始行（上例中的 <code>POST /users HTTP/1.1</code>）称为“请求行”，由三部分组成：</p>
+<div class="code-example"><div class="example-header"><span class="language-name">http</span></div><pre class="brush: http notranslate"><code>&lt;method&gt; &lt;request-target&gt; &lt;protocol&gt;
+</code></pre></div>
+<dl>
+<dt data-unit="03-messages-017" id="method"><a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Messages#method"><code>&lt;method&gt;</code></a></dt>
+<dd>
+<p data-unit="03-messages-018"><a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Methods">HTTP 方法</a>（也称为 <em>HTTP 动词</em>）是一组已定义词语中的一个，用来描述请求的含义和期望的结果。例如，<code>GET</code> 表示客户端希望接收一个资源；<code>POST</code> 表示客户端正在向服务器发送数据。</p>
+</dd>
+<dt data-unit="03-messages-019" id="request-target"><a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Messages#request-target"><code>&lt;request-target&gt;</code></a></dt>
+<dd>
+<p data-unit="03-messages-020">请求目标通常是绝对或相对 <a href="https://developer.mozilla.org/en-US/docs/Glossary/URL">URL</a>，其形式取决于请求的上下文。请求目标的格式由所使用的 HTTP 方法和请求上下文决定。下面的<a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Messages#request_targets">请求目标</a>一节会更详细地介绍。</p>
+</dd>
+<dt data-unit="03-messages-021" id="protocol"><a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Messages#protocol"><code>&lt;protocol&gt;</code></a></dt>
+<dd>
+<p data-unit="03-messages-022"><em>HTTP 版本</em>定义消息其余部分的结构，并指示期望响应使用的版本。这里几乎总是 <code>HTTP/1.1</code>，因为 <code>HTTP/0.9</code> 和 <code>HTTP/1.0</code> 已经过时。在 HTTP/2 及更高版本中，消息不包含协议版本，因为版本在建立连接时已经确定。</p>
+</dd>
+</dl>
+</section><section aria-labelledby="request_targets" class="content-section">
+<h3 class="heading" data-unit="03-messages-023" id="request_targets"><a class="heading-anchor" href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Messages#request_targets">请求目标</a></h3>
+<p data-unit="03-messages-024">请求目标有几种表示方式，其中最常见的是“源站形式”（origin form）。下面列出各种目标形式及其使用场景：</p>
+<ol>
+<li>
+<p data-unit="03-messages-025">在<em>源站形式</em>中，接收方将绝对路径与 <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Host"><code>Host</code></a> 标头中的信息组合起来。路径后面可以附加查询字符串，提供额外信息，通常采用 <code>key=value</code> 格式。这种形式用于 <code>GET</code>、<code>POST</code>、<code>HEAD</code> 和 <code>OPTIONS</code> 方法：</p>
+<div class="code-example"><div class="example-header"><span class="language-name">http</span></div><pre class="brush: http notranslate"><code>GET /en-US/docs/Web/HTTP/Guides/Messages HTTP/1.1
+</code></pre></div>
+</li>
+<li>
+<p data-unit="03-messages-026"><em>绝对形式</em>是一个包含 authority（授权信息部分）的完整 URL，连接代理时与 <code>GET</code> 一起使用：</p>
+<div class="code-example"><div class="example-header"><span class="language-name">http</span></div><pre class="brush: http notranslate"><code>GET https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Messages HTTP/1.1
+</code></pre></div>
+</li>
+<li>
+<p data-unit="03-messages-027"><em>authority 形式</em>是由冒号（<code>:</code>）分隔的 authority 与端口。它只在建立 HTTP 隧道时与 <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Methods/CONNECT"><code>CONNECT</code></a> 方法一起使用：</p>
+<div class="code-example"><div class="example-header"><span class="language-name">http</span></div><pre class="brush: http notranslate"><code>CONNECT developer.mozilla.org:443 HTTP/1.1
+</code></pre></div>
+</li>
+<li>
+<p data-unit="03-messages-028"><em>星号形式</em>只与 <code>OPTIONS</code> 一起使用，用来表示整个服务器（<code>*</code>），而不是某个具名资源：</p>
+<div class="code-example"><div class="example-header"><span class="language-name">http</span></div><pre class="brush: http notranslate"><code>OPTIONS * HTTP/1.1
+</code></pre></div>
+</li>
+</ol>
+</section><section aria-labelledby="request_headers" class="content-section">
+<h3 class="heading" data-unit="03-messages-029" id="request_headers"><a class="heading-anchor" href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Messages#request_headers">请求标头</a></h3>
+<p data-unit="03-messages-030">标头是随请求发送的元数据，位于起始行之后、消息体之前。在上面的<a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Messages#http_requests">表单提交示例</a>中，它们对应以下几行消息：</p>
+<div class="code-example"><div class="example-header"><span class="language-name">http</span></div><pre class="brush: http notranslate"><code>Host: example.com
+Content-Type: application/x-www-form-urlencoded
+Content-Length: 49
+</code></pre></div>
+<p data-unit="03-messages-031">在 HTTP/1.x 中，每个标头都由一个<strong>不区分大小写</strong>的字符串、一个冒号（<code>:</code>）和一个值组成；值的格式取决于具体标头。整个标头，包括它的值，都位于同一行。在某些情况下，这一行可能很长，例如 <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Cookie"><code>Cookie</code></a> 标头。</p>
+<p><img alt="Example of headers in an HTTP request" data-original-src="https://mdn.github.io/shared-assets/images/diagrams/http/messages/request-headers.svg" loading="eager" src="../assets/44cdcb54e713.svg"/></p>
+<p data-unit="03-messages-032">有些标头专门用于请求，另一些可以同时用于请求和响应，或者还可以归入更具体的类别：</p>
+<ul>
+<li data-unit="03-messages-033"><a href="https://developer.mozilla.org/en-US/docs/Glossary/Request_header">请求标头</a>为请求提供额外的上下文，或者增加服务器应如何处理它的额外逻辑，例如<a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Conditional_requests">条件请求</a>。</li>
+<li data-unit="03-messages-034">如果消息有消息体，请求会发送<a href="https://developer.mozilla.org/en-US/docs/Glossary/Representation_header">表示标头</a>，描述消息数据的原始形式及其采用的编码。这样，接收方就知道如何重建资源，使其恢复到网络传输之前的形式。</li>
+</ul>
+</section><section aria-labelledby="request_body" class="content-section">
+<h3 class="heading" data-unit="03-messages-035" id="request_body"><a class="heading-anchor" href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Messages#request_body">请求体</a></h3>
+<p data-unit="03-messages-036">请求体是请求中向服务器携带信息的部分。只有 <code>PATCH</code>、<code>POST</code> 和 <code>PUT</code> 请求有消息体。在<a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Messages#http_requests">表单提交示例</a>中，下面这一部分就是消息体：</p>
+<div class="code-example"><div class="example-header"><span class="language-name">http</span></div><pre class="brush: http notranslate"><code>name=FirstName+LastName&amp;email=bsmth%40example.com
+</code></pre></div>
+<p data-unit="03-messages-037">表单提交请求的消息体包含少量以 <code>key=value</code> 键值对表示的信息，但请求体也可以包含服务器期望的其他类型的数据：</p>
+<div class="code-example"><div class="example-header"><span class="language-name">json</span></div><pre class="brush: json notranslate"><code>{
+  "firstName": "Brian",
+  "lastName": "Smith",
+  "email": "bsmth@example.com",
+  "more": "data"
+}
+</code></pre></div>
+<p data-unit="03-messages-038">或者包含由多个部分组成的数据：</p>
+<div class="code-example"><div class="example-header"><span class="language-name">http</span></div><pre class="brush: http notranslate"><code>--delimiter123
+Content-Disposition: form-data; name="field1"
+
+value1
+--delimiter123
+Content-Disposition: form-data; name="field2"; filename="example.txt"
+
+Text file contents
+--delimiter123--
+</code></pre></div>
+</section><section aria-labelledby="http_responses" class="content-section">
+<h2 class="heading" data-unit="03-messages-039" id="http_responses"><a class="heading-anchor" href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Messages#http_responses">HTTP 响应</a></h2>
+<p data-unit="03-messages-040">响应是服务器为答复请求而发送回来的 HTTP 消息。响应让客户端知道请求的结果。下面是一个 HTTP/1.1 响应示例，用来答复创建了新用户的 <code>POST</code> 请求：</p>
+<div class="code-example"><div class="example-header"><span class="language-name">http</span></div><pre class="brush: http notranslate"><code>HTTP/1.1 201 Created
+Content-Type: application/json
+Location: http://example.com/users/123
+
+{
+  "message": "New user created",
+  "user": {
+    "id": 123,
+    "firstName": "Example",
+    "lastName": "Person",
+    "email": "bsmth@example.com"
+  }
+}
+</code></pre></div>
+<p data-unit="03-messages-041">响应中的起始行（上面的 <code>HTTP/1.1 201 Created</code>）称为“状态行”，由三部分组成：</p>
+<div class="code-example"><div class="example-header"><span class="language-name">http</span></div><pre class="brush: http notranslate"><code>&lt;protocol&gt; &lt;status-code&gt; &lt;reason-phrase&gt;
+</code></pre></div>
+<dl>
+<dt data-unit="03-messages-042" id="protocol_2"><a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Messages#protocol_2"><code>&lt;protocol&gt;</code></a></dt>
+<dd>
+<p data-unit="03-messages-043">消息的 <em>HTTP 版本</em>。</p>
+</dd>
+<dt data-unit="03-messages-044" id="status-code"><a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Messages#status-code"><code>&lt;status-code&gt;</code></a></dt>
+<dd>
+<p data-unit="03-messages-045">数字形式的<a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status">状态码</a>，指出请求成功还是失败。常见状态码有 <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status/200"><code>200</code></a>、<a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status/404"><code>404</code></a> 和 <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status/302"><code>302</code></a>。</p>
+</dd>
+<dt data-unit="03-messages-046" id="reason-phrase"><a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Messages#reason-phrase"><code>&lt;reason-phrase&gt;</code> <span class="badge inline optional">可选</span></a></dt>
+<dd>
+<p data-unit="03-messages-047">状态码后面的可选文本，是对状态的简短文字描述，仅供参考，用来帮助人们理解请求结果。原因短语有时会放在括号里，例如“201 (Created)”，以表明它是可选的。</p>
+</dd>
+</dl>
+</section><section aria-labelledby="response_headers" class="content-section">
+<h3 class="heading" data-unit="03-messages-048" id="response_headers"><a class="heading-anchor" href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Messages#response_headers">响应标头</a></h3>
+<p data-unit="03-messages-049">响应标头是随响应发送的元数据。在 HTTP/1.x 中，每个标头都由一个<strong>不区分大小写</strong>的字符串、一个冒号（<code>:</code>）和一个值组成；值的格式取决于使用的标头。</p>
+<p><img alt="Example of headers in an HTTP response" data-original-src="https://mdn.github.io/shared-assets/images/diagrams/http/messages/response-headers.svg" loading="eager" src="../assets/98f6b7ccad5c.svg"/></p>
+<p data-unit="03-messages-050">与请求标头一样，响应中可以出现许多不同的标头，它们可以分为以下类别：</p>
+<ul>
+<li data-unit="03-messages-051"><a href="https://developer.mozilla.org/en-US/docs/Glossary/Response_header">响应标头</a>提供关于消息的额外上下文，或者增加客户端应如何发起后续请求的额外逻辑。例如，<a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Server"><code>Server</code></a> 等标头包含服务器软件信息，而 <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Date"><code>Date</code></a> 包含响应生成的时间。还有描述返回资源的信息，例如内容类型（<a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Content-Type"><code>Content-Type</code></a>），或者应如何缓存它（<a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Cache-Control"><code>Cache-Control</code></a>）。</li>
+<li data-unit="03-messages-052">如果消息有消息体，<a href="https://developer.mozilla.org/en-US/docs/Glossary/Representation_header">表示标头</a>就会描述消息数据的形式及其采用的编码。例如，同一资源可以采用 XML 或 JSON 等特定媒体类型的格式，针对某种书面语言或地理区域进行本地化，并且／或者为传输进行压缩或其他编码。这样，接收方就知道如何重建资源，使其恢复到网络传输之前的形式。</li>
+</ul>
+</section><section aria-labelledby="response_body" class="content-section">
+<h3 class="heading" data-unit="03-messages-053" id="response_body"><a class="heading-anchor" href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Messages#response_body">响应体</a></h3>
+<p data-unit="03-messages-054">发给客户端的大多数响应消息都包含响应体。请求成功时，响应体包含客户端通过 <code>GET</code> 请求索取的数据。如果客户端请求存在问题，响应体通常会描述失败原因，并提示这是永久性问题还是临时问题。</p>
+<p data-unit="03-messages-055">响应体可以是：</p>
+<ul>
+<li data-unit="03-messages-056">单资源消息体，由 <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Content-Type"><code>Content-Type</code></a> 和 <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Content-Length"><code>Content-Length</code></a> 两个标头定义；也可以长度未知、采用分块编码，此时 <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Transfer-Encoding"><code>Transfer-Encoding</code></a> 被设置为 <code>chunked</code>。</li>
+<li data-unit="03-messages-057"><a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/MIME_types#multipartform-data">多资源消息体</a>，包含多个部分，每个部分承载一项不同的信息。多部分消息体通常与 <a href="https://developer.mozilla.org/en-US/docs/Learn_web_development/Extensions/Forms">HTML 表单</a>有关，但也可以用于回应<a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Range_requests">范围请求</a>。</li>
+</ul>
+<p data-unit="03-messages-058">如果响应的状态码已经足以答复请求，无需包含消息内容，例如 <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status/201"><code>201 Created</code></a> 或 <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status/204"><code>204 No Content</code></a>，就不会有消息体。</p>
+</section><section aria-labelledby="http2_messages" class="content-section">
+<h2 class="heading" data-unit="03-messages-059" id="http2_messages"><a class="heading-anchor" href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Messages#http2_messages">HTTP/2 消息</a></h2>
+<p data-unit="03-messages-060">HTTP/1.x 使用基于文本的消息，阅读和构造都很直接，但这也带来一些缺点。可以使用 <code>gzip</code> 或其他压缩算法压缩消息体，却不能压缩标头。在客户端与服务器的交互中，标头往往相似或相同，却仍然在同一连接上的连续消息中反复出现。已经有许多非常高效的重复文本压缩方法，因此这里有大量节省带宽的机会未被利用。</p>
+<p data-unit="03-messages-061">HTTP/1.x 还有一个称为<a href="https://developer.mozilla.org/en-US/docs/Glossary/Head_of_line_blocking">队头阻塞</a>（head-of-line blocking，HOL blocking）的问题：客户端必须等到服务器响应，才能发送下一个请求。HTTP <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Connection_management_in_HTTP_1.x#http_pipelining">流水线</a>尝试绕过这一问题，但由于支持不佳且实现复杂，它很少被使用，也难以正确实现。要并发发送请求，就需要打开多个连接；而由于 TCP 慢启动，热连接（已经建立且繁忙的连接）比冷连接更高效。</p>
+<p data-unit="03-messages-062">在 HTTP/1.1 中，如果想并行发出两个请求，就必须打开两个连接：</p>
+<p><img alt="Making two HTTP requests to a server in parallel" data-original-src="https://mdn.github.io/shared-assets/images/diagrams/http/messages/http-1-connection.png" loading="eager" src="../assets/a7f5a606e4e8.png"/></p>
+<p data-unit="03-messages-063">这意味着浏览器能够同时下载和渲染的资源数量受到限制，通常上限为 6 个并行连接。</p>
+<p data-unit="03-messages-064">HTTP/2 允许通过单个 TCP 连接，同时处理多个请求和响应。具体方式是将消息封装为二进制帧，并通过连接上带编号的<strong>流</strong>（stream）发送请求和响应。数据帧与标头帧分开处理，使标头可以通过 HPACK 算法压缩。在同一个 TCP 连接上同时处理多个请求，称为<em>多路复用</em>。</p>
+<p><img alt="Multiplexing requests and responses in HTTP/2 using a single TCP connection." data-original-src="https://mdn.github.io/shared-assets/images/diagrams/http/messages/http-2-connection.png" loading="eager" src="../assets/11df6963723b.png"/></p>
+<p data-unit="03-messages-065">请求不必依次完成：例如，流 9 不需要等待流 7 结束。多个流的数据通常在连接上交错传输，因此客户端可以同时接收流 9 和流 7。协议提供了为每个流或资源设置优先级的机制。通过不同流发送时，低优先级资源占用的带宽比高优先级资源少；如果存在应当优先处理的关键资源，也可以让这些资源实际上在同一连接上依次发送。</p>
+<p data-unit="03-messages-066">总体而言，虽然相较于 HTTP/1.x 增加了许多改进和抽象，开发者用于发起请求的 API 几乎不需要改变，就可以改用 HTTP/2。当浏览器与服务器都支持 HTTP/2 时，就会自动启用并使用它。</p>
+</section><section aria-labelledby="pseudo-headers" class="content-section">
+<h3 class="heading" data-unit="03-messages-067" id="pseudo-headers"><a class="heading-anchor" href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Messages#pseudo-headers">伪标头</a></h3>
+<p data-unit="03-messages-068">HTTP/2 消息的一项显著变化是使用伪标头。HTTP/1.x 使用消息起始行，而 HTTP/2 使用以 <code>:</code> 开头的特殊伪标头字段。请求中的伪标头包括：</p>
+<ul>
+<li data-unit="03-messages-069"><code>:method</code>：HTTP 方法。</li>
+<li data-unit="03-messages-070"><code>:scheme</code>：目标 URI 的 scheme（协议方案）部分，通常为 HTTP(S)。</li>
+<li data-unit="03-messages-071"><code>:authority</code>：目标 URI 的 authority 部分。</li>
+<li data-unit="03-messages-072"><code>:path</code>：目标 URI 的路径和查询部分。</li>
+</ul>
+<p data-unit="03-messages-073">响应只有一个伪标头，即 <code>:status</code>，用于提供响应的状态码。</p>
+<p data-unit="03-messages-074">我们可以使用 <a class="external" href="https://github.com/nghttp2/nghttp2" target="_blank" title="External link (opens in new tab)">nghttp</a> 发起 HTTP/2 请求，获取 <code>example.com</code>，它会以更易读的形式输出请求。可以使用下面的命令，其中 <code>-n</code> 选项丢弃下载的数据，<code>-v</code> 表示详细输出，显示帧的接收与发送情况：</p>
+<div class="code-example"><div class="example-header"><span class="language-name">bash</span></div><pre class="brush: bash notranslate"><code>nghttp -nv https://www.example.com
+</code></pre></div>
+<p data-unit="03-messages-075">向下查看输出，可以看到每个发送和接收的帧所对应的时间：</p>
+<pre class="brush: plain notranslate">[  0.123] &lt;send|recv&gt; &lt;frame-type&gt; &lt;frame-details&gt;
+</pre>
+<p data-unit="03-messages-076">不必深入讨论输出的每个细节，但请留意格式为 <code>[  0.123] send HEADERS frame ...</code> 的 <code>HEADERS</code> 帧。在发送标头之后，你会看到以下几行：</p>
+<div class="code-example"><div class="example-header"><span class="language-name">http</span></div><pre class="brush: http notranslate"><code>[  0.447] send HEADERS frame ...
+          ...
+          :method: GET
+          :path: /
+          :scheme: https
+          :authority: www.example.com
+          accept: */*
+          accept-encoding: gzip, deflate
+          user-agent: nghttp2/1.61.0
+</code></pre></div>
+<p data-unit="03-messages-077">如果已经熟悉 HTTP/1.x，这些内容看起来应该很熟悉，本指南前面介绍的概念仍然适用。这是请求 <code>example.com</code> 的 <code>GET</code> 请求所对应的二进制帧，由 <code>nghttp</code> 转换为可读形式。继续向下查看命令输出，会在从服务器接收的某个流中看到 <code>:status</code> 伪标头：</p>
+<div class="code-example"><div class="example-header"><span class="language-name">http</span></div><pre class="brush: http notranslate"><code>[  0.433] recv (stream_id=13) :status: 200
+[  0.433] recv (stream_id=13) content-encoding: gzip
+[  0.433] recv (stream_id=13) age: 112721
+[  0.433] recv (stream_id=13) cache-control: max-age=604800
+[  0.433] recv (stream_id=13) content-type: text/html; charset=UTF-8
+[  0.433] recv (stream_id=13) date: Fri, 13 Sep 2024 12:56:07 GMT
+[  0.433] recv (stream_id=13) etag: "3147526947+gzip"
+...
+</code></pre></div>
+<p data-unit="03-messages-078">如果去掉消息中的时间和流 ID，内容应该会更加熟悉：</p>
+<div class="code-example"><div class="example-header"><span class="language-name">http</span></div><pre class="brush: http notranslate"><code>:status: 200
+content-encoding: gzip
+age: 112721
+</code></pre></div>
+<p data-unit="03-messages-079">进一步探讨消息帧、流 ID 以及连接管理超出了本指南的范围。不过，为了理解和调试 HTTP/2 消息，本文提供的知识和工具应当已经能让你做好准备。</p>
+</section><section aria-labelledby="conclusion" class="content-section">
+<h2 class="heading" data-unit="03-messages-080" id="conclusion"><a class="heading-anchor" href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Messages#conclusion">结论</a></h2>
+<p data-unit="03-messages-081">本指南概述了 HTTP 消息的组成，并用 HTTP/1.1 格式进行说明。我们还探讨了 HTTP/2 消息分帧：它在 HTTP/1.x 语法和底层传输协议之间引入了一层，但没有从根本上改变 HTTP 的语义。HTTP/2 通过支持请求多路复用，解决 HTTP/1.x 中存在的<a href="https://developer.mozilla.org/en-US/docs/Glossary/Head_of_line_blocking">队头阻塞</a>问题。</p>
+<p data-unit="03-messages-082">HTTP/2 仍然存在一个问题：虽然协议层面的队头阻塞得到解决，但 TCP 内部（传输层）的队头阻塞仍会造成性能瓶颈。HTTP/3 用构建在 UDP 之上的 QUIC 协议代替 TCP，解决这一限制。这个变化提高了性能，缩短连接建立时间，并增强了网络状况恶化或不可靠时的稳定性。HTTP/3 保留了相同的 HTTP 核心语义，因此请求方法、状态码和标头等特性，在三个主要 HTTP 版本中保持一致。</p>
+<p data-unit="03-messages-083">如果理解了 HTTP/1.1 的语义，就已经具备理解 HTTP/2 和 HTTP/3 的坚实基础。主要区别在于这些语义在传输层上<strong>如何</strong>实现。通过本指南的示例和概念，现在你应该能够使用 HTTP，理解消息的含义，以及应用如何通过 HTTP 发送和接收数据。</p>
+</section><section aria-labelledby="see_also" class="content-section">
+<h2 class="heading" data-unit="03-messages-084" id="see_also"><a class="heading-anchor" href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Messages#see_also">另请参阅</a></h2>
+<ul>
+<li data-unit="03-messages-085"><a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Evolution_of_HTTP">HTTP 的演进</a></li>
+<li data-unit="03-messages-086"><a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Protocol_upgrade_mechanism">协议升级机制</a></li>
+<li><span data-extra-unit="03-messages-extra-001">术语：
+</span><ul>
+<li data-unit="03-messages-087"><a href="https://developer.mozilla.org/en-US/docs/Glossary/HTTP">HTTP</a></li>
+<li data-unit="03-messages-088"><a href="https://developer.mozilla.org/en-US/docs/Glossary/HTTP_2">HTTP/2</a></li>
+<li data-unit="03-messages-089"><a href="https://developer.mozilla.org/en-US/docs/Glossary/QUIC">QUIC</a></li>
+</ul>
+</li>
+</ul>
+</section></article><nav class="chapter-switcher" aria-label="章节导航"><a href="../02-overview/literal.html">← HTTP 概览</a><a class="course-home" href="../index.html">全部章节</a><a href="../04-connections/literal.html">HTTP/1.x 的连接管理 →</a></nav><footer class="license-note"><p>原文：<a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Messages">HTTP messages</a>，© Mozilla Contributors。原文快照：2026-09-29。本非官方阅读版由 Codex 翻译并逐句润色；另附独立编者导读与校注。正文全文、代码、原图及链接保留，不含 MDN 站点导航、反馈和页脚。</p><p>文档与译文采用 <a href="https://creativecommons.org/licenses/by-sa/2.5/">CC BY-SA 2.5</a>；代码许可及完整来源说明见 <a href="../NOTICE.html">来源与许可</a>。</p></footer></main></body></html>

@@ -1,0 +1,210 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Overview of HTTP · 网络请求阅读材料</title><link rel="stylesheet" href="../../reader.css"><link rel="stylesheet" href="../source.css"><link rel="manifest" href="../../../manifest.webmanifest"></head><body><nav class="site-nav"><a href="../index.html">← 网络请求 · 从一次请求开始</a><a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Overview">MDN 原文 ↗</a></nav><main class="reader"><header class="chapter-header"><span class="chapter-kicker">N02 · English source</span><h1>Overview of HTTP</h1><p class="byline">Overview of HTTP · Mozilla Contributors</p><div class="title-rule"></div><p class="edition-nav"><a href="index.html">中文阅读版</a> · <strong aria-current="page">英文对照</strong> · <a href="literal.html">第一轮直译稿</a></p><aside class="learning-note"><span class="note-kind">编者导读 · 不属于原文</span><p><strong>一次 HTTP 请求里，客户端、服务器和代理各负责什么？</strong></p><p>把例子中的浏览器先看成一种客户端。你在 Android 里请求 JSON，也是客户端向服务器发请求、再读取响应；网页解析和渲染只是本文采用的具体场景。</p><details class="editor-notes"><summary>阅读前的版本与适用范围校注（3 条）</summary><p>原文“QUIC 正在试验”是旧表述。HTTP/3 已由 <a href="https://www.rfc-editor.org/rfc/rfc9114.html">RFC 9114</a> 标准化，并在 QUIC 上运行。因此，正文中 HTTP 依赖 TCP 的说法应放在 HTTP/1.x、HTTP/2 的背景下理解。</p><p>“消息”是 HTTP 层的抽象；HTTP/1.x、HTTP/2 使用的 TCP 在底层仍提供字节流。原文说建连需要若干次往返，不适合当作 TCP 三次握手的精确 RTT 计算；TCP 建连、TLS 握手和 HTTP 请求往返应分开看。</p><p>同源限制、Fetch、EventSource 是浏览器语境。CORS 由浏览器执行，不能直接套成 Android 原生 HTTP 客户端的限制；WebView 中的网页则仍要考虑它。参见 <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/CORS">MDN CORS</a>。</p></details></aside><details class="source-details"><summary>本篇目录与翻译范围</summary><p>对应上述英文文章正文全文，保留原文顺序、表格、示例、原图和“另请参阅”。代码及图中英文保持原样。编者说明与原文分开；历史表述未在译文中静默改写。</p><ul><li class="toc-h2"><a href="#components_of_http-based_systems">Components of HTTP-based systems</a></li><li class="toc-h3"><a href="#client_the_user-agent">Client: the user-agent</a></li><li class="toc-h3"><a href="#the_web_server">The Web server</a></li><li class="toc-h3"><a href="#proxies">Proxies</a></li><li class="toc-h2"><a href="#basic_aspects_of_http">Basic aspects of HTTP</a></li><li class="toc-h3"><a href="#http_is_simple">HTTP is simple</a></li><li class="toc-h3"><a href="#http_is_extensible">HTTP is extensible</a></li><li class="toc-h3"><a href="#http_is_stateless_but_not_sessionless">HTTP is stateless, but not sessionless</a></li><li class="toc-h3"><a href="#http_and_connections">HTTP and connections</a></li><li class="toc-h2"><a href="#what_can_be_controlled_by_http">What can be controlled by HTTP</a></li><li class="toc-h2"><a href="#http_flow">HTTP flow</a></li><li class="toc-h2"><a href="#http_messages">HTTP Messages</a></li><li class="toc-h3"><a href="#requests">Requests</a></li><li class="toc-h3"><a href="#responses">Responses</a></li><li class="toc-h2"><a href="#apis_based_on_http">APIs based on HTTP</a></li><li class="toc-h2"><a href="#conclusion">Conclusion</a></li><li class="toc-h2"><a href="#see_also">See also</a></li></ul></details><nav class="chapter-switcher" aria-label="章节导航"><a href="../01-domain/english.html">← 域名与 DNS</a><a class="course-home" href="../index.html">全部章节</a><a href="../03-messages/english.html">HTTP 消息 →</a></nav></header><article class="translated-article"><section class="content-section">
+<p data-unit="02-overview-001"><strong>HTTP</strong> is a <a href="https://developer.mozilla.org/en-US/docs/Glossary/Protocol">protocol</a> for fetching resources such as HTML documents.
+It is the foundation of any data exchange on the Web and it is a client-server protocol, which means requests are initiated by the recipient, usually the Web browser.
+A complete document is typically constructed from resources such as text content, layout instructions, images, videos, scripts, and more.</p>
+<p><img alt="A single Web document composed from multiple resources from different servers." data-original-src="https://mdn.github.io/shared-assets/images/diagrams/http/overview/fetching-a-page.svg" loading="eager" src="../assets/0fad396f4591.svg"/></p>
+<p data-unit="02-overview-002">Clients and servers communicate by exchanging individual messages (as opposed to a stream of data).
+The messages sent by the client are called <em>requests</em> and the messages sent by the server as an answer are called <em>responses</em>.</p>
+<p><img alt="HTTP as an application layer protocol, on top of TCP (transport layer) and IP (network layer) and below the presentation layer." data-original-src="https://mdn.github.io/shared-assets/images/diagrams/http/overview/http-layers.svg" loading="eager" src="../assets/4fb24414cd40.svg"/></p>
+<p data-unit="02-overview-003">Designed in the early 1990s, HTTP is an extensible protocol which has evolved over time.
+It is an application layer protocol that is sent over <a href="https://developer.mozilla.org/en-US/docs/Glossary/TCP">TCP</a>, or over a <a href="https://developer.mozilla.org/en-US/docs/Glossary/TLS">TLS</a>-encrypted TCP connection, though any reliable transport protocol could theoretically be used.
+Due to its extensibility, it is used to not only fetch hypertext documents, but also images and videos or to post content to servers, like with HTML form results.
+HTTP can also be used to fetch parts of documents to update Web pages on demand.</p>
+</section><section aria-labelledby="components_of_http-based_systems" class="content-section">
+<h2 class="heading" data-unit="02-overview-004" id="components_of_http-based_systems"><a class="heading-anchor" href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Overview#components_of_http-based_systems">Components of HTTP-based systems</a></h2>
+<p data-unit="02-overview-005">HTTP is a client-server protocol: requests are sent by one entity, the user-agent (or a proxy on behalf of it).
+Most of the time the user-agent is a Web browser, but it can be anything, for example, a robot that crawls the Web to populate and maintain a search engine index.</p>
+<p data-unit="02-overview-006">Each individual request is sent to a server, which handles it and provides an answer called the <em>response</em>.
+Between the client and the server there are numerous entities, collectively called <a href="https://developer.mozilla.org/en-US/docs/Glossary/Proxy_server">proxies</a>, which perform different operations and act as gateways or <a href="https://developer.mozilla.org/en-US/docs/Glossary/Cache">caches</a>, for example.</p>
+<p><img alt="An HTTP request from a client forwarded by several proxies to a server and a response taking the same route back to the client." data-original-src="https://mdn.github.io/shared-assets/images/diagrams/http/overview/client-server-chain.svg" loading="eager" src="../assets/bbb53845c400.svg"/></p>
+<p data-unit="02-overview-007">In reality, there are more computers between a browser and the server handling the request: there are routers, modems, and more.
+Thanks to the layered design of the Web, these are hidden in the network and transport layers.
+HTTP is on top, at the application layer.
+Although important for diagnosing network problems, the underlying layers are mostly irrelevant to the description of HTTP.</p>
+</section><section aria-labelledby="client_the_user-agent" class="content-section">
+<h3 class="heading" data-unit="02-overview-008" id="client_the_user-agent"><a class="heading-anchor" href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Overview#client_the_user-agent">Client: the user-agent</a></h3>
+<p data-unit="02-overview-009">The <em>user-agent</em> is any tool that acts on behalf of the user.
+This role is primarily performed by the Web browser, but it may also be performed by programs used by engineers and Web developers to debug their applications.</p>
+<p data-unit="02-overview-010">The browser is <strong>always</strong> the entity initiating the request.
+It is never the server (though some mechanisms have been added over the years to simulate server-initiated messages).</p>
+<p data-unit="02-overview-011">To display a Web page, the browser sends an original request to fetch the HTML document that represents the page.
+It then parses this file, making additional requests corresponding to execution scripts, layout information (CSS) to display, and sub-resources contained within the page (usually images and videos).
+The Web browser then combines these resources to present the complete document, the Web page.
+Scripts executed by the browser can fetch more resources in later phases and the browser updates the Web page accordingly.</p>
+<p data-unit="02-overview-012">A Web page is a hypertext document.
+This means some parts of the displayed content are links, which can be activated (usually by a click of the mouse) to fetch a new Web page, allowing the user to direct their user-agent and navigate through the Web.
+The browser translates these directions into HTTP requests, and further interprets the HTTP responses to present the user with a clear response.</p>
+</section><section aria-labelledby="the_web_server" class="content-section">
+<h3 class="heading" data-unit="02-overview-013" id="the_web_server"><a class="heading-anchor" href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Overview#the_web_server">The Web server</a></h3>
+<p data-unit="02-overview-014">On the opposite side of the communication channel is the server, which <em>serves</em> the document as requested by the client.
+A server appears as only a single machine virtually; but it may actually be a collection of servers sharing the load (load balancing), or other software (such as caches, a database server, or e-commerce servers), totally or partially generating the document on demand.</p>
+<p data-unit="02-overview-015">A server is not necessarily a single machine, but several server software instances can be hosted on the same machine.
+With HTTP/1.1 and the <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Host"><code>Host</code></a> header, they may even share the same IP address.</p>
+</section><section aria-labelledby="proxies" class="content-section">
+<h3 class="heading" data-unit="02-overview-016" id="proxies"><a class="heading-anchor" href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Overview#proxies">Proxies</a></h3>
+<p data-unit="02-overview-017">Between the Web browser and the server, numerous computers and machines relay the HTTP messages.
+Due to the layered structure of the Web stack, most of these operate at the transport, network or physical levels, becoming transparent at the HTTP layer and potentially having a significant impact on performance.
+Those operating at the application layers are generally called <strong>proxies</strong>.
+These can be transparent, forwarding on the requests they receive without altering them in any way, or non-transparent, in which case they will change the request in some way before passing it along to the server.
+Proxies may perform numerous functions:</p>
+<ul>
+<li data-unit="02-overview-018">caching (the cache can be public or private, like the browser cache)</li>
+<li data-unit="02-overview-019">filtering (like an antivirus scan or parental controls)</li>
+<li data-unit="02-overview-020">load balancing (to allow multiple servers to serve different requests)</li>
+<li data-unit="02-overview-021">authentication (to control access to different resources)</li>
+<li data-unit="02-overview-022">logging (allowing the storage of historical information)</li>
+</ul>
+</section><section aria-labelledby="basic_aspects_of_http" class="content-section">
+<h2 class="heading" data-unit="02-overview-023" id="basic_aspects_of_http"><a class="heading-anchor" href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Overview#basic_aspects_of_http">Basic aspects of HTTP</a></h2>
+<? >
+</section><section aria-labelledby="http_is_simple" class="content-section">
+<h3 class="heading" data-unit="02-overview-024" id="http_is_simple"><a class="heading-anchor" href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Overview#http_is_simple">HTTP is simple</a></h3>
+<p data-unit="02-overview-025">HTTP is generally designed to be human-readable, even with the added complexity introduced in HTTP/2 by encapsulating HTTP messages into frames.
+HTTP messages can be read and understood by humans, providing easier testing for developers, and reduced complexity for newcomers.</p>
+</section><section aria-labelledby="http_is_extensible" class="content-section">
+<h3 class="heading" data-unit="02-overview-026" id="http_is_extensible"><a class="heading-anchor" href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Overview#http_is_extensible">HTTP is extensible</a></h3>
+<p data-unit="02-overview-027">Introduced in HTTP/1.0, <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers">HTTP headers</a> make this protocol easy to extend and experiment with.
+New functionality can even be introduced by an agreement between a client and a server about a new header's semantics.</p>
+</section><section aria-labelledby="http_is_stateless_but_not_sessionless" class="content-section">
+<h3 class="heading" data-unit="02-overview-028" id="http_is_stateless_but_not_sessionless"><a class="heading-anchor" href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Overview#http_is_stateless_but_not_sessionless">HTTP is stateless, but not sessionless</a></h3>
+<p data-unit="02-overview-029">HTTP is stateless: there is no link between two requests being successively carried out on the same connection.
+This immediately has the prospect of being problematic for users attempting to interact with certain pages coherently, for example, using e-commerce shopping baskets.
+But while the core of HTTP itself is stateless, HTTP cookies allow the use of stateful sessions.
+Using header extensibility, HTTP Cookies are added to the workflow, allowing session creation on each HTTP request to share the same context, or the same state.</p>
+</section><section aria-labelledby="http_and_connections" class="content-section">
+<h3 class="heading" data-unit="02-overview-030" id="http_and_connections"><a class="heading-anchor" href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Overview#http_and_connections">HTTP and connections</a></h3>
+<p data-unit="02-overview-031">A connection is controlled at the transport layer, and therefore fundamentally out of scope for HTTP.
+HTTP doesn't require the underlying transport protocol to be connection-based; it only requires it to be <em>reliable</em>, or not lose messages (at minimum, presenting an error in such cases).
+Among the two most common transport protocols on the Internet, TCP is reliable and UDP isn't.
+HTTP therefore relies on the TCP standard, which is connection-based.</p>
+<p data-unit="02-overview-032">Before a client and server can exchange an HTTP request/response pair, they must establish a TCP connection, a process which requires several round-trips.
+The default behavior of HTTP/1.0 is to open a separate TCP connection for each HTTP request/response pair.
+This is less efficient than sharing a single TCP connection when multiple requests are sent in close succession.</p>
+<p data-unit="02-overview-033">In order to mitigate this flaw, HTTP/1.1 introduced <em>pipelining</em> (which proved difficult to implement) and <em>persistent connections</em>: the underlying TCP connection can be partially controlled using the <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Connection"><code>Connection</code></a> header.
+HTTP/2 went a step further by multiplexing messages over a single connection, helping keep the connection warm and more efficient.</p>
+<p data-unit="02-overview-034">Experiments are in progress to design a better transport protocol more suited to HTTP.
+For example, Google is experimenting with <a class="external" href="https://en.wikipedia.org/wiki/QUIC" target="_blank" title="External link (opens in new tab)">QUIC</a> which builds on UDP to provide a more reliable and efficient transport protocol.</p>
+</section><section aria-labelledby="what_can_be_controlled_by_http" class="content-section">
+<h2 class="heading" data-unit="02-overview-035" id="what_can_be_controlled_by_http"><a class="heading-anchor" href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Overview#what_can_be_controlled_by_http">What can be controlled by HTTP</a></h2>
+<p data-unit="02-overview-036">This extensible nature of HTTP has, over time, allowed for more control and functionality of the Web.
+Cache and authentication methods were functions handled early in HTTP history.
+The ability to relax the <em>origin constraint</em>, by contrast, was only added in the 2010s.</p>
+<p data-unit="02-overview-037">Here is a list of common features controllable with HTTP:</p>
+<ul>
+<li data-unit="02-overview-038"><em><a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Caching">Caching</a></em>:
+How documents are cached can be controlled by HTTP.
+The server can instruct proxies and clients about what to cache and for how long.
+The client can instruct intermediate cache proxies to ignore the stored document.</li>
+<li data-unit="02-overview-039"><em>Relaxing the origin constraint</em>:
+To prevent snooping and other privacy invasions, Web browsers enforce strict separation between websites.
+Only pages from the <strong>same origin</strong> can access all the information of a Web page.
+Though such a constraint is a burden to the server, HTTP headers can relax this strict separation on the server side, allowing a document to become a patchwork of information sourced from different domains; there could even be security-related reasons to do so.</li>
+<li data-unit="02-overview-040"><em>Authentication</em>:
+Some pages may be protected so that only specific users can access them.
+Basic authentication may be provided by HTTP, either using the <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/WWW-Authenticate"><code>WWW-Authenticate</code></a> and similar headers, or by setting a specific session using <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Cookies">HTTP cookies</a>.</li>
+<li data-unit="02-overview-041"><em><a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Proxy_servers_and_tunneling">Proxy and tunneling</a></em>:
+Servers or clients are often located on intranets and hide their true IP address from other computers.
+HTTP requests then go through proxies to cross this network barrier.
+Not all proxies are HTTP proxies.
+The SOCKS protocol, for example, operates at a lower level.
+Other protocols, like FTP, can be handled by these proxies.</li>
+<li data-unit="02-overview-042"><em>Sessions</em>:
+Using HTTP cookies allows you to link requests with the state of the server.
+This creates sessions, despite basic HTTP being a state-less protocol.
+This is useful not only for e-commerce shopping baskets, but also for any site allowing user configuration of the output.</li>
+</ul>
+</section><section aria-labelledby="http_flow" class="content-section">
+<h2 class="heading" data-unit="02-overview-043" id="http_flow"><a class="heading-anchor" href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Overview#http_flow">HTTP flow</a></h2>
+<p data-unit="02-overview-044">When a client wants to communicate with a server, either the final server or an intermediate proxy, it performs the following steps:</p>
+<ol>
+<li>
+<p data-unit="02-overview-045">Open a TCP connection: The TCP connection is used to send a request, or several, and receive an answer.
+The client may open a new connection, reuse an existing connection, or open several TCP connections to the servers.</p>
+</li>
+<li>
+<p data-unit="02-overview-046">Send an HTTP message: HTTP messages (before HTTP/2) are human-readable.
+With HTTP/2, these messages are encapsulated in frames, making them impossible to read directly, but the principle remains the same.
+For example:</p>
+<div class="code-example"><div class="example-header"><span class="language-name">http</span></div><pre class="brush: http notranslate"><code>GET / HTTP/1.1
+Host: developer.mozilla.org
+Accept-Language: fr
+</code></pre></div>
+</li>
+<li>
+<p data-unit="02-overview-047">Read the response sent by the server, such as:</p>
+<div class="code-example"><div class="example-header"><span class="language-name">http</span></div><pre class="brush: http notranslate"><code>HTTP/1.1 200 OK
+Date: Sat, 09 Oct 2010 14:28:02 GMT
+Server: Apache
+Last-Modified: Tue, 01 Dec 2009 20:18:22 GMT
+ETag: "51142bc1-7449-479b075b2891b"
+Accept-Ranges: bytes
+Content-Length: 29769
+Content-Type: text/html
+
+&lt;!doctype html&gt;… (here come the 29769 bytes of the requested web page)
+</code></pre></div>
+</li>
+<li>
+<p data-unit="02-overview-048">Close or reuse the connection for further requests.</p>
+</li>
+</ol>
+<p data-unit="02-overview-049">If HTTP pipelining is activated, several requests can be sent without waiting for the first response to be fully received.
+HTTP pipelining has proven difficult to implement in existing networks, where old pieces of software coexist with modern versions.
+HTTP pipelining has been superseded in HTTP/2 with more robust multiplexing requests within a frame.</p>
+</section><section aria-labelledby="http_messages" class="content-section">
+<h2 class="heading" data-unit="02-overview-050" id="http_messages"><a class="heading-anchor" href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Overview#http_messages">HTTP Messages</a></h2>
+<p data-unit="02-overview-051">HTTP messages, as defined in HTTP/1.1 and earlier, are human-readable.
+In HTTP/2, these messages are embedded into a binary structure, a <em>frame</em>, allowing optimizations like compression of headers and multiplexing.
+Even if only part of the original HTTP message is sent in this version of HTTP, the semantics of each message is unchanged and the client reconstitutes (virtually) the original HTTP/1.1 request.
+It is therefore useful to comprehend HTTP/2 messages in the HTTP/1.1 format.</p>
+<p data-unit="02-overview-052">There are two types of HTTP messages, requests and responses, each with its own format.</p>
+</section><section aria-labelledby="requests" class="content-section">
+<h3 class="heading" data-unit="02-overview-053" id="requests"><a class="heading-anchor" href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Overview#requests">Requests</a></h3>
+<p data-unit="02-overview-054">An example HTTP request:</p>
+<p><img alt="Overview of an HTTP GET request with headers" data-original-src="https://mdn.github.io/shared-assets/images/diagrams/http/overview/http-request.svg" loading="eager" src="../assets/c81fa8b4bf7a.svg"/></p>
+<p data-unit="02-overview-055">Requests consist of the following elements:</p>
+<ul>
+<li data-unit="02-overview-056">An HTTP <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Methods">method</a>, usually a verb like <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Methods/GET"><code>GET</code></a>, <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Methods/POST"><code>POST</code></a>, or a noun like <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Methods/OPTIONS"><code>OPTIONS</code></a> or <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Methods/HEAD"><code>HEAD</code></a> that defines the operation the client wants to perform.
+Typically, a client wants to fetch a resource (using <code>GET</code>) or post the value of an <a href="https://developer.mozilla.org/en-US/docs/Learn_web_development/Extensions/Forms">HTML form</a> (using <code>POST</code>), though more operations may be needed in other cases.</li>
+<li data-unit="02-overview-057">The path of the resource to fetch; the URL of the resource stripped from elements that are obvious from the context, for example without the <a href="https://developer.mozilla.org/en-US/docs/Glossary/Protocol">protocol</a> (<code>http://</code>), the <a href="https://developer.mozilla.org/en-US/docs/Glossary/Domain">domain</a> (here, <code>developer.mozilla.org</code>), or the TCP <a href="https://developer.mozilla.org/en-US/docs/Glossary/Port">port</a> (here, <code>80</code>).</li>
+<li data-unit="02-overview-058">The version of the HTTP protocol.</li>
+<li data-unit="02-overview-059">Optional <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers">headers</a> that convey additional information for the servers.</li>
+<li data-unit="02-overview-060">A body, for some methods like <code>POST</code>, similar to those in responses, which contain the resource sent.</li>
+</ul>
+</section><section aria-labelledby="responses" class="content-section">
+<h3 class="heading" data-unit="02-overview-061" id="responses"><a class="heading-anchor" href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Overview#responses">Responses</a></h3>
+<p data-unit="02-overview-062">An example response:</p>
+<p><img alt="Overview of a '200 OK' HTTP response to a GET request including response headers." data-original-src="https://mdn.github.io/shared-assets/images/diagrams/http/overview/http-response.svg" loading="eager" src="../assets/0a67bc12ac0c.svg"/></p>
+<p data-unit="02-overview-063">Responses consist of the following elements:</p>
+<ul>
+<li data-unit="02-overview-064">The version of the HTTP protocol they follow.</li>
+<li data-unit="02-overview-065">A <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status">status code</a>, indicating if the request was successful or not, and why.</li>
+<li data-unit="02-overview-066">A status message, a non-authoritative short description of the status code.</li>
+<li data-unit="02-overview-067">HTTP <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers">headers</a>, like those for requests.</li>
+<li data-unit="02-overview-068">Optionally, a body containing the fetched resource.</li>
+</ul>
+</section><section aria-labelledby="apis_based_on_http" class="content-section">
+<h2 class="heading" data-unit="02-overview-069" id="apis_based_on_http"><a class="heading-anchor" href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Overview#apis_based_on_http">APIs based on HTTP</a></h2>
+<p data-unit="02-overview-070">The most commonly used API based on HTTP is the <a href="https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API">Fetch API</a>, which can be used to make HTTP requests from JavaScript. The Fetch API replaces the <a href="https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest"><code>XMLHttpRequest</code></a> API.</p>
+<p data-unit="02-overview-071">Another API, <a href="https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events">server-sent events</a>, is a one-way service that allows a server to send events to the client, using HTTP as a transport mechanism.
+Using the <a href="https://developer.mozilla.org/en-US/docs/Web/API/EventSource"><code>EventSource</code></a> interface, the client opens a connection and establishes event handlers.
+The client browser automatically converts the messages that arrive on the HTTP stream into appropriate <a href="https://developer.mozilla.org/en-US/docs/Web/API/Event"><code>Event</code></a> objects. Then it delivers them to the event handlers that have been registered for the events' <a href="https://developer.mozilla.org/en-US/docs/Web/API/Event/type" title="type"><code>type</code></a> if known, or to the <a href="https://developer.mozilla.org/en-US/docs/Web/API/EventSource/message_event" title="onmessage"><code>onmessage</code></a> event handler if no type-specific event handler was established.</p>
+</section><section aria-labelledby="conclusion" class="content-section">
+<h2 class="heading" data-unit="02-overview-072" id="conclusion"><a class="heading-anchor" href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Overview#conclusion">Conclusion</a></h2>
+<p data-unit="02-overview-073">HTTP is an extensible protocol that is easy to use.
+The client-server structure, combined with the ability to add headers, allows HTTP to advance along with the extended capabilities of the Web.</p>
+<p data-unit="02-overview-074">Though HTTP/2 adds some complexity by embedding HTTP messages in frames to improve performance, the basic structure of messages has stayed the same since HTTP/1.0.
+Session flow remains basic, allowing it to be investigated and debugged with a <a class="external" href="https://firefox-source-docs.mozilla.org/devtools-user/network_monitor/index.html" target="_blank" title="External link (opens in new tab)">HTTP network monitor</a>.</p>
+</section><section aria-labelledby="see_also" class="content-section">
+<h2 class="heading" data-unit="02-overview-075" id="see_also"><a class="heading-anchor" href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Overview#see_also">See also</a></h2>
+<ul>
+<li data-unit="02-overview-076"><a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Evolution_of_HTTP">Evolution of HTTP</a></li>
+<li><span data-extra-unit="02-overview-extra-001">Glossary terms:
+</span><ul>
+<li data-unit="02-overview-077"><a href="https://developer.mozilla.org/en-US/docs/Glossary/HTTP">HTTP</a></li>
+<li data-unit="02-overview-078"><a href="https://developer.mozilla.org/en-US/docs/Glossary/HTTP_2">HTTP/2</a></li>
+<li data-unit="02-overview-079"><a href="https://developer.mozilla.org/en-US/docs/Glossary/QUIC">QUIC</a></li>
+</ul>
+</li>
+</ul>
+</section></article><nav class="chapter-switcher" aria-label="章节导航"><a href="../01-domain/english.html">← 域名与 DNS</a><a class="course-home" href="../index.html">全部章节</a><a href="../03-messages/english.html">HTTP 消息 →</a></nav><footer class="license-note"><p>原文：<a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Overview">Overview of HTTP</a>，© Mozilla Contributors。原文快照：2026-09-29。本非官方阅读版由 Codex 翻译并逐句润色；另附独立编者导读与校注。正文全文、代码、原图及链接保留，不含 MDN 站点导航、反馈和页脚。</p><p>文档与译文采用 <a href="https://creativecommons.org/licenses/by-sa/2.5/">CC BY-SA 2.5</a>；代码许可及完整来源说明见 <a href="../NOTICE.html">来源与许可</a>。</p></footer></main></body></html>

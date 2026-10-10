@@ -1,0 +1,132 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>域名与 DNS · 网络请求阅读材料</title><link rel="stylesheet" href="../../reader.css"><link rel="stylesheet" href="../source.css"><link rel="manifest" href="../../../manifest.webmanifest"></head><body><nav class="site-nav"><a href="../index.html">← 网络请求 · 从一次请求开始</a><a href="https://developer.mozilla.org/en-US/docs/Learn_web_development/Howto/Web_mechanics/What_is_a_domain_name">MDN 原文 ↗</a></nav><main class="reader"><header class="chapter-header"><span class="chapter-kicker">N01 · 第一轮直译稿</span><h1>域名与 DNS</h1><p class="byline">What is a Domain Name? · Mozilla Contributors</p><div class="title-rule"></div><p class="edition-nav"><a href="index.html">中文阅读版</a> · <a href="english.html">英文对照</a> · <strong aria-current="page">第一轮直译稿</strong></p><aside class="learning-note"><span class="note-kind">编者导读 · 不属于原文</span><p><strong>输入一个域名之后，客户端怎样找到服务器？</strong></p><p>先区分域名和 IP 地址：前者便于人使用，后者用于网络寻址。本篇后半段介绍 DNS 查询；域名购买部分可以先略读，原文仍完整保留。</p><details class="editor-notes"><summary>阅读前的版本与适用范围校注（2 条）</summary><p>原文把 DNS 描述为信息刷新到每台服务器，是教学上的简化。实际是分布式、分层的系统：权威服务器保存所负责区域的数据，递归解析器按需查询并缓存，缓存按 TTL 过期；并不是向全球所有 DNS 服务器推送完整数据库。根、顶级域和具体区域的权威服务也不应混为一谈。参见 <a href="https://www.rfc-editor.org/rfc/rfc1034.html">RFC 1034，第 4～5 节</a>。</p><p>原文使用公共 IP 的简化模型，不代表每台联网设备都能从公网直接访问。下面 whois 输出、域名可注册状态和政策例子都是原文示例，不是今天的实时查询结果；正文按原样保留。</p></details></aside><details class="source-details"><summary>本篇目录与翻译范围</summary><p>对应上述英文文章正文全文，保留原文顺序、表格、示例、原图和“另请参阅”。代码及图中英文保持原样。编者说明与原文分开；历史表述未在译文中静默改写。</p><ul><li class="toc-h2"><a href="#summary">概述</a></li><li class="toc-h2"><a href="#deeper_dive">深入了解</a></li><li class="toc-h3"><a href="#structure_of_domain_names">域名的结构</a></li><li class="toc-h3"><a href="#buying_a_domain_name">购买域名</a></li><li class="toc-h4"><a href="#who_owns_a_domain_name">谁拥有域名？</a></li><li class="toc-h4"><a href="#finding_an_available_domain_name">寻找可用的域名</a></li><li class="toc-h4"><a href="#getting_a_domain_name">获取域名</a></li><li class="toc-h4"><a href="#dns_refreshing">DNS 刷新</a></li><li class="toc-h3"><a href="#how_does_a_dns_request_work">DNS 请求如何工作？</a></li><li class="toc-h2"><a href="#next_steps">下一步</a></li></ul></details><nav class="chapter-switcher" aria-label="章节导航"><span></span><a class="course-home" href="../index.html">全部章节</a><a href="../02-overview/literal.html">HTTP 概览 →</a></nav></header><article class="translated-article"><section class="content-section">
+<figure class="table-container"><div class="table-wrapper"><table>
+<tbody>
+<tr>
+<th data-unit="01-domain-001" scope="row">前置知识：</th>
+<td data-unit="01-domain-002">首先，你需要知道<a href="https://developer.mozilla.org/en-US/docs/Learn_web_development/Howto/Web_mechanics/How_does_the_Internet_work">互联网如何工作</a>，并理解<a href="https://developer.mozilla.org/en-US/docs/Learn_web_development/Howto/Web_mechanics/What_is_a_URL">什么是 URL</a>。</td>
+</tr>
+<tr>
+<th data-unit="01-domain-003" scope="row">学习目标：</th>
+<td data-unit="01-domain-004">了解域名是什么、如何工作，以及为什么重要。</td>
+</tr>
+</tbody>
+</table></div></figure>
+</section><section aria-labelledby="summary" class="content-section">
+<h2 class="heading" data-unit="01-domain-005" id="summary"><a class="heading-anchor" href="https://developer.mozilla.org/en-US/docs/Learn_web_development/Howto/Web_mechanics/What_is_a_domain_name#summary">概述</a></h2>
+<p data-unit="01-domain-006">域名是互联网基础设施的重要组成部分。它们为互联网上可访问的任何 Web 服务器提供人类可读的地址。</p>
+<p data-unit="01-domain-007">任何接入互联网的计算机，都可以通过公共 <a href="https://developer.mozilla.org/en-US/docs/Glossary/IP_Address">IP 地址</a>访问；这个地址可以是 IPv4 地址（例如 <code>192.0.2.172</code>），也可以是 IPv6 地址（例如 <code>2001:db8:8b73:0000:0000:8a2e:0370:1337</code>）。</p>
+<p data-unit="01-domain-008">计算机很容易处理这些地址，但人们很难据此判断谁在运行服务器，或者网站提供什么服务。IP 地址难以记忆，而且可能随时间变化。</p>
+<p data-unit="01-domain-009">为了解决这些问题，我们使用人类可读的地址，称为域名。</p>
+</section><section aria-labelledby="deeper_dive" class="content-section">
+<h2 class="heading" data-unit="01-domain-010" id="deeper_dive"><a class="heading-anchor" href="https://developer.mozilla.org/en-US/docs/Learn_web_development/Howto/Web_mechanics/What_is_a_domain_name#deeper_dive">深入了解</a></h2>
+<? >
+</section><section aria-labelledby="structure_of_domain_names" class="content-section">
+<h3 class="heading" data-unit="01-domain-011" id="structure_of_domain_names"><a class="heading-anchor" href="https://developer.mozilla.org/en-US/docs/Learn_web_development/Howto/Web_mechanics/What_is_a_domain_name#structure_of_domain_names">域名的结构</a></h3>
+<p data-unit="01-domain-012">域名的结构很简单，由若干部分组成（可能只有一部分，也可能有两部分、三部分……），各部分用点分隔，并且<strong>从右向左阅读</strong>：</p>
+<p><img alt="Anatomy of the MDN domain name" data-original-src="https://developer.mozilla.org/en-US/docs/Learn_web_development/Howto/Web_mechanics/What_is_a_domain_name/structure.png" height="76" loading="eager" src="../assets/7402d9674619.png" width="252"/></p>
+<p data-unit="01-domain-013">每一部分都提供关于整个域名的特定信息。</p>
+<dl>
+<dt data-unit="01-domain-014" id="tld"><a href="https://developer.mozilla.org/en-US/docs/Glossary/TLD">TLD</a>（顶级域）。</dt>
+<dd>
+<p data-unit="01-domain-015">TLD 告诉用户域名背后服务的一般用途。最通用的 TLD（<code>.com</code>、<code>.org</code>、<code>.net</code>）不要求 Web 服务满足特定标准，但有些 TLD 执行更严格的政策，使其用途更加明确。例如：</p>
+<ul>
+<li data-unit="01-domain-016"><code>.us</code>、<code>.fr</code> 或 <code>.se</code> 这样的地区 TLD，可能要求服务使用特定语言，或者托管在特定国家；它们本来就是用来指示特定语言或国家的资源的。</li>
+<li data-unit="01-domain-017">包含 <code>.gov</code> 的 TLD 只允许政府部门使用。</li>
+<li data-unit="01-domain-018"><code>.edu</code> TLD 仅供教育和学术机构使用。</li>
+</ul>
+<p data-unit="01-domain-019">TLD 除了拉丁字符，也可以包含特殊字符。TLD 最长为 63 个字符，不过大多数长度在 2～3 个字符左右。</p>
+<p data-unit="01-domain-020">完整的 TLD 列表由 <a class="external" href="https://www.icann.org/en/contracted-parties/registry-operators/resources/list-of-top-level-domains" target="_blank" title="External link (opens in new tab)">ICANN 维护</a>。</p>
+</dd>
+<dt data-unit="01-domain-021" id="label_or_component"><a href="https://developer.mozilla.org/en-US/docs/Learn_web_development/Howto/Web_mechanics/What_is_a_domain_name#label_or_component">标签（或组成部分）</a></dt>
+<dd>
+<p data-unit="01-domain-022">标签是接在 TLD 后面的部分。标签是一个不区分大小写的字符序列，长度为 1～63 个字符，只能包含字母 <code>A</code> 到 <code>Z</code>、数字 <code>0</code> 到 <code>9</code>，以及“-”字符（不能位于标签的开头或结尾）。<code>a</code>、<code>97</code> 和 <code>hello-strange-person-16-how-are-you</code> 都是有效标签的例子。</p>
+<p data-unit="01-domain-023">紧挨着 TLD、位于其前面的标签，也称为<em>二级域</em>（SLD）。</p>
+<p data-unit="01-domain-024">一个域名可以有许多标签（或组成部分）。组成域名并不强制要求、也不必一定使用 3 个标签。例如，<a class="external" href="https://informatics.ed.ac.uk/" target="_blank" title="External link (opens in new tab)">informatics.ed.ac.uk</a> 就是有效域名。对于你控制的任何域名（例如 <a class="external" href="https://www.mozilla.org/en-US/" target="_blank" title="External link (opens in new tab)">mozilla.org</a>），你都可以创建“子域名”，让每个子域名提供不同的内容，例如 <a href="https://developer.mozilla.org/">developer.mozilla.org</a>、<a class="external" href="https://support.mozilla.org/" target="_blank" title="External link (opens in new tab)">support.mozilla.org</a> 或 <a class="external" href="https://bugzilla.mozilla.org/" target="_blank" title="External link (opens in new tab)">bugzilla.mozilla.org</a>。</p>
+</dd>
+</dl>
+</section><section aria-labelledby="buying_a_domain_name" class="content-section">
+<h3 class="heading" data-unit="01-domain-025" id="buying_a_domain_name"><a class="heading-anchor" href="https://developer.mozilla.org/en-US/docs/Learn_web_development/Howto/Web_mechanics/What_is_a_domain_name#buying_a_domain_name">购买域名</a></h3>
+<h4 data-unit="01-domain-026" id="who_owns_a_domain_name">谁拥有域名？</h4>
+<p data-unit="01-domain-027">你不能“买下一个域名”。这样做是为了让不再使用的域名最终能重新供其他人使用。如果每个域名都被买断，网络很快就会充斥着被锁定、无人使用、其他人也无法使用的域名。</p>
+<p data-unit="01-domain-028">实际上，你付费购买的是一年或多年的域名使用权。你可以续期，而且你的续期优先于其他人的申请。但你永远不会拥有这个域名。</p>
+<p data-unit="01-domain-029">被称为注册商的公司，通过域名注册数据库记录将你与域名关联起来的技术信息和管理信息。</p>
+<div class="notecard note">
+<p data-unit="01-domain-030"><strong>备注：</strong>对于某些域名，负责记录信息的可能不是注册商。例如，<code>.fire</code> 下的所有域名都由 Amazon 管理。</p>
+</div>
+<h4 data-unit="01-domain-031" id="finding_an_available_domain_name">寻找可用的域名</h4>
+<p data-unit="01-domain-032">要确定某个域名是否可用：</p>
+<ul>
+<li>
+<p data-unit="01-domain-033">访问域名注册商的网站。大多数注册商提供“whois”服务，用来告诉你某个域名是否可用。</p>
+</li>
+<li>
+<p data-unit="01-domain-034">或者，如果你使用的系统内置了 shell，可以在其中输入 <code>whois</code> 命令，下面以 <code>mozilla.org</code> 为例：</p>
+<div class="code-example"><div class="example-header"><span class="language-name">bash</span></div><pre class="brush: bash notranslate"><code>whois mozilla.org
+</code></pre></div>
+<p data-unit="01-domain-035">这会输出以下内容：</p>
+<pre class="brush: plain notranslate">Domain Name:MOZILLA.ORG
+Domain ID: D1409563-LROR
+Creation Date: 1998-01-24T05:00:00Z
+Updated Date: 2013-12-08T01:16:57Z
+Registry Expiry Date: 2015-01-23T05:00:00Z
+Sponsoring Registrar:MarkMonitor Inc. (R37-LROR)
+Sponsoring Registrar IANA ID: 292
+WHOIS Server:
+Referral URL:
+Domain Status: clientDeleteProhibited
+Domain Status: clientTransferProhibited
+Domain Status: clientUpdateProhibited
+Registrant ID:mmr-33684
+Registrant Name:DNS Admin
+Registrant Organization:Mozilla Foundation
+Registrant Street: 650 Castro St Ste 300
+Registrant City:Mountain View
+Registrant State/Province:CA
+Registrant Postal Code:94041
+Registrant Country:US
+Registrant Phone:+1.6509030800
+</pre>
+</li>
+</ul>
+<p data-unit="01-domain-036">如你所见，我不能注册 <code>mozilla.org</code>，因为 Mozilla 基金会已经注册了它。</p>
+<p data-unit="01-domain-037">另一方面，我们来看看能不能注册 <code>afunkydomainname.org</code>：</p>
+<div class="code-example"><div class="example-header"><span class="language-name">bash</span></div><pre class="brush: bash notranslate"><code>whois afunkydomainname.org
+</code></pre></div>
+<p data-unit="01-domain-038">这会输出以下内容（以撰写本文时为准）：</p>
+<pre class="brush: plain notranslate">NOT FOUND
+</pre>
+<p data-unit="01-domain-039">如你所见，这个域名不在 <code>whois</code> 数据库中，因此我们可以申请注册。知道这一点很有用！</p>
+<h4 data-unit="01-domain-040" id="getting_a_domain_name">获取域名</h4>
+<p data-unit="01-domain-041">过程相当直接：</p>
+<ol>
+<li data-unit="01-domain-042">访问注册商的网站。</li>
+<li data-unit="01-domain-043">通常会有一个醒目的“获取域名”操作入口。点击它。</li>
+<li data-unit="01-domain-044">填写表单中所有必需的信息。尤其要确保你想要的域名没有拼写错误。一旦付款，就来不及了！</li>
+<li data-unit="01-domain-045">注册商会在域名注册成功时通知你。几个小时内，所有 DNS 服务器都会收到你的 DNS 信息。</li>
+</ol>
+<div class="notecard note">
+<p data-unit="01-domain-046"><strong>备注：</strong>在这个过程中，注册商会要求你提供现实中的地址。请务必准确填写，因为在某些国家，如果注册商无法提供有效地址，可能会被要求关闭该域名。</p>
+</div>
+<h4 data-unit="01-domain-047" id="dns_refreshing">DNS 刷新</h4>
+<p data-unit="01-domain-048">DNS 数据库存储在世界各地的每台 DNS 服务器上，这些服务器都会引用少数被称为“权威域名服务器”或“顶级 DNS 服务器”的特殊服务器；它们就像管理整个系统的主管服务器。</p>
+<p data-unit="01-domain-049">每当注册商为某个域名创建或更新信息时，每个 DNS 数据库中的信息都必须刷新。每台知道这个域名的 DNS 服务器，都会先将信息存储一段时间，然后让它自动失效并刷新（DNS 服务器查询权威服务器，从那里获取更新的信息）。因此，知道这个域名的 DNS 服务器需要一些时间，才能获得最新信息。</p>
+</section><section aria-labelledby="how_does_a_dns_request_work" class="content-section">
+<h3 class="heading" data-unit="01-domain-050" id="how_does_a_dns_request_work"><a class="heading-anchor" href="https://developer.mozilla.org/en-US/docs/Learn_web_development/Howto/Web_mechanics/What_is_a_domain_name#how_does_a_dns_request_work">DNS 请求如何工作？</a></h3>
+<p data-unit="01-domain-051">正如前面所见，当你想在浏览器中显示网页时，输入域名比输入 IP 地址更容易。我们来看看这个过程：</p>
+<ol>
+<li data-unit="01-domain-052">在浏览器地址栏中输入 <code>mozilla.org</code>。</li>
+<li data-unit="01-domain-053">浏览器询问你的计算机，是否已经知道这个域名对应的 IP 地址（使用本地 DNS 缓存）。如果知道，就把域名转换成 IP 地址，浏览器随后与 Web 服务器协商获取内容。过程到此结束。</li>
+<li data-unit="01-domain-054">如果计算机不知道 <code>mozilla.org</code> 这个名称背后的 IP，就会继续询问 DNS 服务器；DNS 服务器的工作恰好就是告诉计算机，每个已注册的域名对应哪个 IP 地址。</li>
+<li data-unit="01-domain-055">现在计算机知道了请求所需的 IP 地址，浏览器就可以与 Web 服务器协商获取内容。</li>
+</ol>
+<p><img alt="Explanation of the steps needed to obtain the result to a DNS request" data-original-src="https://developer.mozilla.org/en-US/docs/Learn_web_development/Howto/Web_mechanics/What_is_a_domain_name/2014-10-dns-request2.png" height="702" loading="eager" src="../assets/c325534abb7f.png" width="544"/></p>
+</section><section aria-labelledby="next_steps" class="content-section">
+<h2 class="heading" data-unit="01-domain-056" id="next_steps"><a class="heading-anchor" href="https://developer.mozilla.org/en-US/docs/Learn_web_development/Howto/Web_mechanics/What_is_a_domain_name#next_steps">下一步</a></h2>
+<p data-unit="01-domain-057">好了，我们已经谈了很多过程和架构方面的内容。该继续往下学习了。</p>
+<ul>
+<li data-unit="01-domain-058">如果你想动手实践，现在可以开始深入了解设计，探索<a href="https://developer.mozilla.org/en-US/docs/Learn_web_development/Howto/Design_and_accessibility/Common_web_layouts">网页的组成结构</a>。</li>
+<li data-unit="01-domain-059">还要注意，构建网站的某些环节需要花钱。请参阅<a href="https://developer.mozilla.org/en-US/docs/Learn_web_development/Howto/Tools_and_setup/How_much_does_it_cost">搭建网站需要多少钱</a>。</li>
+<li data-unit="01-domain-060">或者，在维基百科上进一步阅读<a class="external" href="https://en.wikipedia.org/wiki/Domain_name" target="_blank" title="External link (opens in new tab)">域名</a>。</li>
+<li data-unit="01-domain-061"><a class="external" href="https://howdns.works/" target="_blank" title="External link (opens in new tab)">DNS 如何工作</a>教程提供了有趣而生动的解释。</li>
+</ul>
+</section></article><nav class="chapter-switcher" aria-label="章节导航"><span></span><a class="course-home" href="../index.html">全部章节</a><a href="../02-overview/literal.html">HTTP 概览 →</a></nav><footer class="license-note"><p>原文：<a href="https://developer.mozilla.org/en-US/docs/Learn_web_development/Howto/Web_mechanics/What_is_a_domain_name">What is a Domain Name?</a>，© Mozilla Contributors。原文快照：2026-09-29。本非官方阅读版由 Codex 翻译并逐句润色；另附独立编者导读与校注。正文全文、代码、原图及链接保留，不含 MDN 站点导航、反馈和页脚。</p><p>文档与译文采用 <a href="https://creativecommons.org/licenses/by-sa/2.5/">CC BY-SA 2.5</a>；代码许可及完整来源说明见 <a href="../NOTICE.html">来源与许可</a>。</p></footer></main></body></html>

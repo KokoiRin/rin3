@@ -1,0 +1,86 @@
+[
+  {
+    "slug": "01-domain",
+    "title": "域名与 DNS",
+    "englishTitle": "What is a Domain Name?",
+    "url": "https://developer.mozilla.org/en-US/docs/Learn_web_development/Howto/Web_mechanics/What_is_a_domain_name",
+    "date": "2026-09-29",
+    "sha256": "9c2c813d9c27a2dd7fd52f50f63bdcc58104f3be0e918e0b4f89c80b59ecd51e",
+    "units": 61,
+    "words": 1268,
+    "images": 2,
+    "codeBlocks": 4
+  },
+  {
+    "slug": "02-overview",
+    "title": "HTTP 概览",
+    "englishTitle": "Overview of HTTP",
+    "url": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Overview",
+    "date": "2026-09-29",
+    "sha256": "d6879c40772f953833b5294c2d158368e95cf86de39afcd7a6d5d03d389c4d1d",
+    "units": 79,
+    "words": 2234,
+    "images": 5,
+    "codeBlocks": 2
+  },
+  {
+    "slug": "03-messages",
+    "title": "HTTP 消息",
+    "englishTitle": "HTTP messages",
+    "url": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Messages",
+    "date": "2026-09-29",
+    "sha256": "57c1cf15d7592a690a1f21916e78c4a2c1f409c9db6cf4908fa277864c9eb98b",
+    "units": 89,
+    "words": 2705,
+    "images": 5,
+    "codeBlocks": 17
+  },
+  {
+    "slug": "04-connections",
+    "title": "HTTP/1.x 的连接管理",
+    "englishTitle": "Connection management in HTTP/1.x",
+    "url": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Connection_management_in_HTTP_1.x",
+    "date": "2026-09-29",
+    "sha256": "4f82b0d7dab9175ad447cdd1881483d8a776d1dbc876d88be43effd8b183e4a3",
+    "units": 43,
+    "words": 1303,
+    "images": 2,
+    "codeBlocks": 0
+  },
+  {
+    "slug": "05-tls",
+    "title": "传输层安全 TLS",
+    "englishTitle": "Transport Layer Security (TLS)",
+    "url": "https://developer.mozilla.org/en-US/docs/Web/Security/Defenses/Transport_Layer_Security",
+    "date": "2026-09-29",
+    "sha256": "34f51d13b2667c2745e1b06af84e96dc1f7a29111658ad11ae128d00ebe3f233",
+    "units": 39,
+    "words": 1072,
+    "images": 0,
+    "codeBlocks": 1
+  },
+  {
+    "slug": "06-cache",
+    "title": "HTTP 缓存",
+    "englishTitle": "HTTP caching",
+    "url": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Caching",
+    "date": "2026-09-29",
+    "sha256": "b4dfa5b919556dddabf2af1a7716d57b8e692df7205d31ede286c261f383fb4d",
+    "units": 213,
+    "words": 5169,
+    "images": 2,
+    "codeBlocks": 39
+  },
+  {
+    "slug": "07-evolution",
+    "title": "HTTP 的演进",
+    "englishTitle": "Evolution of HTTP",
+    "url": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Evolution_of_HTTP",
+    "date": "2026-09-29",
+    "sha256": "aacf2ca77c9a4a71e5fccfc1acb8b8b235c2c5b0b24fd53b4bf6e7bb21a14048",
+    "units": 75,
+    "words": 2367,
+    "images": 0,
+    "codeBlocks": 5
+  }
+]

@@ -1,0 +1,190 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Evolution of HTTP · 网络请求阅读材料</title><link rel="stylesheet" href="../../reader.css"><link rel="stylesheet" href="../source.css"><link rel="manifest" href="../../../manifest.webmanifest"></head><body><nav class="site-nav"><a href="../index.html">← 网络请求 · 从一次请求开始</a><a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Evolution_of_HTTP">MDN 原文 ↗</a></nav><main class="reader"><header class="chapter-header"><span class="chapter-kicker">N07 · English source</span><h1>Evolution of HTTP</h1><p class="byline">Evolution of HTTP · Mozilla Contributors</p><div class="title-rule"></div><p class="edition-nav"><a href="index.html">中文阅读版</a> · <strong aria-current="page">英文对照</strong> · <a href="literal.html">第一轮直译稿</a></p><aside class="learning-note"><span class="note-kind">编者导读 · 不属于原文</span><p><strong>HTTP/2 和 HTTP/3 到底改变了什么，又保留了什么？</strong></p><p>把前面学到的连接和消息放回历史中看：HTTP/1.1 复用连接，HTTP/2 多路复用，HTTP/3 改用 QUIC。首次阅读可以略读历史 API 扩展，重点看三个版本的连接与传输差异。</p><details class="editor-notes"><summary>阅读前的版本与适用范围校注（3 条）</summary><p>本文中的网站使用比例对应原文标注的 2022 年等历史时点，不代表今天的采用率。SSL、DNT、旧扩展的出现史也不是今天的配置清单。</p><p>原文说 QUIC 针对每条流独立进行丢包检测与重传，是概念化表述。更准确地说，丢包检测在 QUIC 传输机制中完成；各流独立、有序地交付数据，某条流的缺失数据不必阻止其他流的数据交付。不同流仍共享连接的拥塞控制等资源。参见 <a href="https://www.rfc-editor.org/rfc/rfc9000.html#section-2">RFC 9000，第 2 节</a>。</p><p>HTTP/3 定义于 <a href="https://www.rfc-editor.org/rfc/rfc9114.html">RFC 9114</a>。不能把正文中 HTTP/3 的“下一个版本”或概览篇的“QUIC 试验”理解为尚未标准化。</p></details></aside><details class="source-details"><summary>本篇目录与翻译范围</summary><p>对应上述英文文章正文全文，保留原文顺序、表格、示例、原图和“另请参阅”。代码及图中英文保持原样。编者说明与原文分开；历史表述未在译文中静默改写。</p><ul><li class="toc-h2"><a href="#invention_of_the_world_wide_web">Invention of the World Wide Web</a></li><li class="toc-h2"><a href="#http0.9_–_the_one-line_protocol">HTTP/0.9 – The one-line protocol</a></li><li class="toc-h2"><a href="#http1.0_–_building_extensibility">HTTP/1.0 – Building extensibility</a></li><li class="toc-h2"><a href="#http1.1_–_the_standardized_protocol">HTTP/1.1 – The standardized protocol</a></li><li class="toc-h2"><a href="#more_than_two_decades_of_development">More than two decades of development</a></li><li class="toc-h3"><a href="#using_http_for_secure_transmissions">Using HTTP for secure transmissions</a></li><li class="toc-h3"><a href="#using_http_for_complex_applications">Using HTTP for complex applications</a></li><li class="toc-h3"><a href="#relaxing_the_security-model_of_the_web">Relaxing the security-model of the web</a></li><li class="toc-h2"><a href="#http2_–_a_protocol_for_greater_performance">HTTP/2 – A protocol for greater performance</a></li><li class="toc-h2"><a href="#post-http2_evolution">Post-HTTP/2 evolution</a></li><li class="toc-h2"><a href="#http3_-_http_over_quic">HTTP/3 - HTTP over QUIC</a></li><li class="toc-h2"><a href="#see_also">See also</a></li></ul></details><nav class="chapter-switcher" aria-label="章节导航"><a href="../06-cache/english.html">← HTTP 缓存</a><a class="course-home" href="../index.html">全部章节</a><a href="../index.html">回到阅读目录 →</a></nav></header><article class="translated-article"><section class="content-section">
+<p data-unit="07-evolution-001"><strong>HTTP</strong> (HyperText Transfer Protocol) is the underlying protocol of the World Wide Web. Developed by Tim Berners-Lee and his team between 1989-1991, HTTP has gone through many changes that have helped maintain its simplicity while shaping its flexibility. Keep reading to learn how HTTP evolved from a protocol designed to exchange files in a semitrusted laboratory environment into a modern internet maze that carries images and videos in high resolution and 3D.</p>
+</section><section aria-labelledby="invention_of_the_world_wide_web" class="content-section">
+<h2 class="heading" data-unit="07-evolution-002" id="invention_of_the_world_wide_web"><a class="heading-anchor" href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Evolution_of_HTTP#invention_of_the_world_wide_web">Invention of the World Wide Web</a></h2>
+<p data-unit="07-evolution-003">In 1989, while working at CERN, Tim Berners-Lee wrote a proposal to build a hypertext system over the internet. Initially called the <em>Mesh</em>, it was later renamed the <em>World Wide Web</em> during its implementation in 1990. Built over the existing TCP and IP protocols, it consisted of 4 building blocks:</p>
+<ul>
+<li data-unit="07-evolution-004">A textual format to represent hypertext documents, the <em><a href="https://developer.mozilla.org/en-US/docs/Web/HTML">HyperText Markup Language</a></em> (HTML).</li>
+<li data-unit="07-evolution-005">A protocol to exchange these documents, the <em>HyperText Transfer Protocol</em> (HTTP).</li>
+<li data-unit="07-evolution-006">A client to display (and edit) these documents, the first web browser called the <em>WorldWideWeb</em>.</li>
+<li data-unit="07-evolution-007">A server to give access to the document, an early version of <em>httpd</em>.</li>
+</ul>
+<p data-unit="07-evolution-008">These four building blocks were completed by the end of 1990, and the first servers were running outside of CERN by early 1991. On August 6, 1991, Tim Berners-Lee <a class="external" href="https://www.w3.org/People/Berners-Lee/1991/08/art-6484.txt" target="_blank" title="External link (opens in new tab)">posted</a> on the public <em>alt.hypertext</em> newsgroup. This is now considered to be the official start of the World Wide Web as a public project.</p>
+<p data-unit="07-evolution-009">The HTTP protocol used in those early phases was very simple. It was later dubbed HTTP/0.9 and is sometimes called the one-line protocol.</p>
+</section><section aria-labelledby="http0.9_–_the_one-line_protocol" class="content-section">
+<h2 class="heading" data-unit="07-evolution-010" id="http0.9_–_the_one-line_protocol"><a class="heading-anchor" href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Evolution_of_HTTP#http0.9_–_the_one-line_protocol">HTTP/0.9 – The one-line protocol</a></h2>
+<p data-unit="07-evolution-011">The initial version of HTTP had no version number; it was later called 0.9 to differentiate it from later versions. HTTP/0.9 was extremely simple: requests consisted of a single line and started with the only possible method <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Methods/GET"><code>GET</code></a> followed by the path to the resource. The full URL wasn't included as the protocol, server, and port weren't necessary once connected to the server.</p>
+<div class="code-example"><div class="example-header"><span class="language-name">http</span></div><pre class="brush: http notranslate"><code>GET /my-page.html
+</code></pre></div>
+<p data-unit="07-evolution-012">The response was extremely simple, too: it only consisted of the file itself.</p>
+<div class="code-example"><div class="example-header"><span class="language-name">html</span></div><pre class="brush: html notranslate"><code>&lt;html&gt;
+  A text-only web page
+&lt;/html&gt;
+</code></pre></div>
+<p data-unit="07-evolution-013">Unlike subsequent evolutions, there were no HTTP headers. This meant that only HTML files could be transmitted. There were no status or error codes. If there was a problem, a specific HTML file was generated and included a description of the problem for human consumption.</p>
+</section><section aria-labelledby="http1.0_–_building_extensibility" class="content-section">
+<h2 class="heading" data-unit="07-evolution-014" id="http1.0_–_building_extensibility"><a class="heading-anchor" href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Evolution_of_HTTP#http1.0_–_building_extensibility">HTTP/1.0 – Building extensibility</a></h2>
+<p data-unit="07-evolution-015">HTTP/0.9 was very limited, but browsers and servers quickly made it more versatile:</p>
+<ul>
+<li data-unit="07-evolution-016">Versioning information was sent within each request (<code>HTTP/1.0</code> was appended to the <code>GET</code> line).</li>
+<li data-unit="07-evolution-017">A status code line was also sent at the beginning of a response. This allowed the browser itself to recognize the success or failure of a request and adapt its behavior accordingly. For example, updating or using its local cache in a specific way.</li>
+<li data-unit="07-evolution-018">The concept of HTTP headers was introduced for both requests and responses. Metadata could be transmitted and the protocol became extremely flexible and extensible.</li>
+<li data-unit="07-evolution-019">Documents other than plain HTML files could be transmitted thanks to the <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Content-Type"><code>Content-Type</code></a> header.</li>
+</ul>
+<p data-unit="07-evolution-020">At this point in time, a typical request and response looked like this:</p>
+<div class="code-example"><div class="example-header"><span class="language-name">http</span></div><pre class="brush: http notranslate"><code>GET /my-page.html HTTP/1.0
+User-Agent: NCSA_Mosaic/2.0 (Windows 3.1)
+
+HTTP/1.0 200 OK
+Date: Tue, 15 Nov 1994 08:12:31 GMT
+Server: CERN/3.0 libwww/2.17
+Content-Type: text/html
+
+&lt;HTML&gt;
+A page with an image
+  &lt;IMG SRC="/my-image.gif"&gt;
+&lt;/HTML&gt;
+</code></pre></div>
+<p data-unit="07-evolution-021">It was followed by a second connection and a request to fetch the image (with the corresponding response):</p>
+<div class="code-example"><div class="example-header"><span class="language-name">http</span></div><pre class="brush: http notranslate"><code>GET /my-image.gif HTTP/1.0
+User-Agent: NCSA_Mosaic/2.0 (Windows 3.1)
+
+HTTP/1.0 200 OK
+Date: Tue, 15 Nov 1994 08:12:32 GMT
+Server: CERN/3.0 libwww/2.17
+Content-Type: text/gif
+
+(image content)
+</code></pre></div>
+<p data-unit="07-evolution-022">Between 1991-1995, these were introduced with a try-and-see approach. A server and a browser would add a feature and see if it got traction. Interoperability problems were common. In an effort to solve these issues, an informational document that described the common practices was published in November 1996. This was known as <a class="external" href="https://datatracker.ietf.org/doc/html/rfc1945" target="_blank" title="External link (opens in new tab)">RFC 1945</a> and defined HTTP/1.0.</p>
+</section><section aria-labelledby="http1.1_–_the_standardized_protocol" class="content-section">
+<h2 class="heading" data-unit="07-evolution-023" id="http1.1_–_the_standardized_protocol"><a class="heading-anchor" href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Evolution_of_HTTP#http1.1_–_the_standardized_protocol">HTTP/1.1 – The standardized protocol</a></h2>
+<p data-unit="07-evolution-024">In the meantime, proper standardization was in progress. This happened in parallel to the diverse implementations of HTTP/1.0. The first standardized version of HTTP, HTTP/1.1, was published in early 1997, only a few months after HTTP/1.0.</p>
+<p data-unit="07-evolution-025">HTTP/1.1 clarified ambiguities and introduced numerous improvements:</p>
+<ul>
+<li data-unit="07-evolution-026">A connection could be reused, which saved time. It no longer needed to be opened multiple times to display the resources embedded in the single original document.</li>
+<li data-unit="07-evolution-027">Pipelining was added. This allowed a second request to be sent before the answer to the first one was fully transmitted. This lowered the latency of the communication.</li>
+<li data-unit="07-evolution-028">Chunked responses were also supported.</li>
+<li data-unit="07-evolution-029">Additional cache control mechanisms were introduced.</li>
+<li data-unit="07-evolution-030">Content negotiation, including language, encoding, and type, was introduced. A client and a server could now agree on which content to exchange.</li>
+<li data-unit="07-evolution-031">Thanks to the <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Host"><code>Host</code></a> header, the ability to host different domains from the same IP address allowed server collocation.</li>
+</ul>
+<p data-unit="07-evolution-032">The following example illustrates a typical sequence of HTTP/1.1 requests sent over a single persistent TCP connection, demonstrating how clients can reuse connections to load resources more efficiently.
+The first request retrieves a web page, and the server responds with an HTML document.
+The client then sends additional requests sequentially as it encounters CSS and JavaScript resources in the HTML:</p>
+<div class="code-example"><div class="example-header"><span class="language-name">http</span></div><pre class="brush: http notranslate"><code>GET /en-US/docs/ HTTP/1.1
+Host: developer.mozilla.org
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:141.0) Gecko/20100101 Firefox/141.0
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
+Accept-Language: en-US,en;q=0.5
+Accept-Encoding: gzip, deflate, br, zstd
+Connection: keep-alive
+
+HTTP/1.1 200 OK
+accept-ranges: none
+content-encoding: br
+date: Tue, 01 Jul 2025 08:32:50 GMT
+expires: Tue, 01 Jul 2025 09:26:50 GMT
+cache-control: public, max-age=3600
+age: 1926
+last-modified: Sat, 28 Jun 2025 00:47:12 GMT
+etag: W/"b55394ed2f274eea5d528cf6c91e1dcf"
+content-type: text/html
+vary: Accept-Encoding
+content-length: 26178
+
+[26178 bytes of HTML]
+
+GET /static/css/main.9e7d1ce5.css HTTP/1.1
+Host: developer.mozilla.org
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:141.0) Gecko/20100101 Firefox/141.0
+Accept: text/css,*/*;q=0.1
+Accept-Language: en-US,en;q=0.5
+Accept-Encoding: gzip, deflate, br, zstd
+
+HTTP/1.1 200 OK
+content-encoding: br
+content-length: 43694
+date: Mon, 30 Jun 2025 21:13:12 GMT
+expires: Mon, 30 Jun 2025 21:47:29 GMT
+cache-control: public, max-age=31536000
+age: 42704
+last-modified: Mon, 30 Jun 2025 00:33:45 GMT
+etag: W/"d4f4d0955482844ad842986a9bcb7e8a"
+content-type: text/css
+vary: Accept-Encoding
+
+[43694 bytes of CSS]
+
+GET /static/js/main.a918a4e7.js HTTP/1.1
+Host: developer.mozilla.org
+…
+</code></pre></div>
+<p data-unit="07-evolution-033">Setting up a TCP connection is an expensive part of the client-server exchange, and <a href="https://developer.mozilla.org/en-US/docs/Glossary/TCP_slow_start">TCP slow start</a> means that longer-lived connections are faster than newly-created ones.
+HTTP/1.1 allows you to reuse a TCP connection for multiple requests and responses, so you avoid having to create a new connection for each request.
+However, clients still had to wait for each resource to download before requesting the next one (<a href="https://developer.mozilla.org/en-US/docs/Glossary/Head_of_line_blocking">Head-of-line blocking</a>).
+To work around this, most browsers allow up to six TCP connections per website (or <a href="https://developer.mozilla.org/en-US/docs/Glossary/Origin">origin</a>).
+With six parallel connections, browsers can fetch multiple resources simultaneously using the HTTP/1.1 model, which has added significant performance improvements.</p>
+<p data-unit="07-evolution-034">HTTP/1.1 was first published as <a class="external" href="https://datatracker.ietf.org/doc/html/rfc2068" target="_blank" title="External link (opens in new tab)">RFC 2068</a> in January 1997.</p>
+</section><section aria-labelledby="more_than_two_decades_of_development" class="content-section">
+<h2 class="heading" data-unit="07-evolution-035" id="more_than_two_decades_of_development"><a class="heading-anchor" href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Evolution_of_HTTP#more_than_two_decades_of_development">More than two decades of development</a></h2>
+<p data-unit="07-evolution-036">The extensibility of HTTP made it easy to create new headers and methods. Even though the HTTP/1.1 protocol was refined over two revisions, <a class="external" href="https://datatracker.ietf.org/doc/html/rfc2616" target="_blank" title="External link (opens in new tab)">RFC 2616</a> published in June 1999 and <a class="external" href="https://datatracker.ietf.org/doc/html/rfc7230" target="_blank" title="External link (opens in new tab)">RFC 7230</a>-<a class="external" href="https://datatracker.ietf.org/doc/html/rfc7235" target="_blank" title="External link (opens in new tab)">RFC 7235</a> published in June 2014 before the release of HTTP/2, it was extremely stable for more than 15 years. HTTP/1.1 was updated again in 2022 with <a class="external" href="https://datatracker.ietf.org/doc/html/rfc9110" target="_blank" title="External link (opens in new tab)">RFC 9110</a>. Not only was HTTP/1.1 updated, but all of HTTP was revised and is now split into the following documents: semantics (<a class="external" href="https://datatracker.ietf.org/doc/html/rfc9110" target="_blank" title="External link (opens in new tab)">RFC 9110</a>), caching (<a class="external" href="https://datatracker.ietf.org/doc/html/rfc9111" target="_blank" title="External link (opens in new tab)">RFC 9111</a>) applying to all HTTP versions, and HTTP/1.1 (<a class="external" href="https://datatracker.ietf.org/doc/html/rfc9112" target="_blank" title="External link (opens in new tab)">RFC 9112</a>), HTTP/2 (<a class="external" href="https://datatracker.ietf.org/doc/html/rfc9113" target="_blank" title="External link (opens in new tab)">RFC 9113</a>), and HTTP/3 (<a class="external" href="https://datatracker.ietf.org/doc/html/rfc9114" target="_blank" title="External link (opens in new tab)">RFC 9114</a>). In addition, the specification finally achieved the status of Internet Standard (STD 97), whereas before it was always a proposed/draft standard.</p>
+</section><section aria-labelledby="using_http_for_secure_transmissions" class="content-section">
+<h3 class="heading" data-unit="07-evolution-037" id="using_http_for_secure_transmissions"><a class="heading-anchor" href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Evolution_of_HTTP#using_http_for_secure_transmissions">Using HTTP for secure transmissions</a></h3>
+<p data-unit="07-evolution-038">The largest change to HTTP was made at the end of 1994. Instead of sending HTTP over a basic TCP/IP stack, the computer-services company Netscape Communications created an additional encrypted transmission layer on top of it: SSL. SSL 1.0 was never released to the public, but SSL 2.0 and its successor SSL 3.0 allowed for the creation of e-commerce websites. To do this, they encrypted and guaranteed the authenticity of the messages exchanged between the server and client. SSL was eventually standardized and became TLS.</p>
+<p data-unit="07-evolution-039">During the same time period, it became clear that an encrypted transport layer was needed. The web was no longer a mostly academic network, and instead became a jungle where advertisers, random individuals, and criminals competed for as much private data as possible. As the applications built over HTTP became more powerful and required access to private information like address books, email, and user location, TLS became necessary outside the e-commerce use case.</p>
+</section><section aria-labelledby="using_http_for_complex_applications" class="content-section">
+<h3 class="heading" data-unit="07-evolution-040" id="using_http_for_complex_applications"><a class="heading-anchor" href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Evolution_of_HTTP#using_http_for_complex_applications">Using HTTP for complex applications</a></h3>
+<p data-unit="07-evolution-041">Tim Berners-Lee didn't originally envision HTTP as a read-only medium. He wanted to create a web where people could add and move documents remotely—a kind of distributed file system. Around 1996, HTTP was extended to allow authoring, and a standard called WebDAV was created. It grew to include specific applications like CardDAV for handling address book entries and CalDAV for dealing with calendars. But all these *DAV extensions had a flaw: they were only usable when implemented by the servers.</p>
+<p data-unit="07-evolution-042">In 2000, a new pattern for using HTTP was designed: <a href="https://developer.mozilla.org/en-US/docs/Glossary/REST">representational state transfer</a> (or REST). The API wasn't based on the new HTTP methods, but instead relied on access to specific URIs with basic HTTP/1.1 methods. This allowed any web application to let an API retrieve and modify its data without having to update the browsers or the servers. All necessary information was embedded in the files that the websites served through standard HTTP/1.1. The drawback of the REST model was that each website defined its own nonstandard RESTful API and had total control of it. This differed from the *DAV extensions where clients and servers were interoperable. RESTful APIs became very common in the 2010s.</p>
+<p data-unit="07-evolution-043">Since 2005, more APIs have become available to web pages. Several of these APIs create extensions to the HTTP protocol for specific purposes:</p>
+<ul>
+<li data-unit="07-evolution-044"><a href="https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events">Server-sent events</a>, where the server can push occasional messages to the browser.</li>
+<li data-unit="07-evolution-045"><a href="https://developer.mozilla.org/en-US/docs/Web/API/WebSockets_API">WebSocket</a>, a new protocol that can be set up by upgrading an existing HTTP connection.</li>
+</ul>
+</section><section aria-labelledby="relaxing_the_security-model_of_the_web" class="content-section">
+<h3 class="heading" data-unit="07-evolution-046" id="relaxing_the_security-model_of_the_web"><a class="heading-anchor" href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Evolution_of_HTTP#relaxing_the_security-model_of_the_web">Relaxing the security-model of the web</a></h3>
+<p data-unit="07-evolution-047">HTTP is independent of the web security model, known as the <a href="https://developer.mozilla.org/en-US/docs/Web/Security/Defenses/Same-origin_policy">same-origin policy</a>. In fact, the current web security model was developed after the creation of HTTP! Over the years, it proved useful to lift some restrictions of this policy under certain constraints. The server transmitted how much and when to lift such restrictions to the client using a new set of HTTP headers. These were defined in specifications like <a href="https://developer.mozilla.org/en-US/docs/Glossary/CORS">Cross-Origin Resource Sharing</a> (CORS) and the <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/CSP">Content Security Policy</a> (CSP).</p>
+<p data-unit="07-evolution-048">In addition to these large extensions, many other headers were added, sometimes only experimentally. Notable headers are the Do Not Track (<a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/DNT"><code>DNT</code></a>) header to control privacy, <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/X-Frame-Options"><code>X-Frame-Options</code></a>, and <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Upgrade-Insecure-Requests"><code>Upgrade-Insecure-Requests</code></a> but many more exist.</p>
+</section><section aria-labelledby="http2_–_a_protocol_for_greater_performance" class="content-section">
+<h2 class="heading" data-unit="07-evolution-049" id="http2_–_a_protocol_for_greater_performance"><a class="heading-anchor" href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Evolution_of_HTTP#http2_–_a_protocol_for_greater_performance">HTTP/2 – A protocol for greater performance</a></h2>
+<p data-unit="07-evolution-050">Over the years, web pages became more complex. Some of them were even applications in their own right. More visual media was displayed and the volume and size of scripts adding interactivity also increased. Much more data was transmitted over significantly more HTTP requests and this created more complexity and overhead for HTTP/1.1 connections. To account for this, Google implemented an experimental protocol SPDY in the early 2010s. This alternative way of exchanging data between client and server amassed interest from developers working on both browsers and servers. SPDY defined an increase in responsiveness and solved the problem of duplicate data transmission, serving as the foundation for the HTTP/2 protocol.</p>
+<p data-unit="07-evolution-051">The HTTP/2 protocol differs from HTTP/1.1 in a few ways:</p>
+<ul>
+<li data-unit="07-evolution-052">It's a binary protocol rather than a text protocol. It can't be read and created manually. Despite this hurdle, it allows for the implementation of improved optimization techniques.</li>
+<li data-unit="07-evolution-053">It's a multiplexed protocol. Parallel requests can be made over the same connection, removing the constraints of the HTTP/1.x protocol.</li>
+<li data-unit="07-evolution-054">It compresses headers. As these are often similar among a set of requests, this removes the duplication and overhead of data transmitted.</li>
+</ul>
+<p data-unit="07-evolution-055">Officially standardized in May 2015, HTTP/2 use peaked in January 2022 at 46.9% of all websites (see <a class="external" href="https://w3techs.com/technologies/details/ce-http2" target="_blank" title="External link (opens in new tab)">these stats</a>). High-traffic websites showed the most rapid adoption in an effort to save on data transfer overhead and subsequent budgets.</p>
+<p data-unit="07-evolution-056">This rapid adoption was likely because HTTP/2 didn't require changes to websites and applications. To use it, only an up-to-date server that communicated with a recent browser was necessary. Only a limited set of groups was needed to trigger adoption, and as legacy browser and server versions were renewed, usage was naturally increased, without significant work for web developers.</p>
+</section><section aria-labelledby="post-http2_evolution" class="content-section">
+<h2 class="heading" data-unit="07-evolution-057" id="post-http2_evolution"><a class="heading-anchor" href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Evolution_of_HTTP#post-http2_evolution">Post-HTTP/2 evolution</a></h2>
+<p data-unit="07-evolution-058">HTTP's extensibility is still being used to add new features. Notably, we can cite new extensions of the HTTP protocol that appeared in 2016:</p>
+<ul>
+<li data-unit="07-evolution-059">Support for <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Alt-Svc"><code>Alt-Svc</code></a> allowed the dissociation of the identification and the location of a given resource. This meant a smarter <a href="https://developer.mozilla.org/en-US/docs/Glossary/CDN">CDN</a> caching mechanism.</li>
+<li data-unit="07-evolution-060">The introduction of <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Client_hints">client hints</a> allowed the browser or client to proactively communicate information about its requirements and hardware constraints to the server.</li>
+<li data-unit="07-evolution-061">The introduction of security-related prefixes in the <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Cookie"><code>Cookie</code></a> header helped guarantee that secure cookies couldn't be altered.</li>
+</ul>
+</section><section aria-labelledby="http3_-_http_over_quic" class="content-section">
+<h2 class="heading" data-unit="07-evolution-062" id="http3_-_http_over_quic"><a class="heading-anchor" href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Evolution_of_HTTP#http3_-_http_over_quic">HTTP/3 - HTTP over QUIC</a></h2>
+<p data-unit="07-evolution-063">The next major version of HTTP, HTTP/3 has the same semantics as earlier versions of HTTP but uses <a href="https://developer.mozilla.org/en-US/docs/Glossary/QUIC">QUIC</a> instead of <a href="https://developer.mozilla.org/en-US/docs/Glossary/TCP">TCP</a> for the transport layer portion. By October 2022, <a class="external" href="https://w3techs.com/technologies/details/ce-http3" target="_blank" title="External link (opens in new tab)">26% of all websites were using HTTP/3</a>.</p>
+<p data-unit="07-evolution-064">QUIC is designed to provide much lower latency for HTTP connections. Like HTTP/2, it is a multiplexed protocol, but HTTP/2 runs over a single TCP connection, so packet loss detection and retransmission handled at the TCP layer can block all streams. QUIC runs multiple streams over <a href="https://developer.mozilla.org/en-US/docs/Glossary/UDP">UDP</a> and implements packet loss detection and retransmission independently for each stream, so that if an error occurs, only the stream with data in that packet is blocked.</p>
+<p data-unit="07-evolution-065">Defined in <a class="external" href="https://datatracker.ietf.org/doc/html/rfc9114" target="_blank" title="External link (opens in new tab)">RFC 9114</a>, <a class="external" href="https://caniuse.com/http3" target="_blank" title="External link (opens in new tab)">HTTP/3 is supported by most major browsers</a> including Chromium (and its variants such as Chrome and Edge) and Firefox.</p>
+</section><section aria-labelledby="see_also" class="content-section">
+<h2 class="heading" data-unit="07-evolution-066" id="see_also"><a class="heading-anchor" href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Evolution_of_HTTP#see_also">See also</a></h2>
+<ul>
+<li data-unit="07-evolution-067"><a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Connection_management_in_HTTP_1.x">Connection management in HTTP/1.x</a></li>
+<li data-unit="07-evolution-068"><a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Protocol_upgrade_mechanism">Protocol upgrade mechanism</a></li>
+<li data-unit="07-evolution-069"><a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Resources_and_specifications">HTTP resources and specifications</a></li>
+<li><span data-extra-unit="07-evolution-extra-001">Glossary terms:
+</span><ul>
+<li data-unit="07-evolution-070"><a href="https://developer.mozilla.org/en-US/docs/Glossary/HTTP">HTTP</a></li>
+<li data-unit="07-evolution-071"><a href="https://developer.mozilla.org/en-US/docs/Glossary/HTTP_2">HTTP/2</a></li>
+<li data-unit="07-evolution-072"><a href="https://developer.mozilla.org/en-US/docs/Glossary/QUIC">QUIC</a></li>
+<li data-unit="07-evolution-073"><a href="https://developer.mozilla.org/en-US/docs/Glossary/Round_Trip_Time">Round Trip Time (RTT)</a></li>
+<li data-unit="07-evolution-074"><a href="https://developer.mozilla.org/en-US/docs/Glossary/TCP_slow_start">TCP slow start</a></li>
+<li data-unit="07-evolution-075"><a href="https://developer.mozilla.org/en-US/docs/Glossary/TCP">Transmission Control Protocol (TCP)</a></li>
+</ul>
+</li>
+</ul>
+</section></article><nav class="chapter-switcher" aria-label="章节导航"><a href="../06-cache/english.html">← HTTP 缓存</a><a class="course-home" href="../index.html">全部章节</a><a href="../index.html">回到阅读目录 →</a></nav><footer class="license-note"><p>原文：<a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Evolution_of_HTTP">Evolution of HTTP</a>，© Mozilla Contributors。原文快照：2026-09-29。本非官方阅读版由 Codex 翻译并逐句润色；另附独立编者导读与校注。正文全文、代码、原图及链接保留，不含 MDN 站点导航、反馈和页脚。</p><p>文档与译文采用 <a href="https://creativecommons.org/licenses/by-sa/2.5/">CC BY-SA 2.5</a>；代码许可及完整来源说明见 <a href="../NOTICE.html">来源与许可</a>。</p></footer></main></body></html>
