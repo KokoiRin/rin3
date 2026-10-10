@@ -1,0 +1,66 @@
+{
+  "https://developer.mozilla.org/en-US/docs/Learn_web_development/Howto/Web_mechanics/What_is_a_domain_name/2014-10-dns-request2.png": {
+    "path": "assets/c325534abb7f.png",
+    "sha256": "57eefb594a2e09a5beafb425bf6ebccd3d94553c4897f478e99116a5c58af641"
+  },
+  "https://developer.mozilla.org/en-US/docs/Learn_web_development/Howto/Web_mechanics/What_is_a_domain_name/structure.png": {
+    "path": "assets/7402d9674619.png",
+    "sha256": "a21b19f5fc2950159acb8da4f75ba689c4491de8f08719f19c68d8fb366d69e6"
+  },
+  "https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Connection_management_in_HTTP_1.x/http1_x_connections.png": {
+    "path": "assets/d4ef0bb64770.png",
+    "sha256": "82fc433674b0ef69c248da672d5bff651ce8e045847bd3fbf8001dcf420df96f"
+  },
+  "https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Connection_management_in_HTTP_1.x/httpsharding.png": {
+    "path": "assets/c2bcf29217e2.png",
+    "sha256": "276923da271880a71fe9f456cf9f3428968189460abc666e48354ce0e2c90bca"
+  },
+  "https://mdn.github.io/shared-assets/images/diagrams/http/cache/request-collapse.svg": {
+    "path": "assets/5c0abf16b6bc.svg",
+    "sha256": "f06637d5a689e1f666ea7491cfd6f715292005e5510eddc2f23e02591069a025"
+  },
+  "https://mdn.github.io/shared-assets/images/diagrams/http/cache/type-of-cache.svg": {
+    "path": "assets/85f0eb4310fe.svg",
+    "sha256": "bb7b19a3e584f36d175da2754da03b7793e5e2cf6fa5f81a63125e98635d057b"
+  },
+  "https://mdn.github.io/shared-assets/images/diagrams/http/messages/http-1-connection.png": {
+    "path": "assets/a7f5a606e4e8.png",
+    "sha256": "cfc34b4693c155923b4d473fb34e1ece1a6c05e1eea46da2d022750c9727668a"
+  },
+  "https://mdn.github.io/shared-assets/images/diagrams/http/messages/http-2-connection.png": {
+    "path": "assets/11df6963723b.png",
+    "sha256": "abddc1096efca4b23206ab250cf8228c2152fe8222a3ef12b1c4a100eab390f7"
+  },
+  "https://mdn.github.io/shared-assets/images/diagrams/http/messages/http-message-anatomy.svg": {
+    "path": "assets/4617c1bfb31f.svg",
+    "sha256": "924e88128910b9548ab40af87aff3835ff102c947d971e23015866c112273f00"
+  },
+  "https://mdn.github.io/shared-assets/images/diagrams/http/messages/request-headers.svg": {
+    "path": "assets/44cdcb54e713.svg",
+    "sha256": "29a2959965d58e729c18afeb5b63b2ecf756aa3d46e62c45b1c8ae91f7822bdc"
+  },
+  "https://mdn.github.io/shared-assets/images/diagrams/http/messages/response-headers.svg": {
+    "path": "assets/98f6b7ccad5c.svg",
+    "sha256": "42a5b56de068867b0045935b5238ba5aba5f0e92b6f9ffafc36ffeaf9b922a6e"
+  },
+  "https://mdn.github.io/shared-assets/images/diagrams/http/overview/client-server-chain.svg": {
+    "path": "assets/bbb53845c400.svg",
+    "sha256": "c8356242e3cfb3ce3508bdc076c99759d4eb3b1d9ffd4586d0f1c8bbb394d2a8"
+  },
+  "https://mdn.github.io/shared-assets/images/diagrams/http/overview/fetching-a-page.svg": {
+    "path": "assets/0fad396f4591.svg",
+    "sha256": "6fb02d7d9bbbeb284ee2965b90d2c7a83e48391d253d5744091b338cacbb7eb4"
+  },
+  "https://mdn.github.io/shared-assets/images/diagrams/http/overview/http-layers.svg": {
+    "path": "assets/4fb24414cd40.svg",
+    "sha256": "dcd2dbc808e215c950f2eaf0f48b411dd0050ff097dbfe966d8188108d18bf9a"
+  },
+  "https://mdn.github.io/shared-assets/images/diagrams/http/overview/http-request.svg": {
+    "path": "assets/c81fa8b4bf7a.svg",
+    "sha256": "c88329a1013579c527562475006a0d1fbdcf85e3639b503b67ab50678dd8bf27"
+  },
+  "https://mdn.github.io/shared-assets/images/diagrams/http/overview/http-response.svg": {
+    "path": "assets/0a67bc12ac0c.svg",
+    "sha256": "c18c767fa2cbac8fefa8a2a1aa0252f950206e0eef20a0cf9464f58999800dee"
+  }
+}

@@ -1,0 +1,184 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>HTTP 的演进 · 网络请求阅读材料</title><link rel="stylesheet" href="../../reader.css"><link rel="stylesheet" href="../source.css"><link rel="manifest" href="../../../manifest.webmanifest"></head><body><nav class="site-nav"><a href="../index.html">← 网络请求 · 从一次请求开始</a><a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Evolution_of_HTTP">MDN 原文 ↗</a></nav><main class="reader"><header class="chapter-header"><span class="chapter-kicker">N07 · 中文阅读版</span><h1>HTTP 的演进</h1><p class="byline">Evolution of HTTP · Mozilla Contributors</p><div class="title-rule"></div><p class="edition-nav"><strong aria-current="page">中文阅读版</strong> · <a href="english.html">英文对照</a> · <a href="literal.html">第一轮直译稿</a></p><aside class="learning-note"><span class="note-kind">编者导读 · 不属于原文</span><p><strong>HTTP/2 和 HTTP/3 到底改变了什么，又保留了什么？</strong></p><p>把前面学到的连接和消息放回历史中看：HTTP/1.1 复用连接，HTTP/2 多路复用，HTTP/3 改用 QUIC。首次阅读可以略读历史 API 扩展，重点看三个版本的连接与传输差异。</p><details class="editor-notes"><summary>阅读前的版本与适用范围校注（3 条）</summary><p>本文中的网站使用比例对应原文标注的 2022 年等历史时点，不代表今天的采用率。SSL、DNT、旧扩展的出现史也不是今天的配置清单。</p><p>原文说 QUIC 针对每条流独立进行丢包检测与重传，是概念化表述。更准确地说，丢包检测在 QUIC 传输机制中完成；各流独立、有序地交付数据，某条流的缺失数据不必阻止其他流的数据交付。不同流仍共享连接的拥塞控制等资源。参见 <a href="https://www.rfc-editor.org/rfc/rfc9000.html#section-2">RFC 9000，第 2 节</a>。</p><p>HTTP/3 定义于 <a href="https://www.rfc-editor.org/rfc/rfc9114.html">RFC 9114</a>。不能把正文中 HTTP/3 的“下一个版本”或概览篇的“QUIC 试验”理解为尚未标准化。</p></details></aside><details class="source-details"><summary>本篇目录与翻译范围</summary><p>对应上述英文文章正文全文，保留原文顺序、表格、示例、原图和“另请参阅”。代码及图中英文保持原样。编者说明与原文分开；历史表述未在译文中静默改写。</p><ul><li class="toc-h2"><a href="#invention_of_the_world_wide_web">万维网的发明</a></li><li class="toc-h2"><a href="#http0.9_–_the_one-line_protocol">HTTP/0.9：单行协议</a></li><li class="toc-h2"><a href="#http1.0_–_building_extensibility">HTTP/1.0：建立可扩展性</a></li><li class="toc-h2"><a href="#http1.1_–_the_standardized_protocol">HTTP/1.1：标准化的协议</a></li><li class="toc-h2"><a href="#more_than_two_decades_of_development">二十余年的发展</a></li><li class="toc-h3"><a href="#using_http_for_secure_transmissions">用 HTTP 进行安全传输</a></li><li class="toc-h3"><a href="#using_http_for_complex_applications">用 HTTP 构建复杂应用</a></li><li class="toc-h3"><a href="#relaxing_the_security-model_of_the_web">放宽 Web 安全模型的限制</a></li><li class="toc-h2"><a href="#http2_–_a_protocol_for_greater_performance">HTTP/2：追求更高性能的协议</a></li><li class="toc-h2"><a href="#post-http2_evolution">HTTP/2 之后的演进</a></li><li class="toc-h2"><a href="#http3_-_http_over_quic">HTTP/3：基于 QUIC 的 HTTP</a></li><li class="toc-h2"><a href="#see_also">另请参阅</a></li></ul></details><nav class="chapter-switcher" aria-label="章节导航"><a href="../06-cache/index.html">← HTTP 缓存</a><a class="course-home" href="../index.html">全部章节</a><a href="../index.html">回到阅读目录 →</a></nav></header><article class="translated-article"><section class="content-section">
+<p data-unit="07-evolution-001"><strong>HTTP</strong>（超文本传输协议）是万维网的底层协议，由 Tim Berners-Lee 及其团队在 1989～1991 年间开发。它经历了许多变化，在保持简单的同时变得更灵活。最初，它只是为半可信的实验室环境交换文件而设计；后来，它逐渐成为现代互联网复杂体系的一部分，承载高分辨率以及三维图像、视频。本文介绍这一演进过程。</p>
+</section><section aria-labelledby="invention_of_the_world_wide_web" class="content-section">
+<h2 class="heading" data-unit="07-evolution-002" id="invention_of_the_world_wide_web"><a class="heading-anchor" href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Evolution_of_HTTP#invention_of_the_world_wide_web">万维网的发明</a></h2>
+<p data-unit="07-evolution-003">1989 年，Tim Berners-Lee 在 CERN 工作期间，撰写了一份提案，希望在互联网上构建超文本系统。它最初名为 <em>Mesh</em>，后来在 1990 年实现时改名为 <em>World Wide Web</em>（万维网）。它建立在已有的 TCP 和 IP 协议之上，由四个基本部分组成：</p>
+<ul>
+<li data-unit="07-evolution-004">一种表示超文本文档的文本格式，即<em><a href="https://developer.mozilla.org/en-US/docs/Web/HTML">超文本标记语言</a></em>（HTML）。</li>
+<li data-unit="07-evolution-005">一种交换这些文档的协议，即<em>超文本传输协议</em>（HTTP）。</li>
+<li data-unit="07-evolution-006">一个用于显示和编辑这些文档的客户端，即第一款 Web 浏览器 <em>WorldWideWeb</em>。</li>
+<li data-unit="07-evolution-007">一个提供文档访问的服务器，即早期版本的 <em>httpd</em>。</li>
+</ul>
+<p data-unit="07-evolution-008">这四个基本部分在 1990 年底完成。到 1991 年初，第一批位于 CERN 之外的服务器已经开始运行。1991 年 8 月 6 日，Tim Berners-Lee 在公开的 <em>alt.hypertext</em> 新闻组中<a class="external" href="https://www.w3.org/People/Berners-Lee/1991/08/art-6484.txt" target="_blank" title="External link (opens in new tab)">发帖</a>。如今，这被视为万维网作为公共项目的正式起点。</p>
+<p data-unit="07-evolution-009">早期使用的 HTTP 协议非常简单。它后来被称为 HTTP/0.9，有时也叫单行协议。</p>
+</section><section aria-labelledby="http0.9_–_the_one-line_protocol" class="content-section">
+<h2 class="heading" data-unit="07-evolution-010" id="http0.9_–_the_one-line_protocol"><a class="heading-anchor" href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Evolution_of_HTTP#http0.9_–_the_one-line_protocol">HTTP/0.9：单行协议</a></h2>
+<p data-unit="07-evolution-011">HTTP 最初没有版本号。后来为了和新版本区分，才把它叫作 0.9。这个版本极其简单：请求只有一行，以唯一支持的方法 <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Methods/GET"><code>GET</code></a> 开头，后面跟资源路径。连接建立后，协议、服务器和端口已经明确，所以请求中不再放完整 URL。</p>
+<div class="code-example"><div class="example-header"><span class="language-name">http</span></div><pre class="brush: http notranslate"><code>GET /my-page.html
+</code></pre></div>
+<p data-unit="07-evolution-012">响应也极其简单：只包含文件本身。</p>
+<div class="code-example"><div class="example-header"><span class="language-name">html</span></div><pre class="brush: html notranslate"><code>&lt;html&gt;
+  A text-only web page
+&lt;/html&gt;
+</code></pre></div>
+<p data-unit="07-evolution-013">与后续版本不同，它没有 HTTP 标头。这意味着只能传输 HTML 文件。也没有状态码或错误码。如果出现问题，就生成一个专门的 HTML 文件，在其中包含供人阅读的问题描述。</p>
+</section><section aria-labelledby="http1.0_–_building_extensibility" class="content-section">
+<h2 class="heading" data-unit="07-evolution-014" id="http1.0_–_building_extensibility"><a class="heading-anchor" href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Evolution_of_HTTP#http1.0_–_building_extensibility">HTTP/1.0：建立可扩展性</a></h2>
+<p data-unit="07-evolution-015">HTTP/0.9 的能力非常有限，但浏览器和服务器很快让它变得更通用：</p>
+<ul>
+<li data-unit="07-evolution-016">每个请求都会发送版本信息，在 <code>GET</code> 行末尾追加 <code>HTTP/1.0</code>。</li>
+<li data-unit="07-evolution-017">响应开头增加了状态码行。浏览器因此能自行判断请求成败，并调整后续行为，例如决定怎样更新或使用本地缓存。</li>
+<li data-unit="07-evolution-018">请求与响应都引入了 HTTP 标头的概念。这样就能传输元数据，协议因此变得非常灵活且可扩展。</li>
+<li data-unit="07-evolution-019">借助 <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Content-Type"><code>Content-Type</code></a> 标头，可以传输纯 HTML 文件之外的文档。</li>
+</ul>
+<p data-unit="07-evolution-020">这时，典型的请求和响应如下所示：</p>
+<div class="code-example"><div class="example-header"><span class="language-name">http</span></div><pre class="brush: http notranslate"><code>GET /my-page.html HTTP/1.0
+User-Agent: NCSA_Mosaic/2.0 (Windows 3.1)
+
+HTTP/1.0 200 OK
+Date: Tue, 15 Nov 1994 08:12:31 GMT
+Server: CERN/3.0 libwww/2.17
+Content-Type: text/html
+
+&lt;HTML&gt;
+A page with an image
+  &lt;IMG SRC="/my-image.gif"&gt;
+&lt;/HTML&gt;
+</code></pre></div>
+<p data-unit="07-evolution-021">随后建立第二条连接，并发出获取图片的请求，及其对应响应：</p>
+<div class="code-example"><div class="example-header"><span class="language-name">http</span></div><pre class="brush: http notranslate"><code>GET /my-image.gif HTTP/1.0
+User-Agent: NCSA_Mosaic/2.0 (Windows 3.1)
+
+HTTP/1.0 200 OK
+Date: Tue, 15 Nov 1994 08:12:32 GMT
+Server: CERN/3.0 libwww/2.17
+Content-Type: text/gif
+
+(image content)
+</code></pre></div>
+<p data-unit="07-evolution-022">在 1991～1995 年间，这些功能通过“试试看”的方式引入。服务器与浏览器增加一项功能，再观察它是否得到采用。互操作问题很常见。为了处理这些问题，一份描述通行做法的信息性文档于 1996 年 11 月发布，即 <a class="external" href="https://datatracker.ietf.org/doc/html/rfc1945" target="_blank" title="External link (opens in new tab)">RFC 1945</a>，它定义了 HTTP/1.0。</p>
+</section><section aria-labelledby="http1.1_–_the_standardized_protocol" class="content-section">
+<h2 class="heading" data-unit="07-evolution-023" id="http1.1_–_the_standardized_protocol"><a class="heading-anchor" href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Evolution_of_HTTP#http1.1_–_the_standardized_protocol">HTTP/1.1：标准化的协议</a></h2>
+<p data-unit="07-evolution-024">与此同时，正式的标准化工作也在进行，与 HTTP/1.0 的各种不同实现并行发展。HTTP 第一个标准化版本 HTTP/1.1 于 1997 年初发布，距离 HTTP/1.0 仅几个月。</p>
+<p data-unit="07-evolution-025">HTTP/1.1 澄清了歧义，并引入了许多改进：</p>
+<ul>
+<li data-unit="07-evolution-026">连接可以复用，从而节省时间。为了显示同一初始文档中嵌入的资源，不再需要反复建立连接。</li>
+<li data-unit="07-evolution-027">增加流水线：第一个响应还没传完，就可以发送第二个请求，以降低通信延迟。</li>
+<li data-unit="07-evolution-028">支持分块响应。</li>
+<li data-unit="07-evolution-029">引入更多缓存控制机制。</li>
+<li data-unit="07-evolution-030">引入内容协商，包括语言、编码和类型。客户端与服务器可以协商交换哪种内容。</li>
+<li data-unit="07-evolution-031">借助 <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Host"><code>Host</code></a> 标头，同一个 IP 地址可以托管不同域名，从而允许多个服务共同部署。</li>
+</ul>
+<p data-unit="07-evolution-032">下面的示例展示了在单条持久 TCP 连接上发送的一组典型 HTTP/1.1 请求，说明客户端如何复用连接，更高效地加载资源。第一个请求获取网页，服务器返回 HTML 文档。随后，客户端在 HTML 中遇到 CSS 和 JavaScript 资源时，依次发送额外请求：</p>
+<div class="code-example"><div class="example-header"><span class="language-name">http</span></div><pre class="brush: http notranslate"><code>GET /en-US/docs/ HTTP/1.1
+Host: developer.mozilla.org
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:141.0) Gecko/20100101 Firefox/141.0
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
+Accept-Language: en-US,en;q=0.5
+Accept-Encoding: gzip, deflate, br, zstd
+Connection: keep-alive
+
+HTTP/1.1 200 OK
+accept-ranges: none
+content-encoding: br
+date: Tue, 01 Jul 2025 08:32:50 GMT
+expires: Tue, 01 Jul 2025 09:26:50 GMT
+cache-control: public, max-age=3600
+age: 1926
+last-modified: Sat, 28 Jun 2025 00:47:12 GMT
+etag: W/"b55394ed2f274eea5d528cf6c91e1dcf"
+content-type: text/html
+vary: Accept-Encoding
+content-length: 26178
+
+[26178 bytes of HTML]
+
+GET /static/css/main.9e7d1ce5.css HTTP/1.1
+Host: developer.mozilla.org
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:141.0) Gecko/20100101 Firefox/141.0
+Accept: text/css,*/*;q=0.1
+Accept-Language: en-US,en;q=0.5
+Accept-Encoding: gzip, deflate, br, zstd
+
+HTTP/1.1 200 OK
+content-encoding: br
+content-length: 43694
+date: Mon, 30 Jun 2025 21:13:12 GMT
+expires: Mon, 30 Jun 2025 21:47:29 GMT
+cache-control: public, max-age=31536000
+age: 42704
+last-modified: Mon, 30 Jun 2025 00:33:45 GMT
+etag: W/"d4f4d0955482844ad842986a9bcb7e8a"
+content-type: text/css
+vary: Accept-Encoding
+
+[43694 bytes of CSS]
+
+GET /static/js/main.a918a4e7.js HTTP/1.1
+Host: developer.mozilla.org
+…
+</code></pre></div>
+<p data-unit="07-evolution-033">建立 TCP 连接是交互中较昂贵的一步。由于 <a href="https://developer.mozilla.org/en-US/docs/Glossary/TCP_slow_start">TCP 慢启动</a>，持续使用的连接也往往比新连接更快。HTTP/1.1 让多个请求和响应复用一条 TCP 连接，避免每次重新建连。但客户端仍需先等一个资源下载完，再请求下一个，这就是<a href="https://developer.mozilla.org/en-US/docs/Glossary/Head_of_line_blocking">队头阻塞</a>。为绕过这一点，大多数浏览器允许每个网站或<a href="https://developer.mozilla.org/en-US/docs/Glossary/Origin">源</a>使用最多六条 TCP 连接，并行获取资源，显著改善性能。</p>
+<p data-unit="07-evolution-034">HTTP/1.1 最初于 1997 年 1 月以 <a class="external" href="https://datatracker.ietf.org/doc/html/rfc2068" target="_blank" title="External link (opens in new tab)">RFC 2068</a> 发布。</p>
+</section><section aria-labelledby="more_than_two_decades_of_development" class="content-section">
+<h2 class="heading" data-unit="07-evolution-035" id="more_than_two_decades_of_development"><a class="heading-anchor" href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Evolution_of_HTTP#more_than_two_decades_of_development">二十余年的发展</a></h2>
+<p data-unit="07-evolution-036">HTTP 的可扩展性，让创建新标头和新方法很容易。虽然 HTTP/1.1 在 HTTP/2 发布前经历了两轮完善，分别是 1999 年 6 月发布的 <a class="external" href="https://datatracker.ietf.org/doc/html/rfc2616" target="_blank" title="External link (opens in new tab)">RFC 2616</a>，以及 2014 年 6 月发布的 <a class="external" href="https://datatracker.ietf.org/doc/html/rfc7230" target="_blank" title="External link (opens in new tab)">RFC 7230</a>～<a class="external" href="https://datatracker.ietf.org/doc/html/rfc7235" target="_blank" title="External link (opens in new tab)">RFC 7235</a>，但它在超过十五年的时间里一直非常稳定。2022 年，HTTP/1.1 又通过 <a class="external" href="https://datatracker.ietf.org/doc/html/rfc9110" target="_blank" title="External link (opens in new tab)">RFC 9110</a> 更新。不只是 HTTP/1.1，整个 HTTP 都经过修订，如今拆分为以下文档：适用于所有 HTTP 版本的语义（<a class="external" href="https://datatracker.ietf.org/doc/html/rfc9110" target="_blank" title="External link (opens in new tab)">RFC 9110</a>）和缓存（<a class="external" href="https://datatracker.ietf.org/doc/html/rfc9111" target="_blank" title="External link (opens in new tab)">RFC 9111</a>），以及 HTTP/1.1（<a class="external" href="https://datatracker.ietf.org/doc/html/rfc9112" target="_blank" title="External link (opens in new tab)">RFC 9112</a>）、HTTP/2（<a class="external" href="https://datatracker.ietf.org/doc/html/rfc9113" target="_blank" title="External link (opens in new tab)">RFC 9113</a>）和 HTTP/3（<a class="external" href="https://datatracker.ietf.org/doc/html/rfc9114" target="_blank" title="External link (opens in new tab)">RFC 9114</a>）。此外，规范终于取得互联网标准（STD 97）的地位，而此前一直是提议标准或草案标准。</p>
+</section><section aria-labelledby="using_http_for_secure_transmissions" class="content-section">
+<h3 class="heading" data-unit="07-evolution-037" id="using_http_for_secure_transmissions"><a class="heading-anchor" href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Evolution_of_HTTP#using_http_for_secure_transmissions">用 HTTP 进行安全传输</a></h3>
+<p data-unit="07-evolution-038">HTTP 最大的一次变化发生在 1994 年底。计算机服务公司 Netscape Communications 不再仅通过基本的 TCP/IP 协议栈发送 HTTP，而是在其上增加了加密传输层 SSL。SSL 1.0 从未公开发布，但 SSL 2.0 及其后继者 SSL 3.0，通过加密客户端与服务器之间交换的消息并保证其真实性，让电子商务网站成为可能。SSL 最终经过标准化，演变为 TLS。</p>
+<p data-unit="07-evolution-039">同一时期，对加密传输层的需求也变得明确。Web 不再是以学术用途为主的网络，而成为广告商、普通个人与犯罪分子竞相获取尽可能多私人数据的丛林。随着基于 HTTP 的应用越来越强大，需要访问通讯录、电子邮件和用户位置等私人信息，TLS 的必要性也超出了电子商务场景。</p>
+</section><section aria-labelledby="using_http_for_complex_applications" class="content-section">
+<h3 class="heading" data-unit="07-evolution-040" id="using_http_for_complex_applications"><a class="heading-anchor" href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Evolution_of_HTTP#using_http_for_complex_applications">用 HTTP 构建复杂应用</a></h3>
+<p data-unit="07-evolution-041">Tim Berners-Lee 最初并没有将 HTTP 设想为只读媒介。他希望创建一种允许人们远程添加和移动文档的 Web，类似分布式文件系统。大约在 1996 年，HTTP 得到扩展，支持创作，并产生了名为 WebDAV 的标准。它随后发展出面向特定用途的应用，例如处理通讯录条目的 CardDAV，以及处理日历的 CalDAV。但所有这些 *DAV 扩展都有一个缺点：只有服务器实现它们之后，才能使用。</p>
+<p data-unit="07-evolution-042">2000 年，出现了一种新的 HTTP 使用模式：<a href="https://developer.mozilla.org/en-US/docs/Glossary/REST">表述性状态转移</a>，也就是 REST。这类 API 不基于新的 HTTP 方法，而是依靠基本 HTTP/1.1 方法访问特定 URI。这使任何 Web 应用都能够通过 API 获取和修改数据，而无需更新浏览器或服务器。所有必要信息都嵌入网站通过标准 HTTP/1.1 提供的文件中。REST 模型的缺点是，每个网站都定义自己的非标准 RESTful API，并完全控制它；这与客户端和服务器可以互操作的 *DAV 扩展不同。RESTful API 在 2010 年代变得非常普遍。</p>
+<p data-unit="07-evolution-043">自 2005 年起，网页可以使用更多 API。其中一些 API 为特定目的扩展了 HTTP 协议：</p>
+<ul>
+<li data-unit="07-evolution-044"><a href="https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events">服务器发送事件</a>，让服务器能够不时向浏览器推送消息。</li>
+<li data-unit="07-evolution-045"><a href="https://developer.mozilla.org/en-US/docs/Web/API/WebSockets_API">WebSocket</a>，一种可以通过升级现有 HTTP 连接来建立的新协议。</li>
+</ul>
+</section><section aria-labelledby="relaxing_the_security-model_of_the_web" class="content-section">
+<h3 class="heading" data-unit="07-evolution-046" id="relaxing_the_security-model_of_the_web"><a class="heading-anchor" href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Evolution_of_HTTP#relaxing_the_security-model_of_the_web">放宽 Web 安全模型的限制</a></h3>
+<p data-unit="07-evolution-047">HTTP 与 Web 的<a href="https://developer.mozilla.org/en-US/docs/Web/Security/Defenses/Same-origin_policy">同源策略</a>是独立的。事实上，现行 Web 安全模型比 HTTP 出现得更晚。实践中，人们发现，在一定条件下放宽部分限制很有用，于是让服务器通过一组新 HTTP 标头，告诉客户端何时、可以放宽到什么程度。这些机制定义在<a href="https://developer.mozilla.org/en-US/docs/Glossary/CORS">跨源资源共享</a>（CORS）、<a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/CSP">内容安全策略</a>（CSP）等规范中。</p>
+<p data-unit="07-evolution-048">除了这些大型扩展，还增加了许多其他标头，其中一些仅用于试验。值得注意的有控制隐私的 Do Not Track（<a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/DNT"><code>DNT</code></a>）标头、<a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/X-Frame-Options"><code>X-Frame-Options</code></a> 和 <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Upgrade-Insecure-Requests"><code>Upgrade-Insecure-Requests</code></a>，此外还有很多。</p>
+</section><section aria-labelledby="http2_–_a_protocol_for_greater_performance" class="content-section">
+<h2 class="heading" data-unit="07-evolution-049" id="http2_–_a_protocol_for_greater_performance"><a class="heading-anchor" href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Evolution_of_HTTP#http2_–_a_protocol_for_greater_performance">HTTP/2：追求更高性能的协议</a></h2>
+<p data-unit="07-evolution-050">多年来，网页变得更加复杂，有些本身就已经是应用。页面展示更多视觉媒体，增加交互的脚本在数量和体积上也不断增长。更多数据通过大幅增加的 HTTP 请求传输，为 HTTP/1.1 连接带来更多复杂性和开销。为此，Google 在 2010 年代初实现了试验性协议 SPDY。这种在客户端与服务器之间交换数据的替代方式，引起了浏览器和服务器开发者的兴趣。SPDY 改善了响应速度，并解决重复数据传输的问题，成为 HTTP/2 协议的基础。</p>
+<p data-unit="07-evolution-051">HTTP/2 与 HTTP/1.1 有以下区别：</p>
+<ul>
+<li data-unit="07-evolution-052">它是二进制协议，而不是文本协议，无法直接手工阅读和创建。尽管有这个障碍，它也使更好的优化技术得以实现。</li>
+<li data-unit="07-evolution-053">它支持多路复用，能在同一连接上并行发送请求，突破 HTTP/1.x 的限制。</li>
+<li data-unit="07-evolution-054">它可以压缩标头。一组请求中的标头通常相似，压缩能减少重复传输及其开销。</li>
+</ul>
+<p data-unit="07-evolution-055">HTTP/2 于 2015 年 5 月正式标准化，使用率在 2022 年 1 月达到峰值，占全部网站的 46.9%，见<a class="external" href="https://w3techs.com/technologies/details/ce-http2" target="_blank" title="External link (opens in new tab)">这份统计</a>。高流量网站采用得最快，希望借此节省数据传输开销和相应预算。</p>
+<p data-unit="07-evolution-056">快速普及很可能是因为网站和应用本身不用改：较新的服务器与较新的浏览器配合，就能使用 HTTP/2。需要推动的群体不多，随着旧版本被替换，采用率便自然提高，Web 开发者无须投入大量额外工作。</p>
+</section><section aria-labelledby="post-http2_evolution" class="content-section">
+<h2 class="heading" data-unit="07-evolution-057" id="post-http2_evolution"><a class="heading-anchor" href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Evolution_of_HTTP#post-http2_evolution">HTTP/2 之后的演进</a></h2>
+<p data-unit="07-evolution-058">HTTP 的可扩展性仍然被用来增加新功能。特别值得一提的，是 2016 年出现的这些 HTTP 协议扩展：</p>
+<ul>
+<li data-unit="07-evolution-059">对 <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Alt-Svc"><code>Alt-Svc</code></a> 的支持，让某个资源的标识与位置可以分离，意味着能够采用更智能的 <a href="https://developer.mozilla.org/en-US/docs/Glossary/CDN">CDN</a> 缓存机制。</li>
+<li data-unit="07-evolution-060"><a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Client_hints">客户端提示</a>（client hints）的引入，让浏览器或客户端能够主动向服务器传达需求和硬件约束信息。</li>
+<li data-unit="07-evolution-061"><a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Cookie"><code>Cookie</code></a> 标头中引入的安全相关前缀，有助于确保安全 Cookie 不被修改。</li>
+</ul>
+</section><section aria-labelledby="http3_-_http_over_quic" class="content-section">
+<h2 class="heading" data-unit="07-evolution-062" id="http3_-_http_over_quic"><a class="heading-anchor" href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Evolution_of_HTTP#http3_-_http_over_quic">HTTP/3：基于 QUIC 的 HTTP</a></h2>
+<p data-unit="07-evolution-063">HTTP 的下一个主要版本 HTTP/3，与此前版本保持相同的语义，但在传输层使用 <a href="https://developer.mozilla.org/en-US/docs/Glossary/QUIC">QUIC</a>，而不是 <a href="https://developer.mozilla.org/en-US/docs/Glossary/TCP">TCP</a>。截至 2022 年 10 月，<a class="external" href="https://w3techs.com/technologies/details/ce-http3" target="_blank" title="External link (opens in new tab)">26% 的网站正在使用 HTTP/3</a>。</p>
+<p data-unit="07-evolution-064">QUIC 的设计目标是大幅降低 HTTP 连接的延迟。它与 HTTP/2 一样支持多路复用，但 HTTP/2 运行在单条 TCP 连接上，因此 TCP 层处理的丢包检测和重传会阻塞所有流。QUIC 在 <a href="https://developer.mozilla.org/en-US/docs/Glossary/UDP">UDP</a> 上运行多个流，并针对每个流独立实现丢包检测和重传，因此发生错误时，只有数据位于该数据包中的流会被阻塞。</p>
+<p data-unit="07-evolution-065">HTTP/3 定义于 <a class="external" href="https://datatracker.ietf.org/doc/html/rfc9114" target="_blank" title="External link (opens in new tab)">RFC 9114</a>，并已<a class="external" href="https://caniuse.com/http3" target="_blank" title="External link (opens in new tab)">获得多数主流浏览器的支持</a>，包括 Chromium 及其 Chrome、Edge 等变体，以及 Firefox。</p>
+</section><section aria-labelledby="see_also" class="content-section">
+<h2 class="heading" data-unit="07-evolution-066" id="see_also"><a class="heading-anchor" href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Evolution_of_HTTP#see_also">另请参阅</a></h2>
+<ul>
+<li data-unit="07-evolution-067"><a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Connection_management_in_HTTP_1.x">HTTP/1.x 的连接管理</a></li>
+<li data-unit="07-evolution-068"><a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Protocol_upgrade_mechanism">协议升级机制</a></li>
+<li data-unit="07-evolution-069"><a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Resources_and_specifications">HTTP 资源与规范</a></li>
+<li><span data-extra-unit="07-evolution-extra-001">术语：
+</span><ul>
+<li data-unit="07-evolution-070"><a href="https://developer.mozilla.org/en-US/docs/Glossary/HTTP">HTTP</a></li>
+<li data-unit="07-evolution-071"><a href="https://developer.mozilla.org/en-US/docs/Glossary/HTTP_2">HTTP/2</a></li>
+<li data-unit="07-evolution-072"><a href="https://developer.mozilla.org/en-US/docs/Glossary/QUIC">QUIC</a></li>
+<li data-unit="07-evolution-073"><a href="https://developer.mozilla.org/en-US/docs/Glossary/Round_Trip_Time">往返时间（RTT）</a></li>
+<li data-unit="07-evolution-074"><a href="https://developer.mozilla.org/en-US/docs/Glossary/TCP_slow_start">TCP 慢启动</a></li>
+<li data-unit="07-evolution-075"><a href="https://developer.mozilla.org/en-US/docs/Glossary/TCP">传输控制协议（TCP）</a></li>
+</ul>
+</li>
+</ul>
+</section></article><nav class="chapter-switcher" aria-label="章节导航"><a href="../06-cache/index.html">← HTTP 缓存</a><a class="course-home" href="../index.html">全部章节</a><a href="../index.html">回到阅读目录 →</a></nav><footer class="license-note"><p>原文：<a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Evolution_of_HTTP">Evolution of HTTP</a>，© Mozilla Contributors。原文快照：2026-09-29。本非官方阅读版由 Codex 翻译并逐句润色；另附独立编者导读与校注。正文全文、代码、原图及链接保留，不含 MDN 站点导航、反馈和页脚。</p><p>文档与译文采用 <a href="https://creativecommons.org/licenses/by-sa/2.5/">CC BY-SA 2.5</a>；代码许可及完整来源说明见 <a href="../NOTICE.html">来源与许可</a>。</p></footer></main></body></html>
