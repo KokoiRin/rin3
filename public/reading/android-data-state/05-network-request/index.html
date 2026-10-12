@@ -142,7 +142,7 @@ $ git checkout starter
 <li data-unit="05-network-request-085">打开模块级 Gradle 文件 <code>build.gradle.kts (Module :app)</code>。</li>
 <li data-unit="05-network-request-086">在 <code>dependencies</code> 部分添加以下 Retrofit 库依赖：</li>
 </ol>
-<div></div><div><pre class="source-code"><code>// Retrofit 
+<div></div><div><pre class="source-code"><code>// Retrofit&#32;
 implementation("com.squareup.retrofit2:retrofit:2.9.0")
 // Retrofit with Scalar Converter
 implementation("com.squareup.retrofit2:converter-scalars:2.9.0")
@@ -172,7 +172,7 @@ implementation("com.squareup.retrofit2:converter-scalars:2.9.0")
 <li data-unit="05-network-request-101">打开 <code>network/MarsApiService.kt</code>。</li>
 <li data-unit="05-network-request-102">添加以下常量作为 Web 服务的基础 URL。</li>
 </ol>
-<div></div><div><pre class="source-code"><code>private const val BASE_URL = 
+<div></div><div><pre class="source-code"><code>private const val BASE_URL =&#32;
    "https://android-kotlin-fun-mars-server.appspot.com"
 </code></pre></div>
 <ol>
@@ -209,7 +209,7 @@ private val retrofit = Retrofit.Builder()
 <ol>
 <li data-unit="05-network-request-109">在 <code>MarsApiService</code> 接口中添加 <code>getPhotos()</code> 函数，取得 Web 服务的响应字符串。</li>
 </ol>
-<div></div><div><pre class="source-code"><code>interface MarsApiService {    
+<div></div><div><pre class="source-code"><code>interface MarsApiService {&#32;&#32;&#32;&#32;
     fun getPhotos()
 }
 </code></pre></div>
@@ -220,7 +220,7 @@ private val retrofit = Retrofit.Builder()
 
 
 interface MarsApiService {
-    @GET("photos") 
+    @GET("photos")&#32;
     fun getPhotos()
 }
 </code></pre></div>
@@ -229,7 +229,7 @@ interface MarsApiService {
 <li data-unit="05-network-request-112">把函数返回类型设为 <code>String</code>。</li>
 </ol>
 <div></div><div><pre class="source-code"><code>interface MarsApiService {
-    @GET("photos") 
+    @GET("photos")&#32;
     fun getPhotos(): String
 }
 </code></pre></div>
@@ -272,7 +272,7 @@ SampleDataProvider.register(...)
 <li data-unit="05-network-request-123">用 <code>retrofit.create()</code> 方法和 <code>MarsApiService</code> 接口初始化 <code>retrofitService</code> 变量。</li>
 </ol>
 <div></div><div><pre class="source-code"><code>object MarsApi {
-    val retrofitService : MarsApiService by lazy { 
+    val retrofitService : MarsApiService by lazy {&#32;
        retrofit.create(MarsApiService::class.java)
     }
 }
@@ -589,7 +589,7 @@ fun ErrorScreen(modifier: Modifier = Modifier) {
 <ol>
 <li data-unit="05-network-request-210">在 <code>dependencies</code> 部分添加以下代码，引入 <code>kotlinx.serialization</code> 依赖，为 Kotlin 项目提供 JSON 序列化。</li>
 </ol>
-<div></div><div><pre class="source-code"><code>// Kotlin serialization 
+<div></div><div><pre class="source-code"><code>// Kotlin serialization&#32;
 implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.1")
 </code></pre></div>
 <ol>
@@ -660,7 +660,7 @@ data class MarsPhoto(
 </ol>
 <div></div><div><pre class="source-code"><code>import kotlinx.serialization.SerialName
 
-@SerialName(value = "img_src") 
+@SerialName(value = "img_src")&#32;
 val imgSrc: String
 </code></pre></div>
 <h2 data-unit="05-network-request-234" id="update-marsapiservice-and-marsviewmodel">更新 MarsApiService 与 MarsViewModel</h2>
