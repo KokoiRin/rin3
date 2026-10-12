@@ -1,0 +1,581 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Data layer · Android 应用的数据与状态</title><link rel="stylesheet" href="../../reader.css"><link rel="stylesheet" href="../source.css"><link rel="manifest" href="../../../manifest.webmanifest"></head><body><nav class="site-nav"><a href="../index.html">← Android 应用的数据与状态</a><a href="https://developer.android.com/topic/architecture/data-layer?hl=en">官方英文原文 ↗</a></nav><main class="reader"><header class="chapter-header"><span class="chapter-kicker">04 · English source</span><h1>Data layer</h1><p class="byline">Data layer · Android Developers / Google</p><div class="title-rule"></div><p class="edition-nav"><a href="index.html">中文阅读版</a> · <strong aria-current="page">英文对照</strong> · <a href="literal.html">第一轮直译稿</a></p><aside class="learning-note"><span class="note-kind">编者导读 · 不属于原文</span><p><strong>网络、缓存和本地数据由谁组织，页面向谁要数据？</strong></p><p>Repository 负责对外提供业务数据；DataSource 连接具体来源。沿新闻应用原例阅读请求、缓存与磁盘保存。</p><p><strong>第一轮阅读：</strong>先读架构、暴露 API、事实来源和网络请求；内存缓存和任务存活范围随后继续。</p><details class="editor-notes"><summary>版本与适用范围校注（2 条）</summary><p>原文“面向业务的操作不能取消”描述的是业务要求，不表示 WorkManager 在技术上不可取消。持久性工作也可以被显式取消，具体策略由需求决定。</p><p>内存中的业务缓存与 HTTP 缓存是两个层次；本篇主要说明前者。</p></details></aside><details class="source-details"><summary>本篇目录与翻译范围</summary><p>官方英文文章正文全文；保留原文顺序、代码、图示、表格与延伸链接。代码与图中文字保持原样。编者导读与校注单独标明，阅读不要求同时安装、运行或编写示例。</p><ul><li class="toc-h2"><a href="#architecture">Data layer architecture</a></li><li class="toc-h2"><a href="#expose-apis">Expose APIs</a></li><li class="toc-h2"><a href="#naming-conventions">Naming conventions in this guide</a></li><li class="toc-h2"><a href="#multiple-levels">Multiple levels of repositories</a></li><li class="toc-h2"><a href="#source-of-truth">Source of truth</a></li><li class="toc-h2"><a href="#threading">Threading</a></li><li class="toc-h2"><a href="#lifecycle">Lifecycle</a></li><li class="toc-h2"><a href="#business-models">Represent business models</a></li><li class="toc-h2"><a href="#data-operation-types">Types of data operations</a></li><li class="toc-h3"><a href="#ui-operations">UI-oriented operations</a></li><li class="toc-h3"><a href="#app-operations">App-oriented operations</a></li><li class="toc-h3"><a href="#business-operations">Business-oriented operations</a></li><li class="toc-h2"><a href="#expose-errors">Expose errors</a></li><li class="toc-h2"><a href="#common-tasks">Common tasks</a></li><li class="toc-h3"><a href="#network-request">Make a network request</a></li><li class="toc-h4"><a href="#create_the_data_source">Create the data source</a></li><li class="toc-h4"><a href="#create_the_repository">Create the repository</a></li><li class="toc-h3"><a href="#in-memory-cache">Implement in-memory data caching</a></li><li class="toc-h4"><a href="#caches">Caches</a></li><li class="toc-h4"><a href="#cache_the_result_of_the_network_request">Cache the result of the network request</a></li><li class="toc-h4"><a href="#make_an_operation_live_longer_than_the_screen">Make an operation live longer than the screen</a></li><li class="toc-h3"><a href="#save-retrieve-data">Save and retrieve data from disk</a></li><li class="toc-h4"><a href="#room_as_a_data_source">Room as a data source</a></li><li class="toc-h4"><a href="#datastore_as_a_data_source">DataStore as a data source</a></li><li class="toc-h4"><a href="#a_file_as_a_data_source">A file as a data source</a></li><li class="toc-h3"><a href="#workmanager">Schedule tasks using WorkManager</a></li><li class="toc-h2"><a href="#testing">Testing</a></li><li class="toc-h3"><a href="#unit-tests">Unit tests</a></li><li class="toc-h3"><a href="#integration-tests">Integration tests</a></li><li class="toc-h2"><a href="#resources">Additional resources</a></li><li class="toc-h3"><a href="#samples">Samples</a></li></ul></details><nav class="chapter-switcher" aria-label="章节导航"><a href="../03-state-production/english.html">← 状态怎样更新</a><a class="course-home" href="../index.html">全部章节</a><a href="../05-network-request/english.html">安卓中的网络请求 →</a></nav></header><article class="translated-article">
+<p data-unit="04-data-layer-001">While the UI layer contains UI-related state and UI logic, the data layer
+contains <em>application data</em> and <em>business logic</em>. The business logic is what
+gives value to your app—it's made of real-world business rules that determine
+how application data must be created, stored, and changed.</p>
+<p data-unit="04-data-layer-002">This separation of concerns allows the data layer to be used on multiple
+screens, share information between different parts of the app, and reproduce
+business logic outside of the UI for unit testing. For more information about
+the benefits of the data layer, check out the <a href="https://developer.android.google.cn/jetpack/guide">Architecture Overview page</a>.</p>
+<aside class="note"><span class="source-text" data-unit="04-data-layer-003"><strong>Note:</strong><span> The recommendations and best practices present in this page can be applied
+to a broad spectrum of apps to allow them to scale, improve quality and
+robustness, and make them easier to test. However, you should treat them as
+guidelines and adapt them to your requirements as needed.</span></span></aside>
+<div class="video-wrapper-full-width">
+<iframe class="devsite-embedded-youtube-video" data-video-id="r5AseKQh2ZE">
+</iframe>
+</div>
+<h2 data-unit="04-data-layer-004" id="architecture">Data layer architecture</h2>
+<p data-unit="04-data-layer-005">The data layer is made of <em>repositories</em> that each can contain zero to many
+<em>data sources</em>. You should create a repository class for each different type of
+data you handle in your app. For example, you might create a <code>MoviesRepository</code>
+class for data related to movies, or a <code>PaymentsRepository</code> class for data
+related to payments.</p>
+<figure id="data-overview">
+<img alt="In a typical architecture, the data layer's repositories provide data
+    to the rest of the app and depend on the data sources." data-original-src="https://developer.android.google.cn/static/topic/libraries/architecture/images/mad-arch-data-overview.png" loading="eager" src="../assets/4a0f39de6adc2c98.png" width="500"/>
+<figcaption data-unit="04-data-layer-006">
+<b>Figure 1.</b> The data layer's role in app architecture.
+</figcaption>
+</figure>
+<p data-unit="04-data-layer-007">Repository classes are responsible for the following tasks:</p>
+<ul>
+<li data-unit="04-data-layer-008">Exposing data to the rest of the app.</li>
+<li data-unit="04-data-layer-009">Centralizing changes to the data.</li>
+<li data-unit="04-data-layer-010">Resolving conflicts between multiple data sources.</li>
+<li data-unit="04-data-layer-011">Abstracting sources of data from the rest of the app.</li>
+<li data-unit="04-data-layer-012">Containing business logic.</li>
+</ul>
+<p data-unit="04-data-layer-013">Each data source class should have the responsibility of working with only one
+source of data, which can be a file, a network source, or a local database. Data
+source classes are the bridge between the application and the system for data
+operations.</p>
+<p data-unit="04-data-layer-014">Other layers in the hierarchy should never access data sources directly; the
+entry points to the data layer are always the repository classes. State holder
+classes (see the <a href="https://developer.android.google.cn/jetpack/guide/ui-layer#state-holders">UI layer guide</a>) or use case classes (see the <a href="https://developer.android.google.cn/jetpack/guide/domain-layer">domain layer
+guide</a>) should never have a data source as a direct dependency. Using
+repository classes as entry points allows the different layers of the
+architecture to scale independently.</p>
+<p data-unit="04-data-layer-015"><strong>The data exposed by this layer should be immutable</strong> so that it cannot be
+tampered with by other classes, which would risk putting its values in an
+inconsistent state. Immutable data can also be safely handled by multiple
+threads. See the <a href="https://developer.android.google.cn/topic/architecture/data-layer?hl=en#threading">threading section</a> for more details.</p>
+<p data-unit="04-data-layer-016">Following <a href="https://developer.android.google.cn/training/dependency-injection">dependency injection</a> best practices, the repository takes data
+sources as dependencies in its constructor:</p>
+<div></div><div><pre class="source-code"><code>class ExampleRepository(
+    private val exampleRemoteDataSource: ExampleRemoteDataSource, // network
+    private val exampleLocalDataSource: ExampleLocalDataSource // database
+) { /* ... */ }
+</code></pre></div><aside class="note"><span class="source-text" data-unit="04-data-layer-017"><strong>Note:</strong><span> Often, when a repository only contains a single data source and
+doesn't depend on other repositories, developers merge the responsibilities of
+repositories and data sources into the repository class. If you do this, don't
+forget to split functionalities if the repository needs to handle data from
+another source in a later version of your app.</span></span></aside>
+<h2 data-unit="04-data-layer-018" id="expose-apis">Expose APIs</h2>
+<p data-unit="04-data-layer-019">Classes in the data layer generally expose functions to perform one-shot Create,
+Read, Update and Delete (CRUD) calls or to be notified of data changes over
+time. The data layer should expose the following for each of these cases:</p>
+<ul>
+<li data-unit="04-data-layer-020"><strong>For one-shot operations</strong>, expose suspend functions.</li>
+<li data-unit="04-data-layer-021"><strong>To be notified of data changes over time</strong>, expose <a href="https://developer.android.google.cn/kotlin/flow">flows</a>.</li>
+</ul>
+<div></div><div><pre class="source-code"><code>class ExampleRepository(
+    private val exampleRemoteDataSource: ExampleRemoteDataSource, // network
+    private val exampleLocalDataSource: ExampleLocalDataSource // database
+) {
+
+    val data: Flow&lt;Example&gt; = ...
+
+    suspend fun modifyData(example: Example) { ... }
+}
+</code></pre></div>
+<h2 data-unit="04-data-layer-022" id="naming-conventions">Naming conventions in this guide</h2>
+<p data-unit="04-data-layer-023">In this guide, repository classes are named after the data that they're
+responsible for. The convention is as follows:</p>
+<p data-unit="04-data-layer-024"><em>type of data</em> + <em>Repository</em>.</p>
+<p data-unit="04-data-layer-025">For example: <code>NewsRepository</code>, <code>MoviesRepository</code>, or <code>PaymentsRepository</code>.</p>
+<p data-unit="04-data-layer-026">Data source classes are named after the data they're responsible for and the
+source they use. The convention is as follows:</p>
+<p data-unit="04-data-layer-027"><em>type of data</em> + <em>type of source</em> + <em>DataSource</em>.</p>
+<p data-unit="04-data-layer-028">For the type of data, use <em>Remote</em> or <em>Local</em> to be more generic because
+implementations can change. For example: <code>NewsRemoteDataSource</code> or
+<code>NewsLocalDataSource</code>. To be more specific in case the source is important, use
+the type of the source. For example: <code>NewsNetworkDataSource</code> or
+<code>NewsDiskDataSource</code>.</p>
+<p data-unit="04-data-layer-029">Don't name the data source based on an implementation detail—for example,
+<code>UserSharedPreferencesDataSource</code>—because repositories that use that data source
+shouldn't know how the data is saved. If you follow this rule, you can change
+the implementation of the data source (for example, migrating from
+<a href="https://developer.android.google.cn/training/data-storage/shared-preferences">SharedPreferences</a> to <a href="https://developer.android.google.cn/topic/libraries/architecture/datastore">DataStore</a>) without affecting the layer that calls
+that source.</p>
+<aside class="note"><span class="source-text" data-unit="04-data-layer-030"><strong>Note:</strong><span> When migrating over to a new implementation of a data source, you might
+create an interface for the data source and have two implementations of the data
+source: one for the old backing technology, and one for the new one. In that
+case, it's fine to use the name of the technology for the data source class
+names (even though it's an implementation detail) because the repository only
+sees the interface, not the data source classes themselves. When you finish the
+migration, you can rename the new class to not contain the implementation detail
+in its name.</span></span></aside>
+<h2 data-unit="04-data-layer-031" id="multiple-levels">Multiple levels of repositories</h2>
+<p data-unit="04-data-layer-032">In some cases involving more complex business requirements, a repository might
+need to depend on other repositories. This could be because the data involved is
+an aggregation from multiple data sources, or because the responsibility needs
+to be encapsulated in another repository class.</p>
+<p data-unit="04-data-layer-033">For example, a repository that handles user authentication data,
+<code>UserRepository</code>, could depend on other repositories such as <code>LoginRepository</code>
+and <code>RegistrationRepository</code> to fulfill its requirements.</p>
+<figure id="data-multiple-repos">
+<img alt="In the example, UserRepository depends on two other repository classes:
+    LoginRepository, which depends on other login data sources; and
+    RegistrationRepository, which depends on other registration data sources." data-original-src="https://developer.android.google.cn/static/topic/libraries/architecture/images/mad-arch-data-multiple-repos.png" loading="eager" src="../assets/dd172204ed789e0a.png" width="500"/>
+<figcaption data-unit="04-data-layer-034">
+<b>Figure 2.</b> Dependency graph of a repository that depends on other
+  repositories.
+</figcaption>
+</figure>
+<aside class="note"><span class="source-text" data-unit="04-data-layer-035"><strong>Note:</strong><span> Traditionally, some developers have called repository classes that depend
+on other repository classes <em>managers</em>—for example, <code>UserManager</code> instead of
+<code>UserRepository</code>. You can use this naming convention if you prefer.</span></span></aside>
+<h2 data-unit="04-data-layer-036" id="source-of-truth">Source of truth</h2>
+<p data-unit="04-data-layer-037">It's important that each repository defines a single source of truth. The source
+of truth always contains data that is consistent, correct, and up-to-date. In
+fact, the data exposed from the repository should always be the data coming
+directly from the source of truth.</p>
+<p data-unit="04-data-layer-038">The source of truth can be a data source—for example, the database—or even an
+in-memory cache that the repository might contain. Repositories combine
+different data sources and solve any potential conflicts between the data
+sources to update the single source of truth regularly or due to a user input
+event.</p>
+<p data-unit="04-data-layer-039">Different repositories in your app might have different sources of truth. For
+example, the <code>LoginRepository</code> class might use its cache as the source of truth
+and the <code>PaymentsRepository</code> class might use the network data source.</p>
+<p data-unit="04-data-layer-040">In order to provide offline-first support, <strong>a local data source—such as a
+database—is the recommended source of truth</strong>.</p>
+<h2 data-unit="04-data-layer-041" id="threading">Threading</h2>
+<p data-unit="04-data-layer-042">Calling data sources and repositories should be <em>main-safe</em>—safe to call from
+the main thread. These classes are responsible for moving the execution of their
+logic to the appropriate thread when performing long-running blocking
+operations. For example, it should be main-safe for a data source to read from a
+file, or for a repository to perform expensive filtering on a big list.</p>
+<p data-unit="04-data-layer-043">Note that most data sources already provide main-safe APIs like the suspend
+method calls provided by <a href="https://developer.android.google.cn/training/data-storage/room">Room</a>, <a href="https://square.github.io/retrofit/">Retrofit</a> or <a href="https://ktor.io/">Ktor</a>. Your
+repository can take advantage of these APIs when they are available.</p>
+<p data-unit="04-data-layer-044">To learn more about threading, see the <a href="https://developer.android.google.cn/guide/background">guide to background processing</a>. For
+Kotlin users, <a href="https://developer.android.google.cn/kotlin/coroutines">coroutines</a> are the recommended option.</p>
+<h2 data-unit="04-data-layer-045" id="lifecycle">Lifecycle</h2>
+<p data-unit="04-data-layer-046">Instances of classes in the data layer remain in memory as long as they are
+reachable from a garbage collection root—usually by being referenced from other
+objects in your app.</p>
+<p data-unit="04-data-layer-047">If a class contains in-memory data—for example, a cache—you might want to reuse
+the same instance of that class for a specific period of time. This is also
+referred to as the <em>lifecycle</em> of the class instance.</p>
+<p data-unit="04-data-layer-048">If the class's responsibility is crucial for the whole application, you can
+<em>scope</em> an instance of that class to the <code>Application</code> class. This makes it so
+the instance follows the application's lifecycle. Alternatively, if you only
+need to reuse the same instance in a particular flow in your app—for example,
+the registration or login flow—then you should scope the instance to the class
+that owns the lifecycle of that flow. For example, you could scope a
+<code>RegistrationRepository</code> that contains in-memory data to the
+<code>RegistrationActivity</code>, or to a backstack using a <a href="https://developer.android.google.cn/guide/navigation/navigation-3/naventrydecorators#apply-decorators"><code>NavEntryDecorator</code></a>.</p>
+<p data-unit="04-data-layer-049">The lifecycle of each instance is a critical factor in deciding how to provide
+dependencies within your app. It's recommended that you follow <a href="https://developer.android.google.cn/training/dependency-injection">dependency
+injection</a> best practices where the dependencies are managed and can be
+scoped to dependency containers. To learn more about scoping in Android, see the
+<a href="https://medium.com/androiddevelopers/scoping-in-android-and-hilt-c2e5222317c0">Scoping in Android and Hilt</a> blog post.</p>
+<h2 data-unit="04-data-layer-050" id="business-models">Represent business models</h2>
+<p data-unit="04-data-layer-051">The data models that you want to expose from the data layer might be a subset of
+the information that you get from the different data sources. Ideally, the
+different data sources—both network and local—should return only the information
+your application needs; but that's not often the case.</p>
+<p data-unit="04-data-layer-052">For example, imagine a News API server that returns not only the article
+information, but also edit history, user comments, and some metadata:</p>
+<div></div><div><pre class="source-code"><code>data class ArticleApiModel(
+    val id: Long,
+    val title: String,
+    val content: String,
+    val publicationDate: Date,
+    val modifications: Array&lt;ArticleApiModel&gt;,
+    val comments: Array&lt;CommentApiModel&gt;,
+    val lastModificationDate: Date,
+    val authorId: Long,
+    val authorName: String,
+    val authorDateOfBirth: Date,
+    val readTimeMin: Int
+)
+</code></pre></div>
+<p data-unit="04-data-layer-053">The app doesn't need that much information about the article because it only
+displays the content of the article on the screen, along with basic information
+about its author. It's a good practice to separate model classes and have your
+repositories expose only the data that the other layers of the hierarchy
+require. For example, here is how you might trim down the <code>ArticleApiModel</code> from
+the network in order to expose an <code>Article</code> model class to the domain and UI
+layers:</p>
+<div></div><div><pre class="source-code"><code>data class Article(
+    val id: Long,
+    val title: String,
+    val content: String,
+    val publicationDate: Date,
+    val authorName: String,
+    val readTimeMin: Int
+)
+</code></pre></div>
+<p data-unit="04-data-layer-054">Separating model classes is beneficial in the following ways:</p>
+<ul>
+<li data-unit="04-data-layer-055">It saves app memory by reducing the data to only what's needed.</li>
+<li data-unit="04-data-layer-056">It adapts external data types to data types used by your app—for example,
+your app might use a different data type to represent dates.</li>
+<li data-unit="04-data-layer-057">It provides better separation of concerns—for example, members of a large
+team could work individually on the network and UI layers of a feature if
+the model class is defined beforehand.</li>
+</ul>
+<p data-unit="04-data-layer-058">You can extend this practice and define separate model classes in other parts of
+your app architecture as well—for example, in data source classes and
+ViewModels. However, this requires you to define extra classes and logic that
+you should properly document and test. <strong>At minimum, it's recommended that you
+create new models in any case where a data source receives data that doesn't
+match with what the rest of your app expects.</strong></p>
+<h2 data-unit="04-data-layer-059" id="data-operation-types">Types of data operations</h2>
+<p data-unit="04-data-layer-060">The data layer can deal with types of operations that vary based on how critical
+they are: UI-oriented, app-oriented, and business-oriented operations.</p>
+<h3 data-unit="04-data-layer-061" id="ui-operations">UI-oriented operations</h3>
+<p data-unit="04-data-layer-062">UI-oriented operations are only relevant when the user is on a specific screen,
+and they're canceled when the user moves away from that screen. An example is
+displaying some data obtained from the database.</p>
+<p data-unit="04-data-layer-063">UI-oriented operations are typically triggered by the UI layer and follow the
+caller's lifecycle—for example, the lifecycle of the ViewModel. See the <a href="https://developer.android.google.cn/topic/architecture/data-layer?hl=en#network-request">Make a
+network request</a> section for an example of a UI-oriented operation.</p>
+<h3 data-unit="04-data-layer-064" id="app-operations">App-oriented operations</h3>
+<p data-unit="04-data-layer-065">App-oriented operations are relevant as long as the app is open. If the app is
+closed or the process is killed, these operations are canceled. An example is
+caching the result of a network request so that it can be used later if needed.
+See the <a href="https://developer.android.google.cn/topic/architecture/data-layer?hl=en#in-memory-cache">Implement in-memory data caching</a> section to learn more.</p>
+<p data-unit="04-data-layer-066">These operations typically follow the lifecycle of the <code>Application</code> class or
+the data layer. For an example, see the <a href="https://developer.android.google.cn/topic/architecture/data-layer?hl=en#make_an_operation_live_longer_than_the_screen">Make an operation live longer than the
+screen</a> section.</p>
+<h3 data-unit="04-data-layer-067" id="business-operations">Business-oriented operations</h3>
+<p data-unit="04-data-layer-068">Business-oriented operations cannot be canceled. They should survive process
+death. An example is finishing the upload of a photo that the user wants to post
+to their profile.</p>
+<p data-unit="04-data-layer-069">The recommendation for business-oriented operations is to use WorkManager. See
+the <a href="https://developer.android.google.cn/topic/architecture/data-layer?hl=en#workmanager">Schedule tasks using WorkManager</a> section to learn more.</p>
+<h2 data-unit="04-data-layer-070" id="expose-errors">Expose errors</h2>
+<p data-unit="04-data-layer-071">Interactions with repositories and sources of data can either succeed or throw
+an exception when a failure occurs. For coroutines and flows, you should use
+Kotlin's <a href="https://kotlinlang.org/docs/exception-handling.html">built-in error-handling mechanism</a>. For errors that could be
+triggered by suspend functions, use <code>try/catch</code> blocks when appropriate; and in
+flows, use the <a href="https://kotlin.github.io/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/catch.html"><code>catch</code></a> operator. With this approach, the UI layer is
+expected to handle exceptions when calling the data layer.</p>
+<p data-unit="04-data-layer-072">The data layer can understand and handle different types of errors and expose
+them using custom exceptions—for example, a <code>UserNotAuthenticatedException</code>.</p>
+<aside class="note"><span class="source-text" data-unit="04-data-layer-073"><strong>Note:</strong><span> Another way to model the result of interactions with the data layer is by
+using a <code>Result</code> class. This pattern models errors and other signals that can
+happen as part of processing the result. In this pattern, the data layer returns
+a <code>Result&lt;T&gt;</code> type instead of <code>T</code>, making the UI aware of <em>known</em> errors that
+could occur in certain scenarios.</span></span></aside>
+<p data-unit="04-data-layer-074">To learn more about errors in coroutines, see the <a href="https://medium.com/androiddevelopers/exceptions-in-coroutines-ce8da1ec060c">Exceptions in coroutines</a>
+blog post.</p>
+<h2 data-unit="04-data-layer-075" id="common-tasks">Common tasks</h2>
+<p data-unit="04-data-layer-076">The following sections present examples of how to use and architect the data
+layer to perform certain tasks that are common in Android apps. The examples are
+based on the typical News app mentioned earlier in the guide.</p>
+<h3 data-unit="04-data-layer-077" id="network-request">Make a network request</h3>
+<p data-unit="04-data-layer-078">Making a network request is one of the most common tasks an Android app might
+perform. The News app needs to present the user with the latest news that is
+fetched from the network. Therefore, the app needs a data source class to manage
+network operations: <code>NewsRemoteDataSource</code>. To expose the information to the
+rest of the app, a new repository that handles operations on news data is
+created: <code>NewsRepository</code>.</p>
+<p data-unit="04-data-layer-079">The requirement is that the latest news always needs to be updated when the user
+opens the screen. Thus, this is a <em>UI-oriented operation</em>.</p>
+<h4 data-unit="04-data-layer-080" id="create_the_data_source">Create the data source</h4>
+<p data-unit="04-data-layer-081">The data source needs to expose a function that returns the latest news: a list
+of <code>ArticleHeadline</code> instances. The data source needs to provide a main-safe way
+to obtain the latest news from the network. For that, it needs to take a
+dependency on the <code>CoroutineDispatcher</code> or <code>Executor</code> to run the task on.</p>
+<p data-unit="04-data-layer-082">Making a network request is a one-shot call handled by a new <code>fetchLatestNews()</code>
+method:</p>
+<div></div><div><pre class="source-code"><code>class NewsRemoteDataSource(
+  private val newsApi: NewsApi,
+  private val ioDispatcher: CoroutineDispatcher
+) {
+    /**
+     * Fetches the latest news from the network and returns the result.
+     * This executes on an IO-optimized thread pool, the function is main-safe.
+     */
+    suspend fun fetchLatestNews(): List&lt;ArticleHeadline&gt; =
+        // Move the execution to an IO-optimized thread since the ApiService
+        // doesn't support coroutines and makes synchronous requests.
+        withContext(ioDispatcher) {
+            newsApi.fetchLatestNews()
+        }
+    }
+
+// Makes news-related network synchronous requests.
+interface NewsApi {
+    fun fetchLatestNews(): List&lt;ArticleHeadline&gt;
+}
+</code></pre></div>
+<p data-unit="04-data-layer-083">The <code>NewsApi</code> interface hides the implementation of the network API client; it
+doesn't make a difference whether the interface is backed by <a href="https://square.github.io/retrofit/">Retrofit</a> or
+<a href="https://developer.android.google.cn/reference/java/net/HttpURLConnection"><code>HttpURLConnection</code></a>. Relying on interfaces makes API implementations
+swappable in your app.</p>
+<aside class="key-point"><span class="source-text" data-unit="04-data-layer-084"><strong>Key Point:</strong><span> <strong>Relying on interfaces makes API implementations swappable in your
+app.</strong> In addition to providing scalability and allowing you to replace
+dependencies more easily, it also favors testability because you can inject fake
+data source implementations in tests.</span></span></aside>
+<h4 data-unit="04-data-layer-085" id="create_the_repository">Create the repository</h4>
+<p data-unit="04-data-layer-086">Because no extra logic is needed in the repository class for this task,
+<code>NewsRepository</code> acts as a proxy for the network data source. The benefits of
+adding this extra layer of abstraction are explained in the <a href="https://developer.android.google.cn/topic/architecture/data-layer?hl=en#in-memory-cache">in-memory
+caching</a> section.</p>
+<div></div><div><pre class="source-code"><code>// NewsRepository is consumed from other layers of the hierarchy.
+class NewsRepository(
+    private val newsRemoteDataSource: NewsRemoteDataSource
+) {
+    suspend fun fetchLatestNews(): List&lt;ArticleHeadline&gt; =
+        newsRemoteDataSource.fetchLatestNews()
+}
+</code></pre></div>
+<p data-unit="04-data-layer-087">To learn how to consume the repository class directly from the UI layer, see the
+<a href="https://developer.android.google.cn/jetpack/guide/ui-layer">UI layer</a> guide.</p>
+<h3 data-unit="04-data-layer-088" id="in-memory-cache">Implement in-memory data caching</h3>
+<p data-unit="04-data-layer-089">Suppose a new requirement is introduced for the News app: when the user opens
+the screen, cached news must be presented to the user if a request has been made
+previously. Otherwise, the app should make a network request to fetch the latest
+news.</p>
+<p data-unit="04-data-layer-090">Given the new requirement, the app must preserve the latest news in memory while
+the user has the app open. Thus, this is an <em>app-oriented operation</em>.</p>
+<h4 data-unit="04-data-layer-091" id="caches">Caches</h4>
+<p data-unit="04-data-layer-092">You can preserve data while the user is in your app by adding in-memory data
+caching. Caches are meant to save some information in memory for a specific
+amount of time—in this case, as long as the user is in the app. Cache
+implementations can take different forms. They can vary from simple mutable
+variables to more sophisticated classes that protect from read/write operations
+on multiple threads. Depending on the use case, caching can be implemented in
+the repository or in data source classes.</p>
+<h4 data-unit="04-data-layer-093" id="cache_the_result_of_the_network_request">Cache the result of the network request</h4>
+<p data-unit="04-data-layer-094">For simplicity, <code>NewsRepository</code> uses a mutable variable to cache the latest
+news. To protect reads and writes from different threads, a <a href="https://kotlin.github.io/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.sync/-mutex/"><code>Mutex</code></a> is
+used. To learn more about shared mutable state and concurrency, see the <a href="https://kotlinlang.org/docs/shared-mutable-state-and-concurrency.html#shared-mutable-state-and-concurrency">Kotlin
+documentation</a>.</p>
+<p data-unit="04-data-layer-095">The following implementation caches the latest news information to a variable in
+the repository that is write-protected with a <code>Mutex</code>. If the result of the
+network request succeeds, the data is assigned to the <code>latestNews</code> variable.</p>
+<div></div><div><pre class="source-code"><code>class NewsRepository(
+  private val newsRemoteDataSource: NewsRemoteDataSource
+) {
+    // Mutex to make writes to cached values thread-safe.
+    private val latestNewsMutex = Mutex()
+
+    // Cache of the latest news got from the network.
+    private var latestNews: List&lt;ArticleHeadline&gt; = emptyList()
+
+    suspend fun getLatestNews(refresh: Boolean = false): List&lt;ArticleHeadline&gt; {
+        if (refresh || latestNews.isEmpty()) {
+            val networkResult = newsRemoteDataSource.fetchLatestNews()
+            // Thread-safe write to latestNews
+            latestNewsMutex.withLock {
+                this.latestNews = networkResult
+            }
+        }
+
+        return latestNewsMutex.withLock { this.latestNews }
+    }
+}
+</code></pre></div>
+<h4 data-unit="04-data-layer-096" id="make_an_operation_live_longer_than_the_screen">Make an operation live longer than the screen</h4>
+<p data-unit="04-data-layer-097">If the user navigates away from the screen while the network request is in
+progress, it'll be canceled and the result won't be cached. <code>NewsRepository</code>
+shouldn't use the caller's <code>CoroutineScope</code> to perform this logic. Instead,
+<code>NewsRepository</code> should use a <code>CoroutineScope</code> that's attached to its lifecycle.
+<strong>Fetching the latest news needs to be an app-oriented operation.</strong></p>
+<p data-unit="04-data-layer-098">To follow dependency injection best practices, <code>NewsRepository</code> should receive a
+scope as a parameter in its constructor instead of creating its own
+<code>CoroutineScope</code>. Because repositories should do most of their work in
+background threads, you should configure the <code>CoroutineScope</code> with either
+<code>Dispatchers.Default</code> or with your own thread pool.</p>
+<div></div><div><pre class="source-code"><code>class NewsRepository(
+    ...,
+    // This could be CoroutineScope(SupervisorJob() + Dispatchers.Default).
+    private val externalScope: CoroutineScope
+) { ... }
+</code></pre></div>
+<p data-unit="04-data-layer-099">Because <code>NewsRepository</code> is ready to perform app-oriented operations with the
+external <code>CoroutineScope</code>, it must perform the call to the data source and save
+its result with a new coroutine started by that scope:</p>
+<div></div><div><pre class="source-code"><code>class NewsRepository(
+    private val newsRemoteDataSource: NewsRemoteDataSource,
+    private val externalScope: CoroutineScope
+) {
+    /* ... */
+
+    suspend fun getLatestNews(refresh: Boolean = false): List&lt;ArticleHeadline&gt; {
+        return if (refresh) {
+            externalScope.async {
+                newsRemoteDataSource.fetchLatestNews().also { networkResult -&gt;
+                    // Thread-safe write to latestNews.
+                    latestNewsMutex.withLock {
+                        latestNews = networkResult
+                    }
+                }
+            }.await()
+        } else {
+            return latestNewsMutex.withLock { this.latestNews }
+        }
+    }
+}
+</code></pre></div>
+<p data-unit="04-data-layer-100"><code>async</code> is used to start the coroutine in the external scope. <code>await</code> is called
+on the new coroutine to suspend until the network request comes back and the
+result is saved to the cache. If by that time the user is still on the screen,
+then they will see the latest news; if the user moves away from the screen,
+<code>await</code> is canceled but the logic inside <code>async</code> continues to execute.</p>
+<p data-unit="04-data-layer-101">Read more about <a href="https://medium.com/androiddevelopers/coroutines-patterns-for-work-that-shouldnt-be-cancelled-e26c40f142ad">patterns for <code>CoroutineScope</code></a>.</p>
+<h3 data-unit="04-data-layer-102" id="save-retrieve-data">Save and retrieve data from disk</h3>
+<p data-unit="04-data-layer-103">Suppose that you want to save data like bookmarked news and user preferences.
+This type of data needs to survive process death and be accessible even if the
+user is not connected to the network.</p>
+<p data-unit="04-data-layer-104">If the data you're working with needs to survive process death, then you need to
+store it on disk in one of the following ways:</p>
+<ul>
+<li data-unit="04-data-layer-105">For <em>large datasets</em> that need to be queried, need referential integrity, or
+need partial updates, save the data in a <em>Room database</em>. In the News app
+example, the news articles or authors could be saved in the database.</li>
+<li data-unit="04-data-layer-106">For <em>small datasets</em> that only need to be retrieved and set (not queried or
+updated partially), use <em>DataStore</em>. In the News app example, the user's
+preferred date format or other display preferences could be saved in
+DataStore.</li>
+<li data-unit="04-data-layer-107">For <em>chunks of data</em> like a JSON object, use a <em>file</em>.</li>
+</ul>
+<p data-unit="04-data-layer-108">As mentioned in the <a href="https://developer.android.google.cn/topic/architecture/data-layer?hl=en#source-of-truth">Source of truth</a> section, each data source works with
+only one source and corresponds to a specific data type (for example, <code>News</code>,
+<code>Authors</code>, <code>NewsAndAuthors</code>, or <code>UserPreferences</code>). Classes that use the data
+source shouldn't know how the data is saved—for example, in a database or in a
+file.</p>
+<h4 data-unit="04-data-layer-109" id="room_as_a_data_source">Room as a data source</h4>
+<p data-unit="04-data-layer-110">Because each data source should have the responsibility of working with only one
+source for a specific type of data, a Room data source would receive either a
+<a href="https://developer.android.google.cn/training/data-storage/room/accessing-data">data access object (DAO)</a> or the database itself as a parameter. For
+example, <code>NewsLocalDataSource</code> might take an instance of <code>NewsDao</code> as a
+parameter, and <code>AuthorsLocalDataSource</code> might take an instance of <code>AuthorsDao</code>.</p>
+<p data-unit="04-data-layer-111">In some cases, if no extra logic is needed, you could inject the DAO directly
+into the repository, because the DAO is an interface that you can easily replace
+in tests.</p>
+<p data-unit="04-data-layer-112">To learn more about working with the Room APIs, see the <a href="https://developer.android.google.cn/training/data-storage/room">Room guides</a>.</p>
+<h4 data-unit="04-data-layer-113" id="datastore_as_a_data_source">DataStore as a data source</h4>
+<p data-unit="04-data-layer-114"><a href="https://developer.android.google.cn/topic/libraries/architecture/datastore">DataStore</a> is perfect for storing key-value pairs like user settings.
+Examples might include time format, notification preferences, and whether to
+show or hide news items after the user has read them. DataStore can also store
+typed objects with <a href="https://developers.google.cn/protocol-buffers">protocol buffers</a>.</p>
+<p data-unit="04-data-layer-115">Like with any other object, a data source backed by DataStore should contain
+data corresponding to a certain type or to a certain part of the app. This is
+even more true with DataStore, because DataStore reads are exposed as a flow
+that emits every time a value is updated. For this reason, you should store
+related preferences in the same DataStore.</p>
+<p data-unit="04-data-layer-116">For example, you could have a <code>NotificationsDataStore</code> that only handles
+notification-related preferences and a <code>NewsPreferencesDataStore</code> that only
+handles preferences related to the news screen. That way, you're able to scope
+the updates better, because the <code>newsScreenPreferencesDataStore.data</code> flow only
+emits when a preference related to that screen is changed. It also means that
+the lifecycle of the object can be shorter because it can live only as long as
+the news screen is displayed.</p>
+<p data-unit="04-data-layer-117">To learn more about working with the DataStore APIs, see the <a href="https://developer.android.google.cn/topic/libraries/architecture/datastore">DataStore
+guides</a>.</p>
+<h4 data-unit="04-data-layer-118" id="a_file_as_a_data_source">A file as a data source</h4>
+<p data-unit="04-data-layer-119">When working with large objects like a JSON object or a bitmap, you'll need to
+work with a <code>File</code> object and handle switching threads.</p>
+<p data-unit="04-data-layer-120">To learn more about working with file storage, see the <a href="https://developer.android.google.cn/training/data-storage">Storage overview</a>
+page.</p>
+<h3 data-unit="04-data-layer-121" id="workmanager">Schedule tasks using WorkManager</h3>
+<p data-unit="04-data-layer-122">Suppose another new requirement is introduced for the News app: the app must
+give the user the option to fetch the latest news regularly and automatically as
+long as the device is charging and connected to an unmetered network. That makes
+this a <em>business-oriented</em> operation. This requirement makes it so that even if
+the device doesn't have connectivity when the user opens the app, the user can
+still see recent news.</p>
+<p data-unit="04-data-layer-123"><a href="https://developer.android.google.cn/topic/libraries/architecture/workmanager">WorkManager</a> makes it easy to schedule asynchronous and reliable work and
+can take care of constraint management. It's the recommended library for
+persistent work. To perform the task defined above, a <a href="https://developer.android.google.cn/topic/libraries/architecture/workmanager/advanced/coroutineworker"><code>Worker</code></a> class is
+created: <code>RefreshLatestNewsWorker</code>. This class takes <code>NewsRepository</code> as a
+dependency in order to fetch the latest news and cache it to disk.</p>
+<div></div><div><pre class="source-code"><code>class RefreshLatestNewsWorker(
+    private val newsRepository: NewsRepository,
+    context: Context,
+    params: WorkerParameters
+) : CoroutineWorker(context, params) {
+
+    override suspend fun doWork(): Result = try {
+        newsRepository.refreshLatestNews()
+        Result.success()
+    } catch (error: Throwable) {
+        Result.failure()
+    }
+}
+</code></pre></div>
+<p data-unit="04-data-layer-124">The business logic for this type of task should be encapsulated in its own class
+and treated as a separate data source. WorkManager will then only be responsible
+for ensuring the work is executed on a background thread when all constraints
+are met. By adhering to this pattern, you can quickly swap implementations on
+different environments as needed.</p>
+<p data-unit="04-data-layer-125">In this example, this news-related task must be called from <code>NewsRepository</code>,
+which would take a new data source as a dependency, <code>NewsTasksDataSource</code>,
+implemented as follows:</p>
+<div></div><div><pre class="source-code"><code>private const val REFRESH_RATE_HOURS = 4L
+private const val FETCH_LATEST_NEWS_TASK = "FetchLatestNewsTask"
+private const val TAG_FETCH_LATEST_NEWS = "FetchLatestNewsTaskTag"
+
+class NewsTasksDataSource(
+    private val workManager: WorkManager
+) {
+    fun fetchNewsPeriodically() {
+        val fetchNewsRequest = PeriodicWorkRequestBuilder&lt;RefreshLatestNewsWorker&gt;(
+            REFRESH_RATE_HOURS, TimeUnit.HOURS
+        ).setConstraints(
+            Constraints.Builder()
+                .setRequiredNetworkType(NetworkType.TEMPORARILY_UNMETERED)
+                .setRequiresCharging(true)
+                .build()
+        )
+            .addTag(TAG_FETCH_LATEST_NEWS)
+
+        workManager.enqueueUniquePeriodicWork(
+            FETCH_LATEST_NEWS_TASK,
+            ExistingPeriodicWorkPolicy.KEEP,
+            fetchNewsRequest.build()
+        )
+    }
+
+    fun cancelFetchingNewsPeriodically() {
+        workManager.cancelAllWorkByTag(TAG_FETCH_LATEST_NEWS)
+    }
+}
+</code></pre></div>
+<p data-unit="04-data-layer-126">These types of classes are named after the data they're responsible for—for
+example, <code>NewsTasksDataSource</code> or <code>PaymentsTasksDataSource</code>. All tasks related
+to a particular type of data should be encapsulated in the same class.</p>
+<p data-unit="04-data-layer-127">If the task needs to be triggered at app startup, it's recommended to trigger
+the WorkManager request using the <a href="https://developer.android.google.cn/topic/libraries/app-startup">App Startup</a> library that calls the
+repository from an <a href="https://developer.android.google.cn/reference/kotlin/androidx/startup/Initializer"><code>Initializer</code></a>.</p>
+<p data-unit="04-data-layer-128">To learn more about working with WorkManager APIs, see the <a href="https://developer.android.google.cn/topic/libraries/architecture/workmanager">WorkManager
+guides</a>.</p>
+<h2 data-unit="04-data-layer-129" id="testing">Testing</h2>
+<p data-unit="04-data-layer-130"><a href="https://developer.android.google.cn/training/dependency-injection">Dependency injection</a> best practices help when testing your app. It's also
+helpful to rely on interfaces for classes that communicate with external
+resources. When you test a unit, you can inject fake versions of its
+dependencies to make the test deterministic and reliable.</p>
+<h3 data-unit="04-data-layer-131" id="unit-tests">Unit tests</h3>
+<p data-unit="04-data-layer-132"><a href="https://developer.android.google.cn/training/testing">General testing guidance</a> applies when testing the data layer. For unit
+tests, use real objects when needed and fake any dependencies that reach out to
+external sources such as reading from a file or reading from the network.</p>
+<h3 data-unit="04-data-layer-133" id="integration-tests">Integration tests</h3>
+<p data-unit="04-data-layer-134">Integration tests that access external sources tend to be less deterministic
+because they need to run on a real device. It's recommended that you execute
+those tests under a controlled environment to make the integration tests more
+reliable.</p>
+<p data-unit="04-data-layer-135">For databases, Room allows creating an in-memory database that you can fully
+control in your tests. To learn more, see the <a href="https://developer.android.google.cn/training/data-storage/room/testing-db#android">Test and debug your database</a>
+page.</p>
+<p data-unit="04-data-layer-136">For networking, there are popular libraries such as <a href="http://wiremock.org/">WireMock</a> or
+<a href="https://github.com/square/okhttp/tree/master/mockwebserver">MockWebServer</a> that let you fake HTTP and HTTPS calls and verify that the
+requests were made as expected.</p>
+<h2 data-unit="04-data-layer-137" id="resources">Additional resources</h2>
+<h3 data-unit="04-data-layer-138" id="samples">Samples</h3>
+<ul>
+<li data-unit="04-data-layer-139"><a href="https://github.com/android/compose-samples/tree/main/Jetcaster">Jetcaster</a></li>
+<li data-unit="04-data-layer-140"><a href="https://github.com/android/architecture-templates/tree/multimodule">Architecture starter template (multi-module)</a></li>
+<li data-unit="04-data-layer-141"><a href="https://github.com/android/architecture-samples/tree/main">Architecture</a></li>
+<li data-unit="04-data-layer-142"><a href="https://github.com/android/architecture-templates/tree/base">Architecture starter template (single module)</a></li>
+<li data-unit="04-data-layer-143"><a href="https://github.com/android/nowinandroid/tree/main">Now in Android app</a></li>
+</ul>
+<div class="nocontent"></div>
+</article><nav class="chapter-switcher" aria-label="章节导航"><a href="../03-state-production/english.html">← 状态怎样更新</a><a class="course-home" href="../index.html">全部章节</a><a href="../05-network-request/english.html">安卓中的网络请求 →</a></nav><footer class="license-note"><p>原文：<a href="https://developer.android.com/topic/architecture/data-layer?hl=en">Data layer</a>，Android Developers / Google。英文快照：2026-10-13。非官方中文翻译与表达优化：Codex。原有示例和代码保留；<a href="../NOTICE.html">来源与许可</a>。</p></footer></main></body></html>

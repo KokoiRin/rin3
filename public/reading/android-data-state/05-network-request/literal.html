@@ -1,0 +1,780 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>安卓中的网络请求 · Android 应用的数据与状态</title><link rel="stylesheet" href="../../reader.css"><link rel="stylesheet" href="../source.css"><link rel="manifest" href="../../../manifest.webmanifest"></head><body><nav class="site-nav"><a href="../index.html">← Android 应用的数据与状态</a><a href="https://developer.android.com/codelabs/basic-android-kotlin-compose-getting-data-internet?hl=en">官方英文原文 ↗</a></nav><main class="reader"><header class="chapter-header"><span class="chapter-kicker">05 · 第一轮直译稿</span><h1>安卓中的网络请求</h1><p class="byline">Get data from the internet · Android Developers / Google</p><div class="title-rule"></div><p class="edition-nav"><a href="index.html">中文阅读版</a> · <a href="english.html">英文对照</a> · <strong aria-current="page">第一轮直译稿</strong></p><aside class="learning-note"><span class="note-kind">编者导读 · 不属于原文</span><p><strong>Kotlin 接口怎样发起请求，JSON 怎样成为页面可用的数据？</strong></p><p>原文通过 Mars Photos 应用解释 Retrofit、序列化、权限和加载状态。代码与完整工程步骤均保留，阅读不要求同时搭建项目。</p><p><strong>第一轮阅读：</strong>先读 Web 服务与 Retrofit、调用接口和 JSON 解析；安装运行步骤可在白天有空时实践。</p><details class="editor-notes"><summary>版本与适用范围校注（4 条）</summary><p>依赖版本、Kotlin 编译警告和转换器配置属于原文示例快照，不是当前项目推荐版本清单。实际运行时再核对项目使用的版本。</p><p>原文将 suspend 与异步执行联系起来；准确地说，suspend 允许挂起，不会自行启动协程或切换线程。这里请求的非阻塞行为来自 Retrofit 等具体 API 的实现。</p><p>本例使用开源 Retrofit；项目里的网络封装与底层传输实现需要分别核对，不能仅凭 Retrofit 名称推断底层库。</p><p>原文对 URI/URL、HTTP 方法和延迟初始化的表述有教学简化；URL 是 URI 的一种，实际请求方法语义和对象创建时机应按对应 API 与协议条件理解。</p></details></aside><details class="source-details"><summary>本篇目录与翻译范围</summary><p>官方英文文章正文全文；保留原文顺序、代码、图示、表格与延伸链接。代码与图中文字保持原样。编者导读与校注单独标明，阅读不要求同时安装、运行或编写示例。</p><ul><li class="toc-h2"><a href="#0">1. 开始之前</a></li><li class="toc-h2"><a href="#prerequisites">前置知识</a></li><li class="toc-h2"><a href="#what-youll-learn">你将学到什么</a></li><li class="toc-h2"><a href="#what-youll-do">你将做什么</a></li><li class="toc-h2"><a href="#what-you-need">所需条件</a></li><li class="toc-h2"><a href="#1">2. 应用概览</a></li><li class="toc-h2"><a href="#2">3. 探索 Mars Photos 起始应用</a></li><li class="toc-h3"><a href="#download-starter-code">下载起始代码</a></li><li class="toc-h2"><a href="#run-starter-code">运行起始代码</a></li><li class="toc-h2"><a href="#starter-code-walkthrough">起始代码导览</a></li><li class="toc-h2"><a href="#3">4. Web 服务简介</a></li><li class="toc-h2"><a href="#4">5. Web 服务与 Retrofit</a></li><li class="toc-h2"><a href="#web-service-request">Web 服务请求</a></li><li class="toc-h3"><a href="#external-libraries">外部库</a></li><li class="toc-h3"><a href="#retrofit-library">Retrofit 库</a></li><li class="toc-h2"><a href="#add-retrofit-dependencies">添加 Retrofit 依赖</a></li><li class="toc-h2"><a href="#5">6. 连接互联网</a></li><li class="toc-h3"><a href="#object-declarations">对象声明</a></li><li class="toc-h2"><a href="#call-the-web-service-in-marsviewmodel">在 MarsViewModel 中调用 Web 服务</a></li><li class="toc-h3"><a href="#viewmodelscope">ViewModelScope</a></li><li class="toc-h2"><a href="#6">7. 添加互联网权限与异常处理</a></li><li class="toc-h2"><a href="#android-permissions">Android 权限</a></li><li class="toc-h2"><a href="#exception-handling">异常处理</a></li><li class="toc-h3"><a href="#exceptions">异常</a></li><li class="toc-h3"><a href="#add-state-ui">添加状态 UI</a></li><li class="toc-h2"><a href="#7">8. 用 kotlinx.serialization 解析 JSON 响应</a></li><li class="toc-h2"><a href="#json">JSON</a></li><li class="toc-h3"><a href="#structure-of-sample-json-response">JSON 响应示例的结构</a></li><li class="toc-h2"><a href="#add-kotlinx.serialization-library-dependencies">添加 kotlinx.serialization 库依赖</a></li><li class="toc-h2"><a href="#implement-the-mars-photo-data-class">实现 MarsPhoto 数据类</a></li><li class="toc-h3"><a href="#serialname-annotation">@SerialName 标注</a></li><li class="toc-h2"><a href="#update-marsapiservice-and-marsviewmodel">更新 MarsApiService 与 MarsViewModel</a></li><li class="toc-h2"><a href="#8">9. 完整代码</a></li><li class="toc-h2"><a href="#9">10. 总结</a></li><li class="toc-h3"><a href="#rest-web-services">REST Web 服务</a></li><li class="toc-h3"><a href="#json-parsing">JSON 解析</a></li><li class="toc-h2"><a href="#10">11. 了解更多</a></li></ul></details><nav class="chapter-switcher" aria-label="章节导航"><a href="../04-data-layer/literal.html">← 数据由谁管理</a><a class="course-home" href="../index.html">全部章节</a><a href="../06-cancellation/literal.html">异步任务的取消与超时 →</a></nav></header><article class="translated-article">
+<div></div>
+<div id="basic-android-kotlin-compose-getting-data-internet" title="Get data from the internet">
+<div>
+<div>
+</div>
+<h2 class="step-title" data-unit="05-network-request-001" id="0">1. 开始之前</h2>
+<p data-unit="05-network-request-002">市面上多数 Android 应用都会连接互联网，执行从后端服务器获取邮件、消息或其他信息等网络操作。Gmail、YouTube 和 Google Photos 都通过互联网显示用户数据。</p>
+<p data-unit="05-network-request-003">本 Codelab 使用开源、由社区推动的库构建数据层，从后端服务器获取数据。这会大幅简化获取过程，也帮助应用遵循 Android 最佳实践，例如在后台线程执行操作。如果网络较慢或不可用，还会显示错误消息，让用户知道连接存在问题。</p>
+<h2 data-unit="05-network-request-004" id="prerequisites">前置知识</h2>
+<ul>
+<li data-unit="05-network-request-005">创建可组合函数的基础知识。</li>
+<li data-unit="05-network-request-006">使用 Android 架构组件 <code>ViewModel</code> 的基础知识。</li>
+<li data-unit="05-network-request-007">用协程处理长时间任务的基础知识。</li>
+<li data-unit="05-network-request-008">在 <code>build.gradle.kts</code> 中添加依赖的基础知识。</li>
+</ul>
+<h2 class="checklist" data-unit="05-network-request-009" id="what-youll-learn"><strong>你将学到什么</strong></h2>
+<ul class="checklist">
+<li data-unit="05-network-request-010">什么是 <a href="https://en.wikipedia.org/wiki/Representational_state_transfer">REST</a> Web 服务。</li>
+<li data-unit="05-network-request-011">如何使用 <a href="https://square.github.io/retrofit/">Retrofit</a> 库连接互联网中的 REST Web 服务并取得响应。</li>
+<li data-unit="05-network-request-012">如何使用 <a href="https://kotlinlang.org/docs/serialization.html#0">Serialization（kotlinx.serialization）</a>库把 JSON 响应解析为数据对象。</li>
+</ul>
+<h2 data-unit="05-network-request-013" id="what-youll-do"><strong>你将做什么</strong></h2>
+<ul>
+<li data-unit="05-network-request-014">修改起始应用，发起 Web 服务 API 请求并处理响应。</li>
+<li data-unit="05-network-request-015">使用 Retrofit 库实现应用的数据层。</li>
+<li data-unit="05-network-request-016">用 <em>kotlinx.serialization</em> 把 Web 服务的 JSON 响应解析成应用的数据对象列表，并连接到 UI state。</li>
+<li data-unit="05-network-request-017">利用 Retrofit 对协程的支持简化代码。</li>
+</ul>
+<h2 data-unit="05-network-request-018" id="what-you-need"><strong>所需条件</strong></h2>
+<ul>
+<li data-unit="05-network-request-019">一台安装 Android Studio 的电脑。</li>
+<li data-unit="05-network-request-020">Mars Photos 应用的起始代码。</li>
+</ul>
+</div>
+<div>
+<h2 class="step-title" data-unit="05-network-request-021" id="1">2. 应用概览</h2>
+<p data-unit="05-network-request-022">你将使用 <strong>Mars Photos</strong> 应用，它显示火星表面的照片。应用连接 Web 服务，获取并显示由 NASA 火星探测车拍摄的真实火星照片。下图是最终应用的截图，其中有一个图片网格。</p>
+<p class="image-container"><img alt="68f4ff12cc1e2d81.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-getting-data-internet/img/68f4ff12cc1e2d81.png" loading="eager" src="../assets/1c294b2a5dd050d9.png"/></p>
+<aside class="special"><p data-unit="05-network-request-023"><strong>注意</strong>：上图展示本单元结束时、完成后续 Codelab 更新后的最终应用。本篇提前展示它，是为了让你更清楚应用的整体功能。</p>
+</aside>
+<p data-unit="05-network-request-024">本篇构建的应用在视觉上较为简单，重点是数据层：连接互联网，通过 Web 服务下载原始属性数据。为确认数据获取和解析正确，可以在 <code>Text</code> 可组合函数中打印后端服务器返回的照片数量。</p>
+<p class="image-container"><img alt="a59e55909b6e9213.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-getting-data-internet/img/a59e55909b6e9213.png" loading="eager" src="../assets/72f7e97cbf825aaf.png"/></p>
+</div>
+<div>
+<h2 class="step-title" data-unit="05-network-request-025" id="2">3. 探索 Mars Photos 起始应用</h2>
+<h3 data-unit="05-network-request-026" id="download-starter-code">下载起始代码</h3>
+<p data-unit="05-network-request-027">首先下载起始代码：</p>
+<p><a href="https://github.com/google-developer-training/basic-android-kotlin-compose-training-mars-photos/archive/refs/heads/starter.zip"></a></p>
+<p data-unit="05-network-request-028">也可以克隆代码的 GitHub 仓库：</p>
+<div></div><div><pre class="source-code"><code>$ git clone https://github.com/google-developer-training/basic-android-kotlin-compose-training-mars-photos.git
+$ cd basic-android-kotlin-compose-training-mars-photos
+$ git checkout starter
+</code></pre></div>
+<aside class="special"><p data-unit="05-network-request-029"><strong>注意：</strong>起始代码在下载仓库的 <code>starter</code> 分支中。</p>
+</aside>
+<p data-unit="05-network-request-030">可以在 GitHub 仓库 <a href="https://github.com/google-developer-training/basic-android-kotlin-compose-training-mars-photos/tree/starter"><code>Mars Photos</code></a> 浏览代码。</p>
+<h2 data-unit="05-network-request-031" id="run-starter-code">运行起始代码</h2>
+<ol>
+<li data-unit="05-network-request-032">在 Android Studio 中打开下载的项目，项目文件夹名为 <code>basic-android-kotlin-compose-training-mars-photos</code>。</li>
+<li data-unit="05-network-request-033">在 <strong>Android</strong> 面板中展开 <strong>app</strong> &gt; <strong>kotlin + java</strong>，可以看到名为 <code>ui</code> 的包文件夹。这是应用的 UI 层。</li>
+</ol>
+<p class="image-container"><img alt="de3d8666ecee9d1c.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-getting-data-internet/img/de3d8666ecee9d1c.png" loading="eager" src="../assets/30126991c385616b.png"/></p>
+<ol>
+<li data-unit="05-network-request-034">运行应用。编译并运行后，屏幕中央显示占位文字，如下图。本篇结束时，这段文字会更新为取得的照片数量。</li>
+</ol>
+<p class="image-container"><img alt="95328ffbc9d7104b.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-getting-data-internet/img/95328ffbc9d7104b.png" loading="eager" src="../assets/5062acd368ce6536.png"/></p>
+<h2 data-unit="05-network-request-035" id="starter-code-walkthrough"><strong>起始代码导览</strong></h2>
+<p data-unit="05-network-request-036">本任务帮助你熟悉项目结构，以下列表介绍重要文件和文件夹。</p>
+<p data-unit="05-network-request-037"><code>ui\MarsPhotosApp.kt</code>：</p>
+<ul>
+<li data-unit="05-network-request-038">该文件包含 <code>MarsPhotosApp</code> 可组合函数，显示顶部应用栏、<code>HomeScreen</code> 可组合函数等屏幕内容。前一步的占位文字也在这里显示。</li>
+<li data-unit="05-network-request-039">下一个 Codelab 中，这个可组合函数会显示从火星照片后端服务器收到的数据。</li>
+</ul>
+<p data-unit="05-network-request-040"><code>screens\MarsViewModel.kt</code>：</p>
+<ul>
+<li data-unit="05-network-request-041">该文件是 <code>MarsPhotosApp</code> 对应的 ViewModel。</li>
+<li data-unit="05-network-request-042">这个类包含一个名为 <code>marsUiState</code> 的 <code>MutableState</code> 属性。更新它的值，会更新屏幕上的占位文字。</li>
+<li data-unit="05-network-request-043"><code>getMarsPhotos()</code> 方法更新占位响应。本篇稍后将用它显示服务器取得的数据。目标是利用互联网数据更新 <code>ViewModel</code> 中的 <code>MutableState</code>。</li>
+</ul>
+<p data-unit="05-network-request-044"><code>screens\HomeScreen.kt</code>：</p>
+<ul>
+<li data-unit="05-network-request-045">该文件包含 <code>HomeScreen</code> 和 <code>ResultScreen</code> 可组合函数。<code>ResultScreen</code> 使用简单的 <code>Box</code> 布局，在 <code>Text</code> 可组合函数中显示 <code>marsUiState</code> 的值。</li>
+</ul>
+<p data-unit="05-network-request-046"><code>MainActivity.kt</code>：</p>
+<ul>
+<li data-unit="05-network-request-047">这个 Activity 的唯一任务是加载 <code>ViewModel</code> 并显示 <code>MarsPhotosApp</code> 可组合函数。</li>
+</ul>
+</div>
+<div>
+<h2 class="step-title" data-unit="05-network-request-048" id="3">4. Web 服务简介</h2>
+<p data-unit="05-network-request-049">本篇创建一个网络服务层，与后端服务器通信并取得所需数据。任务通过名为 <a href="https://square.github.io/retrofit/">Retrofit</a> 的第三方库实现，后面会进一步介绍。<code>ViewModel</code> 与数据层通信，而应用其余部分不需要知道这些实现细节。</p>
+<p class="image-container"><img alt="76551dbe9fc943aa.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-getting-data-internet/img/76551dbe9fc943aa.png" loading="eager" src="../assets/825e9e78d56dfb08.png" title="Data layer with retrofit service and UI layer with view model and other UI classes "/></p>
+<p data-unit="05-network-request-050"><code>MarsViewModel</code> 负责发起网络调用，取得火星照片数据。在 <code>ViewModel</code> 中，使用 <code>MutableState</code> 在数据变化时更新 UI。</p>
+<aside class="special"><p data-unit="05-network-request-051"><strong>注意</strong>：后续 Codelab 会在数据层加入 Repository，由它与 Retrofit 服务通信以获取数据，并负责向应用其余部分暴露数据。</p>
+</aside>
+</div>
+<div>
+<h2 class="step-title" data-unit="05-network-request-052" id="4">5. Web 服务与 Retrofit</h2>
+<p data-unit="05-network-request-053">火星照片数据保存在 Web 服务器上。要把它们取得应用中，需要建立连接，与互联网上的服务器通信。</p>
+<p class="image-container"><img alt="301162f0dca12fcf.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-getting-data-internet/img/301162f0dca12fcf.png" loading="eager" src="../assets/e635b9a37e319241.png" title="Phone client requesting server for mars photos"/><img alt="7ced9b4ca9c65af3.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-getting-data-internet/img/7ced9b4ca9c65af3.png" loading="eager" src="../assets/7346c989c2b7fd4a.png" title="Server sends the mars photos URLs to the phone client"/></p>
+<aside class="special"><p data-unit="05-network-request-054"><strong>注意</strong>：本篇只取得记录（URL）的数量，不取得照片本身。后续 Codelab 才会获取照片并用网格显示。</p>
+</aside>
+<p data-unit="05-network-request-055">当今多数 Web 服务器使用一种常见的无状态 Web 架构提供服务，称为 <a href="https://en.wikipedia.org/wiki/Representational_state_transfer">REST</a>，即 <strong>RE</strong>presentational <strong>S</strong>tate <strong>T</strong>ransfer（表述性状态转移）。采用这种架构的 Web 服务称为 RESTful 服务。</p>
+<p data-unit="05-network-request-056">通过<a href="https://en.wikipedia.org/wiki/Uniform_Resource_Identifier">统一资源标识符</a>（URI），可以按标准方式向 RESTful Web 服务发送请求。URI 用名称标识服务器上的资源，不暗示资源位置或访问方式。例如，本课应用通过以下服务器 URI 获取图片 URL；该服务器同时托管火星地产和火星照片数据：</p>
+<p data-unit="05-network-request-057"><a href="https://android-kotlin-fun-mars-server.appspot.com">android-kotlin-fun-mars-server.appspot.com</a></p>
+<aside class="special"><p data-unit="05-network-request-058"><strong>注意</strong>：另一款展示火星地产的示例应用也使用上述服务器，因此服务器提供两个不同端点，分别用于地产和照片。本课程使用照片端点。</p>
+</aside>
+<p data-unit="05-network-request-059">URL（统一资源定位符）是 URI 的一个子集，指定资源所在位置以及取得资源的机制。</p>
+<p data-unit="05-network-request-060"><strong>例如：</strong></p>
+<p data-unit="05-network-request-061">以下 URL 获取火星上可用地产的列表：</p>
+<p data-unit="05-network-request-062"><a href="https://android-kotlin-fun-mars-server.appspot.com/realestate">https://android-kotlin-fun-mars-server.appspot.com/realestate</a></p>
+<p data-unit="05-network-request-063">以下 URL 获取火星照片列表：</p>
+<p data-unit="05-network-request-064"><a href="https://android-kotlin-fun-mars-server.appspot.com/photos">https://android-kotlin-fun-mars-server.appspot.com/photos</a></p>
+<p data-unit="05-network-request-065">这些 URL 指向 <a href="https://android-kotlin-fun-mars-server.appspot.com/realestate">/realestate</a> 或 <a href="https://android-kotlin-fun-mars-server.appspot.com/photos">/photos</a> 等已标识资源，可通过超文本传输协议（<em>http:</em>）从网络取得。本篇使用 <a href="https://android-kotlin-fun-mars-server.appspot.com/photos">/photos</a> 端点。端点是访问服务器上 Web 服务的 URL。</p>
+<aside class="special"><p data-unit="05-network-request-066"><strong>注意</strong>：熟悉的 Web URL 实际上是一种 URI。本课程交替使用 URL 和 URI 这两个名称。</p>
+</aside>
+<h2 data-unit="05-network-request-067" id="web-service-request"><strong>Web 服务请求</strong></h2>
+<p data-unit="05-network-request-068">每个 Web 服务请求包含 URI，并用 Chrome 等浏览器使用的同一 HTTP 协议传给服务器。HTTP 请求包含一个操作，告诉服务器要做什么。</p>
+<p data-unit="05-network-request-069">常见 HTTP 操作包括：</p>
+<ul>
+<li data-unit="05-network-request-070">GET：取得服务器数据。</li>
+<li data-unit="05-network-request-071">POST：在服务器上创建新数据。</li>
+<li data-unit="05-network-request-072">PUT：更新服务器上的已有数据。</li>
+<li data-unit="05-network-request-073">DELETE：删除服务器上的数据。</li>
+</ul>
+<p data-unit="05-network-request-074">应用向服务器发出 HTTP GET 请求，获取火星照片信息。服务器随后把包含图片 URL 的响应返回给应用。</p>
+<p class="image-container"><img alt="5bbeef4ded3e84cf.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-getting-data-internet/img/5bbeef4ded3e84cf.png" loading="eager" src="../assets/8602198c7b6fa5b1.png" title="client app making an HTTP GET request to the server for the Mars photos"/><img alt="83e8a6eb79249ebe.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-getting-data-internet/img/83e8a6eb79249ebe.png" loading="eager" src="../assets/f0e3f24e61be0cdd.png" title="server returns a response to the client app with the image URLs"/></p>
+<p data-unit="05-network-request-075">Web 服务响应采用 XML（可扩展标记语言）或 JSON（JavaScript 对象表示法）等常见数据格式。JSON 用键值对表示结构化数据。应用通过 JSON 与 REST API 通信，后续任务会进一步介绍。</p>
+<p data-unit="05-network-request-076">本任务建立服务器网络连接，与服务器通信并接收 JSON 响应。后端服务器已为你准备好，本篇用 Retrofit 第三方库与之通信。</p>
+<h3 data-unit="05-network-request-077" id="external-libraries"><strong>外部库</strong></h3>
+<p data-unit="05-network-request-078">外部库或第三方库如同核心 Android API 的扩展。本课程使用的库是开源、由社区开发的，通过全球庞大 Android 社区的共同贡献维护，帮助你这样的开发者构建更好的应用。</p>
+<aside class="warning"><p data-unit="05-network-request-079"><strong>警告</strong>：社区开发维护的库可以节省大量时间，但应谨慎选择，因为应用最终要对这些库中代码的行为负责。</p>
+</aside>
+<h3 data-unit="05-network-request-080" id="retrofit-library">Retrofit 库</h3>
+<p data-unit="05-network-request-081">本篇用于访问 RESTful 火星服务的 Retrofit，是一个支持和维护良好的库的例子。可以访问它的 <a href="https://github.com/square/retrofit">GitHub</a> 页面，查看已关闭和未关闭的问题，其中部分是功能请求。如果开发者经常解决问题并响应功能请求，这个库就可能维护良好，适合应用使用。也可以参阅 <a href="https://square.github.io/retrofit/">Retrofit</a> 文档了解更多。</p>
+<p data-unit="05-network-request-082">Retrofit 与 REST 后端通信并生成相应代码，但需要你根据传入参数提供 Web 服务的 URI。后续各节会详细介绍。</p>
+<p class="image-container"><img alt="26043df178401c6a.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-getting-data-internet/img/26043df178401c6a.png" loading="eager" src="../assets/9001cc92559d982f.png" title="Retrofit library communication with the backend and the client app"/></p>
+<h2 data-unit="05-network-request-083" id="add-retrofit-dependencies">添加 Retrofit 依赖</h2>
+<p data-unit="05-network-request-084">Android Gradle 允许向项目添加外部库。除了依赖，还需要包含托管该库的仓库。</p>
+<ol>
+<li data-unit="05-network-request-085">打开模块级 Gradle 文件 <code>build.gradle.kts (Module :app)</code>。</li>
+<li data-unit="05-network-request-086">在 <code>dependencies</code> 部分添加以下 Retrofit 库依赖：</li>
+</ol>
+<div></div><div><pre class="source-code"><code>// Retrofit 
+implementation("com.squareup.retrofit2:retrofit:2.9.0")
+// Retrofit with Scalar Converter
+implementation("com.squareup.retrofit2:converter-scalars:2.9.0")
+</code></pre></div>
+<p data-unit="05-network-request-087">两个库协同工作：第一个是 Retrofit2 本身，第二个是 Retrofit 的标量转换器。Retrofit2 是 Retrofit 的更新版本。标量转换器让 Retrofit 把 JSON 结果作为 <code>String</code> 返回。JSON 是客户端与服务器之间存储、传输数据的格式，后面会进一步介绍。</p>
+<ol>
+<li data-unit="05-network-request-088">点击 <strong>Sync Now</strong>，用新依赖重新构建项目。</li>
+</ol>
+</div>
+<div>
+<h2 class="step-title" data-unit="05-network-request-089" id="5">6. 连接互联网</h2>
+<p data-unit="05-network-request-090">使用 Retrofit 与火星 Web 服务通信，把原始 JSON 响应显示为 <code>String</code>。占位的 <code>Text</code> 会显示返回的 JSON 响应字符串，或提示连接错误的消息。</p>
+<p data-unit="05-network-request-091">Retrofit 根据 Web 服务内容创建应用的网络 API，从服务取得数据，再交给知道怎样解码数据、返回 <code>String</code> 等对象的独立转换器库。Retrofit 内置对 XML、JSON 等常见格式的支持，最终为你创建调用和使用服务的代码，包括在后台线程执行请求等重要细节。</p>
+<p class="image-container"><img alt="8c3a5c3249570e57.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-getting-data-internet/img/8c3a5c3249570e57.png" loading="eager" src="../assets/0d4191d996290f80.png" title="Retrofit library with the converter library talking to the mars web service and the view model"/></p>
+<p data-unit="05-network-request-092">本任务在 <strong>Mars Photos</strong> 项目中添加数据层，供 <code>ViewModel</code> 与 Web 服务通信。实现 Retrofit 服务 API 的步骤如下：</p>
+<ul>
+<li data-unit="05-network-request-093">创建 DataSource，即 <code>MarsApiService</code> 类。</li>
+<li data-unit="05-network-request-094">用基础 URL 和字符串转换器工厂创建 Retrofit 对象。</li>
+<li data-unit="05-network-request-095">创建描述 Retrofit 怎样与 Web 服务器通信的接口。</li>
+<li data-unit="05-network-request-096">创建 Retrofit 服务，通过 API 服务把实例暴露给应用其余部分。</li>
+</ul>
+<p data-unit="05-network-request-097">实现上述步骤：</p>
+<ol>
+<li data-unit="05-network-request-098">在 Android 项目面板中右键点击 com.example.marsphotos 包，选择 <strong>New &gt; Package</strong>。</li>
+<li data-unit="05-network-request-099">在弹窗建议的包名后追加 <strong>network</strong>。</li>
+<li data-unit="05-network-request-100">在新包下创建 Kotlin 文件，命名为 <code>MarsApiService</code>。</li>
+<li data-unit="05-network-request-101">打开 <code>network/MarsApiService.kt</code>。</li>
+<li data-unit="05-network-request-102">添加以下常量作为 Web 服务的基础 URL。</li>
+</ol>
+<div></div><div><pre class="source-code"><code>private const val BASE_URL = 
+   "https://android-kotlin-fun-mars-server.appspot.com"
+</code></pre></div>
+<ol>
+<li data-unit="05-network-request-103">在常量下方添加 Retrofit builder，用于构建并创建 Retrofit 对象。</li>
+</ol>
+<div></div><div><pre class="source-code"><code>import retrofit2.Retrofit
+
+private val retrofit = Retrofit.Builder()
+</code></pre></div>
+<p data-unit="05-network-request-104">创建 Web 服务 API 时，Retrofit 需要服务的基础 URI 和一个转换器工厂。转换器告诉 Retrofit 怎样处理服务返回的数据。本例希望取得 JSON 响应并作为 <code>String</code> 返回。Retrofit 的 <code>ScalarsConverter</code> 支持字符串及其他基本类型。</p>
+<ol>
+<li data-unit="05-network-request-105">对 builder 调用 <code>addConverterFactory()</code>，传入一个 <code>ScalarsConverterFactory</code> 实例。</li>
+</ol>
+<div></div><div><pre class="source-code"><code>import retrofit2.converter.scalars.ScalarsConverterFactory
+
+private val retrofit = Retrofit.Builder()
+   .addConverterFactory(ScalarsConverterFactory.create())
+</code></pre></div>
+<ol>
+<li data-unit="05-network-request-106">用 <code>baseUrl()</code> 方法添加 Web 服务的基础 URL。</li>
+<li data-unit="05-network-request-107">调用 <code>build()</code> 创建 Retrofit 对象。</li>
+</ol>
+<div></div><div><pre class="source-code"><code>private val retrofit = Retrofit.Builder()
+   .addConverterFactory(ScalarsConverterFactory.create())
+   .baseUrl(BASE_URL)
+   .build()
+</code></pre></div>
+<ol>
+<li data-unit="05-network-request-108">在 Retrofit builder 调用下方，定义名为 <code>MarsApiService</code> 的接口，用 HTTP 请求描述与 Web 服务器的通信方式。</li>
+</ol>
+<div></div><div><pre class="source-code"><code>interface MarsApiService {
+}
+</code></pre></div>
+<ol>
+<li data-unit="05-network-request-109">在 <code>MarsApiService</code> 接口中添加 <code>getPhotos()</code> 函数，取得 Web 服务的响应字符串。</li>
+</ol>
+<div></div><div><pre class="source-code"><code>interface MarsApiService {    
+    fun getPhotos()
+}
+</code></pre></div>
+<ol>
+<li data-unit="05-network-request-110">用 <code>@GET</code> 标注告诉 Retrofit 这是 GET 请求，并指定该服务方法的端点。本例端点是 <code>photos</code>。如前一任务所述，本篇使用 <a href="https://android-kotlin-fun-mars-server.appspot.com/photos">/photos</a> 端点。</li>
+</ol>
+<div></div><div><pre class="source-code"><code>import retrofit2.http.GET
+
+
+interface MarsApiService {
+    @GET("photos") 
+    fun getPhotos()
+}
+</code></pre></div>
+<p data-unit="05-network-request-111">调用 <code>getPhotos()</code> 时，Retrofit 会把端点 <code>photos</code> 追加到 builder 中定义的基础 URL 后，使用这个地址发起请求。</p>
+<ol>
+<li data-unit="05-network-request-112">把函数返回类型设为 <code>String</code>。</li>
+</ol>
+<div></div><div><pre class="source-code"><code>interface MarsApiService {
+    @GET("photos") 
+    fun getPhotos(): String
+}
+</code></pre></div>
+<h3 data-unit="05-network-request-113" id="object-declarations"><strong>对象声明</strong></h3>
+<p data-unit="05-network-request-114">Kotlin 的<a href="https://kotlinlang.org/docs/reference/object-declarations.html#object-declarations">对象声明</a>用于声明单例对象。<a href="https://en.wikipedia.org/wiki/Singleton_pattern">单例模式</a>保证只创建一个实例，并提供全局唯一访问入口。对象初始化是线程安全的，在首次访问时进行。</p>
+<p data-unit="05-network-request-115">以下示例展示对象声明与访问。对象声明在 <code>object</code> 关键字后总有一个名称。</p>
+<p data-unit="05-network-request-116"><strong>示例：</strong></p>
+<div></div><div><pre class="source-code"><code>// Example for Object declaration, do not copy over
+
+object SampleDataProvider {
+    fun register(provider: SampleProvider) {
+        // ...
+    }
+​
+    // ...
+}
+
+// To refer to the object, use its name directly.
+SampleDataProvider.register(...)
+</code></pre></div>
+<aside class="warning"><p data-unit="05-network-request-117"><strong>警告</strong>：单例模式不是推荐实践。单例表示全局状态，难以预测，测试中尤其如此。对象应声明自己需要哪些依赖，而不是描述怎样创建它们。</p>
+<p data-unit="05-network-request-118">应优先使用<a href="https://developer.android.google.cn/training/dependency-injection">依赖注入</a>而非单例模式，后续 Codelab 会介绍实现方法。</p>
+</aside>
+<p data-unit="05-network-request-119">在 Retrofit 对象上调用 <code>create()</code> 函数会消耗较多内存、速度和性能资源。应用只需要<em>一个</em> Retrofit API 服务实例，因此通过<em>对象声明</em>向其余部分暴露服务。</p>
+<ol>
+<li data-unit="05-network-request-120">在 <code>MarsApiService</code> 接口声明之外，定义公开对象 <code>MarsApi</code>，用来初始化 Retrofit 服务。这是应用其余部分可以访问的公开单例对象。</li>
+</ol>
+<div></div><div><pre class="source-code"><code>object MarsApi {}
+</code></pre></div>
+<ol>
+<li data-unit="05-network-request-121">在 <code>MarsApi</code> 对象声明中添加一个名为 <code>retrofitService</code>、类型为 <code>MarsApiService</code> 的延迟初始化 Retrofit 对象属性，以确保首次使用时才初始化。暂时忽略错误，后续步骤会修复。</li>
+</ol>
+<aside class="special"><p data-unit="05-network-request-122"><strong>注意</strong>：“延迟初始化”是有意推迟对象创建，直到真正需要时才进行，以避免不必要的计算或其他资源消耗。Kotlin 对延迟实例化提供<a href="https://kotlinlang.org/docs/reference/delegated-properties.html#lazy">一等支持</a>。</p>
+</aside>
+<div></div><div><pre class="source-code"><code>object MarsApi {
+    val retrofitService : MarsApiService by lazy {}
+}
+</code></pre></div>
+<ol>
+<li data-unit="05-network-request-123">用 <code>retrofit.create()</code> 方法和 <code>MarsApiService</code> 接口初始化 <code>retrofitService</code> 变量。</li>
+</ol>
+<div></div><div><pre class="source-code"><code>object MarsApi {
+    val retrofitService : MarsApiService by lazy { 
+       retrofit.create(MarsApiService::class.java)
+    }
+}
+</code></pre></div>
+<p data-unit="05-network-request-124">Retrofit 配置完成。每次应用调用 <code>MarsApi.retrofitService</code>，都会访问首次使用时创建、实现 <code>MarsApiService</code> 的同一个单例 Retrofit 对象。下一任务将使用它。</p>
+<h2 data-unit="05-network-request-125" id="call-the-web-service-in-marsviewmodel">在 MarsViewModel 中调用 Web 服务</h2>
+<p data-unit="05-network-request-126">本步骤实现 <code>getMarsPhotos()</code> 方法，调用 REST 服务并处理返回的 JSON 字符串。</p>
+<aside class="special"><p data-unit="05-network-request-127"><strong>注意</strong>：推荐从 Repository 调用 Web 服务，以隔离数据层和应用其余部分。后续 Codelab 会为应用加入 Repository。</p>
+</aside>
+<h3 data-unit="05-network-request-128" id="viewmodelscope">ViewModelScope</h3>
+<p data-unit="05-network-request-129"><a href="https://developer.android.google.cn/topic/libraries/architecture/coroutines#viewmodelscope"><code>viewModelScope</code></a> 是为应用中每个 <code>ViewModel</code> 定义的内置协程作用域。在其中启动的协程，会在 <code>ViewModel</code> 清除时自动取消。</p>
+<p data-unit="05-network-request-130">可以用 <code>viewModelScope</code> 启动协程，在后台发起 Web 服务请求。因为 <code>viewModelScope</code> 属于 <code>ViewModel</code>，即使应用经历配置变化，请求也会继续。</p>
+<ol>
+<li data-unit="05-network-request-131">在 <code>MarsApiService.kt</code> 文件中，把 <code>getPhotos()</code> 改成挂起函数，使其异步执行而不阻塞调用线程。这个函数将从 <a href="https://developer.android.google.cn/topic/libraries/architecture/coroutines#viewmodelscope"><code>viewModelScope</code></a> 内调用。</li>
+</ol>
+<div></div><div><pre class="source-code"><code>@GET("photos")
+suspend fun getPhotos(): String
+</code></pre></div>
+<ol>
+<li data-unit="05-network-request-132">打开 <code>ui/screens/MarsViewModel.kt</code>，找到 <code>getMarsPhotos()</code> 方法，删除把状态响应设置为 <code>"Set the Mars API Response here!"</code> 的那一行，使 <code>getMarsPhotos()</code> 方法为空。</li>
+</ol>
+<div></div><div><pre class="source-code"><code>private fun getMarsPhotos() {}
+</code></pre></div>
+<ol>
+<li data-unit="05-network-request-133">在 <code>getMarsPhotos()</code> 内使用 <code>viewModelScope.launch</code> 启动协程。</li>
+</ol>
+<div></div><div><pre class="source-code"><code>import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.launch
+
+
+private fun getMarsPhotos() {
+    viewModelScope.launch {}
+}
+</code></pre></div>
+<ol>
+<li data-unit="05-network-request-134">在 <code>viewModelScope</code> 中，用单例对象 <code>MarsApi</code> 调用 <code>retrofitService</code> 接口的 <code>getPhotos()</code> 方法，把响应保存到名为 <code>listResult</code> 的 <code>val</code> 中。</li>
+</ol>
+<div></div><div><pre class="source-code"><code>import com.example.marsphotos.network.MarsApi
+
+viewModelScope.launch {
+    val listResult = MarsApi.retrofitService.getPhotos()
+}
+</code></pre></div>
+<ol>
+<li data-unit="05-network-request-135">把后端刚返回的结果赋给 <code>marsUiState</code>。<code>marsUiState</code> 是一个可变状态对象，表示最近一次 Web 请求的状态。</li>
+</ol>
+<div></div><div><pre class="source-code"><code>val listResult = MarsApi.retrofitService.getPhotos()
+marsUiState = listResult
+</code></pre></div>
+<ol>
+<li data-unit="05-network-request-136">运行应用。可以看到应用立即关闭，可能显示错误弹窗，也可能不显示。这是一次应用崩溃。</li>
+<li data-unit="05-network-request-137">点击 Android Studio 的 <strong>Logcat</strong> 标签，查看日志中以“<code>------- beginning of crash</code>”开头的错误。</li>
+</ol>
+<div></div><div><pre class="source-code"><code>    --------- beginning of crash
+22803-22865/com.example.android.marsphotos E/AndroidRuntime: FATAL EXCEPTION: OkHttp Dispatcher
+    Process: com.example.android.marsphotos, PID: 22803
+    java.lang.SecurityException: Permission denied (missing INTERNET permission?)
+...
+</code></pre></div>
+<p data-unit="05-network-request-138">该错误说明应用可能缺少 <code>INTERNET</code> 权限。下一任务介绍怎样添加互联网权限并解决问题。</p>
+</div>
+<div>
+<h2 class="step-title" data-unit="05-network-request-139" id="6">7. 添加互联网权限与异常处理</h2>
+<h2 data-unit="05-network-request-140" id="android-permissions"><strong>Android 权限</strong></h2>
+<p data-unit="05-network-request-141">Android 权限用于保护用户隐私。访问联系人、通话记录等敏感用户数据，以及相机、互联网等某些系统功能时，应用必须声明或请求权限。</p>
+<p data-unit="05-network-request-142">应用访问互联网需要 <code>INTERNET</code> 权限。联网会带来安全问题，所以应用默认没有互联网连接能力，必须明确声明需要联网。这个声明属于普通权限。权限类型的更多信息，请参阅 <a href="https://developer.android.google.cn/guide/topics/permissions/overview">Android 权限</a>。</p>
+<p data-unit="05-network-request-143">本步骤通过在 <code>AndroidManifest.xml</code> 文件中添加 <code>&lt;uses-permission&gt;</code> 标签，声明应用所需权限。</p>
+<ol>
+<li data-unit="05-network-request-144">打开 <code>manifests/AndroidManifest.xml</code>，在 <code>&lt;application&gt;</code> 标签前添加以下一行：</li>
+</ol>
+<div></div><div><pre class="source-code"><code>&lt;uses-permission android:name="android.permission.INTERNET" /&gt;
+</code></pre></div>
+<ol>
+<li data-unit="05-network-request-145">重新编译并运行应用。</li>
+</ol>
+<p data-unit="05-network-request-146">如果网络连接正常，会看到包含火星照片数据的 JSON 文本。观察每条图片记录中重复出现的 <code>id</code> 和 <code>img_src</code>，后面会进一步介绍 JSON 格式。</p>
+<p class="image-container"><img alt="b82ddb79eff61995.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-getting-data-internet/img/b82ddb79eff61995.png" loading="eager" src="../assets/9559526901dbf02b.png"/></p>
+<ol>
+<li data-unit="05-network-request-147">点击设备或模拟器上的 <strong>Back</strong> 按钮，关闭应用。</li>
+</ol>
+<h2 data-unit="05-network-request-148" id="exception-handling"><strong>异常处理</strong></h2>
+<p data-unit="05-network-request-149">代码中有一个错误，按以下步骤观察：</p>
+<ol>
+<li data-unit="05-network-request-150">将设备或模拟器切到飞行模式，模拟网络连接错误。</li>
+<li data-unit="05-network-request-151">从最近任务菜单重新打开应用，或从 Android Studio 运行应用。</li>
+<li data-unit="05-network-request-152">点击 Android Studio 的 <strong>Logcat</strong> 标签，查看如下致命异常日志：</li>
+</ol>
+<div></div><div><pre class="source-code"><code>3302-3302/com.example.android.marsphotos E/AndroidRuntime: FATAL EXCEPTION: main
+    Process: com.example.android.marsphotos, PID: 3302
+</code></pre></div>
+<p data-unit="05-network-request-153">错误说明应用尝试连接但发生超时。这类异常在真实运行中很常见。与缺少权限不同，这种错误无法直接修复，但可以处理。下一步学习怎样处理这类异常。</p>
+<h3 data-unit="05-network-request-154" id="exceptions"><strong>异常</strong></h3>
+<p data-unit="05-network-request-155"><a href="https://developer.android.google.cn/reference/java/lang/Exception"><em>异常</em></a>是运行时而非编译时可能发生的错误，会使应用突然终止而不通知用户，造成较差体验。<em>异常处理</em>是一种机制，用来避免应用突然终止，并以对用户友好的方式处理情况。</p>
+<p data-unit="05-network-request-156">异常原因可能简单到除以零，也可能是网络连接错误。这些异常与前面 Codelab 讨论的 <code>IllegalArgumentException</code> 类似。</p>
+<p data-unit="05-network-request-157">连接服务器时可能出现以下问题：</p>
+<ul>
+<li data-unit="05-network-request-158">API 使用的 URL 或 URI 不正确。</li>
+<li data-unit="05-network-request-159">服务器不可用，应用无法连接。</li>
+<li data-unit="05-network-request-160">网络延迟问题。</li>
+<li data-unit="05-network-request-161">设备网络很差或完全没有网络。</li>
+</ul>
+<p data-unit="05-network-request-162">编译时无法处理这些异常，但运行时可以用 <code>try-catch</code> 块处理。更多信息请参阅<a href="https://kotlinlang.org/docs/reference/exceptions.html">异常</a>。</p>
+<p data-unit="05-network-request-163"><strong>try-catch 块的语法示例</strong></p>
+<div></div><div><pre class="source-code"><code>try {
+    // some code that can cause an exception.
+}
+catch (e: SomeException) {
+    // handle the exception to avoid abrupt termination.
+}
+</code></pre></div>
+<p data-unit="05-network-request-164">在 <code>try</code> 块中加入可能抛出异常的代码，本应用中就是网络调用。在 <code>catch</code> 块中实现避免应用突然终止的代码。如果出现异常，<code>catch</code> 块会执行以从错误中恢复，而不是让应用直接终止。</p>
+<ol>
+<li data-unit="05-network-request-165">在 <code>getMarsPhotos()</code> 的 <code>launch</code> 块中，用 <code>try</code> 块包围 <code>MarsApi</code> 调用以处理异常。</li>
+<li data-unit="05-network-request-166">在 <code>try</code> 块之后添加 <code>catch</code> 块。</li>
+</ol>
+<div></div><div><pre class="source-code"><code>import java.io.IOException
+
+
+viewModelScope.launch {
+   try {
+       val listResult = MarsApi.retrofitService.getPhotos()
+       marsUiState = listResult
+   } catch (e: IOException) {
+
+   }
+}
+</code></pre></div>
+<ol>
+<li data-unit="05-network-request-167">再次运行应用，可以看到这次不会崩溃。</li>
+</ol>
+<h3 data-unit="05-network-request-168" id="add-state-ui">添加状态 UI</h3>
+<p data-unit="05-network-request-169"><code>MarsViewModel</code> 类把最近一次请求的状态 <code>marsUiState</code> 保存为可变状态对象，但还不能保存加载、成功、失败等不同状态。</p>
+<ul>
+<li data-unit="05-network-request-170"><strong>Loading</strong> 表示应用正在等待数据。</li>
+<li data-unit="05-network-request-171"><strong>Success</strong> 表示成功从 Web 服务取得数据。</li>
+<li data-unit="05-network-request-172"><strong>Error</strong> 表示网络或连接错误。</li>
+</ul>
+<p data-unit="05-network-request-173">使用<em>密封接口</em>表示这三种状态。<code>sealed interface</code> 限制可能的值，使状态管理更容易。在 Mars Photos 中，将 <code>marsUiState</code> Web 响应限制为加载、成功、错误三种状态（数据类对象），代码如下：</p>
+<div></div><div><pre class="source-code"><code>// No need to copy over
+sealed interface MarsUiState {
+   data class Success : MarsUiState
+   data class Loading : MarsUiState
+   data class Error : MarsUiState
+}
+</code></pre></div>
+<p data-unit="05-network-request-174">上例在成功响应时取得服务器上的照片信息。为保存这些数据，在 <code>Success</code> 数据类中添加构造器参数。</p>
+<p data-unit="05-network-request-175">对于 <code>Loading</code> 与 <code>Error</code> 状态，无须设置新数据或创建新对象，只需传递相应 Web 响应状态。把 <code>data</code> 类改为 <code>Object</code>，创建这些响应的对象。</p>
+<ol>
+<li data-unit="05-network-request-176">打开 <code>ui/MarsViewModel.kt</code>，在 import 后添加 <code>MarsUiState</code> 密封接口，使 <code>MarsUiState</code> 对象可取的值成为可穷举的集合。</li>
+</ol>
+<div></div><div><pre class="source-code"><code>sealed interface MarsUiState {
+    data class Success(val photos: String) : MarsUiState
+    object Error : MarsUiState
+    object Loading : MarsUiState
+}
+</code></pre></div>
+<ol>
+<li data-unit="05-network-request-177">在 <code>MarsViewModel</code> 类中更新 <code>marsUiState</code> 定义，将类型改为 <code>MarsUiState</code>，默认值设为 <code>MarsUiState.Loading</code>，并将 setter 设为私有，保护对 <code>marsUiState</code> 的写入。</li>
+</ol>
+<div></div><div><pre class="source-code"><code>var marsUiState: MarsUiState by mutableStateOf(MarsUiState.Loading)
+  private set
+</code></pre></div>
+<ol>
+<li data-unit="05-network-request-178">找到 <code>getMarsPhotos()</code> 方法，将 <code>marsUiState</code> 改为 <code>MarsUiState.Success</code> 并传入 <code>listResult</code>。</li>
+</ol>
+<div></div><div><pre class="source-code"><code>val listResult = MarsApi.retrofitService.getPhotos()
+marsUiState = MarsUiState.Success(listResult)
+</code></pre></div>
+<ol>
+<li data-unit="05-network-request-179">在 <code>catch</code> 块中处理失败响应，把 <code>MarsUiState</code> 设为 <code>Error</code>。</li>
+</ol>
+<div></div><div><pre class="source-code"><code>catch (e: IOException) {
+   marsUiState = MarsUiState.Error
+}
+</code></pre></div>
+<ol>
+<li data-unit="05-network-request-180">可以将 <code>marsUiState</code> 的赋值移到 <code>try-catch</code> 块之外。完成后的函数如下：</li>
+</ol>
+<div></div><div><pre class="source-code"><code>private fun getMarsPhotos() {
+   viewModelScope.launch {
+       marsUiState = try {
+           val listResult = MarsApi.retrofitService.getPhotos()
+           MarsUiState.Success(listResult)
+       } catch (e: IOException) {
+           MarsUiState.Error
+       }
+   }
+}
+</code></pre></div>
+<ol>
+<li data-unit="05-network-request-181">在 <code>screens/HomeScreen.kt</code> 文件中，对 <code>marsUiState</code> 添加 <code>when</code> 表达式。如果 <code>marsUiState</code> 为 <code>MarsUiState.Success</code>，调用 <code>ResultScreen</code> 并传入 <code>marsUiState.photos</code>。暂时忽略错误。</li>
+</ol>
+<div></div><div><pre class="source-code"><code>import androidx.compose.foundation.layout.fillMaxWidth
+
+fun HomeScreen(
+   marsUiState: MarsUiState,
+   modifier: Modifier = Modifier
+) {
+    when (marsUiState) {
+        is MarsUiState.Success -&gt; ResultScreen(
+            marsUiState.photos, modifier = modifier.fillMaxWidth()
+        )
+    }
+}
+</code></pre></div>
+<aside class="special"><p data-unit="05-network-request-182"><strong>注意</strong>：<code>marsUiState</code> 属性已经不再是字符串，而是 <code>MarsUiState</code> 密封接口，可以有 <code>MarsUiState.Loading</code>、<code>MarsUiState.Success</code>、<code>MarsUiState.Error</code> 三种对象值。</p>
+</aside>
+<ol>
+<li data-unit="05-network-request-183">在 <code>when</code> 块中检查 <code>MarsUiState.Loading</code> 和 <code>MarsUiState.Error</code>，让应用显示后续实现的 <code>LoadingScreen</code>、<code>ResultScreen</code>、<code>ErrorScreen</code> 可组合函数。</li>
+</ol>
+<div></div><div><pre class="source-code"><code>import androidx.compose.foundation.layout.fillMaxSize
+
+fun HomeScreen(
+   marsUiState: MarsUiState,
+   modifier: Modifier = Modifier
+) {
+    when (marsUiState) {
+        is MarsUiState.Loading -&gt; LoadingScreen(modifier = modifier.fillMaxSize())
+        is MarsUiState.Success -&gt; ResultScreen(
+            marsUiState.photos, modifier = modifier.fillMaxWidth()
+        )
+
+        is MarsUiState.Error -&gt; ErrorScreen( modifier = modifier.fillMaxSize())
+    }
+}
+</code></pre></div>
+<aside class="special"><p data-unit="05-network-request-184"><strong>注意</strong>：如果定义 <code>MarsUiState</code> <code>interface</code> 时不使用 <code>sealed</code> 关键字，就需要添加 Success、Error、Loading 以及 <code>else</code> 分支。由于不存在第四种情况（else），使用 <code>sealed</code> 接口告诉编译器只有三个选项，使条件判断可穷举。</p>
+</aside>
+<ol>
+<li data-unit="05-network-request-185">打开 <code>res/drawable/loading_animation.xml</code>。这个 drawable 会让图片资源 <code>loading_img.xml</code> 围绕中心旋转；预览中看不到动画。</li>
+</ol>
+<p class="image-container"><img alt="92a448fa23b6d1df.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-getting-data-internet/img/92a448fa23b6d1df.png" loading="eager" src="../assets/e57c0722f6a5ce1b.png" title="loading animation"/></p>
+<ol>
+<li data-unit="05-network-request-186">在 <code>screens/HomeScreen.kt</code> 文件的 <code>HomeScreen</code> 可组合函数下添加以下 <code>LoadingScreen</code> 可组合函数，显示加载动画。起始代码已经包含 <code>loading_img</code> drawable 资源。</li>
+</ol>
+<div></div><div><pre class="source-code"><code>import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.Image
+
+
+@Composable
+fun LoadingScreen(modifier: Modifier = Modifier) {
+    Image(
+        modifier = modifier.size(200.dp),
+        painter = painterResource(R.drawable.loading_img),
+        contentDescription = stringResource(R.string.loading)
+    )
+}
+</code></pre></div>
+<ol>
+<li data-unit="05-network-request-187">在 <code>LoadingScreen</code> 可组合函数下添加以下 <code>ErrorScreen</code> 可组合函数，让应用能够显示错误消息。</li>
+</ol>
+<div></div><div><pre class="source-code"><code>import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.padding
+
+@Composable
+fun ErrorScreen(modifier: Modifier = Modifier) {
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Image(
+            painter = painterResource(id = R.drawable.ic_connection_error), contentDescription = ""
+        )
+        Text(text = stringResource(R.string.loading_failed), modifier = Modifier.padding(16.dp))
+    }
+}
+</code></pre></div>
+<ol>
+<li data-unit="05-network-request-188">保持飞行模式开启，再次运行应用。这次不会突然关闭，而会显示如下错误消息：</li>
+</ol>
+<p class="image-container"><img alt="28ba37928e0a9334.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-getting-data-internet/img/28ba37928e0a9334.png" loading="eager" src="../assets/bc1a7086a7349c61.png"/></p>
+<ol>
+<li data-unit="05-network-request-189">关闭手机或模拟器的飞行模式。运行并测试应用，确认一切正常，能够看到 JSON 字符串。</li>
+</ol>
+<div class="table-wrapper" tabindex="0"><table class="vertical-rules">
+<tr><td colspan="1" rowspan="1"><p class="image-container"><img data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-getting-data-internet/img/3931a215bc8e35fb.png" loading="eager" src="../assets/38225143e045d245.png"/></p>
+</td><td colspan="1" rowspan="1"><p class="image-container"><img data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-getting-data-internet/img/b82ddb79eff61995.png" loading="eager" src="../assets/9559526901dbf02b.png"/></p>
+</td></tr>
+</table></div>
+</div>
+<div>
+<h2 class="step-title" data-unit="05-network-request-190" id="7">8. 用 kotlinx.serialization 解析 JSON 响应</h2>
+<h2 data-unit="05-network-request-191" id="json"><strong>JSON</strong></h2>
+<p data-unit="05-network-request-192">请求的数据通常采用 XML、JSON 等常见格式。每次调用返回结构化数据，应用需要知道结构，才能读取响应。</p>
+<p data-unit="05-network-request-193">例如，本应用从 <a href="https://mars.udacity.com/realestate">https://</a><a href="https://android-kotlin-fun-mars-server.appspot.com/photos">android-kotlin-fun-mars-server.appspot.com/photos</a> 获取数据。在浏览器输入这个 URL，可以看到 JSON 格式的火星照片 ID 和图片 URL 列表。</p>
+<h3 data-unit="05-network-request-194" id="structure-of-sample-json-response"><strong>JSON 响应示例的结构</strong></h3>
+<p class="image-container"><img alt="showing keys values and JSON object" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-getting-data-internet/img/fde4f6f199990ae8.png" loading="eager" src="../assets/40979843bb7f5852.png" title="JSON array structure"/></p>
+<p data-unit="05-network-request-195">JSON 响应结构具有以下特征：</p>
+<ul>
+<li data-unit="05-network-request-196">响应是用方括号表示的数组，其中包含 JSON 对象。</li>
+<li data-unit="05-network-request-197">JSON 对象由花括号包围。</li>
+<li data-unit="05-network-request-198">每个 JSON 对象包含一组用逗号分隔的键值对。</li>
+<li data-unit="05-network-request-199">键值对中的键与值用冒号分隔。</li>
+<li data-unit="05-network-request-200">名称由引号包围。</li>
+<li data-unit="05-network-request-201">值可以是数字、字符串、布尔值、数组、对象（JSON 对象）或 null。</li>
+</ul>
+<p data-unit="05-network-request-202">例如，<code>img_src</code> 是一个 URL，属于字符串。把它粘贴到浏览器，就能看到火星表面的图片。</p>
+<p class="image-container"><img alt="b4f9f196c64f02c3.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-getting-data-internet/img/b4f9f196c64f02c3.png" loading="eager" src="../assets/a58fafe39f716f73.png" title="web browser showing mars photo"/></p>
+<p data-unit="05-network-request-203">现在应用已经取得火星 Web 服务的 JSON 响应，这是一个好的起点。不过，显示图片真正需要的是 Kotlin 对象，而不是一大段 JSON 字符串。这个转换过程称为<em>反序列化</em>。</p>
+<p data-unit="05-network-request-204"><a href="https://kotlinlang.org/docs/serialization.html"><em>序列化</em></a>把应用使用的数据转换成可经网络传输的格式。与<em>序列化</em>相对应，<em>反序列化</em>读取服务器等外部来源的数据，并转换成运行时对象。二者都是多数网络数据交换应用的重要组成部分。</p>
+<p data-unit="05-network-request-205"><code>kotlinx.serialization</code> 提供将 JSON 字符串转换成 Kotlin 对象的一组库。另有与 Retrofit 配合的社区第三方库 <a href="https://github.com/JakeWharton/retrofit2-kotlinx-serialization-converter#kotlin-serialization-converter">Kotlin Serialization Converter</a>。</p>
+<p data-unit="05-network-request-206">本任务用 <code>kotlinx.serialization</code> 把 Web 服务的 JSON 响应解析为表示火星照片的 Kotlin 对象，并把应用从显示原始 JSON 改为显示返回的照片数量。</p>
+<h2 data-unit="05-network-request-207" id="add-kotlinx.serialization-library-dependencies">添加 <code>kotlinx.serialization</code> 库依赖</h2>
+<ol>
+<li data-unit="05-network-request-208">打开 <code>build.gradle.kts (Module :app)</code>。</li>
+<li data-unit="05-network-request-209">在 <code>plugins</code> 块中添加 <code>kotlinx serialization</code> 插件。</li>
+</ol>
+<div></div><div><pre class="source-code"><code>id("org.jetbrains.kotlin.plugin.serialization") version "1.8.10"
+</code></pre></div>
+<ol>
+<li data-unit="05-network-request-210">在 <code>dependencies</code> 部分添加以下代码，引入 <code>kotlinx.serialization</code> 依赖，为 Kotlin 项目提供 JSON 序列化。</li>
+</ol>
+<div></div><div><pre class="source-code"><code>// Kotlin serialization 
+implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.1")
+</code></pre></div>
+<ol>
+<li data-unit="05-network-request-211">找到 <code>dependencies</code> 块中的 Retrofit 标量转换器依赖，将它改为 <code>kotlinx-serialization-converter</code>：</li>
+</ol>
+<p data-unit="05-network-request-212"><strong>把以下代码</strong></p>
+<div></div><div><pre class="source-code"><code>// Retrofit with scalar Converter
+implementation("com.squareup.retrofit2:converter-scalars:2.9.0")
+</code></pre></div>
+<p data-unit="05-network-request-213"><strong>替换为以下代码</strong></p>
+<div></div><div><pre class="source-code"><code>// Retrofit with Kotlin serialization Converter
+
+implementation("com.jakewharton.retrofit:retrofit2-kotlinx-serialization-converter:1.0.0")
+implementation("com.squareup.okhttp3:okhttp:4.11.0")
+</code></pre></div>
+<ol>
+<li data-unit="05-network-request-214">点击 <strong>Sync Now</strong>，用新依赖重新构建项目。</li>
+</ol>
+<aside class="special"><p data-unit="05-network-request-215"><strong>注意：</strong>移除 Retrofit 标量依赖后，项目可能出现编译错误，后续步骤会修复。</p>
+</aside>
+<h2 data-unit="05-network-request-216" id="implement-the-mars-photo-data-class"><strong>实现 MarsPhoto 数据类</strong></h2>
+<p data-unit="05-network-request-217">Web 服务返回的 JSON 响应条目类似下面的示例，与之前看到的内容相同：</p>
+<div></div><div><pre class="source-code"><code>[
+    {
+        "id":"424906",
+        "img_src":"http://mars.jpl.nasa.gov/msl-raw-images/msss/01000/mcam/1000ML0044631300305227E03_DXXX.jpg"
+    },
+...]
+</code></pre></div>
+<p data-unit="05-network-request-218">观察每个火星照片条目中的 JSON 键值对：</p>
+<ul>
+<li data-unit="05-network-request-219"><strong><code>id</code></strong><strong>：</strong>以字符串表示的属性 ID。由于被引号（<code>" "</code>）包围，它的类型是 <code>String</code> 而非 <code>Integer</code>。</li>
+<li data-unit="05-network-request-220"><strong><code>img_src</code></strong><strong>：</strong>以字符串表示的图片 URL。</li>
+</ul>
+<p data-unit="05-network-request-221">kotlinx.serialization 解析 JSON 数据并转换成 Kotlin 对象。为此，它需要一个 Kotlin 数据类保存解析结果。本步骤创建 <code>MarsPhoto</code> 数据类。</p>
+<ol>
+<li data-unit="05-network-request-222">右键点击 <strong>network</strong> 包，选择 <strong>New &gt; Kotlin File/Class</strong>。</li>
+<li data-unit="05-network-request-223">在对话框选择 <strong>Class</strong>，输入类名 <code>MarsPhoto</code>。这会在 <code>network</code> 包中创建名为 <code>MarsPhoto.kt</code> 的文件。</li>
+<li data-unit="05-network-request-224">在类定义前添加 <code>data</code> 关键字，将 <code>MarsPhoto</code> 变为数据类。</li>
+<li data-unit="05-network-request-225">把花括号 <code>{}</code> 改为圆括号 <code>()</code>。这时会出现错误，因为数据类必须至少定义一个属性。</li>
+</ol>
+<div></div><div><pre class="source-code"><code>data class MarsPhoto()
+</code></pre></div>
+<ol>
+<li data-unit="05-network-request-226">在 <code>MarsPhoto</code> 类定义中添加以下属性。</li>
+</ol>
+<div></div><div><pre class="source-code"><code>data class MarsPhoto(
+    val id: String,  val img_src: String
+)
+</code></pre></div>
+<ol>
+<li data-unit="05-network-request-227">用 <code>@Serializable</code> 标注 <code>MarsPhoto</code>，使其可以序列化。</li>
+</ol>
+<div></div><div><pre class="source-code"><code>import kotlinx.serialization.Serializable
+
+@Serializable
+data class MarsPhoto(
+    val id: String,  val img_src: String
+)
+</code></pre></div>
+<p data-unit="05-network-request-228"><code>MarsPhoto</code> 类中的每个变量，都对应 JSON 对象中的一个键名。为匹配本例响应的类型，所有值都使用 <code>String</code> 对象。</p>
+<p data-unit="05-network-request-229"><code>kotlinx serialization</code> 解析 JSON 时，按名称匹配键，并用相应值填充数据对象。</p>
+<h3 data-unit="05-network-request-230" id="serialname-annotation"><strong>@SerialName 标注</strong></h3>
+<p data-unit="05-network-request-231">JSON 键名有时会使 Kotlin 属性难以理解，或不符合推荐编码风格。例如，JSON 中的 <code>img_src</code> 使用下划线，而 Kotlin 属性通常使用大小写混合的驼峰命名。</p>
+<p data-unit="05-network-request-232">若数据类的变量名与 JSON 键名不同，可使用 <code>@SerialName</code> 标注。下例中变量名为 <code>imgSrc</code>，通过 <code>@SerialName(value = "img_src")</code> 映射到 JSON 属性 <code>img_src</code>。</p>
+<ol>
+<li data-unit="05-network-request-233">将 <code>img_src</code> 对应的那一行替换为以下内容。</li>
+</ol>
+<div></div><div><pre class="source-code"><code>import kotlinx.serialization.SerialName
+
+@SerialName(value = "img_src") 
+val imgSrc: String
+</code></pre></div>
+<h2 data-unit="05-network-request-234" id="update-marsapiservice-and-marsviewmodel">更新 MarsApiService 与 MarsViewModel</h2>
+<p data-unit="05-network-request-235">本任务用 <code>kotlinx.serialization</code> 转换器把 JSON 对象转换成 Kotlin 对象。</p>
+<ol>
+<li data-unit="05-network-request-236">打开 <code>network/MarsApiService.kt</code>。</li>
+<li data-unit="05-network-request-237"><code>ScalarsConverterFactory</code> 的未解析引用错误，来自前面修改 Retrofit 依赖的步骤。</li>
+<li data-unit="05-network-request-238">删除 <code>ScalarConverterFactory</code> 的 import，其他错误稍后修复。</li>
+</ol>
+<p data-unit="05-network-request-239"><strong>删除：</strong></p>
+<div></div><div><pre class="source-code"><code>import retrofit2.converter.scalars.ScalarsConverterFactory
+</code></pre></div>
+<ol>
+<li data-unit="05-network-request-240">在 <em><code>retrofit</code></em> 对象声明中，把 Retrofit builder 的 <code>ScalarConverterFactory</code> 改为 <code>kotlinx.serialization</code>。</li>
+</ol>
+<div></div><div><pre class="source-code"><code>import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
+import kotlinx.serialization.json.Json
+import okhttp3.MediaType
+
+private val retrofit = Retrofit.Builder()
+        .addConverterFactory(Json.asConverterFactory("application/json".toMediaType()))
+        .baseUrl(BASE_URL)
+        .build()
+</code></pre></div>
+<aside class="special"><p data-unit="05-network-request-241"><strong>注意</strong>：如果 Android Studio 显示关于 <code>kotlinx.serialization.ExperimentalSerializationApi</code> 的警告，暂时忽略。无需担心，它会在之后的 Kotlin 版本中解决。</p>
+<p class="image-container"><img alt="857006993db2a1a3.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-getting-data-internet/img/857006993db2a1a3.png" loading="eager" src="../assets/6082d6878908f43b.png"/></p>
+</aside>
+<p data-unit="05-network-request-242">配置好 <code>kotlinx.serialization</code> 后，可以让 Retrofit 从 JSON 数组返回 <code>MarsPhoto</code> 对象列表，而不是 JSON 字符串。</p>
+<ol>
+<li data-unit="05-network-request-243">更新 <code>MarsApiService</code> 接口，让 Retrofit 返回 <code>MarsPhoto</code> 对象列表，而非 <code>String</code>。</li>
+</ol>
+<div></div><div><pre class="source-code"><code>interface MarsApiService {
+    @GET("photos")
+    suspend fun getPhotos(): List&lt;MarsPhoto&gt;
+}
+</code></pre></div>
+<ol>
+<li data-unit="05-network-request-244">对 <code>viewModel</code> 做类似修改。打开 <code>MarsViewModel.kt</code>，找到 <code>getMarsPhotos()</code> 方法。</li>
+</ol>
+<p data-unit="05-network-request-245">在 <code>getMarsPhotos()</code> 方法中，<code>listResult</code> 已经是 <code>List&lt;MarsPhoto&gt;</code>，不再是 <code>String</code>。列表大小就是收到并解析的照片数量。</p>
+<ol>
+<li data-unit="05-network-request-246">为打印取得的照片数量，如下更新 <code>marsUiState</code>：</li>
+</ol>
+<div></div><div><pre class="source-code"><code>val listResult = MarsApi.retrofitService.getPhotos()
+marsUiState = MarsUiState.Success(
+   "Success: ${listResult.size} Mars photos retrieved"
+)
+</code></pre></div>
+<ol>
+<li data-unit="05-network-request-247">确保设备或模拟器上的飞行模式已<em>关闭</em>，编译并运行应用。</li>
+</ol>
+<p data-unit="05-network-request-248">这次消息应显示 Web 服务返回的属性数量，而非一大段 JSON 字符串：</p>
+<p class="image-container"><img alt="a59e55909b6e9213.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-getting-data-internet/img/a59e55909b6e9213.png" loading="eager" src="../assets/72f7e97cbf825aaf.png"/></p>
+<aside class="special"><p data-unit="05-network-request-249"><strong>注意：</strong>网络连接不正常时，确认设备或模拟器已关闭飞行模式。</p>
+</aside>
+</div>
+<div>
+<h2 class="step-title" data-unit="05-network-request-250" id="8">9. 完整代码</h2>
+<p data-unit="05-network-request-251">可以用以下 Git 命令下载完成后的代码：</p>
+<div></div><div><pre class="source-code"><code>$ git clone https://github.com/google-developer-training/basic-android-kotlin-compose-training-mars-photos.git
+$ cd basic-android-kotlin-compose-training-mars-photos
+$ git checkout repo-starter
+</code></pre></div>
+<p data-unit="05-network-request-252">也可以将仓库下载为 ZIP，解压后在 Android Studio 中打开。</p>
+<p><a href="https://github.com/google-developer-training/basic-android-kotlin-compose-training-mars-photos/archive/refs/heads/repo-starter.zip"></a></p>
+<aside class="special"><p data-unit="05-network-request-253"><strong>注意：</strong>完整代码在下载仓库的 <code>repo-starter</code> 分支。</p>
+</aside>
+<p data-unit="05-network-request-254">若想查看本篇的完整代码，请访问 <a href="https://github.com/google-developer-training/basic-android-kotlin-compose-training-mars-photos/tree/repo-starter">GitHub</a>。</p>
+</div>
+<div>
+<h2 class="step-title" data-unit="05-network-request-255" id="9">10. 总结</h2>
+<h3 data-unit="05-network-request-256" id="rest-web-services"><strong>REST Web 服务</strong></h3>
+<ul>
+<li data-unit="05-network-request-257"><em>Web 服务</em>是经互联网提供的软件功能，让应用发出请求并取得数据。</li>
+<li data-unit="05-network-request-258">常见 Web 服务采用 <a href="https://en.wikipedia.org/wiki/Representational_state_transfer">REST</a> 架构，称为 <em>RESTful</em> 服务，使用标准 Web 组件和协议构建。</li>
+<li data-unit="05-network-request-259">通过 URI，可以按标准方式向 REST Web 服务发送请求。</li>
+<li data-unit="05-network-request-260">使用 Web 服务时，应用必须建立网络连接并与服务通信，然后接收响应数据，解析成可供应用使用的格式。</li>
+<li data-unit="05-network-request-261"><a href="https://square.github.io/retrofit/">Retrofit</a> 是让应用向 REST Web 服务发送请求的客户端库。</li>
+<li data-unit="05-network-request-262">转换器告诉 Retrofit 怎样处理发给服务及服务返回的数据。例如，<code>ScalarsConverter</code> 把服务数据作为 <code>String</code> 或其他基本类型处理。</li>
+<li data-unit="05-network-request-263">要让应用连接互联网，应在 Android Manifest 中添加 <code>"android.permission.INTERNET"</code> 权限。</li>
+<li data-unit="05-network-request-264">延迟初始化把对象创建推迟到首次使用时。它先创建引用而非对象，首次访问对象时创建引用，并在之后每次使用同一引用。</li>
+</ul>
+<h3 data-unit="05-network-request-265" id="json-parsing"><strong>JSON 解析</strong></h3>
+<ul>
+<li data-unit="05-network-request-266">Web 服务响应经常采用 <a href="https://www.json.org/">JSON</a>，这是一种表示结构化数据的常见格式。</li>
+<li data-unit="05-network-request-267">JSON 对象是键值对的集合。</li>
+<li data-unit="05-network-request-268">一组 JSON 对象构成 JSON 数组，Web 服务可以返回这样的数组。</li>
+<li data-unit="05-network-request-269">键值对的键由引号包围，值可以是数字或字符串。</li>
+<li data-unit="05-network-request-270">Kotlin 的数据序列化工具位于独立组件 <a href="https://github.com/Kotlin/kotlinx.serialization"><em>kotlinx.serialization</em></a> 中。<em>kotlinx.serialization</em> 提供将 JSON 字符串转换成 Kotlin 对象的一组库。</li>
+<li data-unit="05-network-request-271">社区为 Retrofit 开发了 Kotlin Serialization Converter 库：<a href="https://github.com/JakeWharton/retrofit2-kotlinx-serialization-converter#kotlin-serialization-converter">retrofit2-kotlinx-serialization-converter</a>。</li>
+<li data-unit="05-network-request-272"><em>kotlinx.serialization</em> 把 JSON 响应的键匹配到数据对象中的同名属性。</li>
+<li data-unit="05-network-request-273">若要为键使用不同属性名，给该属性添加 <code>@SerialName</code> 标注，并指定 JSON 键 <code>value</code>。</li>
+</ul>
+</div>
+<div>
+<h2 class="step-title" data-unit="05-network-request-274" id="10">11. 了解更多</h2>
+<p data-unit="05-network-request-275">Android 开发者文档：</p>
+<ul>
+<li data-unit="05-network-request-276"><a href="https://developer.android.google.cn/topic/architecture">应用架构指南 | Android Developers</a></li>
+<li data-unit="05-network-request-277"><a href="https://developer.android.google.cn/topic/libraries/architecture/viewmodel">ViewModel 概览</a></li>
+<li data-unit="05-network-request-278"><a href="https://developer.android.google.cn/topic/libraries/architecture/coroutines#viewmodelscope">ViewModelScope</a></li>
+</ul>
+<p data-unit="05-network-request-279">Kotlin 文档：</p>
+<ul>
+<li data-unit="05-network-request-280"><a href="https://kotlinlang.org/docs/reference/exceptions.html">异常：try、catch、finally、throw、Nothing</a></li>
+<li data-unit="05-network-request-281"><a href="https://kotlinlang.org/docs/reference/coroutines-overview.html">协程官方文档</a></li>
+<li data-unit="05-network-request-282"><a href="https://kotlinlang.org/docs/reference/coroutines/coroutine-context-and-dispatchers.html">协程上下文与调度器</a></li>
+<li data-unit="05-network-request-283"><a href="https://kotlinlang.org/docs/serialization.html#0">序列化 | Kotlin</a></li>
+</ul>
+<p data-unit="05-network-request-284">其他：</p>
+<ul>
+<li data-unit="05-network-request-285"><a href="https://square.github.io/retrofit/">Retrofit</a></li>
+<li data-unit="05-network-request-286"><a href="https://github.com/JakeWharton/retrofit2-kotlinx-serialization-converter">用于 Kotlin 序列化的 Retrofit 2 Converter.Factory</a></li>
+</ul>
+</div>
+</div>
+</article><nav class="chapter-switcher" aria-label="章节导航"><a href="../04-data-layer/literal.html">← 数据由谁管理</a><a class="course-home" href="../index.html">全部章节</a><a href="../06-cancellation/literal.html">异步任务的取消与超时 →</a></nav><footer class="license-note"><p>原文：<a href="https://developer.android.com/codelabs/basic-android-kotlin-compose-getting-data-internet?hl=en">Get data from the internet</a>，Android Developers / Google。英文快照：2026-10-13。非官方中文翻译与表达优化：Codex。原有示例和代码保留；<a href="../NOTICE.html">来源与许可</a>。</p></footer></main></body></html>

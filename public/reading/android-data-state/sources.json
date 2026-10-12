@@ -1,0 +1,1152 @@
+[
+  {
+    "slug": "01-ui-layer",
+    "title": "界面与状态",
+    "englishTitle": "UI layer",
+    "url": "https://developer.android.com/topic/architecture/ui-layer?hl=en",
+    "retrieval_url": "https://developer.android.google.cn/topic/architecture/ui-layer?hl=en",
+    "part": 1,
+    "date": "2026-10-13",
+    "source_sha256": "4c9e6a97d4ab439655340935cc87f564d06e8fb04186f08d0a83842fe81e85d6",
+    "units": 116,
+    "words": 3659,
+    "codeBlocks": 10,
+    "images": 6,
+    "headings": [
+      {
+        "id": "case-study",
+        "tag": "h2",
+        "text": "A basic case study"
+      },
+      {
+        "id": "architecture",
+        "tag": "h2",
+        "text": "UI layer architecture"
+      },
+      {
+        "id": "define-ui-state",
+        "tag": "h2",
+        "text": "Define UI state"
+      },
+      {
+        "id": "state-immutability",
+        "tag": "h3",
+        "text": "Immutability"
+      },
+      {
+        "id": "naming-conventions",
+        "tag": "h3",
+        "text": "Naming conventions in this guide"
+      },
+      {
+        "id": "udf",
+        "tag": "h2",
+        "text": "Manage state with Unidirectional Data Flow"
+      },
+      {
+        "id": "state-holders",
+        "tag": "h3",
+        "text": "State holders"
+      },
+      {
+        "id": "logic-types",
+        "tag": "h3",
+        "text": "Types of logic"
+      },
+      {
+        "id": "why-use-udf",
+        "tag": "h3",
+        "text": "Why use UDF?"
+      },
+      {
+        "id": "expose-ui-state",
+        "tag": "h2",
+        "text": "Expose UI state"
+      },
+      {
+        "id": "additional-considerations",
+        "tag": "h3",
+        "text": "Additional considerations"
+      },
+      {
+        "id": "consume-ui-state",
+        "tag": "h2",
+        "text": "Consume UI state"
+      },
+      {
+        "id": "show-operations",
+        "tag": "h3",
+        "text": "Show in-progress operations"
+      },
+      {
+        "id": "show-errors",
+        "tag": "h3",
+        "text": "Show errors on the screen"
+      },
+      {
+        "id": "threading-concurrency",
+        "tag": "h2",
+        "text": "Threading and concurrency"
+      },
+      {
+        "id": "navigation",
+        "tag": "h2",
+        "text": "Navigation"
+      },
+      {
+        "id": "paging",
+        "tag": "h2",
+        "text": "Paging"
+      },
+      {
+        "id": "animations",
+        "tag": "h2",
+        "text": "Animations"
+      },
+      {
+        "id": "additional-resources",
+        "tag": "h2",
+        "text": "Additional resources"
+      },
+      {
+        "id": "views",
+        "tag": "h3",
+        "text": "Views content"
+      },
+      {
+        "id": "samples",
+        "tag": "h2",
+        "text": "Samples"
+      }
+    ]
+  },
+  {
+    "slug": "02-ui-events",
+    "title": "用户操作与事件",
+    "englishTitle": "UI events",
+    "url": "https://developer.android.com/topic/architecture/ui-layer/events?hl=en",
+    "retrieval_url": "https://developer.android.google.cn/topic/architecture/ui-layer/events?hl=en",
+    "part": 1,
+    "date": "2026-10-13",
+    "source_sha256": "2ed96084c313afd9c2f4d376fd9dcd2b475c7a71412c854c35e7d891b2ccba64",
+    "units": 70,
+    "words": 2840,
+    "codeBlocks": 10,
+    "images": 1,
+    "headings": [
+      {
+        "id": "decision-tree",
+        "tag": "h2",
+        "text": "UI event decision tree"
+      },
+      {
+        "id": "handle-user-events",
+        "tag": "h2",
+        "text": "Handle user events"
+      },
+      {
+        "id": "lazy-list-events",
+        "tag": "h3",
+        "text": "User events in lazy lists"
+      },
+      {
+        "id": "naming-conventions",
+        "tag": "h3",
+        "text": "Naming conventions for user event functions and event handlers"
+      },
+      {
+        "id": "handle-viewmodel-events",
+        "tag": "h2",
+        "text": "Handle ViewModel events"
+      },
+      {
+        "id": "consuming-trigger-updates",
+        "tag": "h3",
+        "text": "Consuming events can trigger state updates"
+      },
+      {
+        "id": "navigation-events",
+        "tag": "h2",
+        "text": "Navigation events"
+      },
+      {
+        "id": "navigation-events-destination-back-stack",
+        "tag": "h3",
+        "text": "Navigation events when the destination is kept in the back stack"
+      },
+      {
+        "id": "other-use-cases",
+        "tag": "h2",
+        "text": "Other use cases"
+      },
+      {
+        "id": "samples",
+        "tag": "h2",
+        "text": "Samples"
+      },
+      {
+        "id": "additional-resources",
+        "tag": "h2",
+        "text": "Additional resources"
+      },
+      {
+        "id": "codelabs",
+        "tag": "h3",
+        "text": "Codelabs"
+      },
+      {
+        "id": "documentation",
+        "tag": "h3",
+        "text": "Documentation"
+      },
+      {
+        "id": "views-content",
+        "tag": "h3",
+        "text": "Views content"
+      }
+    ]
+  },
+  {
+    "slug": "03-state-production",
+    "title": "状态怎样更新",
+    "englishTitle": "UI State production",
+    "url": "https://developer.android.com/topic/architecture/ui-layer/state-production?hl=en",
+    "retrieval_url": "https://developer.android.google.cn/topic/architecture/ui-layer/state-production?hl=en",
+    "part": 1,
+    "date": "2026-10-13",
+    "source_sha256": "7fb92b15e2f268372183f7b9b8ff5b3ac575cdd4611796be9098e91c1d1dd95c",
+    "units": 110,
+    "words": 2682,
+    "codeBlocks": 10,
+    "images": 2,
+    "headings": [
+      {
+        "id": "ui-state",
+        "tag": "h2",
+        "text": "The UI state production pipeline"
+      },
+      {
+        "id": "state-production",
+        "tag": "h2",
+        "text": "State production APIs"
+      },
+      {
+        "id": "state-production-pipeline",
+        "tag": "h2",
+        "text": "State production pipeline assembly"
+      },
+      {
+        "id": "inputs-state",
+        "tag": "h2",
+        "text": "Inputs in state production pipelines"
+      },
+      {
+        "id": "one-shot-apis",
+        "tag": "h3",
+        "text": "One-shot APIs as sources of state change"
+      },
+      {
+        "id": "compose-state",
+        "tag": "h3",
+        "text": "Compose State"
+      },
+      {
+        "id": "stateflow",
+        "tag": "h3",
+        "text": "StateFlow"
+      },
+      {
+        "id": "mutating_the_ui_state_from_asynchronous_calls",
+        "tag": "h4",
+        "text": "Mutating the UI state from asynchronous calls"
+      },
+      {
+        "id": "compose-state_1",
+        "tag": "h3",
+        "text": "Compose State"
+      },
+      {
+        "id": "stateflow_1",
+        "tag": "h3",
+        "text": "StateFlow"
+      },
+      {
+        "id": "mutating_the_ui_state_from_background_threads",
+        "tag": "h4",
+        "text": "Mutating the UI state from background threads"
+      },
+      {
+        "id": "compose-state_2",
+        "tag": "h3",
+        "text": "Compose State"
+      },
+      {
+        "id": "stateflow_2",
+        "tag": "h3",
+        "text": "StateFlow"
+      },
+      {
+        "id": "stream-apis",
+        "tag": "h3",
+        "text": "Stream APIs as sources of state change"
+      },
+      {
+        "id": "one-shot-and",
+        "tag": "h3",
+        "text": "One-shot and stream APIs as sources of state change"
+      },
+      {
+        "id": "compose-state_3",
+        "tag": "h3",
+        "text": "Compose State"
+      },
+      {
+        "id": "stateflow_3",
+        "tag": "h3",
+        "text": "StateFlow"
+      },
+      {
+        "id": "output-types",
+        "tag": "h2",
+        "text": "Output types in state production pipelines"
+      },
+      {
+        "id": "initializing-state-production",
+        "tag": "h2",
+        "text": "State production pipeline initialization"
+      },
+      {
+        "id": "samples",
+        "tag": "h2",
+        "text": "Samples"
+      },
+      {
+        "id": "resources",
+        "tag": "h2",
+        "text": "Additional resources"
+      },
+      {
+        "id": "documentation",
+        "tag": "h3",
+        "text": "Documentation"
+      },
+      {
+        "id": "views",
+        "tag": "h3",
+        "text": "Views content"
+      }
+    ]
+  },
+  {
+    "slug": "04-data-layer",
+    "title": "数据由谁管理",
+    "englishTitle": "Data layer",
+    "url": "https://developer.android.com/topic/architecture/data-layer?hl=en",
+    "retrieval_url": "https://developer.android.google.cn/topic/architecture/data-layer?hl=en",
+    "part": 2,
+    "date": "2026-10-13",
+    "source_sha256": "8853b4943ab4f80642457b54516a65f54f9bccd9175d6d82c97e129a6a4e5700",
+    "units": 143,
+    "words": 4415,
+    "codeBlocks": 11,
+    "images": 2,
+    "headings": [
+      {
+        "id": "architecture",
+        "tag": "h2",
+        "text": "Data layer architecture"
+      },
+      {
+        "id": "expose-apis",
+        "tag": "h2",
+        "text": "Expose APIs"
+      },
+      {
+        "id": "naming-conventions",
+        "tag": "h2",
+        "text": "Naming conventions in this guide"
+      },
+      {
+        "id": "multiple-levels",
+        "tag": "h2",
+        "text": "Multiple levels of repositories"
+      },
+      {
+        "id": "source-of-truth",
+        "tag": "h2",
+        "text": "Source of truth"
+      },
+      {
+        "id": "threading",
+        "tag": "h2",
+        "text": "Threading"
+      },
+      {
+        "id": "lifecycle",
+        "tag": "h2",
+        "text": "Lifecycle"
+      },
+      {
+        "id": "business-models",
+        "tag": "h2",
+        "text": "Represent business models"
+      },
+      {
+        "id": "data-operation-types",
+        "tag": "h2",
+        "text": "Types of data operations"
+      },
+      {
+        "id": "ui-operations",
+        "tag": "h3",
+        "text": "UI-oriented operations"
+      },
+      {
+        "id": "app-operations",
+        "tag": "h3",
+        "text": "App-oriented operations"
+      },
+      {
+        "id": "business-operations",
+        "tag": "h3",
+        "text": "Business-oriented operations"
+      },
+      {
+        "id": "expose-errors",
+        "tag": "h2",
+        "text": "Expose errors"
+      },
+      {
+        "id": "common-tasks",
+        "tag": "h2",
+        "text": "Common tasks"
+      },
+      {
+        "id": "network-request",
+        "tag": "h3",
+        "text": "Make a network request"
+      },
+      {
+        "id": "create_the_data_source",
+        "tag": "h4",
+        "text": "Create the data source"
+      },
+      {
+        "id": "create_the_repository",
+        "tag": "h4",
+        "text": "Create the repository"
+      },
+      {
+        "id": "in-memory-cache",
+        "tag": "h3",
+        "text": "Implement in-memory data caching"
+      },
+      {
+        "id": "caches",
+        "tag": "h4",
+        "text": "Caches"
+      },
+      {
+        "id": "cache_the_result_of_the_network_request",
+        "tag": "h4",
+        "text": "Cache the result of the network request"
+      },
+      {
+        "id": "make_an_operation_live_longer_than_the_screen",
+        "tag": "h4",
+        "text": "Make an operation live longer than the screen"
+      },
+      {
+        "id": "save-retrieve-data",
+        "tag": "h3",
+        "text": "Save and retrieve data from disk"
+      },
+      {
+        "id": "room_as_a_data_source",
+        "tag": "h4",
+        "text": "Room as a data source"
+      },
+      {
+        "id": "datastore_as_a_data_source",
+        "tag": "h4",
+        "text": "DataStore as a data source"
+      },
+      {
+        "id": "a_file_as_a_data_source",
+        "tag": "h4",
+        "text": "A file as a data source"
+      },
+      {
+        "id": "workmanager",
+        "tag": "h3",
+        "text": "Schedule tasks using WorkManager"
+      },
+      {
+        "id": "testing",
+        "tag": "h2",
+        "text": "Testing"
+      },
+      {
+        "id": "unit-tests",
+        "tag": "h3",
+        "text": "Unit tests"
+      },
+      {
+        "id": "integration-tests",
+        "tag": "h3",
+        "text": "Integration tests"
+      },
+      {
+        "id": "resources",
+        "tag": "h2",
+        "text": "Additional resources"
+      },
+      {
+        "id": "samples",
+        "tag": "h3",
+        "text": "Samples"
+      }
+    ]
+  },
+  {
+    "slug": "05-network-request",
+    "title": "安卓中的网络请求",
+    "englishTitle": "Get data from the internet",
+    "url": "https://developer.android.com/codelabs/basic-android-kotlin-compose-getting-data-internet?hl=en",
+    "retrieval_url": "https://developer.android.google.cn/codelabs/basic-android-kotlin-compose-getting-data-internet?hl=en",
+    "part": 2,
+    "date": "2026-10-13",
+    "source_sha256": "b584c69a2692a72b44933bb03f7887e1b108cde72a683926308a8b69e7592740",
+    "units": 286,
+    "words": 6343,
+    "codeBlocks": 48,
+    "images": 20,
+    "headings": [
+      {
+        "id": "0",
+        "tag": "h2",
+        "text": "1. Before you begin"
+      },
+      {
+        "id": "prerequisites",
+        "tag": "h2",
+        "text": "Prerequisites"
+      },
+      {
+        "id": "what-youll-learn",
+        "tag": "h2",
+        "text": "What you'll learn"
+      },
+      {
+        "id": "what-youll-do",
+        "tag": "h2",
+        "text": "What you'll do"
+      },
+      {
+        "id": "what-you-need",
+        "tag": "h2",
+        "text": "What you need"
+      },
+      {
+        "id": "1",
+        "tag": "h2",
+        "text": "2. App overview"
+      },
+      {
+        "id": "2",
+        "tag": "h2",
+        "text": "3. Explore the Mars Photos starter app"
+      },
+      {
+        "id": "download-starter-code",
+        "tag": "h3",
+        "text": "Download starter code"
+      },
+      {
+        "id": "run-starter-code",
+        "tag": "h2",
+        "text": "Run starter code"
+      },
+      {
+        "id": "starter-code-walkthrough",
+        "tag": "h2",
+        "text": "Starter code walkthrough"
+      },
+      {
+        "id": "3",
+        "tag": "h2",
+        "text": "4. Introduction to web services"
+      },
+      {
+        "id": "4",
+        "tag": "h2",
+        "text": "5. Web services and Retrofit"
+      },
+      {
+        "id": "web-service-request",
+        "tag": "h2",
+        "text": "W eb service request"
+      },
+      {
+        "id": "external-libraries",
+        "tag": "h3",
+        "text": "External Libraries"
+      },
+      {
+        "id": "retrofit-library",
+        "tag": "h3",
+        "text": "Retrofit Library"
+      },
+      {
+        "id": "add-retrofit-dependencies",
+        "tag": "h2",
+        "text": "Add Retrofit dependencies"
+      },
+      {
+        "id": "5",
+        "tag": "h2",
+        "text": "6. Connecting to the Internet"
+      },
+      {
+        "id": "object-declarations",
+        "tag": "h3",
+        "text": "Object declarations"
+      },
+      {
+        "id": "call-the-web-service-in-marsviewmodel",
+        "tag": "h2",
+        "text": "Call the web service in MarsViewModel"
+      },
+      {
+        "id": "viewmodelscope",
+        "tag": "h3",
+        "text": "ViewModelScope"
+      },
+      {
+        "id": "6",
+        "tag": "h2",
+        "text": "7. Add Internet permission and Exception Handling"
+      },
+      {
+        "id": "android-permissions",
+        "tag": "h2",
+        "text": "Android Permissions"
+      },
+      {
+        "id": "exception-handling",
+        "tag": "h2",
+        "text": "Exception Handling"
+      },
+      {
+        "id": "exceptions",
+        "tag": "h3",
+        "text": "Exceptions"
+      },
+      {
+        "id": "add-state-ui",
+        "tag": "h3",
+        "text": "Add State UI"
+      },
+      {
+        "id": "7",
+        "tag": "h2",
+        "text": "8. Parse the JSON response with kotlinx.serialization"
+      },
+      {
+        "id": "json",
+        "tag": "h2",
+        "text": "JSON"
+      },
+      {
+        "id": "structure-of-sample-json-response",
+        "tag": "h3",
+        "text": "Structure of sample JSON response"
+      },
+      {
+        "id": "add-kotlinx.serialization-library-dependencies",
+        "tag": "h2",
+        "text": "Add kotlinx.serialization library dependencies"
+      },
+      {
+        "id": "implement-the-mars-photo-data-class",
+        "tag": "h2",
+        "text": "Implement the Mars Photo data class"
+      },
+      {
+        "id": "serialname-annotation",
+        "tag": "h3",
+        "text": "@SerialName Annotation"
+      },
+      {
+        "id": "update-marsapiservice-and-marsviewmodel",
+        "tag": "h2",
+        "text": "Update MarsApiService and MarsViewModel"
+      },
+      {
+        "id": "8",
+        "tag": "h2",
+        "text": "9. Solution code"
+      },
+      {
+        "id": "9",
+        "tag": "h2",
+        "text": "10. Summary"
+      },
+      {
+        "id": "rest-web-services",
+        "tag": "h3",
+        "text": "REST web services"
+      },
+      {
+        "id": "json-parsing",
+        "tag": "h3",
+        "text": "JSON parsing"
+      },
+      {
+        "id": "10",
+        "tag": "h2",
+        "text": "11. Learn more"
+      }
+    ]
+  },
+  {
+    "slug": "06-cancellation",
+    "title": "异步任务的取消与超时",
+    "englishTitle": "Cancellation and timeouts",
+    "url": "https://kotlinlang.org/docs/coroutines-cancellation.html",
+    "retrieval_url": "https://kotlinlang.org/docs/coroutines-cancellation.html",
+    "part": 2,
+    "date": "2026-10-13",
+    "source_sha256": "c15875681e6e2ebd24b0a9366ff5cd6cd6c40a644b6823a167498fe4cd83dc85",
+    "units": 62,
+    "words": 2367,
+    "codeBlocks": 10,
+    "images": 1,
+    "headings": [
+      {
+        "id": "coroutines-cancellation.md",
+        "tag": "h1",
+        "text": "Cancellation and timeouts"
+      },
+      {
+        "id": "cancel-coroutines",
+        "tag": "h2",
+        "text": "Cancel coroutines"
+      },
+      {
+        "id": "cancellation-propagation",
+        "tag": "h3",
+        "text": "Cancellation propagation"
+      },
+      {
+        "id": "cancellation-is-cooperative",
+        "tag": "h2",
+        "text": "Make coroutines react to cancellation"
+      },
+      {
+        "id": "suspension-points-and-cancellation",
+        "tag": "h3",
+        "text": "Suspension points and cancellation"
+      },
+      {
+        "id": "the-yield-suspending-function",
+        "tag": "h3",
+        "text": "The yield() suspending function"
+      },
+      {
+        "id": "check-for-cancellation-explicitly",
+        "tag": "h3",
+        "text": "Check for cancellation explicitly"
+      },
+      {
+        "id": "interrupt-blocking-code-when-coroutines-are-canceled",
+        "tag": "h3",
+        "text": "Interrupt blocking code when coroutines are canceled"
+      },
+      {
+        "id": "handle-values-safely-when-canceling-coroutines",
+        "tag": "h2",
+        "text": "Handle values safely when canceling coroutines"
+      },
+      {
+        "id": "run-non-cancelable-blocks",
+        "tag": "h3",
+        "text": "Run non-cancelable blocks"
+      },
+      {
+        "id": "timeout",
+        "tag": "h2",
+        "text": "Timeout"
+      }
+    ]
+  },
+  {
+    "slug": "07-sql",
+    "title": "数据库与 SQL 入门",
+    "englishTitle": "Use SQL to read and write to a database",
+    "url": "https://developer.android.com/codelabs/basic-android-kotlin-compose-sql?hl=en",
+    "retrieval_url": "https://developer.android.google.cn/codelabs/basic-android-kotlin-compose-sql?hl=en",
+    "part": 3,
+    "date": "2026-10-13",
+    "source_sha256": "0f1b8fa855974c261f38d63704a11e653c1255a26fda8e8730d524282a0595bc",
+    "units": 202,
+    "words": 4482,
+    "codeBlocks": 26,
+    "images": 57,
+    "headings": [
+      {
+        "id": "0",
+        "tag": "h2",
+        "text": "1. Before you begin"
+      },
+      {
+        "id": "1",
+        "tag": "h2",
+        "text": "2. Key concepts of relational databases"
+      },
+      {
+        "id": "what-is-a-database",
+        "tag": "h2",
+        "text": "What is a database?"
+      },
+      {
+        "id": "what-is-sqlite",
+        "tag": "h2",
+        "text": "What is SQLite?"
+      },
+      {
+        "id": "representing-data-with-sqlite",
+        "tag": "h2",
+        "text": "Representing data with SQLite"
+      },
+      {
+        "id": "2",
+        "tag": "h2",
+        "text": "3. Download the starter data set"
+      },
+      {
+        "id": "use-the-database-inspector",
+        "tag": "h2",
+        "text": "Use the Database Inspector"
+      },
+      {
+        "id": "3",
+        "tag": "h2",
+        "text": "4. Read data with a SELECT statement"
+      },
+      {
+        "id": "sql-select-statement",
+        "tag": "h2",
+        "text": "SQL SELECT statement"
+      },
+      {
+        "id": "read-email-data-using-a-select-statement",
+        "tag": "h2",
+        "text": "Read email data using a SELECT statement"
+      },
+      {
+        "id": "4",
+        "tag": "h2",
+        "text": "5. Use SELECT statements with aggregate functions and distinct values"
+      },
+      {
+        "id": "reduce-columns-with-aggregate-functions",
+        "tag": "h2",
+        "text": "Reduce columns with aggregate functions"
+      },
+      {
+        "id": "filter-duplicate-results-with-distinct",
+        "tag": "h2",
+        "text": "Filter duplicate results with DISTINCT"
+      },
+      {
+        "id": "5",
+        "tag": "h2",
+        "text": "6. Filter queries with a WHERE clause"
+      },
+      {
+        "id": "logical-operators-with-where-clauses",
+        "tag": "h2",
+        "text": "Logical operators with WHERE clauses"
+      },
+      {
+        "id": "search-for-text-using-like",
+        "tag": "h2",
+        "text": "Search for text using LIKE"
+      },
+      {
+        "id": "6",
+        "tag": "h2",
+        "text": "7. Group, order, and limit results"
+      },
+      {
+        "id": "group-results-with-group-by",
+        "tag": "h2",
+        "text": "Group results with GROUP BY"
+      },
+      {
+        "id": "sort-results-with-order-by",
+        "tag": "h2",
+        "text": "Sort results with ORDER BY"
+      },
+      {
+        "id": "restrict-the-number-of-results-with-limit",
+        "tag": "h2",
+        "text": "Restrict the number of results with LIMIT"
+      },
+      {
+        "id": "7",
+        "tag": "h2",
+        "text": "8. Insert, update, and delete data in a database"
+      },
+      {
+        "id": "insert-data-into-a-database",
+        "tag": "h2",
+        "text": "Insert data into a database"
+      },
+      {
+        "id": "update-existing-data-in-a-database",
+        "tag": "h2",
+        "text": "Update existing data in a database"
+      },
+      {
+        "id": "delete-a-row-from-a-database",
+        "tag": "h2",
+        "text": "Delete a row from a database"
+      },
+      {
+        "id": "8",
+        "tag": "h2",
+        "text": "9. Summary"
+      },
+      {
+        "id": "9",
+        "tag": "h2",
+        "text": "10. Learn more"
+      }
+    ]
+  },
+  {
+    "slug": "08-room",
+    "title": "Room 整体认识",
+    "englishTitle": "Save data in a local database using Room",
+    "url": "https://developer.android.com/training/data-storage/room?hl=en",
+    "retrieval_url": "https://developer.android.google.cn/training/data-storage/room?hl=en",
+    "part": 3,
+    "date": "2026-10-13",
+    "source_sha256": "fed517ebc30324b748431b324e78940e73961150d8357eb01b9402b78f43f84d",
+    "units": 42,
+    "words": 823,
+    "codeBlocks": 7,
+    "images": 2,
+    "headings": [
+      {
+        "id": "save_data_in_a_local_database_using_room",
+        "tag": "h1",
+        "text": "Save data in a local database using Room Part of Android Jetpack ."
+      },
+      {
+        "id": "setup",
+        "tag": "h2",
+        "text": "Setup"
+      },
+      {
+        "id": "kts",
+        "tag": "h3",
+        "text": "Kotlin"
+      },
+      {
+        "id": "groovy",
+        "tag": "h3",
+        "text": "Groovy"
+      },
+      {
+        "id": "components",
+        "tag": "h2",
+        "text": "Primary components"
+      },
+      {
+        "id": "sample-implementation",
+        "tag": "h2",
+        "text": "Sample implementation"
+      },
+      {
+        "id": "data-entity",
+        "tag": "h3",
+        "text": "Data entity"
+      },
+      {
+        "id": "dao",
+        "tag": "h3",
+        "text": "Data access object (DAO)"
+      },
+      {
+        "id": "database",
+        "tag": "h3",
+        "text": "Database"
+      },
+      {
+        "id": "usage",
+        "tag": "h3",
+        "text": "Usage"
+      },
+      {
+        "id": "additional-resources",
+        "tag": "h2",
+        "text": "Additional resources"
+      },
+      {
+        "id": "samples",
+        "tag": "h3",
+        "text": "Samples"
+      }
+    ]
+  },
+  {
+    "slug": "09-entities",
+    "title": "用 Entity 定义保存的数据",
+    "englishTitle": "Define data using Room entities",
+    "url": "https://developer.android.com/training/data-storage/room/defining-data?hl=en",
+    "retrieval_url": "https://developer.android.google.cn/training/data-storage/room/defining-data?hl=en",
+    "part": 3,
+    "date": "2026-10-13",
+    "source_sha256": "8d53c0be38ddb0f0e569c85929f36e771f2ff0580801101f46e7f5691b8123c3",
+    "units": 29,
+    "words": 972,
+    "codeBlocks": 10,
+    "images": 0,
+    "headings": [
+      {
+        "id": "anatomy",
+        "tag": "h2",
+        "text": "Anatomy of an entity"
+      },
+      {
+        "id": "primary-key",
+        "tag": "h2",
+        "text": "Define a primary key"
+      },
+      {
+        "id": "composite-key",
+        "tag": "h3",
+        "text": "Define a composite primary key"
+      },
+      {
+        "id": "ignore",
+        "tag": "h2",
+        "text": "Ignore properties"
+      },
+      {
+        "id": "search",
+        "tag": "h2",
+        "text": "Provide table search support"
+      },
+      {
+        "id": "fts",
+        "tag": "h3",
+        "text": "Support full-text search"
+      },
+      {
+        "id": "column-indexing",
+        "tag": "h3",
+        "text": "Index specific columns"
+      }
+    ]
+  },
+  {
+    "slug": "10-dao",
+    "title": "用 DAO 读写数据",
+    "englishTitle": "Access data using Room DAOs",
+    "url": "https://developer.android.com/training/data-storage/room/accessing-data?hl=en",
+    "retrieval_url": "https://developer.android.google.cn/training/data-storage/room/accessing-data?hl=en",
+    "part": 3,
+    "date": "2026-10-13",
+    "source_sha256": "708455182d8aea690cdb7697bef9426f9c1953c453904b8a721e2844f902c8ff",
+    "units": 70,
+    "words": 2228,
+    "codeBlocks": 20,
+    "images": 0,
+    "headings": [
+      {
+        "id": "anatomy",
+        "tag": "h2",
+        "text": "Anatomy of a DAO"
+      },
+      {
+        "id": "convenience",
+        "tag": "h2",
+        "text": "Convenience functions"
+      },
+      {
+        "id": "convenience-insert",
+        "tag": "h3",
+        "text": "Insert"
+      },
+      {
+        "id": "convenience-update",
+        "tag": "h3",
+        "text": "Update"
+      },
+      {
+        "id": "convenience-delete",
+        "tag": "h3",
+        "text": "Delete"
+      },
+      {
+        "id": "convenience-upsert",
+        "tag": "h3",
+        "text": "Upsert"
+      },
+      {
+        "id": "query",
+        "tag": "h2",
+        "text": "Query functions"
+      },
+      {
+        "id": "simple-queries",
+        "tag": "h3",
+        "text": "Simple queries"
+      },
+      {
+        "id": "return-subset",
+        "tag": "h3",
+        "text": "Return a subset of a table's columns"
+      },
+      {
+        "id": "simple-parameters",
+        "tag": "h3",
+        "text": "Pass simple parameters to a query"
+      },
+      {
+        "id": "collection-parameters",
+        "tag": "h3",
+        "text": "Pass a collection of parameters to a query"
+      },
+      {
+        "id": "multiple-tables",
+        "tag": "h3",
+        "text": "Query multiple tables"
+      },
+      {
+        "id": "multimap",
+        "tag": "h3",
+        "text": "Return a multimap"
+      },
+      {
+        "id": "special-return-types",
+        "tag": "h2",
+        "text": "Special return types"
+      },
+      {
+        "id": "paging-integration",
+        "tag": "h3",
+        "text": "Paginated queries with the Paging library"
+      },
+      {
+        "id": "query-connection",
+        "tag": "h3",
+        "text": "Direct database connection access"
+      }
+    ]
+  }
+]

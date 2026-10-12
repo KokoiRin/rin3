@@ -1,0 +1,442 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>状态怎样更新 · Android 应用的数据与状态</title><link rel="stylesheet" href="../../reader.css"><link rel="stylesheet" href="../source.css"><link rel="manifest" href="../../../manifest.webmanifest"></head><body><nav class="site-nav"><a href="../index.html">← Android 应用的数据与状态</a><a href="https://developer.android.com/topic/architecture/ui-layer/state-production?hl=en">官方英文原文 ↗</a></nav><main class="reader"><header class="chapter-header"><span class="chapter-kicker">03 · 第一轮直译稿</span><h1>状态怎样更新</h1><p class="byline">UI State production · Android Developers / Google</p><div class="title-rule"></div><p class="edition-nav"><a href="index.html">中文阅读版</a> · <a href="english.html">英文对照</a> · <strong aria-current="page">第一轮直译稿</strong></p><aside class="learning-note"><span class="note-kind">编者导读 · 不属于原文</span><p><strong>一次加载的输入，怎样变成 UI 持续读取的状态？</strong></p><p>先看事件与状态的区别，再认识输入、state holder 和输出。首轮关注一次性异步操作的状态更新。</p><p><strong>第一轮阅读：</strong>先读状态生成管线和一次性 API；多条 Flow 的组合、初始化和 Compose 并发状态随后回访。</p><details class="editor-notes"><summary>版本与适用范围校注（2 条）</summary><p>原文以“5 秒或更久”给出长任务的简化建议；实际是否使用 WorkManager，取决于工作是否需要可靠地跨页面、进程结束后继续执行，以及平台后台限制，不能仅用耗时阈值决定。</p><p>本文的主线程安全指不阻塞主线程；suspend 标记本身不自动切换线程。</p></details></aside><details class="source-details"><summary>本篇目录与翻译范围</summary><p>官方英文文章正文全文；保留原文顺序、代码、图示、表格与延伸链接。代码与图中文字保持原样。编者导读与校注单独标明，阅读不要求同时安装、运行或编写示例。</p><ul><li class="toc-h2"><a href="#ui-state">UI state 生成管线</a></li><li class="toc-h2"><a href="#state-production">状态生成 API</a></li><li class="toc-h2"><a href="#state-production-pipeline">组装状态生成管线</a></li><li class="toc-h2"><a href="#inputs-state">状态生成管线的输入</a></li><li class="toc-h3"><a href="#one-shot-apis">用一次性 API 作为状态变化来源</a></li><li class="toc-h3"><a href="#compose-state">Compose State</a></li><li class="toc-h3"><a href="#stateflow">StateFlow</a></li><li class="toc-h4"><a href="#mutating_the_ui_state_from_asynchronous_calls">从异步调用修改 UI state</a></li><li class="toc-h3"><a href="#compose-state_1">Compose State</a></li><li class="toc-h3"><a href="#stateflow_1">StateFlow</a></li><li class="toc-h4"><a href="#mutating_the_ui_state_from_background_threads">从后台线程修改 UI state</a></li><li class="toc-h3"><a href="#compose-state_2">Compose State</a></li><li class="toc-h3"><a href="#stateflow_2">StateFlow</a></li><li class="toc-h3"><a href="#stream-apis">用流式 API 作为状态变化来源</a></li><li class="toc-h3"><a href="#one-shot-and">同时用一次性和流式 API 作为状态变化来源</a></li><li class="toc-h3"><a href="#compose-state_3">Compose State</a></li><li class="toc-h3"><a href="#stateflow_3">StateFlow</a></li><li class="toc-h2"><a href="#output-types">状态生成管线的输出类型</a></li><li class="toc-h2"><a href="#initializing-state-production">初始化状态生成管线</a></li><li class="toc-h2"><a href="#samples">示例</a></li><li class="toc-h2"><a href="#resources">其他资源</a></li><li class="toc-h3"><a href="#documentation">文档</a></li><li class="toc-h3"><a href="#views">View 相关内容</a></li></ul></details><nav class="chapter-switcher" aria-label="章节导航"><a href="../02-ui-events/literal.html">← 用户操作与事件</a><a class="course-home" href="../index.html">全部章节</a><a href="../04-data-layer/literal.html">数据由谁管理 →</a></nav></header><article class="translated-article">
+<p data-unit="03-state-production-001">现代 UI 很少是静态的。用户与 UI 交互，或应用需要显示新数据时，UI 的状态就会发生变化。</p>
+<p data-unit="03-state-production-002">本文给出生成与管理 UI state 的指导原则，帮助你理解以下内容：</p>
+<ul>
+<li data-unit="03-state-production-003">使用什么 API 生成 UI state。这取决于 state holder 中可用状态变化来源的性质，并遵循<a href="https://developer.android.google.cn/topic/architecture/ui-layer#udf">单向数据流</a>原则。</li>
+<li data-unit="03-state-production-004">如何限定 UI state 生成过程的作用域，以合理使用系统资源。</li>
+<li data-unit="03-state-production-005">如何暴露 UI state，供 UI 读取。</li>
+</ul>
+<p data-unit="03-state-production-006">从根本上说，状态生成就是把这些变化逐步应用到 UI state 上。状态始终存在，并因事件而变化。事件与状态的差异总结如下：</p>
+<div class="table-wrapper" tabindex="0"><table>
+<thead>
+<tr>
+<th data-unit="03-state-production-007">事件</th>
+<th data-unit="03-state-production-008">状态</th>
+</tr>
+</thead>
+<tr>
+<td data-unit="03-state-production-009">短暂、不可预测，只存在有限的时间。</td>
+<td data-unit="03-state-production-010">始终存在。</td>
+</tr>
+<tr>
+<td data-unit="03-state-production-011">状态生成的输入。</td>
+<td data-unit="03-state-production-012">状态生成的输出。</td>
+</tr>
+<tr>
+<td data-unit="03-state-production-013">由 UI 或其他来源产生。</td>
+<td data-unit="03-state-production-014">由 UI 读取。</td>
+</tr>
+</table></div>
+<p data-unit="03-state-production-015">可以用一句话记住上述关系：<strong>状态存在，事件发生</strong>。下图沿时间线展示事件发生时状态怎样变化。每个事件由适当的 <a href="https://developer.android.google.cn/topic/architecture/ui-layer/stateholders">state holder</a> 处理，并引起状态变化：</p>
+<figure id="image-1">
+<img alt="Events vs. state" data-original-src="https://developer.android.google.cn/static/images/topic/architecture/ui-layer/events-vs-state.png" loading="eager" src="../assets/11c8762a914b9d32.png" width="80%"/>
+<figcaption data-unit="03-state-production-016"><b>图 1</b>：事件引起状态变化。</figcaption>
+</figure>
+<p data-unit="03-state-production-017">事件可以来自以下来源：</p>
+<ul>
+<li data-unit="03-state-production-018"><strong>用户</strong>：与应用 UI 交互时产生。</li>
+<li data-unit="03-state-production-019"><strong>其他状态变化来源</strong>：提供 UI 层、领域层或数据层应用数据的 API，例如分别来自这些层的 Snackbar 超时事件、UseCase 或 Repository。</li>
+</ul>
+<h2 data-unit="03-state-production-020" id="ui-state">UI state 生成管线</h2>
+<p data-unit="03-state-production-021">Android 应用中的状态生成可以看作一条处理管线，包含以下部分：</p>
+<ul>
+<li><span class="source-text" data-unit="03-state-production-022"><strong>输入</strong>：状态变化的来源，可能包括：</span><ul>
+<li data-unit="03-state-production-023">UI 层内部来源：例如用户在任务管理应用中输入待办事项标题的事件，或者提供 <a href="https://developer.android.google.cn/topic/architecture/ui-layer/stateholders#ui-logic">UI 逻辑</a>入口、驱动 UI state 变化的 API。例如，在 Jetpack Compose 中调用 <a href="https://developer.android.google.cn/reference/kotlin/androidx/compose/material/DrawerState"><code>DrawerState</code></a> 的 <a href="https://developer.android.google.cn/reference/kotlin/androidx/compose/material/DrawerState#open()"><code>open</code></a> 方法。</li>
+<li data-unit="03-state-production-024">UI 层外部来源：来自领域层或数据层、引起 UI state 变化的来源，例如从 <code>NewsRepository</code> 加载完成的新闻，或其他事件。</li>
+<li data-unit="03-state-production-025">上述来源的组合。</li>
+</ul></li>
+<li data-unit="03-state-production-026"><a href="https://developer.android.google.cn/topic/architecture/ui-layer/stateholders"><strong>State holder</strong></a>：对状态变化来源应用<a href="https://developer.android.google.cn/topic/architecture/ui-layer/stateholders#business-logic">业务逻辑</a>和 <a href="https://developer.android.google.cn/topic/architecture/ui-layer/stateholders#ui-logic">UI 逻辑</a>、处理用户事件并生成 UI state 的类型。</li>
+<li data-unit="03-state-production-027"><strong>输出</strong>：应用可以渲染的 UI state，为用户提供所需信息。</li>
+</ul>
+<figure id="image-2">
+<img alt="The state production pipeline" data-original-src="https://developer.android.google.cn/static/images/topic/architecture/ui-layer/state-production-pipeline.png" loading="eager" src="../assets/fcc90a12a33f10fb.png" width="70%"/>
+<figcaption data-unit="03-state-production-028"><b>图 2</b>：状态生成管线。</figcaption>
+</figure>
+<h2 data-unit="03-state-production-029" id="state-production">状态生成 API</h2>
+<p data-unit="03-state-production-030">根据所在的管线阶段，状态生成主要使用以下两类 API：</p>
+<div class="table-wrapper" tabindex="0"><table>
+<thead>
+<tr>
+<th data-unit="03-state-production-031">管线阶段</th>
+<th data-unit="03-state-production-032">API</th>
+</tr>
+</thead>
+<tr>
+<td data-unit="03-state-production-033">输入</td>
+<td data-unit="03-state-production-034">使用协程、Flow 等异步 API，在 UI 线程之外执行工作，避免 UI 卡顿。</td>
+</tr>
+<tr>
+<td data-unit="03-state-production-035">输出</td>
+<td data-unit="03-state-production-036">使用 Compose State、StateFlow 等可观察数据容器 API，在状态变化时使 UI 失效并重新渲染。可观察数据容器保证 UI 始终有可显示的 UI state。</td>
+</tr>
+</table></div>
+<p data-unit="03-state-production-037">与输出端可观察 API 的选择相比，输入端异步 API 的选择对状态生成管线性质的影响更大，因为输入<strong>决定了管线可以采用哪类处理方式</strong>。</p>
+<h2 data-unit="03-state-production-038" id="state-production-pipeline">组装状态生成管线</h2>
+<p data-unit="03-state-production-039">以下各节介绍适合不同输入的状态生成技术，以及与之匹配的输出 API。每条状态生成管线都是输入与输出的组合，并且必须满足：</p>
+<ul>
+<li data-unit="03-state-production-040"><strong>感知生命周期</strong>：除非有明确需求，否则 UI 不可见或不活跃时，状态生成管线不应消耗任何资源。</li>
+<li data-unit="03-state-production-041"><strong>易于读取</strong>：UI 必须能轻松渲染生成的 UI state。在 Jetpack Compose 中，读取状态是 UI 的核心，因为可组合函数可以根据状态变化更新。</li>
+</ul>
+<h2 data-unit="03-state-production-042" id="inputs-state">状态生成管线的输入</h2>
+<p data-unit="03-state-production-043">管线通过以下方式获得状态变化来源：</p>
+<ul>
+<li data-unit="03-state-production-044">可以同步或异步执行的一次性操作，例如调用 <code>suspend</code> 函数。</li>
+<li data-unit="03-state-production-045">流式 API，例如 <code>Flows</code>。</li>
+<li data-unit="03-state-production-046">以上方式的组合。</li>
+</ul>
+<p data-unit="03-state-production-047">以下各节介绍如何为这些输入分别组装状态生成管线。</p>
+<h3 data-unit="03-state-production-048" id="one-shot-apis">用一次性 API 作为状态变化来源</h3>
+<p data-unit="03-state-production-049">使用可观察数据容器管理状态。尤其在使用 <a href="https://medium.com/androiddevelopers/effective-state-management-for-textfield-in-compose-d6e5b070fbe5">Compose 文本 API</a> 时，应使用 <a href="https://developer.android.google.cn/reference/kotlin/androidx/compose/runtime/package-summary#mutableStateOf(kotlin.Any,androidx.compose.runtime.SnapshotMutationPolicy)"><code>mutableStateOf</code></a> API。状态管理更复杂，或需要与其他架构组件整合时，应使用 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-mutable-state-flow/"><code>MutableStateFlow</code></a> API。两类 API 都提供安全、原子地更新所持有值的方法，无论更新是同步还是异步。</p>
+<p data-unit="03-state-production-050">例如，考虑一个简单掷骰子应用中的状态更新。用户每次掷骰子都会调用同步的 <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.random/next-int.html"><code>Random.nextInt</code></a> 方法，并把结果写入 UI state。</p>
+<div><div>
+<section><h3 data-unit="03-state-production-051" id="compose-state">Compose State</h3><div></div><div><pre class="source-code"><code>@Stable
+interface DiceUiState {
+    val firstDieValue: Int?
+    val secondDieValue: Int?
+    val numberOfRolls: Int?
+}
+
+private class MutableDiceUiState: DiceUiState {
+    override var firstDieValue: Int? by mutableStateOf(null)
+    override var secondDieValue: Int? by mutableStateOf(null)
+    override var numberOfRolls: Int by mutableStateOf(0)
+}
+
+class DiceRollViewModel : ViewModel() {
+
+    private val _uiState = MutableDiceUiState()
+    val uiState: DiceUiState = _uiState
+
+    // Called from the UI
+    fun rollDice() {
+        _uiState.firstDieValue = Random.nextInt(from = 1, until = 7)
+        _uiState.secondDieValue = Random.nextInt(from = 1, until = 7)
+        _uiState.numberOfRolls = _uiState.numberOfRolls + 1
+    }
+}
+</code></pre></div></section>
+<section><h3 data-unit="03-state-production-052" id="stateflow">StateFlow</h3><div></div><div><pre class="source-code"><code>data class DiceUiState(
+    val firstDieValue: Int? = null,
+    val secondDieValue: Int? = null,
+    val numberOfRolls: Int = 0,
+)
+
+class DiceRollViewModel : ViewModel() {
+
+    private val _uiState = MutableStateFlow(DiceUiState())
+    val uiState: StateFlow&lt;DiceUiState&gt; = _uiState.asStateFlow()
+
+    // Called from the UI
+    fun rollDice() {
+        _uiState.update { currentState -&gt;
+            currentState.copy(
+            firstDieValue = Random.nextInt(from = 1, until = 7),
+            secondDieValue = Random.nextInt(from = 1, until = 7),
+            numberOfRolls = currentState.numberOfRolls + 1,
+            )
+        }
+    }
+}
+</code></pre></div></section>
+</div></div>
+<h4 data-unit="03-state-production-053" id="mutating_the_ui_state_from_asynchronous_calls">从异步调用修改 UI state</h4>
+<p data-unit="03-state-production-054">如果状态变化需要异步结果，应在适当的 <code>CoroutineScope</code> 中启动协程。这样，<code>CoroutineScope</code> 被取消时，应用就可以放弃相应工作。state holder 随后把挂起方法的调用结果写入用于暴露 UI state 的可观察 API。</p>
+<p data-unit="03-state-production-055">例如，<a href="https://github.com/android/architecture-samples">架构示例</a>中的 <code>AddEditTaskViewModel</code>：挂起的 <code>saveTask</code> 方法异步保存任务时，MutableStateFlow 上的 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/update.html"><code>update</code></a> 方法把状态变化传播到 UI state。</p>
+<div><div>
+<section><h3 data-unit="03-state-production-056" id="compose-state_1">Compose State</h3><div></div><div><pre class="source-code"><code>@Stable
+interface AddEditTaskUiState {
+    val title: String
+    val description: String
+    val isTaskCompleted: Boolean
+    val isLoading: Boolean
+    val userMessage: String?
+    val isTaskSaved: Boolean
+}
+
+private class MutableAddEditTaskUiState : AddEditTaskUiState() {
+    override var title: String by mutableStateOf("")
+    override var description: String by mutableStateOf("")
+    override var isTaskCompleted: Boolean by mutableStateOf(false)
+    override var isLoading: Boolean by mutableStateOf(false)
+    override var userMessage: String? by mutableStateOf&lt;String?&gt;(null)
+    override var isTaskSaved: Boolean by mutableStateOf(false)
+}
+
+class AddEditTaskViewModel(...) : ViewModel() {
+
+   private val _uiState = MutableAddEditTaskUiState()
+   val uiState: AddEditTaskUiState = _uiState
+
+   private fun createNewTask() {
+        viewModelScope.launch {
+            val newTask = Task(uiState.value.title, uiState.value.description)
+            try {
+                tasksRepository.saveTask(newTask)
+                // Write data into the UI state.
+                _uiState.isTaskSaved = true
+            }
+            catch(cancellationException: CancellationException) {
+                throw cancellationException
+            }
+            catch(exception: Exception) {
+                _uiState.userMessage = getErrorMessage(exception))
+            }
+        }
+    }
+}
+</code></pre></div></section>
+<section><h3 data-unit="03-state-production-057" id="stateflow_1">StateFlow</h3><div></div><div><pre class="source-code"><code>data class AddEditTaskUiState(
+    val title: String = "",
+    val description: String = "",
+    val isTaskCompleted: Boolean = false,
+    val isLoading: Boolean = false,
+    val userMessage: String? = null,
+    val isTaskSaved: Boolean = false
+)
+
+class AddEditTaskViewModel(...) : ViewModel() {
+
+   private val _uiState = MutableStateFlow(AddEditTaskUiState())
+   val uiState: StateFlow&lt;AddEditTaskUiState&gt; = _uiState.asStateFlow()
+
+   private fun createNewTask() {
+        viewModelScope.launch {
+            val newTask = Task(uiState.value.title, uiState.value.description)
+            try {
+                tasksRepository.saveTask(newTask)
+                // Write data into the UI state.
+                _uiState.update {
+                    it.copy(isTaskSaved = true)
+                }
+            }
+            catch(cancellationException: CancellationException) {
+                throw cancellationException
+            }
+            catch(exception: Exception) {
+                _uiState.update {
+                    it.copy(userMessage = getErrorMessage(exception))
+                }
+            }
+        }
+    }
+}
+</code></pre></div></section>
+</div></div><aside class="note"><span class="source-text" data-unit="03-state-production-058"><strong>注意：</strong><span>在 <a href="https://developer.android.google.cn/topic/libraries/architecture/viewmodel">AAC</a> 的 <a href="https://developer.android.google.cn/topic/libraries/architecture/viewmodel"><code>ViewModel</code></a> 的 <code>viewModelScope</code> 中启动的协程，无论正常还是异常，都会一直执行到结束。UI 是否可见不影响这一点，除非明确取消协程或清除 <code>ViewModel</code>。大多数请求持续时间较短，因此通常没有问题。不要用 <code>viewModelScope</code> 执行持续 5 秒或更久的请求，而应通过 WorkManager 将其排入延后执行或长时间运行的工作。</span></span></aside>
+<h4 data-unit="03-state-production-059" id="mutating_the_ui_state_from_background_threads">从后台线程修改 UI state</h4>
+<p data-unit="03-state-production-060">生成 UI state 时，最好在主调度器上启动协程，即在下面代码片段的 <code>withContext</code> 块之外启动。不过，如果需要在其他后台上下文中更新 UI state，可以按以下方式处理：</p>
+<ul>
+<li data-unit="03-state-production-061">使用 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/with-context.html"><code>withContext</code></a> 方法，在不同的并发上下文中执行协程。</li>
+<li data-unit="03-state-production-062">使用 <code>MutableStateFlow</code> 时，照常调用 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/update.html"><code>update</code></a> 方法。</li>
+<li data-unit="03-state-production-063">使用 Compose State 时，调用 <a href="https://developer.android.google.cn/reference/kotlin/androidx/compose/runtime/snapshots/Snapshot.Companion#withMutableSnapshot(kotlin.Function0)"><code>Snapshot.withMutableSnapshot</code></a> 方法，保证并发上下文中的 State 更新具有原子性。</li>
+</ul>
+<p data-unit="03-state-production-064">例如，在下面的 <code>DiceRollViewModel</code> 片段中，假设 <code>SlowRandom.nextInt</code> 是一个计算密集的 <code>suspend</code> 函数，需要从 CPU 密集型协程中调用。</p>
+<div><div>
+<section><h3 data-unit="03-state-production-065" id="compose-state_2">Compose State</h3><div></div><div><pre class="source-code"><code>class DiceRollViewModel(
+    private val defaultDispatcher: CoroutineScope = Dispatchers.Default
+) : ViewModel() {
+
+    private val _uiState = MutableDiceUiState()
+    val uiState: DiceUiState = _uiState
+
+  // Called from the UI
+  fun rollDice() {
+        viewModelScope.launch() {
+            // Other Coroutines that may be called from the current context
+            …
+            withContext(defaultDispatcher) {
+                Snapshot.withMutableSnapshot {
+                    _uiState.firstDieValue = SlowRandom.nextInt(from = 1, until = 7)
+                    _uiState.secondDieValue = SlowRandom.nextInt(from = 1, until = 7)
+                    _uiState.numberOfRolls = _uiState.numberOfRolls + 1
+                }
+            }
+        }
+    }
+}
+</code></pre></div></section>
+<section><h3 data-unit="03-state-production-066" id="stateflow_2">StateFlow</h3><div></div><div><pre class="source-code"><code>class DiceRollViewModel(
+    private val defaultDispatcher: CoroutineScope = Dispatchers.Default
+) : ViewModel() {
+
+    private val _uiState = MutableStateFlow(DiceUiState())
+    val uiState: StateFlow&lt;DiceUiState&gt; = _uiState.asStateFlow()
+
+  // Called from the UI
+  fun rollDice() {
+        viewModelScope.launch() {
+            // Other Coroutines that may be called from the current context
+            …
+            withContext(defaultDispatcher) {
+                _uiState.update { currentState -&gt;
+                    currentState.copy(
+                        firstDieValue = SlowRandom.nextInt(from = 1, until = 7),
+                        secondDieValue = SlowRandom.nextInt(from = 1, until = 7),
+                        numberOfRolls = currentState.numberOfRolls + 1,
+                    )
+                }
+            }
+        }
+    }
+}
+</code></pre></div></section>
+</div></div><aside class="note"><span class="source-text" data-unit="03-state-production-067"><strong>注意：</strong><span>如果所有启动的协程都需要在其他上下文中执行，可以直接调用 <code>viewModelScope.launch(defaultDispatcher){ }</code>。</span></span></aside><aside class="warning"><span class="source-text" data-unit="03-state-production-068"><strong>警告：</strong><span>在非 UI 线程中更新 Compose State 而不使用 <code>Snapshot.withMutableSnapshot{ }</code>，可能导致生成的状态不一致。</span></span></aside>
+<h3 data-unit="03-state-production-069" id="stream-apis">用流式 API 作为状态变化来源</h3>
+<p data-unit="03-state-production-070">对于随时间在流中产生多个值的状态变化来源，一种直接的状态生成方式，是把所有来源的输出整合为一致的整体。</p>
+<p data-unit="03-state-production-071">使用 Kotlin Flow 时，可以通过 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/combine.html">combine</a> 函数做到这一点。<a href="https://github.com/android/nowinandroid">“Now in Android”示例</a>的 <code>InterestsViewModel</code> 中展示了这种用法：</p>
+<div></div><div><pre class="source-code"><code>class InterestsViewModel(
+    authorsRepository: AuthorsRepository,
+    topicsRepository: TopicsRepository
+) : ViewModel() {
+
+    val uiState = combine(
+        authorsRepository.getAuthorsStream(),
+        topicsRepository.getTopicsStream(),
+    ) { availableAuthors, availableTopics -&gt;
+        InterestsUiState.Interests(
+            authors = availableAuthors,
+            topics = availableTopics
+        )
+    }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = InterestsUiState.Loading
+    )
+}
+</code></pre></div><aside class="note"><span class="source-text" data-unit="03-state-production-072"><strong>注意：</strong><span>可以用 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/state-in.html"><code>stateIn</code></a> 操作符，把组合后的 <code>Flow</code> 转换成 <a href="https://developer.android.google.cn/kotlin/flow/stateflow-and-sharedflow"><code>StateFlow</code></a>，作为 UI state 的可观察 API。</span></span></aside>
+<p data-unit="03-state-production-073">用 <code>stateIn</code> 操作符创建 <code>StateFlows</code>，可以让 UI 更精细地控制状态生成管线是否活跃，因为管线可能只需在 UI 可见时保持活跃。</p>
+<ul>
+<li data-unit="03-state-production-074">如果以感知生命周期的方式收集 Flow，且管线只需在 UI 可见时活跃，应使用 <code>SharingStarted.WhileSubscribed</code>。</li>
+<li data-unit="03-state-production-075">如果用户还有可能返回 UI 时，管线就需要保持活跃，例如 UI 留在返回栈中或位于屏幕外的另一标签页，应使用 <code>SharingStarted.Lazily</code>。</li>
+</ul>
+<p data-unit="03-state-production-076">如果不适合聚合基于流的状态来源，Kotlin Flow 等流式 API 还提供<a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/merge.html?query=fun%20%3CT%3E%20merge(vararg%20flows:%20Flow%3CT%3E">合并</a>、<a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/flat-map-latest.html?query=inline%20fun%20%3CT,%20R%3E%20Flow%3CT%3E.flatMapLatest(crossinline%20transform:%20suspend%20(T">展平</a>等丰富的转换操作，帮助把流处理成 UI state。</p>
+<aside class="key-point"><span class="source-text" data-unit="03-state-production-077"><strong>要点：</strong><span>大多数情况下，combine 是从流式 API 生成状态的推荐方式。</span></span></aside>
+<h3 data-unit="03-state-production-078" id="one-shot-and">同时用一次性和流式 API 作为状态变化来源</h3>
+<p data-unit="03-state-production-079">如果状态生成管线同时依赖一次性调用和流作为状态变化来源，流就是决定性的约束。因此，应把一次性调用转换成流式 API，或把它们的输出送入流，再按前述流式处理方式继续处理。</p>
+<p data-unit="03-state-production-080">使用 Flow 时，通常需要创建一个或多个私有的底层 <code>MutableStateFlow</code> 实例来传播状态变化。也可以从 Compose State <a href="https://developer.android.google.cn/reference/kotlin/androidx/compose/runtime/package-summary#snapshotFlow(kotlin.Function0)">创建 snapshot flow</a>。</p>
+<p data-unit="03-state-production-081">考虑 <a href="https://github.com/android/architecture-samples">architecture-samples</a> 仓库中的 <code>TaskDetailViewModel</code>。它的 UI state 依赖当前任务的流（<code>_task</code>）以及一个在任务删除时更新的一次性来源（<code>_isTaskDeleted</code>）。需要这个标记，才能区分任务因 ID 错误而在数据库中找不到，还是因用户刚刚删除它而找不到：</p>
+<div><div>
+<section><h3 data-unit="03-state-production-082" id="compose-state_3">Compose State</h3><div></div><div><pre class="source-code"><code>class TaskDetailViewModel @Inject constructor(
+    private val tasksRepository: TasksRepository,
+    savedStateHandle: SavedStateHandle
+) : ViewModel() {
+
+    private var _isTaskDeleted by mutableStateOf(false)
+    private val _task = tasksRepository.getTaskStream(taskId)
+
+    val uiState: StateFlow&lt;TaskDetailUiState&gt; = combine(
+        snapshotFlow { _isTaskDeleted },
+        _task
+    ) { isTaskDeleted, taskAsync -&gt;
+        TaskDetailUiState(
+            task = taskAsync.data,
+            isTaskDeleted = isTaskDeleted
+        )
+    }
+        // Convert the result to the appropriate observable API for the UI
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = TaskDetailUiState()
+        )
+
+    fun deleteTask() = viewModelScope.launch {
+        tasksRepository.deleteTask(taskId)
+        _isTaskDeleted = true
+    }
+}
+</code></pre></div></section>
+<section><h3 data-unit="03-state-production-083" id="stateflow_3">StateFlow</h3><div></div><div><pre class="source-code"><code>class TaskDetailViewModel @Inject constructor(
+    private val tasksRepository: TasksRepository,
+    savedStateHandle: SavedStateHandle
+) : ViewModel() {
+
+    private val _isTaskDeleted = MutableStateFlow(false)
+    private val _task = tasksRepository.getTaskStream(taskId)
+
+    val uiState: StateFlow&lt;TaskDetailUiState&gt; = combine(
+        _isTaskDeleted,
+        _task
+    ) { isTaskDeleted, taskAsync -&gt;
+        TaskDetailUiState(
+            task = taskAsync.data,
+            isTaskDeleted = isTaskDeleted
+        )
+    }
+        // Convert the result to the appropriate observable API for the UI
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = TaskDetailUiState()
+        )
+
+    fun deleteTask() = viewModelScope.launch {
+        tasksRepository.deleteTask(taskId)
+        _isTaskDeleted.update { true }
+    }
+}
+</code></pre></div></section>
+</div></div><aside class="note"><span class="source-text" data-unit="03-state-production-084"><strong>注意：</strong><span>Compose <code>State</code> 通过 <a href="https://developer.android.google.cn/reference/kotlin/androidx/compose/runtime/package-summary#snapshotFlow(kotlin.Function0)"><code>snapshotFlow</code></a> API 转换为 Flow。</span></span></aside>
+<h2 data-unit="03-state-production-085" id="output-types">状态生成管线的输出类型</h2>
+<p data-unit="03-state-production-086">UI state 输出 API 的选择及其呈现方式，很大程度上取决于应用用于渲染 UI 的 API，例如 Compose。<a href="https://developer.android.google.cn/compose">Jetpack Compose</a> 是构建原生 UI 的推荐现代工具包，需要考虑以下事项：</p>
+<ul>
+<li data-unit="03-state-production-087">以<a href="https://medium.com/androiddevelopers/consuming-flows-safely-in-jetpack-compose-cde014d0d5a3">感知生命周期</a>的方式读取状态。</li>
+<li data-unit="03-state-production-088">state holder 应<a href="https://developer.android.google.cn/topic/architecture/ui-layer#additional-considerations">通过一个还是多个字段暴露状态</a>。</li>
+</ul>
+<p data-unit="03-state-production-089">下表总结了使用 Jetpack Compose 时，状态生成管线应采用的 API：</p>
+<div class="table-wrapper" tabindex="0"><table>
+<thead>
+<tr>
+<th data-unit="03-state-production-090">输入</th>
+<th data-unit="03-state-production-091">输出</th>
+</tr>
+</thead>
+<tr>
+<td data-unit="03-state-production-092">一次性 API</td>
+<td data-unit="03-state-production-093"><code>StateFlow</code> 或 Compose <code>State</code></td>
+</tr>
+<tr>
+<td data-unit="03-state-production-094">流式 API</td>
+<td data-unit="03-state-production-095"><code>StateFlow</code></td>
+</tr>
+<tr>
+<td data-unit="03-state-production-096">一次性与流式 API</td>
+<td data-unit="03-state-production-097"><code>StateFlow</code></td>
+</tr>
+</table></div>
+<h2 data-unit="03-state-production-098" id="initializing-state-production">初始化状态生成管线</h2>
+<p data-unit="03-state-production-099">初始化状态生成管线，就是设置管线运行的初始条件。这可能包括提供对后续输入至关重要的初始值，例如新闻详情页的 <code>id</code>，或启动一次异步加载。</p>
+<p data-unit="03-state-production-100">在可能的情况下，应延迟初始化状态生成管线，以节省系统资源。实际通常意味着等到有读取者读取输出时再初始化。<code>Flow</code> API 可以通过 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/state-in.html"><code>stateIn</code></a> 方法的 <code>started</code> 参数实现这一点。如果不适用，可以定义一个<a href="https://en.wikipedia.org/wiki/Idempotence">幂等</a>的 <code>initialize</code> 函数，明确启动状态生成管线，如下例所示：</p>
+<div></div><div><pre class="source-code"><code>class MyViewModel : ViewModel() {
+
+    private var initializeCalled = false
+
+    // This function is idempotent provided it is only called from the UI thread.
+    @MainThread
+    fun initialize() {
+        if(initializeCalled) return
+        initializeCalled = true
+
+        viewModelScope.launch {
+            // seed the state production pipeline
+        }
+    }
+}
+</code></pre></div><aside class="warning"><span class="source-text" data-unit="03-state-production-101"><strong>警告：</strong><span>不要在 <code>ViewModel</code> 的 <code>init</code> 块或构造器中启动异步操作。必须避免让创建对象产生启动异步操作的副作用，因为异步代码可能在对象完全初始化前就读取或写入它。这也称为对象泄漏，可能导致隐蔽且难以诊断的错误。使用 Compose State 时尤其要注意：如果 ViewModel 持有 Compose State 字段，不要在 <code>ViewModel</code> 的 <code>init</code> 块中启动更新这些字段的协程，否则可能发生 <code>IllegalStateException</code>。</span></span></aside>
+<h2 data-unit="03-state-production-102" id="samples">示例</h2>
+<p data-unit="03-state-production-103">以下 Google 示例展示 UI 层中的状态生成。可以探索它们，了解如何在实践中应用本指南：</p>
+<p></p><div>
+</div>
+<h2 data-unit="03-state-production-104" id="resources">其他资源</h2>
+<p data-unit="03-state-production-105">关于 UI state 的更多信息，请参阅以下补充资源：</p>
+<h3 data-unit="03-state-production-106" id="documentation">文档</h3>
+<ul>
+<li data-unit="03-state-production-107"><a href="https://developer.android.google.cn/develop/ui/compose/state">状态与 Jetpack Compose</a></li>
+<li data-unit="03-state-production-108"><a href="https://developer.android.google.cn/topic/architecture/ui-layer/stateholders">State holder 与 UI state</a></li>
+</ul>
+<h3 data-unit="03-state-production-109" id="views">View 相关内容</h3>
+<ul>
+<li data-unit="03-state-production-110"><a href="https://developer.android.google.cn/topic/libraries/architecture/views/state-production-views">UI state 生成（View）</a></li>
+</ul>
+<div class="nocontent"></div>
+</article><nav class="chapter-switcher" aria-label="章节导航"><a href="../02-ui-events/literal.html">← 用户操作与事件</a><a class="course-home" href="../index.html">全部章节</a><a href="../04-data-layer/literal.html">数据由谁管理 →</a></nav><footer class="license-note"><p>原文：<a href="https://developer.android.com/topic/architecture/ui-layer/state-production?hl=en">UI State production</a>，Android Developers / Google。英文快照：2026-10-13。非官方中文翻译与表达优化：Codex。原有示例和代码保留；<a href="../NOTICE.html">来源与许可</a>。</p></footer></main></body></html>

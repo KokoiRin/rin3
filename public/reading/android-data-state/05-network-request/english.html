@@ -1,0 +1,802 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Get data from the internet · Android 应用的数据与状态</title><link rel="stylesheet" href="../../reader.css"><link rel="stylesheet" href="../source.css"><link rel="manifest" href="../../../manifest.webmanifest"></head><body><nav class="site-nav"><a href="../index.html">← Android 应用的数据与状态</a><a href="https://developer.android.com/codelabs/basic-android-kotlin-compose-getting-data-internet?hl=en">官方英文原文 ↗</a></nav><main class="reader"><header class="chapter-header"><span class="chapter-kicker">05 · English source</span><h1>Get data from the internet</h1><p class="byline">Get data from the internet · Android Developers / Google</p><div class="title-rule"></div><p class="edition-nav"><a href="index.html">中文阅读版</a> · <strong aria-current="page">英文对照</strong> · <a href="literal.html">第一轮直译稿</a></p><aside class="learning-note"><span class="note-kind">编者导读 · 不属于原文</span><p><strong>Kotlin 接口怎样发起请求，JSON 怎样成为页面可用的数据？</strong></p><p>原文通过 Mars Photos 应用解释 Retrofit、序列化、权限和加载状态。代码与完整工程步骤均保留，阅读不要求同时搭建项目。</p><p><strong>第一轮阅读：</strong>先读 Web 服务与 Retrofit、调用接口和 JSON 解析；安装运行步骤可在白天有空时实践。</p><details class="editor-notes"><summary>版本与适用范围校注（4 条）</summary><p>依赖版本、Kotlin 编译警告和转换器配置属于原文示例快照，不是当前项目推荐版本清单。实际运行时再核对项目使用的版本。</p><p>原文将 suspend 与异步执行联系起来；准确地说，suspend 允许挂起，不会自行启动协程或切换线程。这里请求的非阻塞行为来自 Retrofit 等具体 API 的实现。</p><p>本例使用开源 Retrofit；项目里的网络封装与底层传输实现需要分别核对，不能仅凭 Retrofit 名称推断底层库。</p><p>原文对 URI/URL、HTTP 方法和延迟初始化的表述有教学简化；URL 是 URI 的一种，实际请求方法语义和对象创建时机应按对应 API 与协议条件理解。</p></details></aside><details class="source-details"><summary>本篇目录与翻译范围</summary><p>官方英文文章正文全文；保留原文顺序、代码、图示、表格与延伸链接。代码与图中文字保持原样。编者导读与校注单独标明，阅读不要求同时安装、运行或编写示例。</p><ul><li class="toc-h2"><a href="#0">1. Before you begin</a></li><li class="toc-h2"><a href="#prerequisites">Prerequisites</a></li><li class="toc-h2"><a href="#what-youll-learn">What you&#x27;ll learn</a></li><li class="toc-h2"><a href="#what-youll-do">What you&#x27;ll do</a></li><li class="toc-h2"><a href="#what-you-need">What you need</a></li><li class="toc-h2"><a href="#1">2. App overview</a></li><li class="toc-h2"><a href="#2">3. Explore the Mars Photos starter app</a></li><li class="toc-h3"><a href="#download-starter-code">Download starter code</a></li><li class="toc-h2"><a href="#run-starter-code">Run starter code</a></li><li class="toc-h2"><a href="#starter-code-walkthrough">Starter code walkthrough</a></li><li class="toc-h2"><a href="#3">4. Introduction to web services</a></li><li class="toc-h2"><a href="#4">5. Web services and Retrofit</a></li><li class="toc-h2"><a href="#web-service-request">W eb service request</a></li><li class="toc-h3"><a href="#external-libraries">External Libraries</a></li><li class="toc-h3"><a href="#retrofit-library">Retrofit Library</a></li><li class="toc-h2"><a href="#add-retrofit-dependencies">Add Retrofit dependencies</a></li><li class="toc-h2"><a href="#5">6. Connecting to the Internet</a></li><li class="toc-h3"><a href="#object-declarations">Object declarations</a></li><li class="toc-h2"><a href="#call-the-web-service-in-marsviewmodel">Call the web service in MarsViewModel</a></li><li class="toc-h3"><a href="#viewmodelscope">ViewModelScope</a></li><li class="toc-h2"><a href="#6">7. Add Internet permission and Exception Handling</a></li><li class="toc-h2"><a href="#android-permissions">Android Permissions</a></li><li class="toc-h2"><a href="#exception-handling">Exception Handling</a></li><li class="toc-h3"><a href="#exceptions">Exceptions</a></li><li class="toc-h3"><a href="#add-state-ui">Add State UI</a></li><li class="toc-h2"><a href="#7">8. Parse the JSON response with kotlinx.serialization</a></li><li class="toc-h2"><a href="#json">JSON</a></li><li class="toc-h3"><a href="#structure-of-sample-json-response">Structure of sample JSON response</a></li><li class="toc-h2"><a href="#add-kotlinx.serialization-library-dependencies">Add kotlinx.serialization library dependencies</a></li><li class="toc-h2"><a href="#implement-the-mars-photo-data-class">Implement the Mars Photo data class</a></li><li class="toc-h3"><a href="#serialname-annotation">@SerialName Annotation</a></li><li class="toc-h2"><a href="#update-marsapiservice-and-marsviewmodel">Update MarsApiService and MarsViewModel</a></li><li class="toc-h2"><a href="#8">9. Solution code</a></li><li class="toc-h2"><a href="#9">10. Summary</a></li><li class="toc-h3"><a href="#rest-web-services">REST web services</a></li><li class="toc-h3"><a href="#json-parsing">JSON parsing</a></li><li class="toc-h2"><a href="#10">11. Learn more</a></li></ul></details><nav class="chapter-switcher" aria-label="章节导航"><a href="../04-data-layer/english.html">← 数据由谁管理</a><a class="course-home" href="../index.html">全部章节</a><a href="../06-cancellation/english.html">异步任务的取消与超时 →</a></nav></header><article class="translated-article">
+<div></div>
+<div id="basic-android-kotlin-compose-getting-data-internet" title="Get data from the internet">
+<div>
+<div>
+</div>
+<h2 class="step-title" data-unit="05-network-request-001" id="0">
+              1. Before you begin
+          </h2>
+<p data-unit="05-network-request-002">Most Android apps in the market connect to the internet to perform network operations, such as retrieving emails, messages, or other information from a backend server. Gmail, YouTube, and Google Photos are example apps that connect to the internet to display the user data.</p>
+<p data-unit="05-network-request-003">In this codelab, you will use open source and community-driven libraries to build a data layer and get data from a backend server. This greatly simplifies fetching the data and also helps the app follow Android best practices, such as perform operations on a background thread. You will also display an error message if the internet is slow or unavailable, which will keep the user informed about any network connectivity issues.</p>
+<h2 data-unit="05-network-request-004" id="prerequisites">Prerequisites</h2>
+<ul>
+<li data-unit="05-network-request-005">Basic knowledge of how to create Composable functions.</li>
+<li data-unit="05-network-request-006">Basic knowledge of how to use Android architecture components <code>ViewModel</code>.</li>
+<li data-unit="05-network-request-007">Basic knowledge of how to use coroutines for long-running tasks.</li>
+<li data-unit="05-network-request-008">Basic knowledge of how to add dependencies in <code>build.gradle.kts</code>.</li>
+</ul>
+<h2 class="checklist" data-unit="05-network-request-009" id="what-youll-learn"><strong>What you'll learn</strong></h2>
+<ul class="checklist">
+<li data-unit="05-network-request-010">What a  <a href="https://en.wikipedia.org/wiki/Representational_state_transfer">REST</a> web service is.</li>
+<li data-unit="05-network-request-011">How to use the  <a href="https://square.github.io/retrofit/">Retrofit</a> library to connect to a REST web service on the internet and get a response.</li>
+<li data-unit="05-network-request-012">How to use the  <a href="https://kotlinlang.org/docs/serialization.html#0">Serialization (kotlinx.serialization) </a> library to parse the JSON response into a data object.</li>
+</ul>
+<h2 data-unit="05-network-request-013" id="what-youll-do"><strong>What you'll do</strong></h2>
+<ul>
+<li data-unit="05-network-request-014">Modify a starter app to make a web service API request and handle the response.</li>
+<li data-unit="05-network-request-015">Implement a data layer for your app using the Retrofit library.</li>
+<li data-unit="05-network-request-016">Parse the JSON response from the web service into your app's list of data objects with the <em>kotlinx.serialization</em> library, and attach it to the UI state.</li>
+<li data-unit="05-network-request-017">Use Retrofit's support for coroutines to simplify the code.</li>
+</ul>
+<h2 data-unit="05-network-request-018" id="what-you-need"><strong>What you need</strong></h2>
+<ul>
+<li data-unit="05-network-request-019">A computer with Android Studio</li>
+<li data-unit="05-network-request-020">Starter code for the Mars Photos app</li>
+</ul>
+</div>
+<div>
+<h2 class="step-title" data-unit="05-network-request-021" id="1">
+              2. App overview
+          </h2>
+<p data-unit="05-network-request-022">You work with the app named <strong>Mars Photos</strong>, which shows images of the Mars surface. This app connects to a web service to retrieve and display Mars photos. The images are real-life photos from Mars, captured from NASA's Mars rovers. The following image is a screenshot of the final app, which contains a grid of images.</p>
+<p class="image-container"><img alt="68f4ff12cc1e2d81.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-getting-data-internet/img/68f4ff12cc1e2d81.png" loading="eager" src="../assets/1c294b2a5dd050d9.png"/></p>
+<aside class="special"><p data-unit="05-network-request-023"><strong>Note</strong>: The preceding image is a screenshot of the final app that you will build at the end of this unit, after additional updates in later codelabs. The screenshot is shown in this codelab to give you a better idea of the overall app functionality.</p>
+</aside>
+<p data-unit="05-network-request-024">The version of the app you build in this codelab won't have a lot of visual flash. This codelab focuses on the data layer part of the app to connect to the internet and download the raw property data using a web service. To ensure that the app correctly retrieves and parses this data, you can print the number of photos received from the backend server in a <code>Text</code> composable.</p>
+<p class="image-container"><img alt="a59e55909b6e9213.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-getting-data-internet/img/a59e55909b6e9213.png" loading="eager" src="../assets/72f7e97cbf825aaf.png"/></p>
+</div>
+<div>
+<h2 class="step-title" data-unit="05-network-request-025" id="2">
+              3. Explore the Mars Photos starter app
+          </h2>
+<h3 data-unit="05-network-request-026" id="download-starter-code">Download starter code</h3>
+<p data-unit="05-network-request-027">To get started, download the starter code:</p>
+<p><a href="https://github.com/google-developer-training/basic-android-kotlin-compose-training-mars-photos/archive/refs/heads/starter.zip"></a></p>
+<p data-unit="05-network-request-028">Alternatively, you can clone the GitHub repository for the code:</p>
+<div></div><div><pre class="source-code"><code>$ git clone https://github.com/google-developer-training/basic-android-kotlin-compose-training-mars-photos.git
+$ cd basic-android-kotlin-compose-training-mars-photos
+$ git checkout starter
+</code></pre></div>
+<aside class="special"><p data-unit="05-network-request-029"><strong>Note:</strong> The starter code is in the <code>starter</code> branch of the downloaded repository.</p>
+</aside>
+<p data-unit="05-network-request-030">You can browse the code in the  <a href="https://github.com/google-developer-training/basic-android-kotlin-compose-training-mars-photos/tree/starter"><code>Mars Photos</code></a> GitHub repository.</p>
+<h2 data-unit="05-network-request-031" id="run-starter-code">Run starter code</h2>
+<ol>
+<li data-unit="05-network-request-032">Open the downloaded project in Android Studio. The folder name of the project is <code>basic-android-kotlin-compose-training-mars-photos</code>.</li>
+<li data-unit="05-network-request-033">In the <strong>Android</strong> pane, expand <strong>app</strong> &gt; <strong>kotlin + java</strong>. Notice that the app has a package folder called <code>ui</code>. This is the UI layer of the app.</li>
+</ol>
+<p class="image-container"><img alt="de3d8666ecee9d1c.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-getting-data-internet/img/de3d8666ecee9d1c.png" loading="eager" src="../assets/30126991c385616b.png"/></p>
+<ol>
+<li data-unit="05-network-request-034">Run the app. When you compile and run the app, you see the following screen with placeholder text in the center. At the end of this codelab, you update this placeholder text with the number of photos retrieved.</li>
+</ol>
+<p class="image-container"><img alt="95328ffbc9d7104b.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-getting-data-internet/img/95328ffbc9d7104b.png" loading="eager" src="../assets/5062acd368ce6536.png"/></p>
+<h2 data-unit="05-network-request-035" id="starter-code-walkthrough"><strong>Starter code walkthrough</strong></h2>
+<p data-unit="05-network-request-036">In this task, you familiarize yourself with the structure of the project. The following lists provide a walkthrough of the important files and folders in the project.</p>
+<p data-unit="05-network-request-037"><code>ui\MarsPhotosApp.kt</code>:</p>
+<ul>
+<li data-unit="05-network-request-038">This file contains the composable, <code>MarsPhotosApp</code>, which displays the contents on the screen, such as the top app bar and the <code>HomeScreen</code> composable. The placeholder text in the previous step is displayed in this composable.</li>
+<li data-unit="05-network-request-039">In the next codelab, this composable displays the data received from the Mars photos backend server.</li>
+</ul>
+<p data-unit="05-network-request-040"><code>screens\MarsViewModel.kt</code>:</p>
+<ul>
+<li data-unit="05-network-request-041">This file is the corresponding view model for the <code>MarsPhotosApp</code>.</li>
+<li data-unit="05-network-request-042">This class contains a <code>MutableState</code> property named <code>marsUiState</code>. Updating the value of this property updates the placeholder text displayed on the screen.</li>
+<li data-unit="05-network-request-043">The <code>getMarsPhotos()</code> method updates the placeholder response. Later in the codelab, you use this method to display the data fetched from the server. The goal for this codelab is to update the <code>MutableState</code> within the <code>ViewModel</code> using data you get from the internet.</li>
+</ul>
+<p data-unit="05-network-request-044"><code>screens\HomeScreen.kt</code>:</p>
+<ul>
+<li data-unit="05-network-request-045">This file contains the <code>HomeScreen</code> and <code>ResultScreen</code> composables. The <code>ResultScreen</code> has a simple <code>Box</code> layout that displays the value of <code>marsUiState</code> in a <code>Text</code> composable.</li>
+</ul>
+<p data-unit="05-network-request-046"><code>MainActivity.kt</code>:</p>
+<ul>
+<li data-unit="05-network-request-047">The only task for this activity is to load the <code>ViewModel</code> and display the <code>MarsPhotosApp</code> composable.</li>
+</ul>
+</div>
+<div>
+<h2 class="step-title" data-unit="05-network-request-048" id="3">
+              4. Introduction to web services
+          </h2>
+<p data-unit="05-network-request-049">In this codelab, you create a layer for the network service that communicates with the backend server and fetches the required data. You use a third-party library, called  <a href="https://square.github.io/retrofit/">Retrofit</a>, to implement this task. You learn more about this later. The <code>ViewModel</code> communicates with the data layer, and the rest of the app is transparent to this implementation.</p>
+<p class="image-container"><img alt="76551dbe9fc943aa.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-getting-data-internet/img/76551dbe9fc943aa.png" loading="eager" src="../assets/825e9e78d56dfb08.png" title="Data layer with retrofit service and UI layer with view model and other UI classes "/></p>
+<p data-unit="05-network-request-050">The <code>MarsViewModel</code> is responsible for making the network call to get the Mars photos data. In the <code>ViewModel</code>, you use <code>MutableState</code> to update the app UI when the data changes.</p>
+<aside class="special"><p data-unit="05-network-request-051"><strong>Note</strong>: In later codelabs, you will add a Repository to your data layer. The Repository then communicates with the Retrofit service to fetch the data. The Repository is responsible for exposing the data to the rest of the app.</p>
+</aside>
+</div>
+<div>
+<h2 class="step-title" data-unit="05-network-request-052" id="4">
+              5. Web services and Retrofit
+          </h2>
+<p data-unit="05-network-request-053">The Mars photos data is stored on a web server. To get this data into your app, you need to establish a connection and communicate with the server on the internet.</p>
+<p class="image-container"><img alt="301162f0dca12fcf.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-getting-data-internet/img/301162f0dca12fcf.png" loading="eager" src="../assets/e635b9a37e319241.png" title="Phone client requesting server for mars photos"/><img alt="7ced9b4ca9c65af3.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-getting-data-internet/img/7ced9b4ca9c65af3.png" loading="eager" src="../assets/7346c989c2b7fd4a.png" title="Server sends the mars photos URLs to the phone client"/></p>
+<aside class="special"><p data-unit="05-network-request-054"><strong>Note</strong>: In this codelab, you only retrieve the number of records (URLs), not the Mars photos. In a later codelab, you retrieve the Mars photos and display them in a grid.</p>
+</aside>
+<p data-unit="05-network-request-055">Most web servers today run web services using a common stateless web architecture known as  <a href="https://en.wikipedia.org/wiki/Representational_state_transfer">REST</a>, which stands for <strong>RE</strong>presentational <strong>S</strong>tate <strong>T</strong>ransfer. Web services that offer this architecture are known as RESTful services.</p>
+<p data-unit="05-network-request-056">Requests are made to RESTful web services in a standardized way, via  <a href="https://en.wikipedia.org/wiki/Uniform_Resource_Identifier">Uniform Resource Identifiers</a> (URIs). A URI identifies a resource in the server by name, without implying its location or how to access it. For example, in the app for this lesson, you retrieve the image URLs using the following server URI. (This server hosts both Mars real estate and Mars photos):</p>
+<p data-unit="05-network-request-057"><a href="https://android-kotlin-fun-mars-server.appspot.com">android-kotlin-fun-mars-server.appspot.com</a></p>
+<aside class="special"><p data-unit="05-network-request-058"><strong>Note</strong>: The aforementioned server is being accessed by a different sample app where it showcases Mars real estate, so this server has two different endpoints: one for Mars real estate and one for photos. For this course, you use the server to retrieve Mars photos.</p>
+</aside>
+<p data-unit="05-network-request-059">A URL (Uniform Resource Locator) is a subset of a URI that specifies where a resource exists and the mechanism for retrieving it.</p>
+<p data-unit="05-network-request-060"><strong>For example:</strong></p>
+<p data-unit="05-network-request-061">The following URL gets a list of available real estate properties on Mars:</p>
+<p data-unit="05-network-request-062"><a href="https://android-kotlin-fun-mars-server.appspot.com/realestate">https://android-kotlin-fun-mars-server.appspot.com/realestate</a></p>
+<p data-unit="05-network-request-063">The following URL gets a list of Mars photos:</p>
+<p data-unit="05-network-request-064"><a href="https://android-kotlin-fun-mars-server.appspot.com/photos">https://android-kotlin-fun-mars-server.appspot.com/photos</a></p>
+<p data-unit="05-network-request-065">These URLs refer to an identified resource, such as  <a href="https://android-kotlin-fun-mars-server.appspot.com/realestate">/realestate</a> or  <a href="https://android-kotlin-fun-mars-server.appspot.com/photos">/photos</a>, that is obtainable via the Hypertext Transfer Protocol (<em>http:</em>) from the network. You are using the  <a href="https://android-kotlin-fun-mars-server.appspot.com/photos">/photos</a> endpoint in this codelab. An endpoint is a URL that allows you to access a web service running on a server.</p>
+<aside class="special"><p data-unit="05-network-request-066"><strong>Note</strong>: The familiar web URL is actually a type of URI. This course uses both URL and URI interchangeably.</p>
+</aside>
+<h2 data-unit="05-network-request-067" id="web-service-request">W<strong>eb service request</strong></h2>
+<p data-unit="05-network-request-068">Each web service request contains a URI and is transferred to the server using the same HTTP protocol that's used by web browsers, like Chrome. HTTP requests contain an operation to tell the server what to do.</p>
+<p data-unit="05-network-request-069">Common HTTP operations include:</p>
+<ul>
+<li data-unit="05-network-request-070">GET for retrieving server data.</li>
+<li data-unit="05-network-request-071">POST for creating new data on the server.</li>
+<li data-unit="05-network-request-072">PUT for updating existing data on the server.</li>
+<li data-unit="05-network-request-073">DELETE for deleting data from the server.</li>
+</ul>
+<p data-unit="05-network-request-074">Your app makes an HTTP GET request to the server for the Mars photos information, and then the server returns a response to your app, including the image URLs.</p>
+<p class="image-container"><img alt="5bbeef4ded3e84cf.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-getting-data-internet/img/5bbeef4ded3e84cf.png" loading="eager" src="../assets/8602198c7b6fa5b1.png" title="client app making an HTTP GET request to the server for the Mars photos"/><img alt="83e8a6eb79249ebe.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-getting-data-internet/img/83e8a6eb79249ebe.png" loading="eager" src="../assets/f0e3f24e61be0cdd.png" title="server returns a response to the client app with the image URLs"/></p>
+<p data-unit="05-network-request-075">The response from a web service is formatted in one of the common data formats, like XML (eXtensible Markup Language) or JSON (JavaScript Object Notation). The JSON format represents structured data in key-value pairs. An app communicates with the REST API using JSON, which you learn more about in a later task.</p>
+<p data-unit="05-network-request-076">In this task, you establish a network connection to the server, communicate with the server, and receive a JSON response. You will be using a backend server that is already written for you. In this codelab, you use the Retrofit library, a third-party library, to communicate with the backend server.</p>
+<h3 data-unit="05-network-request-077" id="external-libraries"><strong>External Libraries</strong></h3>
+<p data-unit="05-network-request-078">External libraries, or third-party libraries, are like extensions to the core Android APIs. The libraries you use in this course are open source, community-developed, and maintained by the collective contributions from the huge Android community around the world. These resources help Android developers like you to build better apps.</p>
+<aside class="warning"><p data-unit="05-network-request-079"><strong>Warning</strong>: Using community-developed and maintained libraries can be a huge timesaver. However, you must choose these libraries wisely because your app is ultimately responsible for what the code does in these libraries.</p>
+</aside>
+<h3 data-unit="05-network-request-080" id="retrofit-library">Retrofit Library</h3>
+<p data-unit="05-network-request-081">The Retrofit library that you use in this codelab to talk to the RESTful Mars web service is a good example of a well-supported and maintained library. You can tell this by looking at its  <a href="https://github.com/square/retrofit">GitHub</a> page and reviewing the open and closed issues (some are feature requests). If the developers are regularly resolving the issues and responding to the feature requests, the library is likely well-maintained and a good candidate to use in the app. You can also refer to  <a href="https://square.github.io/retrofit/">Retrofit</a> documentation to learn more about the library.</p>
+<p data-unit="05-network-request-082">The Retrofit library communicates with the REST backend. It generates the code, but you need to provide the URIs for the web service based on the parameters we pass to it. You learn more about this topic in later sections.</p>
+<p class="image-container"><img alt="26043df178401c6a.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-getting-data-internet/img/26043df178401c6a.png" loading="eager" src="../assets/9001cc92559d982f.png" title="Retrofit library communication with the backend and the client app"/></p>
+<h2 data-unit="05-network-request-083" id="add-retrofit-dependencies">Add Retrofit dependencies</h2>
+<p data-unit="05-network-request-084">Android Gradle lets you add external libraries to your project. In addition to the library dependency, you also need to include the repository where the library is hosted.</p>
+<ol>
+<li data-unit="05-network-request-085">Open the module-level gradle file <code>build.gradle.kts (Module :app)</code>.</li>
+<li data-unit="05-network-request-086">In the <code>dependencies</code> section, add the following lines for the Retrofit libraries:</li>
+</ol>
+<div></div><div><pre class="source-code"><code>// Retrofit 
+implementation("com.squareup.retrofit2:retrofit:2.9.0")
+// Retrofit with Scalar Converter
+implementation("com.squareup.retrofit2:converter-scalars:2.9.0")
+</code></pre></div>
+<p data-unit="05-network-request-087">The two libraries work together. The first dependency is for the Retrofit2 library itself, and the second dependency is for the Retrofit scalar converter. Retrofit2 is the updated version of the Retrofit library. This scalar converter enables Retrofit to return the JSON result as a <code>String</code>. JSON is a format for storing and transporting data between client and server.  You will learn about JSON in a later section.</p>
+<ol>
+<li data-unit="05-network-request-088">Click <strong>Sync Now</strong> to rebuild the project with the new dependencies.</li>
+</ol>
+</div>
+<div>
+<h2 class="step-title" data-unit="05-network-request-089" id="5">
+              6. Connecting to the Internet
+          </h2>
+<p data-unit="05-network-request-090">You use the Retrofit library to talk to the Mars web service and display the raw JSON response as a <code>String</code>. The placeholder <code>Text</code> either displays the returned JSON response string or a message indicating a connection error.</p>
+<p data-unit="05-network-request-091">Retrofit creates a network API for the app based on the content from the web service. It fetches data from the web service and routes it through a separate converter library that knows how to decode the data and return it in the form of objects, like <code>String</code>. Retrofit includes built-in support for popular data formats, such as XML and JSON. Retrofit ultimately creates the code to call and consume this service for you, including critical details, such as running the requests on background threads.</p>
+<p class="image-container"><img alt="8c3a5c3249570e57.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-getting-data-internet/img/8c3a5c3249570e57.png" loading="eager" src="../assets/0d4191d996290f80.png" title="Retrofit library with the converter library talking to the mars web service and the view model"/></p>
+<p data-unit="05-network-request-092">In this task, you add a data layer to your <strong>Mars Photos</strong> project that your <code>ViewModel</code> uses to communicate with the web service. You implement the Retrofit service API with the following steps:</p>
+<ul>
+<li data-unit="05-network-request-093">Create a data source, <code>MarsApiService</code> class.</li>
+<li data-unit="05-network-request-094">Create a Retrofit object with the base URL and the converter factory to convert strings.</li>
+<li data-unit="05-network-request-095">Create an interface that explains how Retrofit talks to the web server.</li>
+<li data-unit="05-network-request-096">Create a Retrofit service and expose the instance to the api service to the rest of the app.</li>
+</ul>
+<p data-unit="05-network-request-097">Implement the above steps:</p>
+<ol>
+<li data-unit="05-network-request-098">Right-click on the package com.example.marsphotos in your Android project pane and select <strong>New &gt; Package</strong>.</li>
+<li data-unit="05-network-request-099">In the popup, append <strong>network</strong> to the end of the suggested package name.</li>
+<li data-unit="05-network-request-100">Create a new Kotlin file under the new package. Name it <code>MarsApiService</code>.</li>
+<li data-unit="05-network-request-101">Open <code>network/MarsApiService.kt</code>.</li>
+<li data-unit="05-network-request-102">Add the following constant for the base URL for the web service.</li>
+</ol>
+<div></div><div><pre class="source-code"><code>private const val BASE_URL = 
+   "https://android-kotlin-fun-mars-server.appspot.com"
+</code></pre></div>
+<ol>
+<li data-unit="05-network-request-103">Add a Retrofit builder just below that constant to build and create a Retrofit object.</li>
+</ol>
+<div></div><div><pre class="source-code"><code>import retrofit2.Retrofit
+
+private val retrofit = Retrofit.Builder()
+</code></pre></div>
+<p data-unit="05-network-request-104">Retrofit needs the base URI for the web service and a converter factory to build a web services API. The converter tells Retrofit what to do with the data it gets back from the web service. In this case, you want Retrofit to fetch a JSON response from the web service and return it as a <code>String</code>. Retrofit has a <code>ScalarsConverter</code> that supports strings and other primitive types.</p>
+<ol>
+<li data-unit="05-network-request-105">Call <code>addConverterFactory()</code> on the builder with an instance of <code>ScalarsConverterFactory</code>.</li>
+</ol>
+<div></div><div><pre class="source-code"><code>import retrofit2.converter.scalars.ScalarsConverterFactory
+
+private val retrofit = Retrofit.Builder()
+   .addConverterFactory(ScalarsConverterFactory.create())
+</code></pre></div>
+<ol>
+<li data-unit="05-network-request-106">Add the base URL for the web service using the <code>baseUrl()</code> method.</li>
+<li data-unit="05-network-request-107">Call <code>build()</code> to create the Retrofit object.</li>
+</ol>
+<div></div><div><pre class="source-code"><code>private val retrofit = Retrofit.Builder()
+   .addConverterFactory(ScalarsConverterFactory.create())
+   .baseUrl(BASE_URL)
+   .build()
+</code></pre></div>
+<ol>
+<li data-unit="05-network-request-108">Below the call to the Retrofit builder, define an interface called  <code>MarsApiService</code> that defines how Retrofit talks to the web server using HTTP requests.</li>
+</ol>
+<div></div><div><pre class="source-code"><code>interface MarsApiService {
+}
+</code></pre></div>
+<ol>
+<li data-unit="05-network-request-109">Add a function called <code>getPhotos()</code> to the <code>MarsApiService</code> interface to get the response string from the web service.</li>
+</ol>
+<div></div><div><pre class="source-code"><code>interface MarsApiService {    
+    fun getPhotos()
+}
+</code></pre></div>
+<ol>
+<li data-unit="05-network-request-110">Use the <code>@GET</code> annotation to tell Retrofit that this is a GET request and specify an endpoint for that web service method. In this case, the endpoint is <code>photos</code>. As mentioned in the previous task, you will use the  <a href="https://android-kotlin-fun-mars-server.appspot.com/photos">/photos</a> endpoint in this codelab.</li>
+</ol>
+<div></div><div><pre class="source-code"><code>import retrofit2.http.GET
+
+
+interface MarsApiService {
+    @GET("photos") 
+    fun getPhotos()
+}
+</code></pre></div>
+<p data-unit="05-network-request-111">When the <code>getPhotos()</code> method is invoked, Retrofit appends the endpoint <code>photos</code> to the base URL—which you defined in the Retrofit builder—used to start the request.</p>
+<ol>
+<li data-unit="05-network-request-112">Add a return type of the function to <code>String</code>.</li>
+</ol>
+<div></div><div><pre class="source-code"><code>interface MarsApiService {
+    @GET("photos") 
+    fun getPhotos(): String
+}
+</code></pre></div>
+<h3 data-unit="05-network-request-113" id="object-declarations"><strong>Object declarations</strong></h3>
+<p data-unit="05-network-request-114">In Kotlin,  <a href="https://kotlinlang.org/docs/reference/object-declarations.html#object-declarations">object declarations</a> are used to declare singleton objects.  <a href="https://en.wikipedia.org/wiki/Singleton_pattern">Singleton pattern</a> ensures that one, and only one, instance of an object is created and has one global point of access to that object. Object initialization is thread-safe and done at first access.</p>
+<p data-unit="05-network-request-115">Following is an example of an object declaration and its access. Object declaration always has a name following the <code>object</code> keyword.</p>
+<p data-unit="05-network-request-116"><strong>Example:</strong></p>
+<div></div><div><pre class="source-code"><code>// Example for Object declaration, do not copy over
+
+object SampleDataProvider {
+    fun register(provider: SampleProvider) {
+        // ...
+    }
+​
+    // ...
+}
+
+// To refer to the object, use its name directly.
+SampleDataProvider.register(...)
+</code></pre></div>
+<aside class="warning"><p data-unit="05-network-request-117"><strong>Warning</strong>: Singleton pattern is not a recommended practice. Singletons represent global states that are hard to predict, particularly in tests. Objects should define which dependencies they need, instead of describing how to create them.</p>
+<p data-unit="05-network-request-118">Use  <a href="https://developer.android.google.cn/training/dependency-injection">Dependency injection</a> over singleton pattern, you will learn how to implement Dependency injection in a later codelab.</p>
+</aside>
+<p data-unit="05-network-request-119">The call to <code>create()</code> function on a Retrofit object is expensive in terms of memory, speed, and performance. The app needs <em>only one</em> instance of the Retrofit API service, so you expose the service to the rest of the app using <em>object declaration</em>.</p>
+<ol>
+<li data-unit="05-network-request-120">Outside the <code>MarsApiService</code> interface declaration, define a public object called <code>MarsApi</code> to initialize the Retrofit service. This object is the public singleton object that the rest of the app can access.</li>
+</ol>
+<div></div><div><pre class="source-code"><code>object MarsApi {}
+</code></pre></div>
+<ol>
+<li data-unit="05-network-request-121">Inside the <code>MarsApi</code> object declaration, add a lazily initialized retrofit object property named <code>retrofitService</code> of the type <code>MarsApiService</code>. You make this lazy initialization to make sure it is initialized at its first usage. Ignore the error, which you fix in the next steps.</li>
+</ol>
+<aside class="special"><p data-unit="05-network-request-122"><strong>Note</strong>: Remember "lazy initialization" is when object creation is purposely delayed, until you actually need that object, to avoid unnecessary computation or use of other computing resources. Kotlin has  <a href="https://kotlinlang.org/docs/reference/delegated-properties.html#lazy">first-class support</a> for lazy instantiation.</p>
+</aside>
+<div></div><div><pre class="source-code"><code>object MarsApi {
+    val retrofitService : MarsApiService by lazy {}
+}
+</code></pre></div>
+<ol>
+<li data-unit="05-network-request-123">Initialize the <code>retrofitService</code> variable using the <code>retrofit.create()</code> method with the <code>MarsApiService</code> interface.</li>
+</ol>
+<div></div><div><pre class="source-code"><code>object MarsApi {
+    val retrofitService : MarsApiService by lazy { 
+       retrofit.create(MarsApiService::class.java)
+    }
+}
+</code></pre></div>
+<p data-unit="05-network-request-124">The Retrofit setup is done! Each time your app calls <code>MarsApi.retrofitService</code>,  the caller accesses the same singleton Retrofit object that implements <code>MarsApiService</code>, which is created on the first access. In the next task, you use the Retrofit object you implemented.</p>
+<h2 data-unit="05-network-request-125" id="call-the-web-service-in-marsviewmodel">Call the web service in MarsViewModel</h2>
+<p data-unit="05-network-request-126">In this step, you implement the <code>getMarsPhotos()</code> method that calls the REST service and then handles the returned JSON string.</p>
+<aside class="special"><p data-unit="05-network-request-127"><strong>Note</strong>: The recommended approach is to call webservice from a repository, which isolates the data layer from the rest of the app. In a later codelab, you add a repository to your app.</p>
+</aside>
+<h3 data-unit="05-network-request-128" id="viewmodelscope">ViewModelScope</h3>
+<p data-unit="05-network-request-129">A  <a href="https://developer.android.google.cn/topic/libraries/architecture/coroutines#viewmodelscope"><code>viewModelScope</code></a> is the built-in coroutine scope defined for each <code>ViewModel</code> in your app. Any coroutine launched in this scope is automatically canceled if the <code>ViewModel</code> is cleared.</p>
+<p data-unit="05-network-request-130">You can use <code>viewModelScope</code> to launch the coroutine and make the web service request in the background. Since the <code>viewModelScope</code> belongs to the <code>ViewModel</code>, the request continues even if the app goes through a configuration change.</p>
+<ol>
+<li data-unit="05-network-request-131">In the <code>MarsApiService.kt</code> file, make <code>getPhotos()</code> a suspend function to make it asynchronous and not block the calling thread. You call this function from inside a  <a href="https://developer.android.google.cn/topic/libraries/architecture/coroutines#viewmodelscope"><code>viewModelScope</code></a>.</li>
+</ol>
+<div></div><div><pre class="source-code"><code>@GET("photos")
+suspend fun getPhotos(): String
+</code></pre></div>
+<ol>
+<li data-unit="05-network-request-132">Open the <code>ui/screens/MarsViewModel.kt</code> file.  Scroll down to the <code>getMarsPhotos()</code> method. Delete the line that sets the status response to <code>"Set the Mars API Response here!"</code> so that the method <code>getMarsPhotos()</code> is empty.</li>
+</ol>
+<div></div><div><pre class="source-code"><code>private fun getMarsPhotos() {}
+</code></pre></div>
+<ol>
+<li data-unit="05-network-request-133">Inside <code>getMarsPhotos()</code>,  launch the coroutine using <code>viewModelScope.launch</code>.</li>
+</ol>
+<div></div><div><pre class="source-code"><code>import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.launch
+
+
+private fun getMarsPhotos() {
+    viewModelScope.launch {}
+}
+</code></pre></div>
+<ol>
+<li data-unit="05-network-request-134">Inside <code>viewModelScope</code>, use the singleton object <code>MarsApi</code> to call the <code>getPhotos()</code> method from the <code>retrofitService</code> interface. Save the returned response in a <code>val</code> called <code>listResult</code>.</li>
+</ol>
+<div></div><div><pre class="source-code"><code>import com.example.marsphotos.network.MarsApi
+
+viewModelScope.launch {
+    val listResult = MarsApi.retrofitService.getPhotos()
+}
+</code></pre></div>
+<ol>
+<li data-unit="05-network-request-135">Assign the result just received from the backend server to the <code>marsUiState</code>. The <code>marsUiState</code> is a mutable state object that represents the status of the most recent web request.</li>
+</ol>
+<div></div><div><pre class="source-code"><code>val listResult = MarsApi.retrofitService.getPhotos()
+marsUiState = listResult
+</code></pre></div>
+<ol>
+<li data-unit="05-network-request-136">Run the app. Notice that the app closes immediately, and it may or may not display an error popup. This is an app crash.</li>
+<li data-unit="05-network-request-137">Click the <strong>Logcat</strong> tab in Android Studio and note the error in the log, which starts with a line like this: "<code>------- beginning of crash</code>"</li>
+</ol>
+<div></div><div><pre class="source-code"><code>    --------- beginning of crash
+22803-22865/com.example.android.marsphotos E/AndroidRuntime: FATAL EXCEPTION: OkHttp Dispatcher
+    Process: com.example.android.marsphotos, PID: 22803
+    java.lang.SecurityException: Permission denied (missing INTERNET permission?)
+...
+</code></pre></div>
+<p data-unit="05-network-request-138">This error message indicates the app might be missing the <code>INTERNET</code> permissions. The next task describes how to add internet permissions to the app and resolve this issue.</p>
+</div>
+<div>
+<h2 class="step-title" data-unit="05-network-request-139" id="6">
+              7. Add Internet permission and Exception Handling
+          </h2>
+<h2 data-unit="05-network-request-140" id="android-permissions"><strong>Android Permissions</strong></h2>
+<p data-unit="05-network-request-141">The purpose of permissions on Android is to protect the privacy of an Android user. Android apps must declare or request permissions to access sensitive user data, such as contacts, call logs, and certain system features, such as camera or internet.</p>
+<p data-unit="05-network-request-142">In order for your app to access the Internet, it needs the <code>INTERNET</code> permission. Connecting to the internet introduces security concerns, which is why apps do not have internet connectivity by default. You need to explicitly declare that the app needs access to the internet. This declaration is considered a normal permission. To learn more about Android permissions and its types, please refer to the  <a href="https://developer.android.google.cn/guide/topics/permissions/overview">Permissions on Android</a>.</p>
+<p data-unit="05-network-request-143">In this step, your app declares the permission(s) it requires by including <code>&lt;uses-permission&gt;</code> tags in the <code>AndroidManifest.xml</code> file.</p>
+<ol>
+<li data-unit="05-network-request-144">Open <code>manifests/AndroidManifest.xml</code>. Add this line just before the <code>&lt;application&gt;</code> tag:</li>
+</ol>
+<div></div><div><pre class="source-code"><code>&lt;uses-permission android:name="android.permission.INTERNET" /&gt;
+</code></pre></div>
+<ol>
+<li data-unit="05-network-request-145">Compile and run the app again.</li>
+</ol>
+<p data-unit="05-network-request-146">If you have a working internet connection, you see the JSON text containing data related to the Mars photos. Observe how the <code>id</code> and <code>img_src</code> are repeated for every image record. You learn more about  the JSON format later in the codelab.</p>
+<p class="image-container"><img alt="b82ddb79eff61995.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-getting-data-internet/img/b82ddb79eff61995.png" loading="eager" src="../assets/9559526901dbf02b.png"/></p>
+<ol>
+<li data-unit="05-network-request-147">Tap the <strong>Back</strong> button in your device or emulator to close the app.</li>
+</ol>
+<h2 data-unit="05-network-request-148" id="exception-handling"><strong>Exception Handling</strong></h2>
+<p data-unit="05-network-request-149">There is a bug in your code. Perform the following steps to see it:</p>
+<ol>
+<li data-unit="05-network-request-150">Put your device or emulator into Airplane Mode to simulate a network connection error.</li>
+<li data-unit="05-network-request-151">Reopen the app from the Recents menu, or run the app from Android Studio.</li>
+<li data-unit="05-network-request-152">Click the <strong>Logcat</strong> tab in Android Studio and note the fatal exception in the log, which looks like the following:</li>
+</ol>
+<div></div><div><pre class="source-code"><code>3302-3302/com.example.android.marsphotos E/AndroidRuntime: FATAL EXCEPTION: main
+    Process: com.example.android.marsphotos, PID: 3302
+</code></pre></div>
+<p data-unit="05-network-request-153">This error message indicates the application tried to connect and timed out. Exceptions like this one are very common in real time. Unlike the permission issue, this error is not something you can fix, but you can handle it. In the next step, you learn how to handle such exceptions.</p>
+<h3 data-unit="05-network-request-154" id="exceptions"><strong>Exceptions</strong></h3>
+<p data-unit="05-network-request-155"><a href="https://developer.android.google.cn/reference/java/lang/Exception"><em>Exceptions</em></a> are errors that can occur during runtime, not compile time, and they terminate the app abruptly without notifying the user. This can result in a poor user experience. <em>Exception handling</em> is a mechanism by which you prevent the app from terminating abruptly and handle the situation in a user-friendly way.</p>
+<p data-unit="05-network-request-156">The reason for exceptions could be as simple as division by zero or an error with the network connection. These exceptions are similar to the <code>IllegalArgumentException</code> that a previous codelab discusses.</p>
+<p data-unit="05-network-request-157">Examples of potential issues while connecting to a server include the following:</p>
+<ul>
+<li data-unit="05-network-request-158">The URL or URI used in the API is incorrect.</li>
+<li data-unit="05-network-request-159">The server is unavailable, and the app could not connect to it.</li>
+<li data-unit="05-network-request-160">A network latency issue.</li>
+<li data-unit="05-network-request-161">Poor or no internet connection on the device.</li>
+</ul>
+<p data-unit="05-network-request-162">These exceptions can't be handled during compile time, but you can use a <code>try-catch</code> block to handle the exception in runtime. For further learning, refer to  <a href="https://kotlinlang.org/docs/reference/exceptions.html">Exceptions</a>.</p>
+<p data-unit="05-network-request-163"><strong>Example syntax for try-catch block</strong></p>
+<div></div><div><pre class="source-code"><code>try {
+    // some code that can cause an exception.
+}
+catch (e: SomeException) {
+    // handle the exception to avoid abrupt termination.
+}
+</code></pre></div>
+<p data-unit="05-network-request-164">Inside the <code>try</code> block, you add the code where you anticipate an exception. In your app, this is a network call. In the <code>catch</code> block, you need to implement the code that prevents abrupt termination of the app. If there is an exception, then the <code>catch</code> block executes to recover from the error instead of terminating the app abruptly.</p>
+<ol>
+<li data-unit="05-network-request-165">In <code>getMarsPhotos()</code>, inside the <code>launch</code> block, add a <code>try</code> block around the <code>MarsApi</code> call to handle exceptions.</li>
+<li data-unit="05-network-request-166">Add a <code>catch</code> block after the <code>try</code> block.</li>
+</ol>
+<div></div><div><pre class="source-code"><code>import java.io.IOException
+
+
+viewModelScope.launch {
+   try {
+       val listResult = MarsApi.retrofitService.getPhotos()
+       marsUiState = listResult
+   } catch (e: IOException) {
+
+   }
+}
+</code></pre></div>
+<ol>
+<li data-unit="05-network-request-167">Run the app one more time. Notice that the app does not crash this time.</li>
+</ol>
+<h3 data-unit="05-network-request-168" id="add-state-ui">Add State UI</h3>
+<p data-unit="05-network-request-169">In the <code>MarsViewModel</code> class, the status of the most recent web request, <code>marsUiState</code>, is saved as a mutable state object. However, this class lacks the ability to save the different status: loading, success, and failure.</p>
+<ul>
+<li data-unit="05-network-request-170"><strong>Loading</strong> status indicates the app is waiting for data.</li>
+<li data-unit="05-network-request-171"><strong>Success</strong> status indicates the data was successfully retrieved from the web service.</li>
+<li data-unit="05-network-request-172"><strong>Error</strong> status indicates any network or connection errors.</li>
+</ul>
+<p data-unit="05-network-request-173">To represent these three states in your application, you use a <em>sealed interface</em>. A <code>sealed interface</code> makes it easy to manage state by limiting the possible values. In the Mars Photos app, you restrict the <code>marsUiState</code> web response to three states (data class objects): loading, success, and error, which looks like the following code:</p>
+<div></div><div><pre class="source-code"><code>// No need to copy over
+sealed interface MarsUiState {
+   data class Success : MarsUiState
+   data class Loading : MarsUiState
+   data class Error : MarsUiState
+}
+</code></pre></div>
+<p data-unit="05-network-request-174">In the above code snippet, in the case of a successful response, you receive Mars photo information from the server. In order to store the data, add a constructor parameter to the  <code>Success</code> data class.</p>
+<p data-unit="05-network-request-175">In the case of <code>Loading</code> and <code>Error</code> states, you don't need to set new data and create new objects; you are just passing the web response. Change the <code>data</code> class to <code>Object</code> to create the objects for the web responses.</p>
+<ol>
+<li data-unit="05-network-request-176">Open the <code>ui/MarsViewModel.kt</code> file. After the import statements, add the <code>MarsUiState</code> sealed interface. This addition makes the values <code>MarsUiState</code> object can have exhaustive.</li>
+</ol>
+<div></div><div><pre class="source-code"><code>sealed interface MarsUiState {
+    data class Success(val photos: String) : MarsUiState
+    object Error : MarsUiState
+    object Loading : MarsUiState
+}
+</code></pre></div>
+<ol>
+<li data-unit="05-network-request-177">Inside the <code>MarsViewModel</code> class, update the <code>marsUiState</code> definition. Change the type to <code>MarsUiState</code> and <code>MarsUiState.Loading</code> as its default value. Make the setter private to protect writes to the  <code>marsUiState</code>.</li>
+</ol>
+<div></div><div><pre class="source-code"><code>var marsUiState: MarsUiState by mutableStateOf(MarsUiState.Loading)
+  private set
+</code></pre></div>
+<ol>
+<li data-unit="05-network-request-178">Scroll down to the <code>getMarsPhotos()</code> method. Update the <code>marsUiState</code> value to <code>MarsUiState.Success</code> and pass the <code>listResult</code>.</li>
+</ol>
+<div></div><div><pre class="source-code"><code>val listResult = MarsApi.retrofitService.getPhotos()
+marsUiState = MarsUiState.Success(listResult)
+</code></pre></div>
+<ol>
+<li data-unit="05-network-request-179">Inside the <code>catch</code> block, handle the failure response. Set <code>MarsUiState</code> to <code>Error</code>.</li>
+</ol>
+<div></div><div><pre class="source-code"><code>catch (e: IOException) {
+   marsUiState = MarsUiState.Error
+}
+</code></pre></div>
+<ol>
+<li data-unit="05-network-request-180">You can lift the <code>marsUiState</code> assignment out of the <code>try-catch</code> block. Your completed function should look like the following code:</li>
+</ol>
+<div></div><div><pre class="source-code"><code>private fun getMarsPhotos() {
+   viewModelScope.launch {
+       marsUiState = try {
+           val listResult = MarsApi.retrofitService.getPhotos()
+           MarsUiState.Success(listResult)
+       } catch (e: IOException) {
+           MarsUiState.Error
+       }
+   }
+}
+</code></pre></div>
+<ol>
+<li data-unit="05-network-request-181">In the <code>screens/HomeScreen.kt</code> file, add a <code>when</code> expression on the <code>marsUiState</code>. If the <code>marsUiState</code> is <code>MarsUiState.Success</code>, call <code>ResultScreen</code> and pass in <code>marsUiState.photos</code>. Ignore the errors for now.</li>
+</ol>
+<div></div><div><pre class="source-code"><code>import androidx.compose.foundation.layout.fillMaxWidth
+
+fun HomeScreen(
+   marsUiState: MarsUiState,
+   modifier: Modifier = Modifier
+) {
+    when (marsUiState) {
+        is MarsUiState.Success -&gt; ResultScreen(
+            marsUiState.photos, modifier = modifier.fillMaxWidth()
+        )
+    }
+}
+</code></pre></div>
+<aside class="special"><p data-unit="05-network-request-182"><strong>Note</strong>: The <code>marsUiState</code> property is not a string any longer. You changed it to a <code>MarsUiState</code> sealed interface, which can have three different object values: <code>MarsUiState.Loading</code>, <code>MarsUiState.Success</code>, and <code>MarsUiState.Error</code>.</p>
+</aside>
+<ol>
+<li data-unit="05-network-request-183">Inside the <code>when</code> block, add checks for <code>MarsUiState.Loading</code> and <code>MarsUiState.Error</code>. Have the app display the <code>LoadingScreen</code>, <code>ResultScreen</code>, and <code>ErrorScreen</code> composables, which you implement later.</li>
+</ol>
+<div></div><div><pre class="source-code"><code>import androidx.compose.foundation.layout.fillMaxSize
+
+fun HomeScreen(
+   marsUiState: MarsUiState,
+   modifier: Modifier = Modifier
+) {
+    when (marsUiState) {
+        is MarsUiState.Loading -&gt; LoadingScreen(modifier = modifier.fillMaxSize())
+        is MarsUiState.Success -&gt; ResultScreen(
+            marsUiState.photos, modifier = modifier.fillMaxWidth()
+        )
+
+        is MarsUiState.Error -&gt; ErrorScreen( modifier = modifier.fillMaxSize())
+    }
+}
+</code></pre></div>
+<aside class="special"><p data-unit="05-network-request-184"><strong>Note</strong>: If you implement <code>MarsUiState</code> <code>interface</code> without a <code>sealed</code> keyword, it requires you to add a Success, Error, Loading and <code>else</code> branch. Since there is no fourth option (else), you use a <code>sealed</code> interface to tell the compiler that there are only three options (thus making the conditionals exhaustive).</p>
+</aside>
+<ol>
+<li data-unit="05-network-request-185">Open <code>res/drawable/loading_animation.xml</code>. This drawable is an animation that rotates an image drawable, <code>loading_img.xml</code>, around the center point. (You don't see the animation in the preview.)</li>
+</ol>
+<p class="image-container"><img alt="92a448fa23b6d1df.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-getting-data-internet/img/92a448fa23b6d1df.png" loading="eager" src="../assets/e57c0722f6a5ce1b.png" title="loading animation"/></p>
+<ol>
+<li data-unit="05-network-request-186">In the <code>screens/HomeScreen.kt</code> file, below the <code>HomeScreen</code> composable, add the following <code>LoadingScreen</code> composable function to display the loading animation. The <code>loading_img</code> drawable resource is included in the starter code.</li>
+</ol>
+<div></div><div><pre class="source-code"><code>import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.Image
+
+
+@Composable
+fun LoadingScreen(modifier: Modifier = Modifier) {
+    Image(
+        modifier = modifier.size(200.dp),
+        painter = painterResource(R.drawable.loading_img),
+        contentDescription = stringResource(R.string.loading)
+    )
+}
+</code></pre></div>
+<ol>
+<li data-unit="05-network-request-187">Below the <code>LoadingScreen</code> composable, add the following <code>ErrorScreen</code> composable function so the app can display the error message.</li>
+</ol>
+<div></div><div><pre class="source-code"><code>import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.padding
+
+@Composable
+fun ErrorScreen(modifier: Modifier = Modifier) {
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Image(
+            painter = painterResource(id = R.drawable.ic_connection_error), contentDescription = ""
+        )
+        Text(text = stringResource(R.string.loading_failed), modifier = Modifier.padding(16.dp))
+    }
+}
+</code></pre></div>
+<ol>
+<li data-unit="05-network-request-188">Run the app again with Airplane Mode turned on. The app does not close abruptly this time, and it displays the following error message:</li>
+</ol>
+<p class="image-container"><img alt="28ba37928e0a9334.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-getting-data-internet/img/28ba37928e0a9334.png" loading="eager" src="../assets/bc1a7086a7349c61.png"/></p>
+<ol>
+<li data-unit="05-network-request-189">Turn off Airplane Mode on your phone or emulator. Run and test your app to make sure everything works correctly and you are able to see the JSON string.</li>
+</ol>
+<div class="table-wrapper" tabindex="0"><table class="vertical-rules">
+<tr><td colspan="1" rowspan="1"><p class="image-container"><img data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-getting-data-internet/img/3931a215bc8e35fb.png" loading="eager" src="../assets/38225143e045d245.png"/></p>
+</td><td colspan="1" rowspan="1"><p class="image-container"><img data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-getting-data-internet/img/b82ddb79eff61995.png" loading="eager" src="../assets/9559526901dbf02b.png"/></p>
+</td></tr>
+</table></div>
+</div>
+<div>
+<h2 class="step-title" data-unit="05-network-request-190" id="7">
+              8. Parse the JSON response with kotlinx.serialization
+          </h2>
+<h2 data-unit="05-network-request-191" id="json"><strong>JSON</strong></h2>
+<p data-unit="05-network-request-192">The requested data is typically formatted in one of the common data formats like XML or JSON. Each call returns structured data, and your app needs to know what that structure is in order to read the data from the response.</p>
+<p data-unit="05-network-request-193">For example, in this app, you are retrieving the data from the   <a href="https://mars.udacity.com/realestate">https://</a> <a href="https://android-kotlin-fun-mars-server.appspot.com/photos">android-kotlin-fun-mars-server.appspot.com/photos</a> server. When you enter this URL in the browser, you see a list of IDs and image URLs of the surface of Mars in a JSON format!</p>
+<h3 data-unit="05-network-request-194" id="structure-of-sample-json-response"><strong>Structure of sample JSON response</strong></h3>
+<p class="image-container"><img alt="showing keys values and JSON object" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-getting-data-internet/img/fde4f6f199990ae8.png" loading="eager" src="../assets/40979843bb7f5852.png" title="JSON array structure"/></p>
+<p data-unit="05-network-request-195">The structure of a JSON response has the following features:</p>
+<ul>
+<li data-unit="05-network-request-196">JSON response is an array, indicated by the square brackets. The array contains JSON objects.</li>
+<li data-unit="05-network-request-197">JSON objects are surrounded by curly brackets.</li>
+<li data-unit="05-network-request-198">Each JSON object contains a set of key-value pairs separated by a comma.</li>
+<li data-unit="05-network-request-199">A colon separates the key and value in a pair.</li>
+<li data-unit="05-network-request-200">Names are surrounded by quotes.</li>
+<li data-unit="05-network-request-201">Values can be numbers, strings, a boolean, an array, an object (JSON object), or null.</li>
+</ul>
+<p data-unit="05-network-request-202">For example, the <code>img_src</code> is a URL, which is a string. When you paste the URL into a web browser, you see a Mars surface image.</p>
+<p class="image-container"><img alt="b4f9f196c64f02c3.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-getting-data-internet/img/b4f9f196c64f02c3.png" loading="eager" src="../assets/a58fafe39f716f73.png" title="web browser showing mars photo"/></p>
+<p data-unit="05-network-request-203">In your app, now you're getting a JSON response from the Mars web service, which is a great start. But what you really need to display the images are Kotlin objects, not a big JSON string. This process is called <em>deserialization</em>.</p>
+<p data-unit="05-network-request-204"><a href="https://kotlinlang.org/docs/serialization.html"><em>Serialization</em></a> is the process of converting data used by an application to a format that can be transferred over a network. As opposed to <em>serialization</em>, <em>deserialization</em> is the process of reading data from an external source (like a server) and converting it into a runtime object. They are both essential components of most applications that exchange data over the network.</p>
+<p data-unit="05-network-request-205">The <code>kotlinx.serialization</code> provides sets of libraries that convert a JSON string into Kotlin objects. There is a community developed third party library that works with Retrofit,  <a href="https://github.com/JakeWharton/retrofit2-kotlinx-serialization-converter#kotlin-serialization-converter">Kotlin Serialization Converter</a>.</p>
+<p data-unit="05-network-request-206">In this task, you use the <code>kotlinx.serialization</code> library, to parse the JSON response from the web service into useful Kotlin objects that represent Mars photos. You change the app so that instead of displaying the raw JSON, the app displays the number of Mars photos returned.</p>
+<h2 data-unit="05-network-request-207" id="add-kotlinx.serialization-library-dependencies">Add <code>kotlinx.serialization</code> library dependencies</h2>
+<ol>
+<li data-unit="05-network-request-208">Open <code>build.gradle.kts (Module :app)</code>.</li>
+<li data-unit="05-network-request-209">In the <code>plugins</code> block, add <code>kotlinx serialization</code> plugin.</li>
+</ol>
+<div></div><div><pre class="source-code"><code>id("org.jetbrains.kotlin.plugin.serialization") version "1.8.10"
+</code></pre></div>
+<ol>
+<li data-unit="05-network-request-210">In the <code>dependencies</code> section, add the following code to include the <code>kotlinx.serialization</code> dependency. This dependency provides JSON serialization for Kotlin projects.</li>
+</ol>
+<div></div><div><pre class="source-code"><code>// Kotlin serialization 
+implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.1")
+</code></pre></div>
+<ol>
+<li data-unit="05-network-request-211">Locate the lines for the Retrofit scalar converter in the <code>dependencies</code> block and change it to use <code>kotlinx-serialization-converter</code>:</li>
+</ol>
+<p data-unit="05-network-request-212"><strong>Replace the following code</strong></p>
+<div></div><div><pre class="source-code"><code>// Retrofit with scalar Converter
+implementation("com.squareup.retrofit2:converter-scalars:2.9.0")
+</code></pre></div>
+<p data-unit="05-network-request-213"><strong>with the following code</strong></p>
+<div></div><div><pre class="source-code"><code>// Retrofit with Kotlin serialization Converter
+
+implementation("com.jakewharton.retrofit:retrofit2-kotlinx-serialization-converter:1.0.0")
+implementation("com.squareup.okhttp3:okhttp:4.11.0")
+</code></pre></div>
+<ol>
+<li data-unit="05-network-request-214">Click <strong>Sync Now</strong> to rebuild the project with the new dependencies.</li>
+</ol>
+<aside class="special"><p data-unit="05-network-request-215"><strong>Note:</strong> The project may show compiler errors related to the removed Retrofit scalar dependency. You fix those in the next steps.</p>
+</aside>
+<h2 data-unit="05-network-request-216" id="implement-the-mars-photo-data-class"><strong>Implement the Mars Photo data class</strong></h2>
+<p data-unit="05-network-request-217">A sample entry of the JSON response you get from the web service looks something like the following, similar to what you saw earlier:</p>
+<div></div><div><pre class="source-code"><code>[
+    {
+        "id":"424906",
+        "img_src":"http://mars.jpl.nasa.gov/msl-raw-images/msss/01000/mcam/1000ML0044631300305227E03_DXXX.jpg"
+    },
+...]
+</code></pre></div>
+<p data-unit="05-network-request-218">In the example above, notice that each Mars photo entry has the following JSON key and value pairs:</p>
+<ul>
+<li data-unit="05-network-request-219"><strong><code>id</code></strong><strong>:</strong> the ID of the property, as a string. Since it is wrapped in quotes (<code>" "</code>), it is of the type <code>String</code>, not <code>Integer</code>.</li>
+<li data-unit="05-network-request-220"><strong><code>img_src</code></strong><strong>:</strong> The image's URL, as a string.</li>
+</ul>
+<p data-unit="05-network-request-221">kotlinx.serialization parses this JSON data and converts it into Kotlin objects. To do this, kotlinx.serialization needs to have a Kotlin data class to store the parsed results. In this step, you create the data class <code>MarsPhoto</code>.</p>
+<ol>
+<li data-unit="05-network-request-222">Right-click on the <strong>network</strong> package and select <strong>New &gt; Kotlin File/Class</strong>.</li>
+<li data-unit="05-network-request-223">In the dialog, select <strong>Class</strong> and enter <code>MarsPhoto</code> as the name of the class. This action creates a new file called <code>MarsPhoto.kt</code> in the <code>network</code> package.</li>
+<li data-unit="05-network-request-224">Make <code>MarsPhoto</code> a data class by adding the <code>data</code> keyword before the class definition.</li>
+<li data-unit="05-network-request-225">Change the curly braces <code>{}</code> to parentheses <code>()</code>. This change gives you an error because data classes must have at least one property defined.</li>
+</ol>
+<div></div><div><pre class="source-code"><code>data class MarsPhoto()
+</code></pre></div>
+<ol>
+<li data-unit="05-network-request-226">Add the following properties to the <code>MarsPhoto</code> class definition.</li>
+</ol>
+<div></div><div><pre class="source-code"><code>data class MarsPhoto(
+    val id: String,  val img_src: String
+)
+</code></pre></div>
+<ol>
+<li data-unit="05-network-request-227">To make <code>MarsPhoto</code> class serializable annotating it with <code>@Serializable</code>.</li>
+</ol>
+<div></div><div><pre class="source-code"><code>import kotlinx.serialization.Serializable
+
+@Serializable
+data class MarsPhoto(
+    val id: String,  val img_src: String
+)
+</code></pre></div>
+<p data-unit="05-network-request-228">Notice that each of the variables in the <code>MarsPhoto</code> class corresponds to a key name in the JSON object. To match the types in our specific JSON response, you use <code>String</code> objects for all the values.</p>
+<p data-unit="05-network-request-229">When <code>kotlinx serialization</code> parses the JSON, it matches the keys by name and fills the data objects with appropriate values.</p>
+<h3 data-unit="05-network-request-230" id="serialname-annotation"><strong>@SerialName Annotation</strong></h3>
+<p data-unit="05-network-request-231">Sometimes the key names in a JSON response can make confusing Kotlin properties or may not match recommended coding style. For example, in the JSON file, the <code>img_src</code> key uses an underscore, whereas Kotlin convention for properties uses upper and lowercase letters (camel case).</p>
+<p data-unit="05-network-request-232">To use variable names in your data class that differ from the key names in the JSON response, use the <code>@SerialName</code> annotation. In the following example, the name of the variable in the data class is <code>imgSrc</code>. The variable can be mapped to the JSON attribute <code>img_src</code> using <code>@SerialName(value = "img_src")</code>.</p>
+<ol>
+<li data-unit="05-network-request-233">Replace the line for the <code>img_src</code> key with the line shown below.</li>
+</ol>
+<div></div><div><pre class="source-code"><code>import kotlinx.serialization.SerialName
+
+@SerialName(value = "img_src") 
+val imgSrc: String
+</code></pre></div>
+<h2 data-unit="05-network-request-234" id="update-marsapiservice-and-marsviewmodel">Update MarsApiService and MarsViewModel</h2>
+<p data-unit="05-network-request-235">In this task, you will use the <code>kotlinx.serialization</code> converter to convert the JSON object to Kotlin objects.</p>
+<ol>
+<li data-unit="05-network-request-236">Open <code>network/MarsApiService.kt</code>.</li>
+<li data-unit="05-network-request-237">Notice the unresolved reference errors for <code>ScalarsConverterFactory</code>. These errors are a result of the Retrofit dependency change in a previous section.</li>
+<li data-unit="05-network-request-238">Delete the import for <code>ScalarConverterFactory</code>. You fix the other error later.</li>
+</ol>
+<p data-unit="05-network-request-239"><strong>Remove:</strong></p>
+<div></div><div><pre class="source-code"><code>import retrofit2.converter.scalars.ScalarsConverterFactory
+</code></pre></div>
+<ol>
+<li data-unit="05-network-request-240">In the <em><code>retrofit</code></em> object declaration, change the Retrofit builder to use the <code>kotlinx.serialization</code> instead of the <code>ScalarConverterFactory</code>.</li>
+</ol>
+<div></div><div><pre class="source-code"><code>import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
+import kotlinx.serialization.json.Json
+import okhttp3.MediaType
+
+private val retrofit = Retrofit.Builder()
+        .addConverterFactory(Json.asConverterFactory("application/json".toMediaType()))
+        .baseUrl(BASE_URL)
+        .build()
+</code></pre></div>
+<aside class="special"><p data-unit="05-network-request-241"><strong>Note</strong>: If Android Studio shows you any warning regarding <code>kotlinx.serialization.ExperimentalSerializationApi</code> ignore it for now. You don't have to worry about this warning. It will be resolved in the later versions of Kotlin.</p>
+<p class="image-container"><img alt="857006993db2a1a3.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-getting-data-internet/img/857006993db2a1a3.png" loading="eager" src="../assets/6082d6878908f43b.png"/></p>
+</aside>
+<p data-unit="05-network-request-242">Now that you have the <code>kotlinx.serialization</code> in place, you can ask Retrofit to return a list of <code>MarsPhoto</code> objects from the JSON array, instead of returning a JSON string.</p>
+<ol>
+<li data-unit="05-network-request-243">Update the <code>MarsApiService</code> interface for Retrofit to return a list of <code>MarsPhoto</code> objects instead of returning a <code>String</code>.</li>
+</ol>
+<div></div><div><pre class="source-code"><code>interface MarsApiService {
+    @GET("photos")
+    suspend fun getPhotos(): List&lt;MarsPhoto&gt;
+}
+</code></pre></div>
+<ol>
+<li data-unit="05-network-request-244">Make similar changes to the <code>viewModel</code>. Open <code>MarsViewModel.kt</code> and scroll down to the <code>getMarsPhotos()</code> method.</li>
+</ol>
+<p data-unit="05-network-request-245">In the <code>getMarsPhotos()</code> method, <code>listResult</code> is a <code>List&lt;MarsPhoto&gt;</code> and not a <code>String</code> anymore. The size of that list is the number of photos that were received and parsed.</p>
+<ol>
+<li data-unit="05-network-request-246">To print the number of photos retrieved, update <code>marsUiState</code> as follows:</li>
+</ol>
+<div></div><div><pre class="source-code"><code>val listResult = MarsApi.retrofitService.getPhotos()
+marsUiState = MarsUiState.Success(
+   "Success: ${listResult.size} Mars photos retrieved"
+)
+</code></pre></div>
+<ol>
+<li data-unit="05-network-request-247">Make sure Airplane Mode is turned <em>off</em> on your device or emulator. Compile and run the app.</li>
+</ol>
+<p data-unit="05-network-request-248">This time, the message should show the number of properties returned from the web service, and not a big JSON string:</p>
+<p class="image-container"><img alt="a59e55909b6e9213.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-getting-data-internet/img/a59e55909b6e9213.png" loading="eager" src="../assets/72f7e97cbf825aaf.png"/></p>
+<aside class="special"><p data-unit="05-network-request-249"><strong>Note:</strong> If your internet connection is not working, make sure that you turn off Airplane Mode on your device or emulator.</p>
+</aside>
+</div>
+<div>
+<h2 class="step-title" data-unit="05-network-request-250" id="8">
+              9. Solution code
+          </h2>
+<p data-unit="05-network-request-251">To download the code for the finished codelab, you can use these git commands:</p>
+<div></div><div><pre class="source-code"><code>$ git clone https://github.com/google-developer-training/basic-android-kotlin-compose-training-mars-photos.git
+$ cd basic-android-kotlin-compose-training-mars-photos
+$ git checkout repo-starter
+</code></pre></div>
+<p data-unit="05-network-request-252">Alternatively, you can download the repository as a zip file, unzip it, and open it in Android Studio.</p>
+<p><a href="https://github.com/google-developer-training/basic-android-kotlin-compose-training-mars-photos/archive/refs/heads/repo-starter.zip"></a></p>
+<aside class="special"><p data-unit="05-network-request-253"><strong>Note:</strong> The solution code is in the <code>repo-starter</code> branch of the downloaded repository.</p>
+</aside>
+<p data-unit="05-network-request-254">If you want to see the solution code for this codelab, view it on  <a href="https://github.com/google-developer-training/basic-android-kotlin-compose-training-mars-photos/tree/repo-starter">GitHub</a>.</p>
+</div>
+<div>
+<h2 class="step-title" data-unit="05-network-request-255" id="9">
+              10. Summary
+          </h2>
+<h3 data-unit="05-network-request-256" id="rest-web-services"><strong>REST web services</strong></h3>
+<ul>
+<li data-unit="05-network-request-257">A <em>web service</em> is software-based functionality, offered over the internet, that enables your app to make requests and get data back.</li>
+<li data-unit="05-network-request-258">Common web services use a  <a href="https://en.wikipedia.org/wiki/Representational_state_transfer">REST</a> architecture. Web services that offer REST architecture are known as <em>RESTful</em> services. RESTful web services are built using standard web components and protocols.</li>
+<li data-unit="05-network-request-259">You make a request to a REST web service in a standardized way via URIs.</li>
+<li data-unit="05-network-request-260">To use a web service, an app must establish a network connection and communicate with the service. Then the app must receive and parse response data into a format the app can use.</li>
+<li data-unit="05-network-request-261">The  <a href="https://square.github.io/retrofit/">Retrofit</a> library is a client library that enables your app to make requests to a REST web service.</li>
+<li data-unit="05-network-request-262">Use converters to tell Retrofit what to do with the data it sends to the web service and gets back from the web service.  For example, the <code>ScalarsConverter</code> treats the web service data as a <code>String</code> or other primitive.</li>
+<li data-unit="05-network-request-263">To enable your app to make connections to the internet, add the <code>"android.permission.INTERNET"</code> permission in the Android manifest.</li>
+<li data-unit="05-network-request-264">Lazy initialization delegates the creation of an object to the first time it is used. It creates the reference but not the object. When an object is accessed for the first time, a reference is created and used every time thereafter.</li>
+</ul>
+<h3 data-unit="05-network-request-265" id="json-parsing"><strong>JSON parsing</strong></h3>
+<ul>
+<li data-unit="05-network-request-266">The response from a web service is often formatted in  <a href="https://www.json.org/">JSON</a>, a common format to represent structured data.</li>
+<li data-unit="05-network-request-267">A JSON object is a collection of key-value pairs.</li>
+<li data-unit="05-network-request-268">A collection of JSON objects is a JSON array. You get a JSON array as a response from a web service.</li>
+<li data-unit="05-network-request-269">The keys in a key-value pair are surrounded by quotes. The values can be numbers or strings.</li>
+<li data-unit="05-network-request-270">In Kotlin, data serialization tools are available in a separate component,  <a href="https://github.com/Kotlin/kotlinx.serialization"><em>kotlinx.serialization</em></a>. The <em>kotlinx.serialization</em> provides sets of libraries that convert a JSON string into Kotlin objects.</li>
+<li data-unit="05-network-request-271">There is a community developed Kotlin Serialization Converter library for Retrofit:   <a href="https://github.com/JakeWharton/retrofit2-kotlinx-serialization-converter#kotlin-serialization-converter">retrofit2-kotlinx-serialization-converter</a>.</li>
+<li data-unit="05-network-request-272">The <em>kotlinx.serialization</em> matches the keys in a JSON response with properties in a data object that have the same name.</li>
+<li data-unit="05-network-request-273">To use a different property name for a key, annotate that property with the <code>@SerialName</code> annotation and the JSON key <code>value</code>.</li>
+</ul>
+</div>
+<div>
+<h2 class="step-title" data-unit="05-network-request-274" id="10">
+              11. Learn more
+          </h2>
+<p data-unit="05-network-request-275">Android developer documentation:</p>
+<ul>
+<li data-unit="05-network-request-276"><a href="https://developer.android.google.cn/topic/architecture">Guide to app architecture | Android Developers</a></li>
+<li data-unit="05-network-request-277"><a href="https://developer.android.google.cn/topic/libraries/architecture/viewmodel">ViewModel overview</a></li>
+<li data-unit="05-network-request-278"><a href="https://developer.android.google.cn/topic/libraries/architecture/coroutines#viewmodelscope">ViewModelScope</a></li>
+</ul>
+<p data-unit="05-network-request-279">Kotlin documentation:</p>
+<ul>
+<li data-unit="05-network-request-280"><a href="https://kotlinlang.org/docs/reference/exceptions.html">Exceptions: try, catch, finally, throw, Nothing</a></li>
+<li data-unit="05-network-request-281"><a href="https://kotlinlang.org/docs/reference/coroutines-overview.html">Coroutines, official documentation</a></li>
+<li data-unit="05-network-request-282"><a href="https://kotlinlang.org/docs/reference/coroutines/coroutine-context-and-dispatchers.html">Coroutine context and dispatchers</a></li>
+<li data-unit="05-network-request-283"><a href="https://kotlinlang.org/docs/serialization.html#0">Serialization | Kotlin</a></li>
+</ul>
+<p data-unit="05-network-request-284">Other:</p>
+<ul>
+<li data-unit="05-network-request-285"><a href="https://square.github.io/retrofit/">Retrofit</a></li>
+<li data-unit="05-network-request-286"><a href="https://github.com/JakeWharton/retrofit2-kotlinx-serialization-converter">Retrofit 2 Converter.Factory for Kotlin serialization</a></li>
+</ul>
+</div>
+</div>
+</article><nav class="chapter-switcher" aria-label="章节导航"><a href="../04-data-layer/english.html">← 数据由谁管理</a><a class="course-home" href="../index.html">全部章节</a><a href="../06-cancellation/english.html">异步任务的取消与超时 →</a></nav><footer class="license-note"><p>原文：<a href="https://developer.android.com/codelabs/basic-android-kotlin-compose-getting-data-internet?hl=en">Get data from the internet</a>，Android Developers / Google。英文快照：2026-10-13。非官方中文翻译与表达优化：Codex。原有示例和代码保留；<a href="../NOTICE.html">来源与许可</a>。</p></footer></main></body></html>

@@ -1,0 +1,344 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>用户操作与事件 · Android 应用的数据与状态</title><link rel="stylesheet" href="../../reader.css"><link rel="stylesheet" href="../source.css"><link rel="manifest" href="../../../manifest.webmanifest"></head><body><nav class="site-nav"><a href="../index.html">← Android 应用的数据与状态</a><a href="https://developer.android.com/topic/architecture/ui-layer/events?hl=en">官方英文原文 ↗</a></nav><main class="reader"><header class="chapter-header"><span class="chapter-kicker">02 · 中文阅读版</span><h1>用户操作与事件</h1><p class="byline">UI events · Android Developers / Google</p><div class="title-rule"></div><p class="edition-nav"><strong aria-current="page">中文阅读版</strong> · <a href="english.html">英文对照</a> · <a href="literal.html">第一轮直译稿</a></p><aside class="learning-note"><span class="note-kind">编者导读 · 不属于原文</span><p><strong>点击、刷新、提示消息与导航，分别由谁处理？</strong></p><p>沿用上一章的状态模型，先区分业务逻辑和 UI 行为，再阅读刷新、登录与注册的原例。</p><p><strong>第一轮阅读：</strong>先读事件决策树和用户事件，再读 ViewModel 事件；返回栈保留页面的导航例子可分第二次读。</p><details class="editor-notes"><summary>版本与适用范围校注（1 条）</summary><p>本文采用“将 ViewModel 事件转化为 UI state”的官方架构建议；它是指导原则，应结合产品需求和实际状态所有者判断。</p></details></aside><details class="source-details"><summary>本篇目录与翻译范围</summary><p>官方英文文章正文全文；保留原文顺序、代码、图示、表格与延伸链接。代码与图中文字保持原样。编者导读与校注单独标明，阅读不要求同时安装、运行或编写示例。</p><ul><li class="toc-h2"><a href="#decision-tree">UI 事件决策树</a></li><li class="toc-h2"><a href="#handle-user-events">处理用户事件</a></li><li class="toc-h3"><a href="#lazy-list-events">惰性列表中的用户事件</a></li><li class="toc-h3"><a href="#naming-conventions">用户事件函数与事件处理器的命名约定</a></li><li class="toc-h2"><a href="#handle-viewmodel-events">处理 ViewModel 事件</a></li><li class="toc-h3"><a href="#consuming-trigger-updates">读取事件可能触发状态更新</a></li><li class="toc-h2"><a href="#navigation-events">导航事件</a></li><li class="toc-h3"><a href="#navigation-events-destination-back-stack">目标留在返回栈中的导航事件</a></li><li class="toc-h2"><a href="#other-use-cases">其他场景</a></li><li class="toc-h2"><a href="#samples">示例</a></li><li class="toc-h2"><a href="#additional-resources">其他资源</a></li><li class="toc-h3"><a href="#codelabs">Codelab</a></li><li class="toc-h3"><a href="#documentation">文档</a></li><li class="toc-h3"><a href="#views-content">View 相关内容</a></li></ul></details><nav class="chapter-switcher" aria-label="章节导航"><a href="../01-ui-layer/index.html">← 界面与状态</a><a class="course-home" href="../index.html">全部章节</a><a href="../03-state-production/index.html">状态怎样更新 →</a></nav></header><article class="translated-article">
+<p data-unit="02-ui-events-001"><em>UI events</em> 是 UI 层需要处理的操作，可以由 UI 或 ViewModel 处理。其中最常见的是<em>用户事件</em>：用户点击屏幕、做出手势等操作都会产生事件，UI 再通过可组合函数上的 <a href="https://developer.android.google.cn/develop/ui/compose/touch-input/pointer-input/tap-and-press">Lambda</a> 等回调接收它们。</p>
+<aside class="key-term"><span class="source-text" data-unit="02-ui-events-002"><b>关键术语：</b></span><ul>
+<li data-unit="02-ui-events-003"><b>UI：</b>处理用户界面的代码。</li>
+<li data-unit="02-ui-events-004"><b>UI events：</b>应在 UI 层处理的操作。</li>
+<li data-unit="02-ui-events-005"><b>用户事件：</b>用户与应用交互时产生的事件。</li>
+</ul>
+</aside>
+<p data-unit="02-ui-events-006">用户点击“刷新”这类操作时，ViewModel 通常负责相应业务逻辑，并提供供 UI 调用的函数。事件中的界面行为则可以由 UI 自己处理，例如跳转页面或显示 <a href="https://developer.android.google.cn/develop/ui/compose/components/snackbar"><code>Snackbar</code></a>。</p>
+<p data-unit="02-ui-events-007">同一应用在不同移动平台或设备形态上的<em>业务逻辑</em>保持一致，而 <em>UI 行为逻辑</em>属于实现细节，可能因这些情况而不同。<a href="https://developer.android.google.cn/jetpack/guide/ui-layer#logic-types">UI 层页面</a>对这两种逻辑的定义如下：</p>
+<ul>
+<li data-unit="02-ui-events-008"><strong>业务逻辑</strong>指状态变化后<em>做什么</em>，例如付款或保存用户偏好。领域层和数据层通常处理这类逻辑。本指南选择 <a href="https://developer.android.google.cn/topic/libraries/architecture/viewmodel">Architecture Components ViewModel</a> 类作为处理业务逻辑的类的一种明确方案。</li>
+<li data-unit="02-ui-events-009"><strong>UI 行为逻辑</strong>或 <strong>UI 逻辑</strong>指<em>怎样显示</em>状态变化，例如导航逻辑或向用户显示消息的方式。UI 负责处理这类逻辑。</li>
+</ul>
+<aside class="note"><span class="source-text" data-unit="02-ui-events-010"><strong>注意：</strong><span>本页的建议和最佳实践适用于多种应用，有助于扩展规模、提高质量和健壮性，以及改善可测试性。不过，应把它们视为指导原则，并根据自身需求调整。</span></span></aside>
+<div class="video-wrapper-full-width">
+<iframe class="devsite-embedded-youtube-video" data-video-id="lwGtp0Yr0PE">
+</iframe>
+</div>
+<h2 data-unit="02-ui-events-011" id="decision-tree">UI 事件决策树</h2>
+<p data-unit="02-ui-events-012">下图用决策树帮助你为特定事件场景找到合适的处理方式。本指南的其余部分会详细说明这些方式。</p>
+<figure id="uievents-tree">
+<img alt="If the event originated in the ViewModel, then update the UI state. If
+    the event originated in the UI and requires business logic, then delegate
+    the business logic to the ViewModel. If the event originated in the UI and
+    requires UI behavior logic, then modify the UI element state directly in the
+    UI." data-original-src="https://developer.android.google.cn/static/topic/libraries/architecture/images/mad-arch-uievents-tree.png" loading="eager" src="../assets/fc72bf4247f33b87.png" width="600"/>
+</figure>
+<figcaption data-unit="02-ui-events-013"><b>图 1。</b>事件处理决策树。</figcaption>
+<h2 data-unit="02-ui-events-014" id="handle-user-events">处理用户事件</h2>
+<p data-unit="02-ui-events-015">如果事件只影响 UI 元素本身，例如展开或收起一个条目，UI 可以直接处理。如果需要执行业务逻辑，例如刷新页面数据，就应交给 ViewModel。</p>
+<p data-unit="02-ui-events-016">下例使用不同的按钮展开 UI 元素（UI 逻辑）和刷新页面数据（业务逻辑）：</p>
+<div></div><div><pre class="source-code"><code>@Composable
+fun LatestNewsScreen(viewModel: LatestNewsViewModel = viewModel()) {
+
+    // State of whether more details should be shown
+    var expanded by remember { mutableStateOf(false) }
+
+    Column {
+        Text("Some text")
+        if (expanded) {
+            Text("More details")
+        }
+
+        Button(
+        // The expand details event is processed by the UI that
+        // modifies this composable's internal state.
+        onClick = { expanded = !expanded }
+        ) {
+        val expandText = if (expanded) "Collapse" else "Expand"
+        Text("$expandText details")
+        }
+
+        // The refresh event is processed by the ViewModel that is in charge
+        // of the UI's business logic.
+        Button(onClick = { viewModel.refreshNews() }) {
+            Text("Refresh data")
+        }
+    }
+}
+</code></pre></div>
+<h3 data-unit="02-ui-events-017" id="lazy-list-events">惰性列表中的用户事件</h3>
+<p data-unit="02-ui-events-018">即使操作来自 UI 树更深的位置，例如 <code>LazyColumn</code> 条目，也仍应由 <code>ViewModel</code> 处理用户事件。</p>
+<p data-unit="02-ui-events-019">例如，考虑一个包含可点击条目的列表。不要把 <code>ViewModel</code> 实例向下传入列表可组合函数（<code>MyList</code>），因为这会使 UI 组件与实现细节紧密耦合。</p>
+<p data-unit="02-ui-events-020">把事件定义成可组合函数的 Lambda 参数。这样，列表只需触发事件，不必知道后面由谁处理、如何处理。</p>
+<div></div><div><pre class="source-code"><code>data class MyItem(val id: Int)
+
+@Composable
+fun MyList(
+    items: List&lt;String&gt;,
+    onItemClick: (MyItem) -&gt; Unit
+) {
+    Card {
+        LazyColumn {
+            itemsIndexed(items) { index, string -&gt;
+                ListItem(
+                    modifier = Modifier.clickable {
+                        onItemClick(MyItem(index))
+                    },
+                    headlineContent = {
+                        Text(text = string)
+                    }
+                )
+            }
+        }
+    }
+}
+</code></pre></div>
+<p data-unit="02-ui-events-021">在这种方式下，<code>MyList</code> 可组合函数只处理它显示的数据和暴露的事件，无法访问 ViewModel。事件向上提升，再由上层可组合函数传给 ViewModel。</p>
+<p data-unit="02-ui-events-022">事件处理的更多信息，请参阅 <a href="https://developer.android.google.cn/develop/ui/compose/architecture#architecture-events">Compose 中的事件</a>。</p>
+<h3 data-unit="02-ui-events-023" id="naming-conventions">用户事件函数与事件处理器的命名约定</h3>
+<p data-unit="02-ui-events-024">本指南中，处理用户事件的 ViewModel 函数按相应操作用动词命名，例如 <code>validateInput()</code> 或 <code>login()</code>。</p>
+<p data-unit="02-ui-events-025">Compose 的事件处理器遵循标准命名约定，让数据流向更清晰：</p>
+<ul>
+<li data-unit="02-ui-events-026"><strong>参数名：</strong><code>on</code> + <code>Verb</code> + <code>Target</code>，例如 <code>onExpandClicked</code> 或 <code>onValueChange</code>。</li>
+<li data-unit="02-ui-events-027"><strong>Lambda 表达式：</strong>调用可组合函数时，Lambda 通常就是相应事件的实现。</li>
+</ul>
+<h2 data-unit="02-ui-events-028" id="handle-viewmodel-events">处理 ViewModel 事件</h2>
+<p data-unit="02-ui-events-029"><strong>来自 ViewModel 的 UI 操作，即 ViewModel 事件，应始终转换为 <a href="https://developer.android.google.cn/jetpack/guide/ui-layer#expose-ui-state">UI state</a> 的更新。</strong>这遵循<a href="https://developer.android.google.cn/jetpack/guide/ui-layer#udf">单向数据流</a>，使配置变化后仍可重现事件，保证 UI 操作不丢失。使用 <a href="https://developer.android.google.cn/topic/libraries/architecture/viewmodel-savedstate">saved state 模块</a>时，还可以让事件在进程死亡后恢复。</p>
+<p data-unit="02-ui-events-030">把 UI 操作映射为 UI state 并不总是简单，但最终会得到更简单的逻辑。例如，思考不应止于确定怎样让 UI 导航到某个页面，还需要继续考虑怎样在 UI state 中表达整个用户流程。<strong>换言之，不要只想 UI 要执行什么操作，而应思考这些操作怎样影响 UI state。</strong></p>
+<aside class="key-point"><span class="source-text" data-unit="02-ui-events-031"><strong>要点：</strong><span>ViewModel 事件应始终导致 UI state 更新。</span></span></aside>
+<p data-unit="02-ui-events-032">例如，考虑登录页面。可以用如下方式建模它的 UI state：</p>
+<div></div><div><pre class="source-code"><code>data class LoginUiState(
+    val isLoginInProgress: Boolean = false,
+    val errorMessage: String? = null,
+    val isUserLoggedIn: Boolean = false
+)
+</code></pre></div>
+<p data-unit="02-ui-events-033">登录页面响应 UI state 的变化。</p>
+<div></div><div><pre class="source-code"><code>class LoginViewModel : ViewModel() {
+
+    var uiState by mutableStateOf(LoginUiState())
+
+    fun tryLogin(username: String, password: String) {
+        viewModelScope.launch {
+            // Emit a new state indicating that login is in progress
+            uiState = uiState.copy(isLoginInProgress = true)
+
+            uiState = if (login(username, password)) {
+                // Emit a new state indicating that login was successful
+                uiState.copy(isLoginInProgress = false, isUserLoggedIn = true)
+            } else {
+                // Emit a new state with the error message
+                LoginUiState(isLoginInProgress = false, errorMessage = "Login failed")
+            }
+        }
+    }
+
+    private suspend fun login(username: String, password: String): Boolean {
+        delay(1000)
+        return (username == "Hello" &amp;&amp; password == "World!")
+    }
+}
+
+@Composable
+fun LoginScreen(viewModel: LoginViewModel, onSuccessfulLogin: () -&gt; Unit) {
+
+    val uiState = viewModel.uiState
+
+    LaunchedEffect(uiState) {
+        if (uiState.isUserLoggedIn) {
+            onSuccessfulLogin()
+        }
+    }
+
+    if (uiState.isLoginInProgress) {
+        CircularProgressIndicator()
+    } else {
+        LoginForm(
+            onLoginAttempt = { username, password -&gt;
+                viewModel.tryLogin(username, password)
+            },
+            errorMessage = uiState.errorMessage
+        )
+    }
+}
+</code></pre></div><aside class="note"><span class="source-text" data-unit="02-ui-events-034"><strong>注意：</strong><span>理解本节代码示例，需要先了解<a href="https://developer.android.google.cn/kotlin/coroutines">协程</a>。</span></span></aside>
+<h3 data-unit="02-ui-events-035" id="consuming-trigger-updates">读取事件可能触发状态更新</h3>
+<p data-unit="02-ui-events-036">UI 处理某些 ViewModel 事件后，还需要触发下一次状态更新。例如，要显示一条临时消息，UI 显示完成后应通知 ViewModel。用户关闭消息，或消息因超时消失，都可以视为“用户输入”，因此 ViewModel 也需要知道。相应 UI state 可以这样定义：</p>
+<div></div><div><pre class="source-code"><code>// Models the UI state for the Latest news screen.
+data class LatestNewsUiState(
+    val news: List&lt;News&gt; = emptyList(),
+    val isLoading: Boolean = false,
+    val userMessage: String? = null
+)
+</code></pre></div>
+<p data-unit="02-ui-events-037">当业务逻辑要求向用户显示新的临时消息时，ViewModel 会按以下方式更新 UI state：</p>
+<div></div><div><pre class="source-code"><code>class LatestNewsViewModel(/* ... */) : ViewModel() {
+
+    var uiState by mutableStateOf(LatestNewsUiState())
+        private set
+
+    fun refreshNews() {
+        viewModelScope.launch {
+            // If there isn't internet connection, show a new message on the screen.
+            if (!internetConnection()) {
+                uiState = uiState.copy(userMessage = "No Internet connection")
+                return@launch
+            }
+
+            // Do something else.
+        }
+    }
+
+    fun userMessageShown() {
+        uiState = uiState.copy(userMessage = null)
+    }
+}
+</code></pre></div>
+<p data-unit="02-ui-events-038">ViewModel 只需知道有消息待显示，不必知道 UI 具体怎样显示。消息显示后，UI 通知 ViewModel，再次更新状态以清空 <code>userMessage</code>：</p>
+<div></div><div><pre class="source-code"><code>@Composable
+fun LatestNewsScreen(
+    snackbarHostState: SnackbarHostState,
+    viewModel: LatestNewsViewModel = viewModel(),
+) {
+    // Rest of the UI content.
+
+    // If there are user messages to show on the screen,
+    // show it and notify the ViewModel.
+    viewModel.uiState.userMessage?.let { userMessage -&gt;
+        LaunchedEffect(userMessage) {
+            snackbarHostState.showSnackbar(userMessage)
+            // Once the message is displayed and dismissed, notify the ViewModel.
+            viewModel.userMessageShown()
+        }
+    }
+}
+</code></pre></div>
+<p data-unit="02-ui-events-039">即使消息只是临时的，UI state 也始终忠实反映屏幕上显示的内容：用户消息要么正在显示，要么没有显示。</p>
+<aside class="note"><span class="source-text" data-unit="02-ui-events-040"><strong>注意：</strong><span>如需更高级的用法，即在屏幕上显示用户消息列表，请参阅 <a class="external" href="https://github.com/android/compose-samples/blob/main/Jetsnack/app/src/main/java/com/example/jetsnack/model/SnackbarManager.kt">Jetsnack Compose 示例</a>。</span></span></aside>
+<h2 data-unit="02-ui-events-041" id="navigation-events">导航事件</h2>
+<p data-unit="02-ui-events-042"><a href="https://developer.android.google.cn/topic/architecture/ui-layer/events?hl=en#consuming-trigger-updates">读取事件可能触发状态更新</a>一节详细说明了如何利用 UI state 在屏幕上显示用户消息。导航事件也是 Android 应用中常见的事件类型。</p>
+<p data-unit="02-ui-events-043">如果用户点击按钮，在 UI 中触发事件，则由 UI 将事件暴露给调用方可组合函数来处理。</p>
+<div></div><div><pre class="source-code"><code>@Composable
+fun LoginScreen(
+    onHelp: () -&gt; Unit, // Caller navigates to the help screen
+    viewModel: LoginViewModel = viewModel()
+) {
+    // Rest of the UI
+    Button(
+        onClick = dropUnlessResumed { onHelp() }
+    ) {
+        Text("Get help")
+    }
+}
+</code></pre></div>
+<p data-unit="02-ui-events-044"><a href="https://developer.android.google.cn/reference/kotlin/androidx/lifecycle/compose/dropUnlessResumed.composable"><code>dropUnlessResumed</code></a> 属于 Lifecycle 库，只有生命周期至少处于 <code>RESUMED</code> 状态时，它才允许执行 <code>onHelp</code> 函数。</p>
+<p data-unit="02-ui-events-045">如果导航前需要用业务逻辑验证输入数据，ViewModel 就需要把相应状态暴露给 UI。UI 响应状态变化并执行导航。<a href="https://developer.android.google.cn/topic/architecture/ui-layer/events#handle-viewmodel-events">处理 ViewModel 事件</a>一节涵盖了这种场景。类似代码如下：</p>
+<div></div><div><pre class="source-code"><code>@Composable
+fun LoginScreen(
+    onUserLogIn: () -&gt; Unit, // Caller navigates to the right screen
+    viewModel: LoginViewModel = viewModel()
+) {
+    Button(
+        onClick = {
+            // ViewModel validation is triggered
+            viewModel.tryLogin()
+        }
+    ) {
+        Text("Log in")
+    }
+    // Rest of the UI
+
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+    val currentOnUserLogIn by rememberUpdatedState(onUserLogIn)
+    LaunchedEffect(viewModel, lifecycle)  {
+        // Whenever the uiState changes, check if the user is logged in and
+        // call the `onUserLogin` event when `lifecycle` is at least STARTED
+        snapshotFlow { viewModel.uiState }
+            .filter { it.isUserLoggedIn }
+            .flowWithLifecycle(lifecycle)
+            .collect {
+                currentOnUserLogIn()
+            }
+    }
+}
+</code></pre></div>
+<p data-unit="02-ui-events-046">上例能按预期运行，因为当前的登录目标不会留在返回栈中，用户按返回键也无法回到它。不过，如果页面可能留在返回栈中，方案就需要额外逻辑。</p>
+<h3 data-unit="02-ui-events-047" id="navigation-events-destination-back-stack">目标留在返回栈中的导航事件</h3>
+<p data-unit="02-ui-events-048">如果状态触发从 A 导航到 B，而 A 仍留在返回栈中，就需要避免返回 A 后又自动跳到 B。为此，可以额外保存“是否应该导航”的状态。由于导航属于 UI 逻辑，这个状态通常由 UI 持有。以下场景说明这种处理方式。</p>
+<p data-unit="02-ui-events-049">假设你正在应用的注册流程中。在<em>出生日期</em>验证页面上，用户输入日期并点击“继续”后，ViewModel 会验证日期，并把验证逻辑委托给数据层。如果日期有效，用户进入下一页面。另外，用户可以在不同注册页面之间前后切换，修改部分数据。因此，注册流程中的所有导航目标都留在同一返回栈中。根据这些需求，可以如下实现此页面：</p>
+<div></div><div><pre class="source-code"><code>class DobValidationViewModel(/* ... */) : ViewModel() {
+    var uiState by mutableStateOf(DobValidationUiState())
+        private set
+}
+
+@Composable
+fun DobValidationScreen(
+    onNavigateToNextScreen: () -&gt; Unit, // Caller navigates to the right screen
+    viewModel: DobValidationViewModel = viewModel()
+) {
+    // TextField that updates the ViewModel when a date of birth is selected
+
+    var validationInProgress by rememberSaveable { mutableStateOf(false) }
+
+    Button(
+        onClick = {
+            viewModel.validateInput()
+            validationInProgress = true
+        }
+    ) {
+        Text("Continue")
+    }
+    // Rest of the UI
+
+    /*
+        * The following code implements the requirement of advancing automatically
+        * to the next screen when a valid date of birth has been introduced
+        * and the user wanted to continue with the registration process.
+        */
+
+    if (validationInProgress) {
+        val lifecycle = LocalLifecycleOwner.current.lifecycle
+        val currentNavigateToNextScreen by rememberUpdatedState(onNavigateToNextScreen)
+        LaunchedEffect(viewModel, lifecycle) {
+            // If the date of birth is valid and the validation is in progress,
+            // navigate to the next screen when `lifecycle` is at least STARTED,
+            // which is the default Lifecycle.State for the `flowWithLifecycle` operator.
+            snapshotFlow { viewModel.uiState }
+                .filter { it.isDobValid }
+                .flowWithLifecycle(lifecycle)
+                .collect {
+                    validationInProgress = false
+                    currentNavigateToNextScreen()
+                }
+        }
+    }
+}
+</code></pre></div>
+<p data-unit="02-ui-events-050">验证出生日期是 ViewModel 负责的<em>业务逻辑</em>，通常会被委托给数据层。导航到下一页面则是 <em>UI 逻辑</em>，因为相应需求可能随 UI 配置变化。例如，平板同时显示多个注册步骤时，可能不希望自动进入另一个页面。上例的 <code>validationInProgress</code> 变量实现这一功能：当出生日期有效且用户希望继续下一注册步骤时，它决定 UI 是否自动导航。</p>
+<h2 data-unit="02-ui-events-051" id="other-use-cases">其他场景</h2>
+<p data-unit="02-ui-events-052">如果认为某个 UI 事件场景无法通过 UI state 更新解决，可能需要重新考虑应用中的数据流。请考虑以下原则：</p>
+<ul>
+<li data-unit="02-ui-events-053"><strong>每个类只做其职责范围内的事。</strong>UI 负责屏幕特有的行为逻辑，例如导航调用、点击事件和请求权限。ViewModel 包含业务逻辑，并把更低层的结果转换成 UI state。</li>
+<li data-unit="02-ui-events-054"><strong>思考事件从哪里产生。</strong>遵循本指南开头的<a href="https://developer.android.google.cn/topic/architecture/ui-layer/events?hl=en#decision-tree">决策树</a>，让每个类处理自己的职责。例如，事件产生于 UI 并引发导航时，必须在 UI 中处理。部分逻辑可以委托给 ViewModel，但不能把整个事件的处理完全交给 ViewModel。</li>
+<li data-unit="02-ui-events-055"><strong>如果有多个读取者，并担心事件被多次读取，可能需要重新考虑应用架构。</strong>多个并发读取者会使<em>恰好交付一次</em>的契约极难保证，复杂性和隐蔽行为也会急剧增加。遇到这种问题时，应考虑把相关职责移到 UI 树更高的位置，可能需要一个作用域位于层级更高处的不同实体。</li>
+<li data-unit="02-ui-events-056"><strong>思考什么时候需要读取状态。</strong>有些情况下，应用在后台时不应继续读取状态，例如显示 <code>Toast</code>。这时应考虑在 UI 位于前台时读取。</li>
+</ul>
+<aside class="note">
+<p data-unit="02-ui-events-057"><b>注意：</b>某些应用通过 <a class="external" href="https://kotlinlang.org/docs/channels.html">Kotlin Channel</a> 或其他响应式流把 ViewModel 事件暴露给 UI。当生成者（ViewModel）比读取者（Compose UI）存活得更久时，这些方案无法保证事件得到交付和处理。这可能给开发者带来后续问题，对多数应用来说也是不可接受的用户体验，因为它可能让应用处于不一致状态、引入错误，或使用户错过关键信息。</p>
+<p data-unit="02-ui-events-058">遇到这类问题，应先明确这个一次性事件对界面意味着什么，再立即处理并把结果表达成 UI state。这样能更准确地表示当前界面，提供更强的交付和处理保证，也通常更容易测试，并与应用其他部分保持一致。</p>
+<p data-unit="02-ui-events-059">如果想通过代码示例进一步了解为什么不应使用上述 API，请阅读 <a class="external" href="https://medium.com/androiddevelopers/viewmodel-one-off-event-antipatterns-16a1da869b95">ViewModel：一次性事件反模式</a>博客文章。</p>
+</aside>
+<h2 data-unit="02-ui-events-060" id="samples">示例</h2>
+<p data-unit="02-ui-events-061">以下 Google 示例展示 UI 层中的 UI 事件。可以探索它们，了解如何在实践中应用本指南：</p>
+<p></p><div>
+</div>
+<h2 data-unit="02-ui-events-062" id="additional-resources">其他资源</h2>
+<p data-unit="02-ui-events-063">更多 UI 事件信息，请参阅以下补充资源：</p>
+<h3 data-unit="02-ui-events-064" id="codelabs">Codelab</h3>
+<ul>
+<li data-unit="02-ui-events-065"><a href="https://developer.android.google.cn/codelabs/basic-android-kotlin-compose-viewmodel-and-state#0">Compose 中的 ViewModel 与状态</a></li>
+</ul>
+<h3 data-unit="02-ui-events-066" id="documentation">文档</h3>
+<ul>
+<li data-unit="02-ui-events-067"><a href="https://developer.android.google.cn/topic/architecture/ui-layer">UI 层</a></li>
+<li data-unit="02-ui-events-068"><a href="https://developer.android.google.cn/topic/architecture">应用架构指南</a></li>
+</ul>
+<h3 data-unit="02-ui-events-069" id="views-content">View 相关内容</h3>
+<ul>
+<li data-unit="02-ui-events-070"><a href="https://developer.android.google.cn/topic/architecture/views/ui-layer/events-views">UI 事件（View）</a></li>
+</ul>
+<div class="nocontent"></div>
+</article><nav class="chapter-switcher" aria-label="章节导航"><a href="../01-ui-layer/index.html">← 界面与状态</a><a class="course-home" href="../index.html">全部章节</a><a href="../03-state-production/index.html">状态怎样更新 →</a></nav><footer class="license-note"><p>原文：<a href="https://developer.android.com/topic/architecture/ui-layer/events?hl=en">UI events</a>，Android Developers / Google。英文快照：2026-10-13。非官方中文翻译与表达优化：Codex。原有示例和代码保留；<a href="../NOTICE.html">来源与许可</a>。</p></footer></main></body></html>

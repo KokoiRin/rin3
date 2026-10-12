@@ -1,0 +1,104 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>用 Entity 定义保存的数据 · Android 应用的数据与状态</title><link rel="stylesheet" href="../../reader.css"><link rel="stylesheet" href="../source.css"><link rel="manifest" href="../../../manifest.webmanifest"></head><body><nav class="site-nav"><a href="../index.html">← Android 应用的数据与状态</a><a href="https://developer.android.com/training/data-storage/room/defining-data?hl=en">官方英文原文 ↗</a></nav><main class="reader"><header class="chapter-header"><span class="chapter-kicker">09 · 中文阅读版</span><h1>用 Entity 定义保存的数据</h1><p class="byline">Define data using Room entities · Android Developers / Google</p><div class="title-rule"></div><p class="edition-nav"><strong aria-current="page">中文阅读版</strong> · <a href="english.html">英文对照</a> · <a href="literal.html">第一轮直译稿</a></p><aside class="learning-note"><span class="note-kind">编者导读 · 不属于原文</span><p><strong>Kotlin 对象怎样对应数据库中的表和行？</strong></p><p>先认识 Entity、列名和主键，再看哪些字段保存、哪些忽略。</p><p><strong>第一轮阅读：</strong>首轮读实体组成、主键、复合主键和忽略属性；全文搜索与索引留作后续深化。</p><details class="editor-notes"><summary>版本与适用范围校注（1 条）</summary><p>本次原文的部分 API 与链接属于 Room 3.0。迁移或实践时应核对项目版本；FTS 和驱动支持按原文列出的条件理解。</p></details></aside><details class="source-details"><summary>本篇目录与翻译范围</summary><p>官方英文文章正文全文；保留原文顺序、代码、图示、表格与延伸链接。代码与图中文字保持原样。编者导读与校注单独标明，阅读不要求同时安装、运行或编写示例。</p><ul><li class="toc-h2"><a href="#anatomy">实体的组成</a></li><li class="toc-h2"><a href="#primary-key">定义主键</a></li><li class="toc-h3"><a href="#composite-key">定义复合主键</a></li><li class="toc-h2"><a href="#ignore">忽略属性</a></li><li class="toc-h2"><a href="#search">提供表搜索能力</a></li><li class="toc-h3"><a href="#fts">支持全文搜索</a></li><li class="toc-h3"><a href="#column-indexing">为特定列建立索引</a></li></ul></details><nav class="chapter-switcher" aria-label="章节导航"><a href="../08-room/index.html">← Room 整体认识</a><a class="course-home" href="../index.html">全部章节</a><a href="../10-dao/index.html">用 DAO 读写数据 →</a></nav></header><article class="translated-article">
+<p data-unit="09-entities-001">用 <a href="https://developer.android.google.cn/training/data-storage/room">Room</a> 保存数据时，先定义实体，表示准备保存的对象。一个实体对应一张表，一个实体实例对应表中的一行。</p>
+<p data-unit="09-entities-002">通过 Room 实体，无须编写 SQL 就能定义<a class="external" href="https://www.sqlite.org/schematab.html">数据库结构</a>。</p>
+<h2 data-unit="09-entities-003" id="anatomy">实体的组成</h2>
+<p data-unit="09-entities-004">用带 <a href="https://developer.android.google.cn/reference/kotlin/androidx/room3/Entity"><code>@Entity</code></a> 标注的类定义实体。实体包含对应表中各列的属性，其中一列或多列构成<a href="https://developer.android.google.cn/training/data-storage/room/defining-data?hl=en#primary-key">主键</a>。</p>
+<p data-unit="09-entities-005">下例定义一个 <code>User</code> 表的实体，包含 ID、名字和姓氏列：</p>
+<p>
+</p><div></div><div><pre class="source-code" id="android_room3_defining_data_simple_entity-code-sample-kotlin"><code>@Entity
+data class User(
+    @PrimaryKey val id: Int,
+    val firstName: String,
+    val lastName: String
+)DefiningDataSnippets.kt</code></pre></div>
+<aside class="note"><span class="source-text" data-unit="09-entities-006"><strong>注意：</strong><span>Room 需要能够访问属性，才能持久化它。应公开该属性，或提供 getter 和 setter 函数。</span></span></aside>
+<p data-unit="09-entities-007">默认用类名作为表名，属性名作为列名。修改表名时，设置 <code>@Entity</code> 的 <a href="https://developer.android.google.cn/reference/kotlin/androidx/room3/Entity#tableName()"><code>tableName</code></a>；修改列名时，在属性上添加 <a href="https://developer.android.google.cn/reference/kotlin/androidx/room3/ColumnInfo"><code>@ColumnInfo</code></a> 并设置 <a href="https://developer.android.google.cn/reference/kotlin/androidx/room3/ColumnInfo#name()"><code>name</code></a>。下面是自定义名称的示例：</p>
+<p>
+</p><div></div><div><pre class="source-code" id="android_room3_defining_data_custom_entity-code-sample-kotlin"><code>@Entity(tableName = "users")
+data class User(
+    @PrimaryKey val id: Int,
+    @ColumnInfo(name = "first_name") val firstName: String,
+    @ColumnInfo(name = "last_name") val lastName: String
+)DefiningDataSnippets.kt</code></pre></div>
+<aside class="note"><span class="source-text" data-unit="09-entities-008"><strong>注意：</strong><span>SQLite 的表名和列名<em>不区分大小写</em>。</span></span></aside>
+<h2 data-unit="09-entities-009" id="primary-key">定义主键</h2>
+<p data-unit="09-entities-010">每个 Room 实体都必须定义<a class="external" href="https://learn.microsoft.com/en-us/sql/relational-databases/tables/create-primary-keys?view=sql-server-ver16">主键</a>，唯一标识相应表中的每一行。为某列添加 <a href="https://developer.android.google.cn/reference/kotlin/androidx/room3/PrimaryKey"><code>@PrimaryKey</code></a> 即可：</p>
+<p>
+</p><div></div><div><pre class="source-code" id="android_room3_defining_data_pk-code-sample-kotlin"><code>@PrimaryKey val id: IntDefiningDataSnippets.kt</code></pre></div>
+<aside class="note"><span class="source-text" data-unit="09-entities-011"><strong>注意：</strong><span>若需要 Room 自动分配实体 ID，把 <code>@PrimaryKey</code> 的 <a href="https://developer.android.google.cn/reference/kotlin/androidx/room3/PrimaryKey#autoGenerate()"><code>autoGenerate</code></a> 设为 <code>true</code>。</span></span></aside>
+<h3 data-unit="09-entities-012" id="composite-key">定义复合主键</h3>
+<p data-unit="09-entities-013">如果需要用多列的组合唯一标识一行，就定义<em>复合主键</em>：在 <code>@Entity</code> 的 <a href="https://developer.android.google.cn/reference/kotlin/androidx/room3/Entity#primaryKeys()"><code>primaryKeys</code></a> 中列出相应列。</p>
+<p>
+</p><div></div><div><pre class="source-code" id="android_room3_defining_data_composite_pk-code-sample-kotlin"><code>@Entity(primaryKeys = ["firstName", "lastName"])
+data class User(
+    val firstName: String,
+    val lastName: String
+)DefiningDataSnippets.kt</code></pre></div>
+<h2 data-unit="09-entities-014" id="ignore">忽略属性</h2>
+<p data-unit="09-entities-015">默认情况下，Room 为实体的每个属性创建一列。若不希望持久化某属性，添加 <a href="https://developer.android.google.cn/reference/kotlin/androidx/room3/Ignore"><code>@Ignore</code></a>：</p>
+<p>
+</p><div></div><div><pre class="source-code" id="android_room3_defining_data_ignore-code-sample-kotlin"><code>@Entity
+data class User(
+    @PrimaryKey val id: Int,
+    val firstName: String,
+    val lastName: String,
+    @Ignore val picture: Bitmap? = null
+)DefiningDataSnippets.kt</code></pre></div>
+<aside class="note"><span class="source-text" data-unit="09-entities-016"><strong>注意：</strong><span>主构造器中的属性若被忽略，必须提供默认值，例如 <code>null</code>。因为 Room 建表时不保存这个属性，但从查询结果创建对象时仍会调用主构造器。</span></span></aside>
+<p data-unit="09-entities-017">如果实体从父实体继承属性，使用 <code>@Entity</code> 标注的 <a href="https://developer.android.google.cn/reference/kotlin/androidx/room3/Entity#ignoredColumns()"><code>ignoredColumns</code></a>：</p>
+<p>
+</p><div></div><div><pre class="source-code" id="android_room3_defining_data_inherited_ignore-code-sample-kotlin"><code>open class User {
+    var picture: Bitmap? = null
+}
+
+@Entity(ignoredColumns = ["picture"])
+data class RemoteUser(
+    @PrimaryKey val id: Int,
+    val hasVpn: Boolean
+) : User()DefiningDataSnippets.kt</code></pre></div>
+<h2 data-unit="09-entities-018" id="search">提供表搜索能力</h2>
+<p data-unit="09-entities-019">Room 支持多种标注，用于在数据库表中搜索信息。</p>
+<h3 data-unit="09-entities-020" id="fts">支持全文搜索</h3>
+<p data-unit="09-entities-021">若应用需要快速全文搜索（FTS），应让实体由虚拟表支持，使用 <a class="external" href="https://www.sqlite.org/fts3.html">SQLite 的 FTS3 或 FTS4 扩展</a>，或 <a class="external" href="https://www.sqlite.org/fts5.html">FTS5 扩展</a>。</p>
+<p data-unit="09-entities-022">为实体添加 <a href="https://developer.android.google.cn/reference/kotlin/androidx/room3/Fts3"><code>@Fts3</code></a>、<a href="https://developer.android.google.cn/reference/kotlin/androidx/room3/Fts4"><code>@Fts4</code></a> 或 <a href="https://developer.android.google.cn/reference/kotlin/androidx/room3/Fts5"><code>@Fts5</code></a>，即可使用这一能力。</p>
+<p>
+</p><div></div><div><pre class="source-code" id="android_room3_defining_data_fts4-code-sample-kotlin"><code>// Use `@Fts3` only if your app has strict disk space requirements.
+@Fts4
+@Entity(tableName = "users")
+data class User(
+    // Specifying a primary key for an FTS-table-backed entity is optional,
+    // but if you include one, it must an INTEGER type and column name "rowid".
+    @PrimaryKey @ColumnInfo(name = "rowid") val id: Long,
+    @ColumnInfo(name = "first_name") val firstName: String
+)DefiningDataSnippets.kt</code></pre></div>
+<aside class="note"><span class="source-text" data-unit="09-entities-023"><strong>注意：</strong><span>启用 FTS 的表始终使用类型为 <code>INTEGER</code>、列名为 <code>"rowid"</code> 的主键。若 FTS 实体定义主键，<em>必须</em>采用这一类型和列名。</span></span></aside>
+<p data-unit="09-entities-024">用 <code>tokenizer</code> 选项自定义 FTS 表的分词方式。Room 通过 <a href="https://developer.android.google.cn/reference/kotlin/androidx/room3/FtsOptions"><code>FtsOptions</code></a> 提供多种内置分词器，包括 <code>TOKENIZER_SIMPLE</code>、<code>TOKENIZER_PORTER</code>、<code>TOKENIZER_UNICODE61</code>：</p>
+<p>
+</p><div></div><div><pre class="source-code" id="android_room3_defining_data_fts4_tokenizer-code-sample-kotlin"><code>@Fts4(tokenizer = FtsOptions.TOKENIZER_UNICODE61)
+@Entity(tableName = "users")
+data class User(
+    @PrimaryKey @ColumnInfo(name = "rowid") val id: Long,
+    @ColumnInfo(name = "first_name") val firstName: String
+)DefiningDataSnippets.kt</code></pre></div>
+<p data-unit="09-entities-025">Room 还提供结果排序、移除列索引、使用外部内容表等 FTS 实体选项。更多信息请参阅 <a href="https://developer.android.google.cn/reference/kotlin/androidx/room3/FtsOptions"><code>FtsOptions</code></a>。</p>
+<h3 data-unit="09-entities-026" id="column-indexing">为特定列建立索引</h3>
+<p data-unit="09-entities-027">如果使用 <a href="https://developer.android.google.cn/reference/kotlin/androidx/sqlite/driver/AndroidSQLiteDriver"><code>AndroidSQLiteDriver</code></a>，需要兼容不支持 FTS3、FTS4、FTS5 实体表的 SDK 版本，仍可对数据库特定列建立索引，加快查询。使用 <a href="https://developer.android.google.cn/reference/kotlin/androidx/sqlite/driver/bundled/BundledSQLiteDriver"><code>BundledSQLiteDriver</code></a> 时，Room 支持所有 FTS 版本，不受 Android SDK 版本影响。</p>
+<p data-unit="09-entities-028">在 <a href="https://developer.android.google.cn/reference/kotlin/androidx/room3/Entity"><code>@Entity</code></a> 中加入 <a href="https://developer.android.google.cn/reference/kotlin/androidx/room3/Entity#indices()"><code>indices</code></a>，为实体添加索引，并列出包含在索引或复合索引中的列名。示例如下：</p>
+<p>
+</p><div></div><div><pre class="source-code" id="android_room3_defining_data_index-code-sample-kotlin"><code>@Entity(indices = [Index(value = ["last_name", "address"])])
+data class User(
+    @PrimaryKey val id: Int,
+    @ColumnInfo(name = "first_name") val firstName: String,
+    @ColumnInfo(name = "last_name") val lastName: String,
+    val address: String?,
+)DefiningDataSnippets.kt</code></pre></div>
+<p data-unit="09-entities-029">如果某列或某组列的值必须唯一，可将 <a href="https://developer.android.google.cn/reference/kotlin/androidx/room3"><code>@Index</code></a> 的 <a href="https://developer.android.google.cn/reference/kotlin/androidx/room3#unique()"><code>unique</code></a> 设为 <code>true</code>。示例如下：</p>
+<p>
+</p><div></div><div><pre class="source-code" id="android_room3_defining_data_unique_index-code-sample-kotlin"><code>@Entity(indices = [Index(value = ["first_name", "last_name"], unique = true)])
+data class User(
+    @PrimaryKey val id: Int,
+    @ColumnInfo(name = "first_name") val firstName: String,
+    @ColumnInfo(name = "last_name") val lastName: String,
+)DefiningDataSnippets.kt</code></pre></div>
+<div class="nocontent"></div>
+</article><nav class="chapter-switcher" aria-label="章节导航"><a href="../08-room/index.html">← Room 整体认识</a><a class="course-home" href="../index.html">全部章节</a><a href="../10-dao/index.html">用 DAO 读写数据 →</a></nav><footer class="license-note"><p>原文：<a href="https://developer.android.com/training/data-storage/room/defining-data?hl=en">Define data using Room entities</a>，Android Developers / Google。英文快照：2026-10-13。非官方中文翻译与表达优化：Codex。原有示例和代码保留；<a href="../NOTICE.html">来源与许可</a>。</p></footer></main></body></html>

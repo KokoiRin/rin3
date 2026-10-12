@@ -1,0 +1,514 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Use SQL to read and write to a database · Android 应用的数据与状态</title><link rel="stylesheet" href="../../reader.css"><link rel="stylesheet" href="../source.css"><link rel="manifest" href="../../../manifest.webmanifest"></head><body><nav class="site-nav"><a href="../index.html">← Android 应用的数据与状态</a><a href="https://developer.android.com/codelabs/basic-android-kotlin-compose-sql?hl=en">官方英文原文 ↗</a></nav><main class="reader"><header class="chapter-header"><span class="chapter-kicker">07 · English source</span><h1>Use SQL to read and write to a database</h1><p class="byline">Use SQL to read and write to a database · Android Developers / Google</p><div class="title-rule"></div><p class="edition-nav"><a href="index.html">中文阅读版</a> · <strong aria-current="page">英文对照</strong> · <a href="literal.html">第一轮直译稿</a></p><aside class="learning-note"><span class="note-kind">编者导读 · 不属于原文</span><p><strong>表、行、列是什么，怎样读取和修改保存的数据？</strong></p><p>沿邮件数据库原例，从结构、SELECT 和 WHERE 开始，再看排序、数量限制和增删改。</p><p><strong>第一轮阅读：</strong>先读关系型数据库概念、SELECT 和 WHERE；聚合、分组及写入可以分批阅读。Database Inspector 操作不是阅读前置条件。</p><details class="editor-notes"><summary>版本与适用范围校注（4 条）</summary><p>原文把 SQL 说成“不是实际的编程语言”，是面向初学者的简化。SQL 是用于描述数据查询和操作的语言，不必因此先学习 C。</p><p>SQLite 并不要求每张表显式声明主键；普通 rowid 表可有隐式 rowid。本篇的主键说明是其数据建模入门场景。</p><p>GROUP BY 用于按键分组并进行聚合，不是只改变返回顺序；如果需要有保证的排序，应显式使用 ORDER BY。正文忠实保留原文表述，本条校注与原文分开。</p><p>SQLite 没有独立的布尔存储类型，通常用整数 0/1 表示真假。类型表中的 BOOLEAN 是声明类型的教学写法，不能等同于独立布尔存储类别。</p></details></aside><details class="source-details"><summary>本篇目录与翻译范围</summary><p>官方英文文章正文全文；保留原文顺序、代码、图示、表格与延伸链接。代码与图中文字保持原样。编者导读与校注单独标明，阅读不要求同时安装、运行或编写示例。</p><ul><li class="toc-h2"><a href="#0">1. Before you begin</a></li><li class="toc-h2"><a href="#1">2. Key concepts of relational databases</a></li><li class="toc-h2"><a href="#what-is-a-database">What is a database?</a></li><li class="toc-h2"><a href="#what-is-sqlite">What is SQLite?</a></li><li class="toc-h2"><a href="#representing-data-with-sqlite">Representing data with SQLite</a></li><li class="toc-h2"><a href="#2">3. Download the starter data set</a></li><li class="toc-h2"><a href="#use-the-database-inspector">Use the Database Inspector</a></li><li class="toc-h2"><a href="#3">4. Read data with a SELECT statement</a></li><li class="toc-h2"><a href="#sql-select-statement">SQL SELECT statement</a></li><li class="toc-h2"><a href="#read-email-data-using-a-select-statement">Read email data using a SELECT statement</a></li><li class="toc-h2"><a href="#4">5. Use SELECT statements with aggregate functions and distinct values</a></li><li class="toc-h2"><a href="#reduce-columns-with-aggregate-functions">Reduce columns with aggregate functions</a></li><li class="toc-h2"><a href="#filter-duplicate-results-with-distinct">Filter duplicate results with DISTINCT</a></li><li class="toc-h2"><a href="#5">6. Filter queries with a WHERE clause</a></li><li class="toc-h2"><a href="#logical-operators-with-where-clauses">Logical operators with WHERE clauses</a></li><li class="toc-h2"><a href="#search-for-text-using-like">Search for text using LIKE</a></li><li class="toc-h2"><a href="#6">7. Group, order, and limit results</a></li><li class="toc-h2"><a href="#group-results-with-group-by">Group results with GROUP BY</a></li><li class="toc-h2"><a href="#sort-results-with-order-by">Sort results with ORDER BY</a></li><li class="toc-h2"><a href="#restrict-the-number-of-results-with-limit">Restrict the number of results with LIMIT</a></li><li class="toc-h2"><a href="#7">8. Insert, update, and delete data in a database</a></li><li class="toc-h2"><a href="#insert-data-into-a-database">Insert data into a database</a></li><li class="toc-h2"><a href="#update-existing-data-in-a-database">Update existing data in a database</a></li><li class="toc-h2"><a href="#delete-a-row-from-a-database">Delete a row from a database</a></li><li class="toc-h2"><a href="#8">9. Summary</a></li><li class="toc-h2"><a href="#9">10. Learn more</a></li></ul></details><nav class="chapter-switcher" aria-label="章节导航"><a href="../06-cancellation/english.html">← 异步任务的取消与超时</a><a class="course-home" href="../index.html">全部章节</a><a href="../08-room/english.html">Room 整体认识 →</a></nav></header><article class="translated-article">
+<div></div>
+<div id="basic-android-kotlin-compose-sql" title="Use SQL to read and write to a database">
+<div>
+<div>
+</div>
+<h2 class="step-title" data-unit="07-sql-001" id="0">
+              1. Before you begin
+          </h2>
+<p data-unit="07-sql-002">Many of the apps you use store data directly on the device. The Clock app stores your recurring alarms, the Google Maps app saves a list of your recent searches, and the Contacts app lets you add, edit, and remove your contacts' information.</p>
+<p data-unit="07-sql-003">Data persistence—storing or persisting data on the device—is a big part of Android development. Persistent data ensures user-generated content isn't lost when the app is closed, or data downloaded from the internet is saved so it doesn't need to be redownloaded later.</p>
+<p data-unit="07-sql-004">SQLite is a common way provided by the Android SDK for Android apps to persist data. SQLite provides a relational database that allows you to represent data in a similar way to how you structure data with Kotlin classes. This codelab teaches the fundamentals of SQL—Structured Query Language—which, while not an actual programming language, provides a simple and flexible way to read and modify a SQLite database with just a few lines of code.</p>
+<p data-unit="07-sql-005">After you gain a fundamental knowledge of SQL, you'll be prepared to use the Room library to add persistence to your apps later in this unit.</p>
+<aside class="special"><p data-unit="07-sql-006"><strong>Note:</strong> Android apps have a number of ways to store data, including both internal and external storage. This unit discusses Room and Preferences Datastore. To learn more about the different methods for storing data on Android, refer to the  <a href="https://developer.android.google.cn/training/data-storage">Data and file storage overview</a>.</p>
+</aside>
+</div>
+<div>
+<h2 class="step-title" data-unit="07-sql-007" id="1">
+              2. Key concepts of relational databases
+          </h2>
+<h2 data-unit="07-sql-008" id="what-is-a-database">What is a database?</h2>
+<p data-unit="07-sql-009">If you are familiar with a spreadsheet program like Google Sheets, you are already familiar with a basic analogy for a database.</p>
+<p data-unit="07-sql-010">A spreadsheet consists of separate data tables, or individual spreadsheets in the same workbook.</p>
+<p class="image-container"><img alt="1f2b00d3ca083c4a.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/1f2b00d3ca083c4a.png" loading="eager" src="../assets/738149da9851e1be.png"/></p>
+<p data-unit="07-sql-011">Each table consists of columns that define what the data represents and rows that represent individual items with values for each column. For example, you might define columns for a student's ID, name, major, and grade.</p>
+<p class="image-container"><img alt="a441da5cc7be346b.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/a441da5cc7be346b.png" loading="eager" src="../assets/f671053e6141b909.png"/></p>
+<p data-unit="07-sql-012">Each row contains data for a single student, with values for each of the columns.</p>
+<p class="image-container"><img alt="6131d8a59996f521.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/6131d8a59996f521.png" loading="eager" src="../assets/2a872465b2d4c826.png"/></p>
+<p data-unit="07-sql-013">A relational database works the same way.</p>
+<ul>
+<li data-unit="07-sql-014">Tables define high-level groupings of data you want to represent, such as students and professors.</li>
+<li data-unit="07-sql-015">Columns define the data that each row in the table contains.</li>
+<li data-unit="07-sql-016">Rows contain the actual data that consist of values for each column in the table.</li>
+</ul>
+<p data-unit="07-sql-017">The structure of a relational database also mirrors what you already know about classes and objects in Kotlin.</p>
+<div></div><div><pre class="source-code"><code>data class Student(
+    id: Int,
+    name: String,
+    major: String,
+    gpa: Double
+)
+</code></pre></div>
+<ul>
+<li data-unit="07-sql-018">Classes, like tables, model the data you want to represent in your app.</li>
+<li data-unit="07-sql-019">Properties, like columns, define the specific pieces of data that every instance of the class should contain.</li>
+<li data-unit="07-sql-020">Objects, like rows, are the actual data. Objects contain values for each property defined in the class, just as rows contain values for each column defined in the data table.</li>
+</ul>
+<p data-unit="07-sql-021">Just as a spreadsheet can contain multiple sheets and an app can contain multiple classes, a database can contain multiple tables. A database is called a relational database when it can model relationships between tables. For example, a graduate student might have a single professor as a doctoral advisor whereas that professor is the doctoral advisor for multiple students.</p>
+<p class="image-container"><img alt="7f1b56e05520dc3.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/7f1b56e05520dc3.png" loading="eager" src="../assets/9bd8d481567b65a1.png"/></p>
+<p data-unit="07-sql-022">Every table in a relational database contains a unique identifier for rows, such as a column where the value in each row is an automatically incremented integer. This identifier is known as the primary key.</p>
+<p data-unit="07-sql-023">When a table references the primary key of another table, it is known as a foreign key. The presence of a foreign key means there's a relationship between the tables.</p>
+<aside class="special"><p data-unit="07-sql-024"><strong>Note:</strong> Like with Kotlin classes, the convention is to use the singular form for the name of database tables. For the example above, that means you name the tables <code>teacher</code>, <code>student</code>, and <code>course</code>, not the plural forms of <code>teachers</code>, <code>students</code>, and <code>courses</code>.</p>
+</aside>
+<h2 data-unit="07-sql-025" id="what-is-sqlite">What is SQLite?</h2>
+<p data-unit="07-sql-026">SQLite is a commonly used relational database. Specifically, SQLite refers to a lightweight C library for relational database management with Structured Query Language, known as SQL and sometimes pronounced as "sequel" for short.</p>
+<p data-unit="07-sql-027">You won't have to learn C or any entirely new programming language to work with a relational database. SQL is simply a way to add and retrieve data from a relational database with a few lines of code.</p>
+<aside class="special"><p data-unit="07-sql-028"><strong>Note:</strong> Not all databases are organized into tables, columns, and rows. Other kinds of databases, known as NoSQL, are structured similarly to a JSON object with nested pairs of keys and values. Examples of NoSQL databases include Redis or  <a href="https://firebase.google.cn/docs/firestore">Cloud Firestore</a>.</p>
+</aside>
+<h2 data-unit="07-sql-029" id="representing-data-with-sqlite">Representing data with SQLite</h2>
+<p data-unit="07-sql-030">In Kotlin, you're familiar with data types like <code>Int</code> and <code>Boolean</code>. SQLite databases use data types too! Data table columns must have a specific data type. The following table maps common Kotlin data types to their SQLite equivalents.</p>
+<div class="table-wrapper" tabindex="0"><table class="vertical-rules">
+<tr><td colspan="1" rowspan="1"><p data-unit="07-sql-031"><strong>Kotlin data type</strong></p>
+</td><td colspan="1" rowspan="1"><p data-unit="07-sql-032"><strong>SQLite data type</strong></p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p data-unit="07-sql-033"><code>Int</code></p>
+</td><td colspan="1" rowspan="1"><p data-unit="07-sql-034">INTEGER</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p data-unit="07-sql-035"><code>String</code></p>
+</td><td colspan="1" rowspan="1"><p data-unit="07-sql-036">VARCHAR or TEXT</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p data-unit="07-sql-037"><code>Boolean</code></p>
+</td><td colspan="1" rowspan="1"><p data-unit="07-sql-038">BOOLEAN</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p data-unit="07-sql-039"><code>Float</code>, <code>Double</code></p>
+</td><td colspan="1" rowspan="1"><p data-unit="07-sql-040">REAL</p>
+</td></tr>
+</table></div>
+<p data-unit="07-sql-041">The tables in a database and the columns in each table are collectively known as the <em>schema</em>. In the next section, you download the starter data set and learn more about its schema.</p>
+</div>
+<div>
+<h2 class="step-title" data-unit="07-sql-042" id="2">
+              3. Download the starter data set
+          </h2>
+<p data-unit="07-sql-043">The database for this codelab is for a hypothetical email app. This codelab uses familiar examples, such as sorting and filtering mail, or searching by subject text or sender, to demonstrate all the powerful things you can do with SQL. This example also ensures you have experience with the types of scenarios you might find in an app before you work with Room in the next pathway.</p>
+<p data-unit="07-sql-044">Download the starter project from the <code>compose</code> branch of the SQL Basics GitHub repository  <a href="https://github.com/google-developer-training/android-basics-kotlin-sql-basics-app/tree/compose">here</a>.</p>
+<h2 data-unit="07-sql-045" id="use-the-database-inspector">Use the Database Inspector</h2>
+<p data-unit="07-sql-046">To use Database Inspector, perform the following steps:</p>
+<ol>
+<li data-unit="07-sql-047">Run the SQL Basics app in Android Studio. When the app launches, you see the following screen.</li>
+</ol>
+<p class="image-container"><img alt="76e94dfe2234c2b1.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/76e94dfe2234c2b1.png" loading="eager" src="../assets/d9b5337dda8753d3.png"/></p>
+<ol>
+<li data-unit="07-sql-048">In Android Studio, click <strong>View</strong> &gt; <strong>Tool Windows</strong> &gt; <strong>App Inspection</strong>.</li>
+</ol>
+<p class="image-container"><img alt="cd5dd859d31cbab3.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/cd5dd859d31cbab3.png" loading="eager" src="../assets/8407302d0a92b4d5.png"/></p>
+<p data-unit="07-sql-049">You now see a new tab at the bottom labeled <strong>App Inspection</strong> with the <strong>Database Inspector</strong> tab selected. There are two additional tabs, but you don't need to use those. It might take a few seconds to load, but you then see a list on the left with the data tables, which you can select to run queries against.</p>
+<p class="image-container"><img alt="5ace24ac5cc15abc.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/5ace24ac5cc15abc.png" loading="eager" src="../assets/78c1596ccc6809bf.png"/></p>
+<ol>
+<li data-unit="07-sql-050">Click the <strong>Open New Query Tab</strong> button to open a pane to run a query against the database.</li>
+</ol>
+<p class="image-container"><img alt="277ecff401ca5f1a.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/277ecff401ca5f1a.png" loading="eager" src="../assets/57bf0240ff98cab4.png"/></p>
+<p data-unit="07-sql-051">The <code>email</code> table has 7 columns:</p>
+<ul>
+<li data-unit="07-sql-052"><code>id</code>: The primary key.</li>
+<li data-unit="07-sql-053"><code>subject</code>: The subject line of the email.</li>
+<li data-unit="07-sql-054"><code>sender</code>: The email address from which the email originated.</li>
+<li data-unit="07-sql-055"><code>folder</code>: The folder where the message can be found, such as Inbox or Spam.</li>
+<li data-unit="07-sql-056"><code>starred</code>: Whether or not the user starred the email.</li>
+<li data-unit="07-sql-057"><code>read</code>: Whether or not the user read the email.</li>
+<li data-unit="07-sql-058"><code>received</code>: The timestamp when the email was received.</li>
+</ul>
+<aside class="warning"><p data-unit="07-sql-059"><strong>Tip:</strong> Click the <strong>Keep Database Connections Open  </strong><img alt="c344609191760f79.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/c344609191760f79.png" loading="eager" src="../assets/8bedcc36c57fdef9.png"/> button to continue interacting with the database after shutting down the emulator.</p>
+<p class="image-container"><img alt="582d2d5ec3a738e0.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/582d2d5ec3a738e0.png" loading="eager" src="../assets/3e7701f8dd9bb6c5.png"/></p>
+</aside>
+</div>
+<div>
+<h2 class="step-title" data-unit="07-sql-060" id="3">
+              4. Read data with a SELECT statement
+          </h2>
+<h2 data-unit="07-sql-061" id="sql-select-statement">SQL <code>SELECT</code> statement</h2>
+<p data-unit="07-sql-062">A SQL statement—sometimes called a query—is used to read or manipulate a database.</p>
+<p data-unit="07-sql-063">You read data from a SQLite database with a <code>SELECT</code> statement. A simple <code>SELECT</code> statement consists of the <code>SELECT</code> keyword, followed by the column name, followed by the <code>FROM</code> keyword, followed by the table name. Every SQL statement ends with a semicolon (<code>;</code>).</p>
+<p class="image-container"><img alt="2d7ff99736b072b9.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/2d7ff99736b072b9.png" loading="eager" src="../assets/4ec0a42653ecb65e.png"/></p>
+<p data-unit="07-sql-064">A <code>SELECT</code> statement can also return data from multiple columns. You must separate column names with a comma.</p>
+<p class="image-container"><img alt="cf94edd5de825043.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/cf94edd5de825043.png" loading="eager" src="../assets/de0b769f5d0d6c4b.png"/></p>
+<p data-unit="07-sql-065">If you want to select every column from the table, you use the wildcard character (<code>*</code>) in place of the column names.</p>
+<p class="image-container"><img alt="fb75d3033c59949a.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/fb75d3033c59949a.png" loading="eager" src="../assets/7d0aa006a21c4d4d.png"/></p>
+<p data-unit="07-sql-066">In either case, a simple <code>SELECT</code> statement like this returns every row in the table. You just need to specify the column names you want it to return.</p>
+<aside class="special"><p data-unit="07-sql-067"><strong>Note:</strong> While it is the convention to end every SQL statement with a semicolon (<code>;</code>), certain editors like the database inspector in Android Studio might let you omit  the semicolon. The diagrams in this codelab show a semicolon at the end of each complete SQL query.</p>
+</aside>
+<h2 data-unit="07-sql-068" id="read-email-data-using-a-select-statement">Read email data using a <code>SELECT</code> statement</h2>
+<p data-unit="07-sql-069">One of the primary things an email app needs to do is display a list of messages. With a SQL database, you can get this information with a <code>SELECT</code> statement.</p>
+<ol>
+<li data-unit="07-sql-070">Make sure the <strong>email</strong> table is selected in the <strong>Database Inspector</strong>.</li>
+</ol>
+<p class="image-container"><img alt="ffc77f938ea09071.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/ffc77f938ea09071.png" loading="eager" src="../assets/48ea2f594d2a095c.png"/></p>
+<ol>
+<li data-unit="07-sql-071">First, try to select every column from every row in the <code>email</code> table.</li>
+</ol>
+<div></div><div><pre class="source-code"><code>SELECT * FROM email;
+</code></pre></div>
+<ol>
+<li data-unit="07-sql-072">Click the <strong>Run</strong> button in the bottom right corner of the text box. Observe that the entire <code>email</code> table is returned.</li>
+</ol>
+<p class="image-container"><img alt="4c3ea237c6ed2b57.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/4c3ea237c6ed2b57.png" loading="eager" src="../assets/bb2c50706b2c96be.png"/></p>
+<ol>
+<li data-unit="07-sql-073">Now, try to select just the subject for every row.</li>
+</ol>
+<div></div><div><pre class="source-code"><code>SELECT subject FROM email;
+</code></pre></div>
+<ol>
+<li data-unit="07-sql-074">Notice that, once again, the query returns every row but only for that single column.</li>
+</ol>
+<p class="image-container"><img alt="69a20935721dcc2.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/69a20935721dcc2.png" loading="eager" src="../assets/ef65e07569abc4d9.png"/></p>
+<ol>
+<li data-unit="07-sql-075">You can also select multiple columns. Try selecting the subject and the sender.</li>
+</ol>
+<div></div><div><pre class="source-code"><code>SELECT subject, sender FROM email;
+</code></pre></div>
+<ol>
+<li data-unit="07-sql-076">Observe that the query returns every row in the <code>email</code> table, but only the values of the subject and sender column.</li>
+</ol>
+<p class="image-container"><img alt="4ae739dad54397ea.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/4ae739dad54397ea.png" loading="eager" src="../assets/942a77475d67f3d5.png"/></p>
+<p data-unit="07-sql-077">Congratulations! You just executed your first query. Not bad, but consider it just the beginning; the "hello world" of SQL, if you will.</p>
+<p data-unit="07-sql-078">You can be much more specific with <code>SELECT</code> statements by adding clauses to specify a subset of the data and even change how the output is formatted. In the following sections, you learn about the commonly used clauses of <code>SELECT</code> statements and how to format data.</p>
+</div>
+<div>
+<h2 class="step-title" data-unit="07-sql-079" id="4">
+              5. Use SELECT statements with aggregate functions and distinct values
+          </h2>
+<h2 data-unit="07-sql-080" id="reduce-columns-with-aggregate-functions">Reduce columns with aggregate functions</h2>
+<p data-unit="07-sql-081">SQL statements aren't limited to returning rows. SQL offers a variety of functions that can perform an operation or calculation on a specific column, such as finding the maximum value, or counting the number of unique possible values for a particular column. These functions are called <strong>aggregate functions</strong>. Instead of returning all the data of a specific column, you can return a single value from a specific column.</p>
+<p data-unit="07-sql-082">Examples of SQL aggregate functions include the following:</p>
+<ul>
+<li data-unit="07-sql-083"><code>COUNT()</code>: Returns the total number of rows that match the query.</li>
+<li data-unit="07-sql-084"><code>SUM()</code>: Returns the sum of the values for all rows in the selected column.</li>
+<li data-unit="07-sql-085"><code>AVG()</code>: Returns the mean value—average—of all the values in the selected column.</li>
+<li data-unit="07-sql-086"><code>MIN()</code>: Returns the smallest value in the selected column.</li>
+<li data-unit="07-sql-087"><code>MAX()</code>: Returns the largest value in the selected column.</li>
+</ul>
+<p data-unit="07-sql-088">Instead of a column name, you can call an aggregate function and pass in a column name as an argument between the parentheses.</p>
+<p class="image-container"><img alt="6730a62d583a0d9.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/6730a62d583a0d9.png" loading="eager" src="../assets/6995703dc15d1a5c.png"/></p>
+<p data-unit="07-sql-089">Instead of returning that column's value for every row in the table, a single value is returned from calling the aggregate function.</p>
+<p data-unit="07-sql-090">Aggregate functions can be an efficient way to perform calculations on a value when you don't need to read all the data in a database. For example, you might want to find the average of the values in a column without loading your entire database into a List and doing it manually.</p>
+<p data-unit="07-sql-091">Let's see some of the aggregate functions in action with the <code>email</code> table:</p>
+<ol>
+<li data-unit="07-sql-092">An app might want to get the total number of emails received. You can do this by using the <code>COUNT()</code> function and the wildcard character (<code>*</code>).</li>
+</ol>
+<div></div><div><pre class="source-code"><code>SELECT COUNT(*) FROM email;
+</code></pre></div>
+<ol>
+<li data-unit="07-sql-093">The query returns a single value. You can do this entirely with a SQL query, without any Kotlin code to count the rows manually.</li>
+</ol>
+<p class="image-container"><img alt="5d49b987545184bb.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/5d49b987545184bb.png" loading="eager" src="../assets/0e48afc42d114bde.png"/></p>
+<ol>
+<li data-unit="07-sql-094">To get the time of the most recent message, you can use the <code>MAX()</code> function on the received column because the most recent Unix timestamp is the highest number.</li>
+</ol>
+<div></div><div><pre class="source-code"><code>SELECT MAX(received) FROM email;
+</code></pre></div>
+<ol>
+<li data-unit="07-sql-095">The query returns a single result, the highest—most recent—timestamp in the received column.</li>
+</ol>
+<p class="image-container"><img alt="d0241dce845c3955.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/d0241dce845c3955.png" loading="eager" src="../assets/cba415d3045313a4.png"/></p>
+<h2 data-unit="07-sql-096" id="filter-duplicate-results-with-distinct">Filter duplicate results with <code>DISTINCT</code></h2>
+<p data-unit="07-sql-097">When you select a column, you can precede it with the <code>DISTINCT</code> keyword. This approach can be useful if you want to remove duplicates from the query result.</p>
+<p class="image-container"><img alt="4f02533256302f26.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/4f02533256302f26.png" loading="eager" src="../assets/d360adc91cab39c6.png"/></p>
+<p data-unit="07-sql-098">As an example, many email apps have an autocomplete feature for addresses. You might want to include all addresses you receive an email from and display them in a list.</p>
+<ol>
+<li data-unit="07-sql-099">Run the following query to return the <code>sender</code> column for every row.</li>
+</ol>
+<div></div><div><pre class="source-code"><code>SELECT sender FROM email;
+</code></pre></div>
+<ol>
+<li data-unit="07-sql-100">Observe that the result contains many duplicates. This definitely isn't an ideal experience!</li>
+</ol>
+<p class="image-container"><img alt="4f0489d1668dbede.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/4f0489d1668dbede.png" loading="eager" src="../assets/62e0546b677e4766.png"/></p>
+<ol>
+<li data-unit="07-sql-101">Add the <code>DISTINCT</code> keyword before the sender column and rerun the query.</li>
+</ol>
+<div></div><div><pre class="source-code"><code>SELECT DISTINCT sender FROM email;
+</code></pre></div>
+<ol>
+<li data-unit="07-sql-102">Notice that the result is now much smaller and every value is unique.</li>
+</ol>
+<p class="image-container"><img alt="43a47ad8d18fee6e.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/43a47ad8d18fee6e.png" loading="eager" src="../assets/46895b0bc6105477.png"/></p>
+<p data-unit="07-sql-103">You can also precede the column name in an aggregate function with the <code>DISTINCT</code> keyword.</p>
+<p class="image-container"><img alt="55c45cb9c258e882.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/55c45cb9c258e882.png" loading="eager" src="../assets/d37443611f7fbc88.png"/></p>
+<p data-unit="07-sql-104">Say you want to know the number of unique senders in the database. You can count the number of unique senders with the <code>COUNT()</code> aggregate function and with the <code>DISTINCT</code> keyword on the <code>sender</code> column.</p>
+<ol>
+<li data-unit="07-sql-105">Perform a <code>SELECT</code> statement, passing in <code>DISTINCT sender</code> to the <code>COUNT()</code> function.</li>
+</ol>
+<div></div><div><pre class="source-code"><code>SELECT COUNT(DISTINCT sender) FROM email;
+</code></pre></div>
+<ol>
+<li data-unit="07-sql-106">Observe that the query tells us that there are 14 unique senders.</li>
+</ol>
+<p class="image-container"><img alt="19ae43b0bc9a927e.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/19ae43b0bc9a927e.png" loading="eager" src="../assets/e4b9a69ab83a8c28.png"/></p>
+</div>
+<div>
+<h2 class="step-title" data-unit="07-sql-107" id="5">
+              6. Filter queries with a WHERE clause
+          </h2>
+<p data-unit="07-sql-108">Many email apps offer the feature to filter the messages shown based on certain criteria, such as data, search term, folder, sender, etc. For these types of use cases, you can add a <code>WHERE</code> clause to your <code>SELECT</code> query.</p>
+<p data-unit="07-sql-109">After the table name, on a new line, you can add the <code>WHERE</code> keyword followed by an expression. When writing more complex SQL queries, it's common to put each clause on a new line for readability.</p>
+<p class="image-container"><img alt="707b0641aa2de0f.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/707b0641aa2de0f.png" loading="eager" src="../assets/ba729994b483d47e.png"/></p>
+<p data-unit="07-sql-110">This query performs a boolean check for each selected row; if the check returns true, it includes the row in the result of the query. Rows for which the query returns false are not included in the result.</p>
+<p data-unit="07-sql-111">For example, an email app might have filters for spam, trash, drafts, or user-created filters. The following instructions do this with a <code>WHERE</code> clause:</p>
+<ol>
+<li data-unit="07-sql-112">Run a <code>SELECT</code> statement to return all columns (<code>*</code>) from the <code>email</code> table, including a <code>WHERE</code> clause to check the condition <code>folder = 'inbox'</code>. No, that's not a typo: you use a single equals sign to check equality in SQL, and single rather than double quotes to represent a string value.</li>
+</ol>
+<div></div><div><pre class="source-code"><code>SELECT * FROM email
+WHERE folder = 'inbox';
+</code></pre></div>
+<ol>
+<li data-unit="07-sql-113">The result only returns rows for messages in the user's inbox.</li>
+</ol>
+<p class="image-container"><img alt="6e9f2a17186d7faa.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/6e9f2a17186d7faa.png" loading="eager" src="../assets/a67a397b8e3fecfd.png"/></p>
+<aside class="special"><p data-unit="07-sql-114"><strong>Note:</strong> Pay special attention to the SQL comparison operators!</p>
+<p data-unit="07-sql-115">Unlike in Kotlin, the comparison operator in SQL is a single equal sign (<code>=</code>), rather than a double equal sign (<code>==</code>).</p>
+<p data-unit="07-sql-116">The inequality operator (<code>!=</code>) is the same as in Kotlin. SQL also provides comparison operators <code>&lt;</code>, <code>&lt;=</code>, <code>&gt;</code>, and <code>&gt;=</code>.</p>
+</aside>
+<h2 data-unit="07-sql-117" id="logical-operators-with-where-clauses">Logical operators with <code>WHERE</code> clauses</h2>
+<p data-unit="07-sql-118">SQL <code>WHERE</code> clauses aren't limited to a single expression. You can use the <code>AND</code> keyword, equivalent to the Kotlin <strong>and</strong> operator (<code>&amp;&amp;</code>), to only include results that satisfy both conditions.</p>
+<p class="image-container"><img alt="d8a698416e55d11b.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/d8a698416e55d11b.png" loading="eager" src="../assets/aa82d4631d3e46b8.png"/></p>
+<p data-unit="07-sql-119">Alternatively, you can use the <code>OR</code> keyword, equivalent to the Kotlin <strong>or</strong> operator (<code>||</code>), to include rows in the results that satisfy either condition.</p>
+<p class="image-container"><img alt="f3cecac289e7650d.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/f3cecac289e7650d.png" loading="eager" src="../assets/efb78dc1d164474f.png"/></p>
+<p data-unit="07-sql-120">For readability, you can also negate an expression using the <code>NOT</code> keyword.</p>
+<p class="image-container"><img alt="27300a0a38ef0343.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/27300a0a38ef0343.png" loading="eager" src="../assets/de6746a3f4fd24cc.png"/></p>
+<p data-unit="07-sql-121">Many email apps allow multiple filters, for example, only showing unread emails.</p>
+<p data-unit="07-sql-122">Try out the following more complicated <code>WHERE</code> clauses on the <code>email</code> table:</p>
+<ol>
+<li data-unit="07-sql-123">In addition to only returning messages in the user's inbox, try also limiting the results to unread messages—where the value of the read column is false.</li>
+</ol>
+<div></div><div><pre class="source-code"><code>SELECT * FROM email
+WHERE folder = 'inbox' AND read = false;
+</code></pre></div>
+<ol>
+<li data-unit="07-sql-124">Observe that after running the query, the results only contain unread emails in the user's inbox.</li>
+</ol>
+<p class="image-container"><img alt="d9ebd307a146d320.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/d9ebd307a146d320.png" loading="eager" src="../assets/76fdf24aa79faca7.png"/></p>
+<ol>
+<li data-unit="07-sql-125">Return all emails that are in the <strong>important</strong> folder <code>OR</code> are <strong>starred</strong> (<code>starred = true</code>). This means the result includes emails in different folders as long as they're starred.</li>
+</ol>
+<div></div><div><pre class="source-code"><code>SELECT * FROM email
+WHERE folder = 'important' OR starred = true;
+</code></pre></div>
+<ol>
+<li data-unit="07-sql-126">Observe the result.</li>
+</ol>
+<p class="image-container"><img alt="fd2f0dc7b6444956.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/fd2f0dc7b6444956.png" loading="eager" src="../assets/53c0dec8758f0cce.png"/></p>
+<aside class="special"><p data-unit="07-sql-127"><strong>Note:</strong> You can also write the SQL condition <code>NOT folder = 'spam'</code> as <code>folder != 'spam'</code>.</p>
+</aside>
+<h2 data-unit="07-sql-128" id="search-for-text-using-like">Search for text using <code>LIKE</code></h2>
+<p data-unit="07-sql-129">One super useful thing you can do with a <code>WHERE</code> clause is to search for text in a specific column. You achieve this result when you specify a column name, followed by the <code>LIKE</code> keyword, followed by a search string.</p>
+<p class="image-container"><img alt="6692c0d491b6f9af.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/6692c0d491b6f9af.png" loading="eager" src="../assets/4f6c54aa1b3603ae.png"/></p>
+<p data-unit="07-sql-130">The search string starts with the percent symbol (<code>%</code>), followed by the text to search for (Search term), followed by the percent symbol (<code>%</code>) again.</p>
+<p class="image-container"><img alt="c69c15f654645ee2.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/c69c15f654645ee2.png" loading="eager" src="../assets/bcd0511f3c969bb9.png"/></p>
+<p data-unit="07-sql-131">If you're searching for a prefix—results that begin with the specified text—omit the first percent symbol (<code>%</code>).</p>
+<p class="image-container"><img alt="fbe6a94daaf173ae.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/fbe6a94daaf173ae.png" loading="eager" src="../assets/c2b39161f6f70f29.png"/></p>
+<p data-unit="07-sql-132">Alternatively, if you're searching for a suffix, omit the last percent symbol (<code>%</code>).</p>
+<p class="image-container"><img alt="141f567c9cbc4029.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/141f567c9cbc4029.png" loading="eager" src="../assets/41096c7ba64c6b39.png"/></p>
+<p data-unit="07-sql-133">There are many use cases where an app can use text search, such as searching for emails that contain particular text in the subject line or updating autocomplete suggestions as the user is typing.</p>
+<p data-unit="07-sql-134">The following instructions let you use text search when querying the <code>email</code> table.</p>
+<ol>
+<li data-unit="07-sql-135">Shakespeare characters, like the ones in our database, loved to talk about fools. Run the following query to get the total number of emails with the text "fool" in the subject line.</li>
+</ol>
+<div></div><div><pre class="source-code"><code>SELECT COUNT(*) FROM email
+WHERE subject LIKE '%fool%';
+</code></pre></div>
+<ol>
+<li data-unit="07-sql-136">Observe the result.</li>
+</ol>
+<p class="image-container"><img alt="fd2ff96969824b0d.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/fd2ff96969824b0d.png" loading="eager" src="../assets/279e4db5badadf45.png"/></p>
+<ol>
+<li data-unit="07-sql-137">Run the following query to return all columns from all rows where the subject ends with the word fool.</li>
+</ol>
+<div></div><div><pre class="source-code"><code>SELECT * FROM email
+WHERE subject LIKE '%fool';
+</code></pre></div>
+<ol>
+<li data-unit="07-sql-138">Observe that two rows are returned.</li>
+</ol>
+<p class="image-container"><img alt="a23379e507e39c0b.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/a23379e507e39c0b.png" loading="eager" src="../assets/4657e56cc994c11a.png"/></p>
+<ol>
+<li data-unit="07-sql-139">Run the following query to return distinct values of the <code>sender</code> column that begin with the letter <code>h</code>.</li>
+</ol>
+<div></div><div><pre class="source-code"><code>SELECT DISTINCT sender FROM email
+WHERE sender LIKE 'h%';
+</code></pre></div>
+<ol>
+<li data-unit="07-sql-140">Observe that the query returns three values: <code>helena@example.com</code> , <code>hyppolytus@example.com</code>, and <code>hermia@example.com</code>.</li>
+</ol>
+<p class="image-container"><img alt="47ada07aee5cd8d9.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/47ada07aee5cd8d9.png" loading="eager" src="../assets/16dfd07d38089a7c.png"/></p>
+</div>
+<div>
+<h2 class="step-title" data-unit="07-sql-141" id="6">
+              7. Group, order, and limit results
+          </h2>
+<h2 data-unit="07-sql-142" id="group-results-with-group-by">Group results with <code>GROUP BY</code></h2>
+<p data-unit="07-sql-143">You just saw how to use aggregate functions and the <code>WHERE</code> clause to filter and reduce results. SQL offers several other clauses that can help you format the results of your query. Among these clauses are grouping, ordering, and limiting results.</p>
+<p data-unit="07-sql-144">You can use a <code>GROUP BY</code> clause to group results so that all rows that have the same value for a given column are grouped next to each other in the results. This clause doesn't change the results, but only the order in which they're returned.</p>
+<p data-unit="07-sql-145">To add a <code>GROUP BY</code> clause to a <code>SELECT</code> statement, add the <code>GROUP BY</code> keyword followed by the column name you want to group results by.</p>
+<p class="image-container"><img alt="6be095e981498bbf.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/6be095e981498bbf.png" loading="eager" src="../assets/588064e132bccd74.png"/></p>
+<p data-unit="07-sql-146">A common use case is to couple a <code>GROUP BY</code> clause with an aggregate function to partition the result of the aggregate function across different buckets, such as values of a column. Here's an example. Pretend you want to get the number of emails in each folder: <code>'inbox'</code>, <code>'spam'</code>, etc. You can select both the <code>folder</code> column and the <code>COUNT()</code> aggregate function, and specify the <code>folder</code> column in the <code>GROUP BY</code> clause.</p>
+<ol>
+<li data-unit="07-sql-147">Perform the following query to select the folder column, and the result of <code>COUNT()</code> aggregate function. Use a <code>GROUP BY</code> clause to bucket the results by the value in the <code>folder</code> column.</li>
+</ol>
+<div></div><div><pre class="source-code"><code>SELECT folder, COUNT(*) FROM email
+GROUP BY folder;
+</code></pre></div>
+<ol>
+<li data-unit="07-sql-148">Observe the results. The query returns the total number of emails for each folder.</li>
+</ol>
+<p class="image-container"><img alt="13b9eb8f5c8230c4.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/13b9eb8f5c8230c4.png" loading="eager" src="../assets/a73584aadafcbcd3.png"/></p>
+<aside class="special"><p data-unit="07-sql-149"><strong>Note:</strong> You can specify multiple columns, separated by a comma in the <code>GROUP BY</code> clause, if you want to further separate each group into additional subgroups based on a different column.</p>
+</aside>
+<h2 data-unit="07-sql-150" id="sort-results-with-order-by">Sort results with <code>ORDER BY</code></h2>
+<p data-unit="07-sql-151">You can also change the order of query results when you sort them with the <code>ORDER BY</code> clause. Add the <code>ORDER BY</code> keyword, followed by a column name, followed by the sort direction.</p>
+<p class="image-container"><img alt="9cf561c6346ed6e0.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/9cf561c6346ed6e0.png" loading="eager" src="../assets/0964df3f2b604866.png"/></p>
+<p data-unit="07-sql-152">By default, the sort direction is <code>a</code>scending order, which you can omit from the <code>ORDER BY</code> clause. If you want the results sorted in descending order, add <code>DESC</code> after the column name.</p>
+<p data-unit="07-sql-153">Chances are you expect an email app to show the most recent emails first. The following instructions let you do this with an <code>ORDER BY</code> clause.</p>
+<ol>
+<li data-unit="07-sql-154">Add an <code>ORDER BY</code> clause to sort unread emails, based on the <code>received</code> column. Because ascending order—lowest or the oldest first—is the default, you need to  use the <code>DESC</code> keyword.</li>
+</ol>
+<div></div><div><pre class="source-code"><code>SELECT * FROM email
+ORDER BY received DESC;
+</code></pre></div>
+<ol>
+<li data-unit="07-sql-155">Observe the result.</li>
+</ol>
+<p class="image-container"><img alt="6e28aef784a16d1b.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/6e28aef784a16d1b.png" loading="eager" src="../assets/65d9b7d6ce2814cf.png"/></p>
+<p data-unit="07-sql-156">You can use an <code>ORDER BY</code> clause with a <code>WHERE</code> clause. Say a user wants to search for old emails containing the text <em>fool</em>. They can sort the results to show the oldest emails first, in ascending order.</p>
+<ol>
+<li data-unit="07-sql-157">Select all emails where the subject contains the text "fool" and sort the results in ascending order. Because the order is ascending, which is the default order when none is specified, using the <code>ASC</code> keyword with the <code>ORDER BY</code> clause is optional.</li>
+</ol>
+<div></div><div><pre class="source-code"><code>SELECT * FROM email
+WHERE subject LIKE '%fool%'
+ORDER BY received ASC;
+</code></pre></div>
+<ol>
+<li data-unit="07-sql-158">Observe that the filtered results are returned with the oldest—lowest value in the received column—shown first.</li>
+</ol>
+<p class="image-container"><img alt="77ada71b663afab6.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/77ada71b663afab6.png" loading="eager" src="../assets/c71cd4716c774a8b.png"/></p>
+<aside class="special"><p data-unit="07-sql-159"><strong>Note:</strong> If both are used in the same query, the <code>GROUP BY</code> clause comes before the <code>ORDER BY</code> clause.</p>
+</aside>
+<h2 data-unit="07-sql-160" id="restrict-the-number-of-results-with-limit">Restrict the number of results with <code>LIMIT</code></h2>
+<p data-unit="07-sql-161">So far, all the examples return every single result from the database that matches the query. In many cases, you only need to display a limited number of rows from your database. You can add a <code>LIMIT</code> clause to your query to only return a specific number of results. Add the <code>LIMIT</code> keyword followed by the maximum number of rows you want to return. If applicable, the <code>LIMIT</code> clause comes after the <code>ORDER BY</code> clause.</p>
+<p class="image-container"><img alt="122152adf15a9fca.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/122152adf15a9fca.png" loading="eager" src="../assets/6c5beaa6fd5175dc.png"/></p>
+<p data-unit="07-sql-162">Optionally, you can include the <code>OFFSET</code> keyword followed by another number for the number of rows to "skip". For example, if you want the next ten results, after the first ten, but don't want to return all twenty results, you can use <code>LIMIT 10 OFFSET 10</code>.</p>
+<p class="image-container"><img alt="37ad836862573d55.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/37ad836862573d55.png" loading="eager" src="../assets/2cb536f6072029d6.png"/></p>
+<p data-unit="07-sql-163">In an app, you might want to load emails more quickly by only returning the first ten emails in the user's inbox. Users can then scroll to view subsequent pages of emails. The following instructions use a <code>LIMIT</code> clause to achieve this behavior.</p>
+<ol>
+<li data-unit="07-sql-164">Perform the following <code>SELECT</code> statement to get all emails in the user's inbox in descending order and limited to the first ten results.</li>
+</ol>
+<div></div><div><pre class="source-code"><code>SELECT * FROM email
+WHERE folder = 'inbox'
+ORDER BY received DESC
+LIMIT 10;
+</code></pre></div>
+<ol>
+<li data-unit="07-sql-165">Observe that only ten results are returned.</li>
+</ol>
+<p class="image-container"><img alt="5b228d8053956489.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/5b228d8053956489.png" loading="eager" src="../assets/3e38e5285a70f9a5.png"/></p>
+<ol>
+<li data-unit="07-sql-166">Modify and re-run the query to include the <code>OFFSET</code> keyword with a value of <code>10</code>.</li>
+</ol>
+<div></div><div><pre class="source-code"><code>SELECT * FROM email
+WHERE folder = 'inbox'
+ORDER BY received DESC
+LIMIT 10 OFFSET 10;
+</code></pre></div>
+<ol>
+<li data-unit="07-sql-167">The query returns ten results in decreasing order. However, the query skips the first set of ten results.</li>
+</ol>
+<p class="image-container"><img alt="83a6ddbf6ef92b89.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/83a6ddbf6ef92b89.png" loading="eager" src="../assets/0e9c136caa384245.png"/></p>
+</div>
+<div>
+<h2 class="step-title" data-unit="07-sql-168" id="7">
+              8. Insert, update, and delete data in a database
+          </h2>
+<h2 data-unit="07-sql-169" id="insert-data-into-a-database">Insert data into a database</h2>
+<p data-unit="07-sql-170">In addition to reading from a database, there are different SQL statements for writing to a database. The data needs a way to get in there in the first place, right?</p>
+<p data-unit="07-sql-171">You can add a new row to a database with an <code>INSERT</code> statement. An <code>INSERT</code> statement starts with <code>INSERT INTO</code> followed by the table name in which you want to insert a new row. The <code>VALUES</code> keyword appears on a new line followed by a set of parentheses that contain a comma separated list of values. You need to list the values in the same order of the database columns.</p>
+<p class="image-container"><img alt="97b93929d6de2d0e.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/97b93929d6de2d0e.png" loading="eager" src="../assets/0cd986d336c277df.png"/></p>
+<p data-unit="07-sql-172">Pretend the user receives a new email, and we need to store it in our app's database. We can use an <code>INSERT</code> statement to add a new row to the <code>email</code> table.</p>
+<ol>
+<li data-unit="07-sql-173">Perform an <code>INSERT</code> statement with the following data for a new email. Because the email is new, it is unread and initially appears in the inbox <code>folder</code>. A value of <code>NULL</code> is provided for the <code>id</code> column, which means the <code>id</code> will be automatically generated with the next available autoincremented integer..</li>
+</ol>
+<div></div><div><pre class="source-code"><code>INSERT INTO email
+VALUES (
+    NULL, 'Lorem ipsum dolor sit amet', 'sender@example.com', 'inbox', false, false, CURRENT_TIMESTAMP
+);
+</code></pre></div>
+<aside class="special"><p data-unit="07-sql-174"><strong>Note: </strong><code>CURRENT_TIMESTAMP</code> is a special variable that is replaced with the current time in  <a href="https://en.wikipedia.org/wiki/Coordinated_Universal_Time">UTC</a> when the query runs, which is convenient for when you insert new rows!</p>
+</aside>
+<ol>
+<li data-unit="07-sql-175">Observe that the result is inserted into the database with an <code>id</code> of <code>44</code>.</li>
+</ol>
+<div></div><div><pre class="source-code"><code>SELECT * FROM email
+WHERE sender = 'sender@example.com';
+</code></pre></div>
+<p class="image-container"><img alt="12a3e77309771dd8.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/12a3e77309771dd8.png" loading="eager" src="../assets/e6cd08ee04e22c2b.png"/></p>
+<h2 data-unit="07-sql-176" id="update-existing-data-in-a-database">Update existing data in a database</h2>
+<p data-unit="07-sql-177">After you've inserted data into a table, you can still change it later. You can update the value of one or more columns using an <code>UPDATE</code> statement. An <code>UPDATE</code> statement starts with the <code>UPDATE</code> keyword, followed by the table name, followed by a <code>SET</code> clause.</p>
+<p class="image-container"><img alt="8ee88a5985aec77e.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/8ee88a5985aec77e.png" loading="eager" src="../assets/04008c25246cf323.png"/></p>
+<p data-unit="07-sql-178">A <code>SET</code> clause consists of the         <code>SET</code> keyword, followed by the name of the column you want to update.</p>
+<p class="image-container"><img alt="bc255ece789859f.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/bc255ece789859f.png" loading="eager" src="../assets/7685ad20a2415211.png"/></p>
+<p data-unit="07-sql-179">An <code>UPDATE</code> statement often includes a <code>WHERE</code> clause to specify the single row or multiple rows that you want to update with the specified column-value pair.</p>
+<p class="image-container"><img alt="e64b7b343feb6224.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/e64b7b343feb6224.png" loading="eager" src="../assets/5a4f54c97bdaa0e1.png"/></p>
+<p data-unit="07-sql-180">If the user wants to mark an email as read, for example, you use an <code>UPDATE</code> statement to update the database. The following instructions let you mark the email inserted in the previous step as read.</p>
+<ol>
+<li data-unit="07-sql-181">Perform the following <code>UPDATE</code> statement to set the row with an <code>id</code> of <code>44</code> so that the value of the <code>read</code> column is <code>true</code>.</li>
+</ol>
+<div></div><div><pre class="source-code"><code>UPDATE email
+SET read = true
+WHERE id = 44;
+</code></pre></div>
+<ol>
+<li data-unit="07-sql-182">Run a <code>SELECT</code> statement for that specific row to validate the result.</li>
+</ol>
+<div></div><div><pre class="source-code"><code>SELECT read FROM email
+WHERE id = 44;
+</code></pre></div>
+<ol>
+<li data-unit="07-sql-183">Observe that the value of the read column is now <code>1</code> for a "true" value as opposed to <code>0</code> for "false"..</li>
+</ol>
+<p class="image-container"><img alt="74e9af167fa49ba3.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/74e9af167fa49ba3.png" loading="eager" src="../assets/58d37a418a862167.png"/></p>
+<h2 data-unit="07-sql-184" id="delete-a-row-from-a-database">Delete a row from a database</h2>
+<p data-unit="07-sql-185">Finally, you can use a SQL <code>DELETE</code> statement to delete one or more rows from a table. A <code>DELETE</code> statement starts with the <code>DELETE</code> keyword, followed by the <code>FROM</code> keyword, followed by the table name, followed by a <code>WHERE</code> clause to specify which row or rows you want to delete.</p>
+<p class="image-container"><img alt="a7e56405c5e5aaab.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/a7e56405c5e5aaab.png" loading="eager" src="../assets/fdcf37c93c1e48b5.png"/></p>
+<p data-unit="07-sql-186">The following instructions use a <code>DELETE</code> statement to delete the previously inserted and subsequently updated row from the database.</p>
+<ol>
+<li data-unit="07-sql-187">Perform the following <code>DELETE</code> statement to delete the row with an <code>id</code> of <code>44</code> from the database.</li>
+</ol>
+<div></div><div><pre class="source-code"><code>DELETE FROM email
+WHERE id = 44;
+</code></pre></div>
+<ol>
+<li data-unit="07-sql-188">Validate your changes using a <code>SELECT</code> statement.</li>
+</ol>
+<div></div><div><pre class="source-code"><code>SELECT * FROM email
+WHERE id = 44;
+</code></pre></div>
+<ol>
+<li data-unit="07-sql-189">Observe that a row with an <code>id</code> of <code>44</code> no longer exists.</li>
+</ol>
+<p class="image-container"><img alt="b026810cf2fd6e44.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/b026810cf2fd6e44.png" loading="eager" src="../assets/bd1cc2370830fc52.png"/></p>
+</div>
+<div>
+<h2 class="step-title" data-unit="07-sql-190" id="8">
+              9. Summary
+          </h2>
+<p data-unit="07-sql-191">Congratulations! You learned a lot! You can now read from a database using <code>SELECT</code> statements, including <code>WHERE</code>, <code>GROUP BY</code>, <code>ORDER BY</code>, and <code>LIMIT</code> clauses to filter results. You also learned about frequently used aggregate functions, the <code>DISTINCT</code> keyword to specify unique results, and the <code>LIKE</code> keyword to perform a text search on the values in a column. Finally, you learned how to <code>INSERT</code>, <code>UPDATE</code>, and <code>DELETE</code> rows in a data table.</p>
+<p data-unit="07-sql-192">These skills will translate directly to Room, and with your knowledge of SQL, you'll be more than prepared to take on data persistence in your future apps.</p>
+<p data-unit="07-sql-193"><code>SELECT</code> statement syntax:</p>
+<p class="image-container"><img alt="346bed4fda774ca7.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/346bed4fda774ca7.png" loading="eager" src="../assets/de980d6eebb2eb96.png"/></p>
+</div>
+<div>
+<h2 class="step-title" data-unit="07-sql-194" id="9">
+              10. Learn more
+          </h2>
+<p data-unit="07-sql-195">While we've focused on the basics of SQL and some common use cases for Android development, there's a lot more that SQL can do. Refer to the following resources as an additional reference for what you've learned or to learn even more about the topic.</p>
+<ul>
+<li data-unit="07-sql-196"><a href="https://developer.android.google.cn/studio/inspect/database">Database Inspector</a></li>
+<li data-unit="07-sql-197"><a href="https://developer.android.google.cn/training/data-storage/sqlite">Save data using SQLite</a></li>
+<li data-unit="07-sql-198"><a href="https://www.sqlite.org/lang_aggfunc.html">Aggregate functions</a></li>
+<li data-unit="07-sql-199"><a href="https://www.w3schools.com/sql/sql_quickref.asp">SQL Quick reference</a></li>
+<li data-unit="07-sql-200"><a href="https://www.w3schools.com/sql/sql_create_db.asp">Creating data tables</a></li>
+<li data-unit="07-sql-201"><a href="https://www.w3schools.com/sql/sql_join.asp">SQL Joins</a></li>
+<li data-unit="07-sql-202"><a href="https://developer.android.google.cn/topic/performance/sqlite-performance-best-practices">SQLite Performance</a></li>
+</ul>
+</div>
+</div>
+</article><nav class="chapter-switcher" aria-label="章节导航"><a href="../06-cancellation/english.html">← 异步任务的取消与超时</a><a class="course-home" href="../index.html">全部章节</a><a href="../08-room/english.html">Room 整体认识 →</a></nav><footer class="license-note"><p>原文：<a href="https://developer.android.com/codelabs/basic-android-kotlin-compose-sql?hl=en">Use SQL to read and write to a database</a>，Android Developers / Google。英文快照：2026-10-13。非官方中文翻译与表达优化：Codex。原有示例和代码保留；<a href="../NOTICE.html">来源与许可</a>。</p></footer></main></body></html>

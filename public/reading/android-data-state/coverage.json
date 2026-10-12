@@ -1,0 +1,4347 @@
+{
+  "documents": [
+    {
+      "slug": "01-ui-layer",
+      "title": "界面与状态",
+      "englishTitle": "UI layer",
+      "url": "https://developer.android.com/topic/architecture/ui-layer?hl=en",
+      "retrieval_url": "https://developer.android.google.cn/topic/architecture/ui-layer?hl=en",
+      "part": 1,
+      "date": "2026-10-13",
+      "source_sha256": "4c9e6a97d4ab439655340935cc87f564d06e8fb04186f08d0a83842fe81e85d6",
+      "units": 116,
+      "words": 3659,
+      "codeBlocks": 10,
+      "images": 6,
+      "headings": [
+        {
+          "id": "case-study",
+          "tag": "h2",
+          "text": "A basic case study"
+        },
+        {
+          "id": "architecture",
+          "tag": "h2",
+          "text": "UI layer architecture"
+        },
+        {
+          "id": "define-ui-state",
+          "tag": "h2",
+          "text": "Define UI state"
+        },
+        {
+          "id": "state-immutability",
+          "tag": "h3",
+          "text": "Immutability"
+        },
+        {
+          "id": "naming-conventions",
+          "tag": "h3",
+          "text": "Naming conventions in this guide"
+        },
+        {
+          "id": "udf",
+          "tag": "h2",
+          "text": "Manage state with Unidirectional Data Flow"
+        },
+        {
+          "id": "state-holders",
+          "tag": "h3",
+          "text": "State holders"
+        },
+        {
+          "id": "logic-types",
+          "tag": "h3",
+          "text": "Types of logic"
+        },
+        {
+          "id": "why-use-udf",
+          "tag": "h3",
+          "text": "Why use UDF?"
+        },
+        {
+          "id": "expose-ui-state",
+          "tag": "h2",
+          "text": "Expose UI state"
+        },
+        {
+          "id": "additional-considerations",
+          "tag": "h3",
+          "text": "Additional considerations"
+        },
+        {
+          "id": "consume-ui-state",
+          "tag": "h2",
+          "text": "Consume UI state"
+        },
+        {
+          "id": "show-operations",
+          "tag": "h3",
+          "text": "Show in-progress operations"
+        },
+        {
+          "id": "show-errors",
+          "tag": "h3",
+          "text": "Show errors on the screen"
+        },
+        {
+          "id": "threading-concurrency",
+          "tag": "h2",
+          "text": "Threading and concurrency"
+        },
+        {
+          "id": "navigation",
+          "tag": "h2",
+          "text": "Navigation"
+        },
+        {
+          "id": "paging",
+          "tag": "h2",
+          "text": "Paging"
+        },
+        {
+          "id": "animations",
+          "tag": "h2",
+          "text": "Animations"
+        },
+        {
+          "id": "additional-resources",
+          "tag": "h2",
+          "text": "Additional resources"
+        },
+        {
+          "id": "views",
+          "tag": "h3",
+          "text": "Views content"
+        },
+        {
+          "id": "samples",
+          "tag": "h2",
+          "text": "Samples"
+        }
+      ],
+      "unitIds": [
+        "01-ui-layer-001",
+        "01-ui-layer-002",
+        "01-ui-layer-003",
+        "01-ui-layer-004",
+        "01-ui-layer-005",
+        "01-ui-layer-006",
+        "01-ui-layer-007",
+        "01-ui-layer-008",
+        "01-ui-layer-009",
+        "01-ui-layer-010",
+        "01-ui-layer-011",
+        "01-ui-layer-012",
+        "01-ui-layer-013",
+        "01-ui-layer-014",
+        "01-ui-layer-015",
+        "01-ui-layer-016",
+        "01-ui-layer-017",
+        "01-ui-layer-018",
+        "01-ui-layer-019",
+        "01-ui-layer-020",
+        "01-ui-layer-021",
+        "01-ui-layer-022",
+        "01-ui-layer-023",
+        "01-ui-layer-024",
+        "01-ui-layer-025",
+        "01-ui-layer-026",
+        "01-ui-layer-027",
+        "01-ui-layer-028",
+        "01-ui-layer-029",
+        "01-ui-layer-030",
+        "01-ui-layer-031",
+        "01-ui-layer-032",
+        "01-ui-layer-033",
+        "01-ui-layer-034",
+        "01-ui-layer-035",
+        "01-ui-layer-036",
+        "01-ui-layer-037",
+        "01-ui-layer-038",
+        "01-ui-layer-039",
+        "01-ui-layer-040",
+        "01-ui-layer-041",
+        "01-ui-layer-042",
+        "01-ui-layer-043",
+        "01-ui-layer-044",
+        "01-ui-layer-045",
+        "01-ui-layer-046",
+        "01-ui-layer-047",
+        "01-ui-layer-048",
+        "01-ui-layer-049",
+        "01-ui-layer-050",
+        "01-ui-layer-051",
+        "01-ui-layer-052",
+        "01-ui-layer-053",
+        "01-ui-layer-054",
+        "01-ui-layer-055",
+        "01-ui-layer-056",
+        "01-ui-layer-057",
+        "01-ui-layer-058",
+        "01-ui-layer-059",
+        "01-ui-layer-060",
+        "01-ui-layer-061",
+        "01-ui-layer-062",
+        "01-ui-layer-063",
+        "01-ui-layer-064",
+        "01-ui-layer-065",
+        "01-ui-layer-066",
+        "01-ui-layer-067",
+        "01-ui-layer-068",
+        "01-ui-layer-069",
+        "01-ui-layer-070",
+        "01-ui-layer-071",
+        "01-ui-layer-072",
+        "01-ui-layer-073",
+        "01-ui-layer-074",
+        "01-ui-layer-075",
+        "01-ui-layer-076",
+        "01-ui-layer-077",
+        "01-ui-layer-078",
+        "01-ui-layer-079",
+        "01-ui-layer-080",
+        "01-ui-layer-081",
+        "01-ui-layer-082",
+        "01-ui-layer-083",
+        "01-ui-layer-084",
+        "01-ui-layer-085",
+        "01-ui-layer-086",
+        "01-ui-layer-087",
+        "01-ui-layer-088",
+        "01-ui-layer-089",
+        "01-ui-layer-090",
+        "01-ui-layer-091",
+        "01-ui-layer-092",
+        "01-ui-layer-093",
+        "01-ui-layer-094",
+        "01-ui-layer-095",
+        "01-ui-layer-096",
+        "01-ui-layer-097",
+        "01-ui-layer-098",
+        "01-ui-layer-099",
+        "01-ui-layer-100",
+        "01-ui-layer-101",
+        "01-ui-layer-102",
+        "01-ui-layer-103",
+        "01-ui-layer-104",
+        "01-ui-layer-105",
+        "01-ui-layer-106",
+        "01-ui-layer-107",
+        "01-ui-layer-108",
+        "01-ui-layer-109",
+        "01-ui-layer-110",
+        "01-ui-layer-111",
+        "01-ui-layer-112",
+        "01-ui-layer-113",
+        "01-ui-layer-114",
+        "01-ui-layer-115",
+        "01-ui-layer-116"
+      ],
+      "source_headings": [
+        {
+          "id": "case-study",
+          "tag": "h2",
+          "text": "A basic case study"
+        },
+        {
+          "id": "architecture",
+          "tag": "h2",
+          "text": "UI layer architecture"
+        },
+        {
+          "id": "define-ui-state",
+          "tag": "h2",
+          "text": "Define UI state"
+        },
+        {
+          "id": "state-immutability",
+          "tag": "h3",
+          "text": "Immutability"
+        },
+        {
+          "id": "naming-conventions",
+          "tag": "h3",
+          "text": "Naming conventions in this guide"
+        },
+        {
+          "id": "udf",
+          "tag": "h2",
+          "text": "Manage state with Unidirectional Data Flow"
+        },
+        {
+          "id": "state-holders",
+          "tag": "h3",
+          "text": "State holders"
+        },
+        {
+          "id": "logic-types",
+          "tag": "h3",
+          "text": "Types of logic"
+        },
+        {
+          "id": "why-use-udf",
+          "tag": "h3",
+          "text": "Why use UDF?"
+        },
+        {
+          "id": "expose-ui-state",
+          "tag": "h2",
+          "text": "Expose UI state"
+        },
+        {
+          "id": "additional-considerations",
+          "tag": "h3",
+          "text": "Additional considerations"
+        },
+        {
+          "id": "consume-ui-state",
+          "tag": "h2",
+          "text": "Consume UI state"
+        },
+        {
+          "id": "show-operations",
+          "tag": "h3",
+          "text": "Show in-progress operations"
+        },
+        {
+          "id": "show-errors",
+          "tag": "h3",
+          "text": "Show errors on the screen"
+        },
+        {
+          "id": "threading-concurrency",
+          "tag": "h2",
+          "text": "Threading and concurrency"
+        },
+        {
+          "id": "navigation",
+          "tag": "h2",
+          "text": "Navigation"
+        },
+        {
+          "id": "paging",
+          "tag": "h2",
+          "text": "Paging"
+        },
+        {
+          "id": "animations",
+          "tag": "h2",
+          "text": "Animations"
+        },
+        {
+          "id": "additional-resources",
+          "tag": "h2",
+          "text": "Additional resources"
+        },
+        {
+          "id": "views",
+          "tag": "h3",
+          "text": "Views content"
+        },
+        {
+          "id": "samples",
+          "tag": "h2",
+          "text": "Samples"
+        }
+      ],
+      "coverage": "complete-article-body",
+      "code_sha256": [
+        "a7bb94519850515e318ae7104095fd571d9d2fad1b64c1f089eb695d6d372221",
+        "ada5ec441ed153ce21ff9af9b4a3e86bf1428ef38a893d55f8b2661a283f19ba",
+        "0536ae80f3af7b54e289783c150b43395b5616da4604c52334c0631a7b6647f8",
+        "fe4fe022c76381a7a6b39c65a22e8f4f58c233cb6d2598ef5ea383ac2c540d63",
+        "419ec54ae2a2609996338093b1b8b900c51aa591cb8b35be3542dd373c142072",
+        "7670961fd3018a23fe66f932e90339aff73a42f75bd1898bbe3bffec17d4ae44",
+        "3f1cfeea2e2233fb718204246d9144955247c4c0932a8fe448506a94551a00b3",
+        "39a3800b95b45860886134b9c2f91fda21120d97ddab400dfb6dc6a75876d02a",
+        "9383b9c2f9a5ac06579f8050799fd2f331bcf6bcba5c0c201240f56028a2c3d2",
+        "6d555b953d7645d4bd6141b6a7b850dbf323c67f8ed34ce936d31a23f314fddb"
+      ],
+      "inline_code": [
+        "NewsUiState",
+        "bookmarked",
+        "NewsItemUiState",
+        "Activity",
+        "NewsUiState",
+        "NewsItemUiState",
+        "NewsViewModel",
+        "ViewModel",
+        "ViewModel",
+        "ViewModel",
+        "Resources",
+        "Context",
+        "StateFlow",
+        "StateFlow",
+        "mutableStateOf",
+        "snapshotFlow",
+        "StateFlow",
+        "UiState",
+        "mutableStateOf",
+        "private set",
+        "viewModelScope",
+        "NewsViewModel",
+        "UiState",
+        "UiState",
+        "UiState",
+        "Flow",
+        "distinctUntilChanged()",
+        "UiState",
+        "collect()",
+        "collectAsStateWithLifecycle",
+        "UiState",
+        "SignInViewModel",
+        "UiState",
+        "isSignedIn",
+        "true",
+        "PagingData",
+        "PagingData"
+      ]
+    },
+    {
+      "slug": "02-ui-events",
+      "title": "用户操作与事件",
+      "englishTitle": "UI events",
+      "url": "https://developer.android.com/topic/architecture/ui-layer/events?hl=en",
+      "retrieval_url": "https://developer.android.google.cn/topic/architecture/ui-layer/events?hl=en",
+      "part": 1,
+      "date": "2026-10-13",
+      "source_sha256": "2ed96084c313afd9c2f4d376fd9dcd2b475c7a71412c854c35e7d891b2ccba64",
+      "units": 70,
+      "words": 2840,
+      "codeBlocks": 10,
+      "images": 1,
+      "headings": [
+        {
+          "id": "decision-tree",
+          "tag": "h2",
+          "text": "UI event decision tree"
+        },
+        {
+          "id": "handle-user-events",
+          "tag": "h2",
+          "text": "Handle user events"
+        },
+        {
+          "id": "lazy-list-events",
+          "tag": "h3",
+          "text": "User events in lazy lists"
+        },
+        {
+          "id": "naming-conventions",
+          "tag": "h3",
+          "text": "Naming conventions for user event functions and event handlers"
+        },
+        {
+          "id": "handle-viewmodel-events",
+          "tag": "h2",
+          "text": "Handle ViewModel events"
+        },
+        {
+          "id": "consuming-trigger-updates",
+          "tag": "h3",
+          "text": "Consuming events can trigger state updates"
+        },
+        {
+          "id": "navigation-events",
+          "tag": "h2",
+          "text": "Navigation events"
+        },
+        {
+          "id": "navigation-events-destination-back-stack",
+          "tag": "h3",
+          "text": "Navigation events when the destination is kept in the back stack"
+        },
+        {
+          "id": "other-use-cases",
+          "tag": "h2",
+          "text": "Other use cases"
+        },
+        {
+          "id": "samples",
+          "tag": "h2",
+          "text": "Samples"
+        },
+        {
+          "id": "additional-resources",
+          "tag": "h2",
+          "text": "Additional resources"
+        },
+        {
+          "id": "codelabs",
+          "tag": "h3",
+          "text": "Codelabs"
+        },
+        {
+          "id": "documentation",
+          "tag": "h3",
+          "text": "Documentation"
+        },
+        {
+          "id": "views-content",
+          "tag": "h3",
+          "text": "Views content"
+        }
+      ],
+      "unitIds": [
+        "02-ui-events-001",
+        "02-ui-events-002",
+        "02-ui-events-003",
+        "02-ui-events-004",
+        "02-ui-events-005",
+        "02-ui-events-006",
+        "02-ui-events-007",
+        "02-ui-events-008",
+        "02-ui-events-009",
+        "02-ui-events-010",
+        "02-ui-events-011",
+        "02-ui-events-012",
+        "02-ui-events-013",
+        "02-ui-events-014",
+        "02-ui-events-015",
+        "02-ui-events-016",
+        "02-ui-events-017",
+        "02-ui-events-018",
+        "02-ui-events-019",
+        "02-ui-events-020",
+        "02-ui-events-021",
+        "02-ui-events-022",
+        "02-ui-events-023",
+        "02-ui-events-024",
+        "02-ui-events-025",
+        "02-ui-events-026",
+        "02-ui-events-027",
+        "02-ui-events-028",
+        "02-ui-events-029",
+        "02-ui-events-030",
+        "02-ui-events-031",
+        "02-ui-events-032",
+        "02-ui-events-033",
+        "02-ui-events-034",
+        "02-ui-events-035",
+        "02-ui-events-036",
+        "02-ui-events-037",
+        "02-ui-events-038",
+        "02-ui-events-039",
+        "02-ui-events-040",
+        "02-ui-events-041",
+        "02-ui-events-042",
+        "02-ui-events-043",
+        "02-ui-events-044",
+        "02-ui-events-045",
+        "02-ui-events-046",
+        "02-ui-events-047",
+        "02-ui-events-048",
+        "02-ui-events-049",
+        "02-ui-events-050",
+        "02-ui-events-051",
+        "02-ui-events-052",
+        "02-ui-events-053",
+        "02-ui-events-054",
+        "02-ui-events-055",
+        "02-ui-events-056",
+        "02-ui-events-057",
+        "02-ui-events-058",
+        "02-ui-events-059",
+        "02-ui-events-060",
+        "02-ui-events-061",
+        "02-ui-events-062",
+        "02-ui-events-063",
+        "02-ui-events-064",
+        "02-ui-events-065",
+        "02-ui-events-066",
+        "02-ui-events-067",
+        "02-ui-events-068",
+        "02-ui-events-069",
+        "02-ui-events-070"
+      ],
+      "source_headings": [
+        {
+          "id": "decision-tree",
+          "tag": "h2",
+          "text": "UI event decision tree"
+        },
+        {
+          "id": "handle-user-events",
+          "tag": "h2",
+          "text": "Handle user events"
+        },
+        {
+          "id": "lazy-list-events",
+          "tag": "h3",
+          "text": "User events in lazy lists"
+        },
+        {
+          "id": "naming-conventions",
+          "tag": "h3",
+          "text": "Naming conventions for user event functions and event handlers"
+        },
+        {
+          "id": "handle-viewmodel-events",
+          "tag": "h2",
+          "text": "Handle ViewModel events"
+        },
+        {
+          "id": "consuming-trigger-updates",
+          "tag": "h3",
+          "text": "Consuming events can trigger state updates"
+        },
+        {
+          "id": "navigation-events",
+          "tag": "h2",
+          "text": "Navigation events"
+        },
+        {
+          "id": "navigation-events-destination-back-stack",
+          "tag": "h3",
+          "text": "Navigation events when the destination is kept in the back stack"
+        },
+        {
+          "id": "other-use-cases",
+          "tag": "h2",
+          "text": "Other use cases"
+        },
+        {
+          "id": "samples",
+          "tag": "h2",
+          "text": "Samples"
+        },
+        {
+          "id": "additional-resources",
+          "tag": "h2",
+          "text": "Additional resources"
+        },
+        {
+          "id": "codelabs",
+          "tag": "h3",
+          "text": "Codelabs"
+        },
+        {
+          "id": "documentation",
+          "tag": "h3",
+          "text": "Documentation"
+        },
+        {
+          "id": "views-content",
+          "tag": "h3",
+          "text": "Views content"
+        }
+      ],
+      "coverage": "complete-article-body",
+      "code_sha256": [
+        "2d789c463aa67f9d0dce0c2f15e3df25db658197d0356a42f00fc0b9b8191bf8",
+        "d4119f42162c34b11ef235081ae3832363b3e35a93948eb714e2ba88cb7d386d",
+        "d1b3713ea7044a403d6eb1963d6309130332c58263f3dad5cbe29b26fab6b5da",
+        "4899f2874b209cbe1556b69a6d0b3f22447e357717f785d0500acfb548fc9ae2",
+        "2b17baa607113d189038ae9f3b7f220e6cb99d99dd0f4e0dff7ea8356f1dd956",
+        "34ee44270f1c68f75737f22bf29ab9712e5937dd83be995f673ddf0d45178ad6",
+        "d73c4c7a47db765b8bb3fd26801ec22834a5effccd54f3c12ff9ba1beff412a8",
+        "1cc8f290bd2e8a83ee21c13017fb0d9fdbc4a50b5d3651f2e395ceacc841a4f1",
+        "746f4647a8cd45a2965f20d8a67766b0b0b86b49a93ea02aeef5a03544c6fa8b",
+        "9dd43a93ec62c40e3f387322499ab5b7c9fb87c5d0b3c5ec9070e219c83b6442"
+      ],
+      "inline_code": [
+        "Snackbar",
+        "LazyColumn",
+        "ViewModel",
+        "ViewModel",
+        "MyList",
+        "MyList",
+        "validateInput()",
+        "login()",
+        "on",
+        "Verb",
+        "Target",
+        "onExpandClicked",
+        "onValueChange",
+        "userMessage",
+        "dropUnlessResumed",
+        "onHelp",
+        "RESUMED",
+        "validationInProgress",
+        "Toast"
+      ]
+    },
+    {
+      "slug": "03-state-production",
+      "title": "状态怎样更新",
+      "englishTitle": "UI State production",
+      "url": "https://developer.android.com/topic/architecture/ui-layer/state-production?hl=en",
+      "retrieval_url": "https://developer.android.google.cn/topic/architecture/ui-layer/state-production?hl=en",
+      "part": 1,
+      "date": "2026-10-13",
+      "source_sha256": "7fb92b15e2f268372183f7b9b8ff5b3ac575cdd4611796be9098e91c1d1dd95c",
+      "units": 110,
+      "words": 2682,
+      "codeBlocks": 10,
+      "images": 2,
+      "headings": [
+        {
+          "id": "ui-state",
+          "tag": "h2",
+          "text": "The UI state production pipeline"
+        },
+        {
+          "id": "state-production",
+          "tag": "h2",
+          "text": "State production APIs"
+        },
+        {
+          "id": "state-production-pipeline",
+          "tag": "h2",
+          "text": "State production pipeline assembly"
+        },
+        {
+          "id": "inputs-state",
+          "tag": "h2",
+          "text": "Inputs in state production pipelines"
+        },
+        {
+          "id": "one-shot-apis",
+          "tag": "h3",
+          "text": "One-shot APIs as sources of state change"
+        },
+        {
+          "id": "compose-state",
+          "tag": "h3",
+          "text": "Compose State"
+        },
+        {
+          "id": "stateflow",
+          "tag": "h3",
+          "text": "StateFlow"
+        },
+        {
+          "id": "mutating_the_ui_state_from_asynchronous_calls",
+          "tag": "h4",
+          "text": "Mutating the UI state from asynchronous calls"
+        },
+        {
+          "id": "compose-state_1",
+          "tag": "h3",
+          "text": "Compose State"
+        },
+        {
+          "id": "stateflow_1",
+          "tag": "h3",
+          "text": "StateFlow"
+        },
+        {
+          "id": "mutating_the_ui_state_from_background_threads",
+          "tag": "h4",
+          "text": "Mutating the UI state from background threads"
+        },
+        {
+          "id": "compose-state_2",
+          "tag": "h3",
+          "text": "Compose State"
+        },
+        {
+          "id": "stateflow_2",
+          "tag": "h3",
+          "text": "StateFlow"
+        },
+        {
+          "id": "stream-apis",
+          "tag": "h3",
+          "text": "Stream APIs as sources of state change"
+        },
+        {
+          "id": "one-shot-and",
+          "tag": "h3",
+          "text": "One-shot and stream APIs as sources of state change"
+        },
+        {
+          "id": "compose-state_3",
+          "tag": "h3",
+          "text": "Compose State"
+        },
+        {
+          "id": "stateflow_3",
+          "tag": "h3",
+          "text": "StateFlow"
+        },
+        {
+          "id": "output-types",
+          "tag": "h2",
+          "text": "Output types in state production pipelines"
+        },
+        {
+          "id": "initializing-state-production",
+          "tag": "h2",
+          "text": "State production pipeline initialization"
+        },
+        {
+          "id": "samples",
+          "tag": "h2",
+          "text": "Samples"
+        },
+        {
+          "id": "resources",
+          "tag": "h2",
+          "text": "Additional resources"
+        },
+        {
+          "id": "documentation",
+          "tag": "h3",
+          "text": "Documentation"
+        },
+        {
+          "id": "views",
+          "tag": "h3",
+          "text": "Views content"
+        }
+      ],
+      "unitIds": [
+        "03-state-production-001",
+        "03-state-production-002",
+        "03-state-production-003",
+        "03-state-production-004",
+        "03-state-production-005",
+        "03-state-production-006",
+        "03-state-production-007",
+        "03-state-production-008",
+        "03-state-production-009",
+        "03-state-production-010",
+        "03-state-production-011",
+        "03-state-production-012",
+        "03-state-production-013",
+        "03-state-production-014",
+        "03-state-production-015",
+        "03-state-production-016",
+        "03-state-production-017",
+        "03-state-production-018",
+        "03-state-production-019",
+        "03-state-production-020",
+        "03-state-production-021",
+        "03-state-production-022",
+        "03-state-production-023",
+        "03-state-production-024",
+        "03-state-production-025",
+        "03-state-production-026",
+        "03-state-production-027",
+        "03-state-production-028",
+        "03-state-production-029",
+        "03-state-production-030",
+        "03-state-production-031",
+        "03-state-production-032",
+        "03-state-production-033",
+        "03-state-production-034",
+        "03-state-production-035",
+        "03-state-production-036",
+        "03-state-production-037",
+        "03-state-production-038",
+        "03-state-production-039",
+        "03-state-production-040",
+        "03-state-production-041",
+        "03-state-production-042",
+        "03-state-production-043",
+        "03-state-production-044",
+        "03-state-production-045",
+        "03-state-production-046",
+        "03-state-production-047",
+        "03-state-production-048",
+        "03-state-production-049",
+        "03-state-production-050",
+        "03-state-production-051",
+        "03-state-production-052",
+        "03-state-production-053",
+        "03-state-production-054",
+        "03-state-production-055",
+        "03-state-production-056",
+        "03-state-production-057",
+        "03-state-production-058",
+        "03-state-production-059",
+        "03-state-production-060",
+        "03-state-production-061",
+        "03-state-production-062",
+        "03-state-production-063",
+        "03-state-production-064",
+        "03-state-production-065",
+        "03-state-production-066",
+        "03-state-production-067",
+        "03-state-production-068",
+        "03-state-production-069",
+        "03-state-production-070",
+        "03-state-production-071",
+        "03-state-production-072",
+        "03-state-production-073",
+        "03-state-production-074",
+        "03-state-production-075",
+        "03-state-production-076",
+        "03-state-production-077",
+        "03-state-production-078",
+        "03-state-production-079",
+        "03-state-production-080",
+        "03-state-production-081",
+        "03-state-production-082",
+        "03-state-production-083",
+        "03-state-production-084",
+        "03-state-production-085",
+        "03-state-production-086",
+        "03-state-production-087",
+        "03-state-production-088",
+        "03-state-production-089",
+        "03-state-production-090",
+        "03-state-production-091",
+        "03-state-production-092",
+        "03-state-production-093",
+        "03-state-production-094",
+        "03-state-production-095",
+        "03-state-production-096",
+        "03-state-production-097",
+        "03-state-production-098",
+        "03-state-production-099",
+        "03-state-production-100",
+        "03-state-production-101",
+        "03-state-production-102",
+        "03-state-production-103",
+        "03-state-production-104",
+        "03-state-production-105",
+        "03-state-production-106",
+        "03-state-production-107",
+        "03-state-production-108",
+        "03-state-production-109",
+        "03-state-production-110"
+      ],
+      "source_headings": [
+        {
+          "id": "ui-state",
+          "tag": "h2",
+          "text": "The UI state production pipeline"
+        },
+        {
+          "id": "state-production",
+          "tag": "h2",
+          "text": "State production APIs"
+        },
+        {
+          "id": "state-production-pipeline",
+          "tag": "h2",
+          "text": "State production pipeline assembly"
+        },
+        {
+          "id": "inputs-state",
+          "tag": "h2",
+          "text": "Inputs in state production pipelines"
+        },
+        {
+          "id": "one-shot-apis",
+          "tag": "h3",
+          "text": "One-shot APIs as sources of state change"
+        },
+        {
+          "id": "compose-state",
+          "tag": "h3",
+          "text": "Compose State"
+        },
+        {
+          "id": "stateflow",
+          "tag": "h3",
+          "text": "StateFlow"
+        },
+        {
+          "id": "mutating_the_ui_state_from_asynchronous_calls",
+          "tag": "h4",
+          "text": "Mutating the UI state from asynchronous calls"
+        },
+        {
+          "id": "compose-state_1",
+          "tag": "h3",
+          "text": "Compose State"
+        },
+        {
+          "id": "stateflow_1",
+          "tag": "h3",
+          "text": "StateFlow"
+        },
+        {
+          "id": "mutating_the_ui_state_from_background_threads",
+          "tag": "h4",
+          "text": "Mutating the UI state from background threads"
+        },
+        {
+          "id": "compose-state_2",
+          "tag": "h3",
+          "text": "Compose State"
+        },
+        {
+          "id": "stateflow_2",
+          "tag": "h3",
+          "text": "StateFlow"
+        },
+        {
+          "id": "stream-apis",
+          "tag": "h3",
+          "text": "Stream APIs as sources of state change"
+        },
+        {
+          "id": "one-shot-and",
+          "tag": "h3",
+          "text": "One-shot and stream APIs as sources of state change"
+        },
+        {
+          "id": "compose-state_3",
+          "tag": "h3",
+          "text": "Compose State"
+        },
+        {
+          "id": "stateflow_3",
+          "tag": "h3",
+          "text": "StateFlow"
+        },
+        {
+          "id": "output-types",
+          "tag": "h2",
+          "text": "Output types in state production pipelines"
+        },
+        {
+          "id": "initializing-state-production",
+          "tag": "h2",
+          "text": "State production pipeline initialization"
+        },
+        {
+          "id": "samples",
+          "tag": "h2",
+          "text": "Samples"
+        },
+        {
+          "id": "resources",
+          "tag": "h2",
+          "text": "Additional resources"
+        },
+        {
+          "id": "documentation",
+          "tag": "h3",
+          "text": "Documentation"
+        },
+        {
+          "id": "views",
+          "tag": "h3",
+          "text": "Views content"
+        }
+      ],
+      "coverage": "complete-article-body",
+      "code_sha256": [
+        "ce502f041fd6ac997b69e0bc103e6076702a9f2a1711a8c53ef4def89195fce6",
+        "196fb47279d6cb17e95b199ed4af97e203288f79c03b368855032d98e38fc43a",
+        "0cdbb7f2c8f45aa8419bf6af7cec6c3768d03939b3043fcc898657ddb4b48f18",
+        "75a9b909dda328859eee2c23edd04177b94346ecc85243bc337ce73f2557026c",
+        "6bf9b9990d1e71a96cb38f79efe292c16c9a9f805eb500f9e616756bd91e8f1c",
+        "d2c30d317e614132a22fc06f9ae5acc36bb3ab886935df258e588bce2c594687",
+        "f471442718c27dde1744d9c0c97be49a95c99819c6bfd9457497e1f1c0275e6e",
+        "898bbe6a34a9ff26d7659daf89629f0af4764007415f5a3a7660a22e414a6e9c",
+        "79d17954a55baeb7bba919ce268dab4f63a4ca68dbfb0aeda0ef6a99e355b889",
+        "1f54cf001ec0e2e71a1c7c5b79703f4999ba89101b3de6869e07984de6d2a0f4"
+      ],
+      "inline_code": [
+        "open",
+        "DrawerState",
+        "NewsRepository",
+        "suspend",
+        "Flows",
+        "mutableStateOf",
+        "MutableStateFlow",
+        "Random.nextInt",
+        "CoroutineScope",
+        "CoroutineScope",
+        "AddEditTaskViewModel",
+        "saveTask",
+        "update",
+        "viewModelScope",
+        "ViewModel",
+        "ViewModel",
+        "viewModelScope",
+        "withContext",
+        "withContext",
+        "MutableStateFlow",
+        "update",
+        "Snapshot.withMutableSnapshot",
+        "DiceRollViewModel",
+        "SlowRandom.nextInt",
+        "suspend",
+        "viewModelScope.launch(defaultDispatcher){ }",
+        "Snapshot.withMutableSnapshot{ }",
+        "InterestsViewModel",
+        "stateIn",
+        "Flow",
+        "StateFlow",
+        "stateIn",
+        "StateFlows",
+        "SharingStarted.WhileSubscribed",
+        "SharingStarted.Lazily",
+        "MutableStateFlow",
+        "TaskDetailViewModel",
+        "_task",
+        "_isTaskDeleted",
+        "State",
+        "snapshotFlow",
+        "StateFlow",
+        "State",
+        "StateFlow",
+        "StateFlow",
+        "id",
+        "Flow",
+        "started",
+        "stateIn",
+        "initialize",
+        "init",
+        "ViewModel",
+        "init",
+        "ViewModel",
+        "IllegalStateException"
+      ]
+    },
+    {
+      "slug": "04-data-layer",
+      "title": "数据由谁管理",
+      "englishTitle": "Data layer",
+      "url": "https://developer.android.com/topic/architecture/data-layer?hl=en",
+      "retrieval_url": "https://developer.android.google.cn/topic/architecture/data-layer?hl=en",
+      "part": 2,
+      "date": "2026-10-13",
+      "source_sha256": "8853b4943ab4f80642457b54516a65f54f9bccd9175d6d82c97e129a6a4e5700",
+      "units": 143,
+      "words": 4415,
+      "codeBlocks": 11,
+      "images": 2,
+      "headings": [
+        {
+          "id": "architecture",
+          "tag": "h2",
+          "text": "Data layer architecture"
+        },
+        {
+          "id": "expose-apis",
+          "tag": "h2",
+          "text": "Expose APIs"
+        },
+        {
+          "id": "naming-conventions",
+          "tag": "h2",
+          "text": "Naming conventions in this guide"
+        },
+        {
+          "id": "multiple-levels",
+          "tag": "h2",
+          "text": "Multiple levels of repositories"
+        },
+        {
+          "id": "source-of-truth",
+          "tag": "h2",
+          "text": "Source of truth"
+        },
+        {
+          "id": "threading",
+          "tag": "h2",
+          "text": "Threading"
+        },
+        {
+          "id": "lifecycle",
+          "tag": "h2",
+          "text": "Lifecycle"
+        },
+        {
+          "id": "business-models",
+          "tag": "h2",
+          "text": "Represent business models"
+        },
+        {
+          "id": "data-operation-types",
+          "tag": "h2",
+          "text": "Types of data operations"
+        },
+        {
+          "id": "ui-operations",
+          "tag": "h3",
+          "text": "UI-oriented operations"
+        },
+        {
+          "id": "app-operations",
+          "tag": "h3",
+          "text": "App-oriented operations"
+        },
+        {
+          "id": "business-operations",
+          "tag": "h3",
+          "text": "Business-oriented operations"
+        },
+        {
+          "id": "expose-errors",
+          "tag": "h2",
+          "text": "Expose errors"
+        },
+        {
+          "id": "common-tasks",
+          "tag": "h2",
+          "text": "Common tasks"
+        },
+        {
+          "id": "network-request",
+          "tag": "h3",
+          "text": "Make a network request"
+        },
+        {
+          "id": "create_the_data_source",
+          "tag": "h4",
+          "text": "Create the data source"
+        },
+        {
+          "id": "create_the_repository",
+          "tag": "h4",
+          "text": "Create the repository"
+        },
+        {
+          "id": "in-memory-cache",
+          "tag": "h3",
+          "text": "Implement in-memory data caching"
+        },
+        {
+          "id": "caches",
+          "tag": "h4",
+          "text": "Caches"
+        },
+        {
+          "id": "cache_the_result_of_the_network_request",
+          "tag": "h4",
+          "text": "Cache the result of the network request"
+        },
+        {
+          "id": "make_an_operation_live_longer_than_the_screen",
+          "tag": "h4",
+          "text": "Make an operation live longer than the screen"
+        },
+        {
+          "id": "save-retrieve-data",
+          "tag": "h3",
+          "text": "Save and retrieve data from disk"
+        },
+        {
+          "id": "room_as_a_data_source",
+          "tag": "h4",
+          "text": "Room as a data source"
+        },
+        {
+          "id": "datastore_as_a_data_source",
+          "tag": "h4",
+          "text": "DataStore as a data source"
+        },
+        {
+          "id": "a_file_as_a_data_source",
+          "tag": "h4",
+          "text": "A file as a data source"
+        },
+        {
+          "id": "workmanager",
+          "tag": "h3",
+          "text": "Schedule tasks using WorkManager"
+        },
+        {
+          "id": "testing",
+          "tag": "h2",
+          "text": "Testing"
+        },
+        {
+          "id": "unit-tests",
+          "tag": "h3",
+          "text": "Unit tests"
+        },
+        {
+          "id": "integration-tests",
+          "tag": "h3",
+          "text": "Integration tests"
+        },
+        {
+          "id": "resources",
+          "tag": "h2",
+          "text": "Additional resources"
+        },
+        {
+          "id": "samples",
+          "tag": "h3",
+          "text": "Samples"
+        }
+      ],
+      "unitIds": [
+        "04-data-layer-001",
+        "04-data-layer-002",
+        "04-data-layer-003",
+        "04-data-layer-004",
+        "04-data-layer-005",
+        "04-data-layer-006",
+        "04-data-layer-007",
+        "04-data-layer-008",
+        "04-data-layer-009",
+        "04-data-layer-010",
+        "04-data-layer-011",
+        "04-data-layer-012",
+        "04-data-layer-013",
+        "04-data-layer-014",
+        "04-data-layer-015",
+        "04-data-layer-016",
+        "04-data-layer-017",
+        "04-data-layer-018",
+        "04-data-layer-019",
+        "04-data-layer-020",
+        "04-data-layer-021",
+        "04-data-layer-022",
+        "04-data-layer-023",
+        "04-data-layer-024",
+        "04-data-layer-025",
+        "04-data-layer-026",
+        "04-data-layer-027",
+        "04-data-layer-028",
+        "04-data-layer-029",
+        "04-data-layer-030",
+        "04-data-layer-031",
+        "04-data-layer-032",
+        "04-data-layer-033",
+        "04-data-layer-034",
+        "04-data-layer-035",
+        "04-data-layer-036",
+        "04-data-layer-037",
+        "04-data-layer-038",
+        "04-data-layer-039",
+        "04-data-layer-040",
+        "04-data-layer-041",
+        "04-data-layer-042",
+        "04-data-layer-043",
+        "04-data-layer-044",
+        "04-data-layer-045",
+        "04-data-layer-046",
+        "04-data-layer-047",
+        "04-data-layer-048",
+        "04-data-layer-049",
+        "04-data-layer-050",
+        "04-data-layer-051",
+        "04-data-layer-052",
+        "04-data-layer-053",
+        "04-data-layer-054",
+        "04-data-layer-055",
+        "04-data-layer-056",
+        "04-data-layer-057",
+        "04-data-layer-058",
+        "04-data-layer-059",
+        "04-data-layer-060",
+        "04-data-layer-061",
+        "04-data-layer-062",
+        "04-data-layer-063",
+        "04-data-layer-064",
+        "04-data-layer-065",
+        "04-data-layer-066",
+        "04-data-layer-067",
+        "04-data-layer-068",
+        "04-data-layer-069",
+        "04-data-layer-070",
+        "04-data-layer-071",
+        "04-data-layer-072",
+        "04-data-layer-073",
+        "04-data-layer-074",
+        "04-data-layer-075",
+        "04-data-layer-076",
+        "04-data-layer-077",
+        "04-data-layer-078",
+        "04-data-layer-079",
+        "04-data-layer-080",
+        "04-data-layer-081",
+        "04-data-layer-082",
+        "04-data-layer-083",
+        "04-data-layer-084",
+        "04-data-layer-085",
+        "04-data-layer-086",
+        "04-data-layer-087",
+        "04-data-layer-088",
+        "04-data-layer-089",
+        "04-data-layer-090",
+        "04-data-layer-091",
+        "04-data-layer-092",
+        "04-data-layer-093",
+        "04-data-layer-094",
+        "04-data-layer-095",
+        "04-data-layer-096",
+        "04-data-layer-097",
+        "04-data-layer-098",
+        "04-data-layer-099",
+        "04-data-layer-100",
+        "04-data-layer-101",
+        "04-data-layer-102",
+        "04-data-layer-103",
+        "04-data-layer-104",
+        "04-data-layer-105",
+        "04-data-layer-106",
+        "04-data-layer-107",
+        "04-data-layer-108",
+        "04-data-layer-109",
+        "04-data-layer-110",
+        "04-data-layer-111",
+        "04-data-layer-112",
+        "04-data-layer-113",
+        "04-data-layer-114",
+        "04-data-layer-115",
+        "04-data-layer-116",
+        "04-data-layer-117",
+        "04-data-layer-118",
+        "04-data-layer-119",
+        "04-data-layer-120",
+        "04-data-layer-121",
+        "04-data-layer-122",
+        "04-data-layer-123",
+        "04-data-layer-124",
+        "04-data-layer-125",
+        "04-data-layer-126",
+        "04-data-layer-127",
+        "04-data-layer-128",
+        "04-data-layer-129",
+        "04-data-layer-130",
+        "04-data-layer-131",
+        "04-data-layer-132",
+        "04-data-layer-133",
+        "04-data-layer-134",
+        "04-data-layer-135",
+        "04-data-layer-136",
+        "04-data-layer-137",
+        "04-data-layer-138",
+        "04-data-layer-139",
+        "04-data-layer-140",
+        "04-data-layer-141",
+        "04-data-layer-142",
+        "04-data-layer-143"
+      ],
+      "source_headings": [
+        {
+          "id": "architecture",
+          "tag": "h2",
+          "text": "Data layer architecture"
+        },
+        {
+          "id": "expose-apis",
+          "tag": "h2",
+          "text": "Expose APIs"
+        },
+        {
+          "id": "naming-conventions",
+          "tag": "h2",
+          "text": "Naming conventions in this guide"
+        },
+        {
+          "id": "multiple-levels",
+          "tag": "h2",
+          "text": "Multiple levels of repositories"
+        },
+        {
+          "id": "source-of-truth",
+          "tag": "h2",
+          "text": "Source of truth"
+        },
+        {
+          "id": "threading",
+          "tag": "h2",
+          "text": "Threading"
+        },
+        {
+          "id": "lifecycle",
+          "tag": "h2",
+          "text": "Lifecycle"
+        },
+        {
+          "id": "business-models",
+          "tag": "h2",
+          "text": "Represent business models"
+        },
+        {
+          "id": "data-operation-types",
+          "tag": "h2",
+          "text": "Types of data operations"
+        },
+        {
+          "id": "ui-operations",
+          "tag": "h3",
+          "text": "UI-oriented operations"
+        },
+        {
+          "id": "app-operations",
+          "tag": "h3",
+          "text": "App-oriented operations"
+        },
+        {
+          "id": "business-operations",
+          "tag": "h3",
+          "text": "Business-oriented operations"
+        },
+        {
+          "id": "expose-errors",
+          "tag": "h2",
+          "text": "Expose errors"
+        },
+        {
+          "id": "common-tasks",
+          "tag": "h2",
+          "text": "Common tasks"
+        },
+        {
+          "id": "network-request",
+          "tag": "h3",
+          "text": "Make a network request"
+        },
+        {
+          "id": "create_the_data_source",
+          "tag": "h4",
+          "text": "Create the data source"
+        },
+        {
+          "id": "create_the_repository",
+          "tag": "h4",
+          "text": "Create the repository"
+        },
+        {
+          "id": "in-memory-cache",
+          "tag": "h3",
+          "text": "Implement in-memory data caching"
+        },
+        {
+          "id": "caches",
+          "tag": "h4",
+          "text": "Caches"
+        },
+        {
+          "id": "cache_the_result_of_the_network_request",
+          "tag": "h4",
+          "text": "Cache the result of the network request"
+        },
+        {
+          "id": "make_an_operation_live_longer_than_the_screen",
+          "tag": "h4",
+          "text": "Make an operation live longer than the screen"
+        },
+        {
+          "id": "save-retrieve-data",
+          "tag": "h3",
+          "text": "Save and retrieve data from disk"
+        },
+        {
+          "id": "room_as_a_data_source",
+          "tag": "h4",
+          "text": "Room as a data source"
+        },
+        {
+          "id": "datastore_as_a_data_source",
+          "tag": "h4",
+          "text": "DataStore as a data source"
+        },
+        {
+          "id": "a_file_as_a_data_source",
+          "tag": "h4",
+          "text": "A file as a data source"
+        },
+        {
+          "id": "workmanager",
+          "tag": "h3",
+          "text": "Schedule tasks using WorkManager"
+        },
+        {
+          "id": "testing",
+          "tag": "h2",
+          "text": "Testing"
+        },
+        {
+          "id": "unit-tests",
+          "tag": "h3",
+          "text": "Unit tests"
+        },
+        {
+          "id": "integration-tests",
+          "tag": "h3",
+          "text": "Integration tests"
+        },
+        {
+          "id": "resources",
+          "tag": "h2",
+          "text": "Additional resources"
+        },
+        {
+          "id": "samples",
+          "tag": "h3",
+          "text": "Samples"
+        }
+      ],
+      "coverage": "complete-article-body",
+      "code_sha256": [
+        "5db0b8a4075346b63e44d4f1776e9881514c9d0d1302fc1559b77f6c26647061",
+        "db4f93d8adb15f6fa27f93743ff1626b2971929075ffc7358690627130fd1946",
+        "ff4ebba3de0f43d6cc65cb2bc8a9082f08675b41788e891759a227f6b29d9411",
+        "efbc3b28b0faec3f9e980b45ca57a8b1f7027a65665f2c2889e97d317295bfa6",
+        "3131fc811c413fa64ea995bb7df5a7ed6623d1e3a18f142ecce4a354f18db9a4",
+        "3175c910e4876fc8d6a711f0221f70d4e18d86049378179eb131c3d6e739683b",
+        "88ef36784ed23d30b71cfe5fa5eb93a5caba4a85a71eb18e01077fc5570e5c60",
+        "7ef81627b5fea22db7c51eea7b993d00e046cd27f39456f9441e10affc23965e",
+        "79a03c43c55bcbb74de674628938f264f235f27b43155c63052b5546ef23f04b",
+        "2e960bc7a09e9ab30f10ebebe907584845e7c8d615b74d02d49bdf095c07d8bd",
+        "75777c9cb9843ced6fa90aadf61329923c55351b5b88b8b92c959228a7378ec3"
+      ],
+      "inline_code": [
+        "MoviesRepository",
+        "PaymentsRepository",
+        "NewsRepository",
+        "MoviesRepository",
+        "PaymentsRepository",
+        "NewsRemoteDataSource",
+        "NewsLocalDataSource",
+        "NewsNetworkDataSource",
+        "NewsDiskDataSource",
+        "UserSharedPreferencesDataSource",
+        "UserRepository",
+        "LoginRepository",
+        "RegistrationRepository",
+        "UserManager",
+        "UserRepository",
+        "LoginRepository",
+        "PaymentsRepository",
+        "Application",
+        "RegistrationRepository",
+        "RegistrationActivity",
+        "NavEntryDecorator",
+        "ArticleApiModel",
+        "Article",
+        "Application",
+        "try/catch",
+        "catch",
+        "UserNotAuthenticatedException",
+        "Result",
+        "Result<T>",
+        "T",
+        "NewsRemoteDataSource",
+        "NewsRepository",
+        "ArticleHeadline",
+        "CoroutineDispatcher",
+        "Executor",
+        "fetchLatestNews()",
+        "NewsApi",
+        "HttpURLConnection",
+        "NewsRepository",
+        "NewsRepository",
+        "Mutex",
+        "Mutex",
+        "latestNews",
+        "NewsRepository",
+        "CoroutineScope",
+        "NewsRepository",
+        "CoroutineScope",
+        "NewsRepository",
+        "CoroutineScope",
+        "CoroutineScope",
+        "Dispatchers.Default",
+        "NewsRepository",
+        "CoroutineScope",
+        "async",
+        "await",
+        "await",
+        "async",
+        "CoroutineScope",
+        "News",
+        "Authors",
+        "NewsAndAuthors",
+        "UserPreferences",
+        "NewsLocalDataSource",
+        "NewsDao",
+        "AuthorsLocalDataSource",
+        "AuthorsDao",
+        "NotificationsDataStore",
+        "NewsPreferencesDataStore",
+        "newsScreenPreferencesDataStore.data",
+        "File",
+        "Worker",
+        "RefreshLatestNewsWorker",
+        "NewsRepository",
+        "NewsRepository",
+        "NewsTasksDataSource",
+        "NewsTasksDataSource",
+        "PaymentsTasksDataSource",
+        "Initializer"
+      ]
+    },
+    {
+      "slug": "05-network-request",
+      "title": "安卓中的网络请求",
+      "englishTitle": "Get data from the internet",
+      "url": "https://developer.android.com/codelabs/basic-android-kotlin-compose-getting-data-internet?hl=en",
+      "retrieval_url": "https://developer.android.google.cn/codelabs/basic-android-kotlin-compose-getting-data-internet?hl=en",
+      "part": 2,
+      "date": "2026-10-13",
+      "source_sha256": "b584c69a2692a72b44933bb03f7887e1b108cde72a683926308a8b69e7592740",
+      "units": 286,
+      "words": 6343,
+      "codeBlocks": 48,
+      "images": 20,
+      "headings": [
+        {
+          "id": "0",
+          "tag": "h2",
+          "text": "1. Before you begin"
+        },
+        {
+          "id": "prerequisites",
+          "tag": "h2",
+          "text": "Prerequisites"
+        },
+        {
+          "id": "what-youll-learn",
+          "tag": "h2",
+          "text": "What you'll learn"
+        },
+        {
+          "id": "what-youll-do",
+          "tag": "h2",
+          "text": "What you'll do"
+        },
+        {
+          "id": "what-you-need",
+          "tag": "h2",
+          "text": "What you need"
+        },
+        {
+          "id": "1",
+          "tag": "h2",
+          "text": "2. App overview"
+        },
+        {
+          "id": "2",
+          "tag": "h2",
+          "text": "3. Explore the Mars Photos starter app"
+        },
+        {
+          "id": "download-starter-code",
+          "tag": "h3",
+          "text": "Download starter code"
+        },
+        {
+          "id": "run-starter-code",
+          "tag": "h2",
+          "text": "Run starter code"
+        },
+        {
+          "id": "starter-code-walkthrough",
+          "tag": "h2",
+          "text": "Starter code walkthrough"
+        },
+        {
+          "id": "3",
+          "tag": "h2",
+          "text": "4. Introduction to web services"
+        },
+        {
+          "id": "4",
+          "tag": "h2",
+          "text": "5. Web services and Retrofit"
+        },
+        {
+          "id": "web-service-request",
+          "tag": "h2",
+          "text": "W eb service request"
+        },
+        {
+          "id": "external-libraries",
+          "tag": "h3",
+          "text": "External Libraries"
+        },
+        {
+          "id": "retrofit-library",
+          "tag": "h3",
+          "text": "Retrofit Library"
+        },
+        {
+          "id": "add-retrofit-dependencies",
+          "tag": "h2",
+          "text": "Add Retrofit dependencies"
+        },
+        {
+          "id": "5",
+          "tag": "h2",
+          "text": "6. Connecting to the Internet"
+        },
+        {
+          "id": "object-declarations",
+          "tag": "h3",
+          "text": "Object declarations"
+        },
+        {
+          "id": "call-the-web-service-in-marsviewmodel",
+          "tag": "h2",
+          "text": "Call the web service in MarsViewModel"
+        },
+        {
+          "id": "viewmodelscope",
+          "tag": "h3",
+          "text": "ViewModelScope"
+        },
+        {
+          "id": "6",
+          "tag": "h2",
+          "text": "7. Add Internet permission and Exception Handling"
+        },
+        {
+          "id": "android-permissions",
+          "tag": "h2",
+          "text": "Android Permissions"
+        },
+        {
+          "id": "exception-handling",
+          "tag": "h2",
+          "text": "Exception Handling"
+        },
+        {
+          "id": "exceptions",
+          "tag": "h3",
+          "text": "Exceptions"
+        },
+        {
+          "id": "add-state-ui",
+          "tag": "h3",
+          "text": "Add State UI"
+        },
+        {
+          "id": "7",
+          "tag": "h2",
+          "text": "8. Parse the JSON response with kotlinx.serialization"
+        },
+        {
+          "id": "json",
+          "tag": "h2",
+          "text": "JSON"
+        },
+        {
+          "id": "structure-of-sample-json-response",
+          "tag": "h3",
+          "text": "Structure of sample JSON response"
+        },
+        {
+          "id": "add-kotlinx.serialization-library-dependencies",
+          "tag": "h2",
+          "text": "Add kotlinx.serialization library dependencies"
+        },
+        {
+          "id": "implement-the-mars-photo-data-class",
+          "tag": "h2",
+          "text": "Implement the Mars Photo data class"
+        },
+        {
+          "id": "serialname-annotation",
+          "tag": "h3",
+          "text": "@SerialName Annotation"
+        },
+        {
+          "id": "update-marsapiservice-and-marsviewmodel",
+          "tag": "h2",
+          "text": "Update MarsApiService and MarsViewModel"
+        },
+        {
+          "id": "8",
+          "tag": "h2",
+          "text": "9. Solution code"
+        },
+        {
+          "id": "9",
+          "tag": "h2",
+          "text": "10. Summary"
+        },
+        {
+          "id": "rest-web-services",
+          "tag": "h3",
+          "text": "REST web services"
+        },
+        {
+          "id": "json-parsing",
+          "tag": "h3",
+          "text": "JSON parsing"
+        },
+        {
+          "id": "10",
+          "tag": "h2",
+          "text": "11. Learn more"
+        }
+      ],
+      "unitIds": [
+        "05-network-request-001",
+        "05-network-request-002",
+        "05-network-request-003",
+        "05-network-request-004",
+        "05-network-request-005",
+        "05-network-request-006",
+        "05-network-request-007",
+        "05-network-request-008",
+        "05-network-request-009",
+        "05-network-request-010",
+        "05-network-request-011",
+        "05-network-request-012",
+        "05-network-request-013",
+        "05-network-request-014",
+        "05-network-request-015",
+        "05-network-request-016",
+        "05-network-request-017",
+        "05-network-request-018",
+        "05-network-request-019",
+        "05-network-request-020",
+        "05-network-request-021",
+        "05-network-request-022",
+        "05-network-request-023",
+        "05-network-request-024",
+        "05-network-request-025",
+        "05-network-request-026",
+        "05-network-request-027",
+        "05-network-request-028",
+        "05-network-request-029",
+        "05-network-request-030",
+        "05-network-request-031",
+        "05-network-request-032",
+        "05-network-request-033",
+        "05-network-request-034",
+        "05-network-request-035",
+        "05-network-request-036",
+        "05-network-request-037",
+        "05-network-request-038",
+        "05-network-request-039",
+        "05-network-request-040",
+        "05-network-request-041",
+        "05-network-request-042",
+        "05-network-request-043",
+        "05-network-request-044",
+        "05-network-request-045",
+        "05-network-request-046",
+        "05-network-request-047",
+        "05-network-request-048",
+        "05-network-request-049",
+        "05-network-request-050",
+        "05-network-request-051",
+        "05-network-request-052",
+        "05-network-request-053",
+        "05-network-request-054",
+        "05-network-request-055",
+        "05-network-request-056",
+        "05-network-request-057",
+        "05-network-request-058",
+        "05-network-request-059",
+        "05-network-request-060",
+        "05-network-request-061",
+        "05-network-request-062",
+        "05-network-request-063",
+        "05-network-request-064",
+        "05-network-request-065",
+        "05-network-request-066",
+        "05-network-request-067",
+        "05-network-request-068",
+        "05-network-request-069",
+        "05-network-request-070",
+        "05-network-request-071",
+        "05-network-request-072",
+        "05-network-request-073",
+        "05-network-request-074",
+        "05-network-request-075",
+        "05-network-request-076",
+        "05-network-request-077",
+        "05-network-request-078",
+        "05-network-request-079",
+        "05-network-request-080",
+        "05-network-request-081",
+        "05-network-request-082",
+        "05-network-request-083",
+        "05-network-request-084",
+        "05-network-request-085",
+        "05-network-request-086",
+        "05-network-request-087",
+        "05-network-request-088",
+        "05-network-request-089",
+        "05-network-request-090",
+        "05-network-request-091",
+        "05-network-request-092",
+        "05-network-request-093",
+        "05-network-request-094",
+        "05-network-request-095",
+        "05-network-request-096",
+        "05-network-request-097",
+        "05-network-request-098",
+        "05-network-request-099",
+        "05-network-request-100",
+        "05-network-request-101",
+        "05-network-request-102",
+        "05-network-request-103",
+        "05-network-request-104",
+        "05-network-request-105",
+        "05-network-request-106",
+        "05-network-request-107",
+        "05-network-request-108",
+        "05-network-request-109",
+        "05-network-request-110",
+        "05-network-request-111",
+        "05-network-request-112",
+        "05-network-request-113",
+        "05-network-request-114",
+        "05-network-request-115",
+        "05-network-request-116",
+        "05-network-request-117",
+        "05-network-request-118",
+        "05-network-request-119",
+        "05-network-request-120",
+        "05-network-request-121",
+        "05-network-request-122",
+        "05-network-request-123",
+        "05-network-request-124",
+        "05-network-request-125",
+        "05-network-request-126",
+        "05-network-request-127",
+        "05-network-request-128",
+        "05-network-request-129",
+        "05-network-request-130",
+        "05-network-request-131",
+        "05-network-request-132",
+        "05-network-request-133",
+        "05-network-request-134",
+        "05-network-request-135",
+        "05-network-request-136",
+        "05-network-request-137",
+        "05-network-request-138",
+        "05-network-request-139",
+        "05-network-request-140",
+        "05-network-request-141",
+        "05-network-request-142",
+        "05-network-request-143",
+        "05-network-request-144",
+        "05-network-request-145",
+        "05-network-request-146",
+        "05-network-request-147",
+        "05-network-request-148",
+        "05-network-request-149",
+        "05-network-request-150",
+        "05-network-request-151",
+        "05-network-request-152",
+        "05-network-request-153",
+        "05-network-request-154",
+        "05-network-request-155",
+        "05-network-request-156",
+        "05-network-request-157",
+        "05-network-request-158",
+        "05-network-request-159",
+        "05-network-request-160",
+        "05-network-request-161",
+        "05-network-request-162",
+        "05-network-request-163",
+        "05-network-request-164",
+        "05-network-request-165",
+        "05-network-request-166",
+        "05-network-request-167",
+        "05-network-request-168",
+        "05-network-request-169",
+        "05-network-request-170",
+        "05-network-request-171",
+        "05-network-request-172",
+        "05-network-request-173",
+        "05-network-request-174",
+        "05-network-request-175",
+        "05-network-request-176",
+        "05-network-request-177",
+        "05-network-request-178",
+        "05-network-request-179",
+        "05-network-request-180",
+        "05-network-request-181",
+        "05-network-request-182",
+        "05-network-request-183",
+        "05-network-request-184",
+        "05-network-request-185",
+        "05-network-request-186",
+        "05-network-request-187",
+        "05-network-request-188",
+        "05-network-request-189",
+        "05-network-request-190",
+        "05-network-request-191",
+        "05-network-request-192",
+        "05-network-request-193",
+        "05-network-request-194",
+        "05-network-request-195",
+        "05-network-request-196",
+        "05-network-request-197",
+        "05-network-request-198",
+        "05-network-request-199",
+        "05-network-request-200",
+        "05-network-request-201",
+        "05-network-request-202",
+        "05-network-request-203",
+        "05-network-request-204",
+        "05-network-request-205",
+        "05-network-request-206",
+        "05-network-request-207",
+        "05-network-request-208",
+        "05-network-request-209",
+        "05-network-request-210",
+        "05-network-request-211",
+        "05-network-request-212",
+        "05-network-request-213",
+        "05-network-request-214",
+        "05-network-request-215",
+        "05-network-request-216",
+        "05-network-request-217",
+        "05-network-request-218",
+        "05-network-request-219",
+        "05-network-request-220",
+        "05-network-request-221",
+        "05-network-request-222",
+        "05-network-request-223",
+        "05-network-request-224",
+        "05-network-request-225",
+        "05-network-request-226",
+        "05-network-request-227",
+        "05-network-request-228",
+        "05-network-request-229",
+        "05-network-request-230",
+        "05-network-request-231",
+        "05-network-request-232",
+        "05-network-request-233",
+        "05-network-request-234",
+        "05-network-request-235",
+        "05-network-request-236",
+        "05-network-request-237",
+        "05-network-request-238",
+        "05-network-request-239",
+        "05-network-request-240",
+        "05-network-request-241",
+        "05-network-request-242",
+        "05-network-request-243",
+        "05-network-request-244",
+        "05-network-request-245",
+        "05-network-request-246",
+        "05-network-request-247",
+        "05-network-request-248",
+        "05-network-request-249",
+        "05-network-request-250",
+        "05-network-request-251",
+        "05-network-request-252",
+        "05-network-request-253",
+        "05-network-request-254",
+        "05-network-request-255",
+        "05-network-request-256",
+        "05-network-request-257",
+        "05-network-request-258",
+        "05-network-request-259",
+        "05-network-request-260",
+        "05-network-request-261",
+        "05-network-request-262",
+        "05-network-request-263",
+        "05-network-request-264",
+        "05-network-request-265",
+        "05-network-request-266",
+        "05-network-request-267",
+        "05-network-request-268",
+        "05-network-request-269",
+        "05-network-request-270",
+        "05-network-request-271",
+        "05-network-request-272",
+        "05-network-request-273",
+        "05-network-request-274",
+        "05-network-request-275",
+        "05-network-request-276",
+        "05-network-request-277",
+        "05-network-request-278",
+        "05-network-request-279",
+        "05-network-request-280",
+        "05-network-request-281",
+        "05-network-request-282",
+        "05-network-request-283",
+        "05-network-request-284",
+        "05-network-request-285",
+        "05-network-request-286"
+      ],
+      "source_headings": [
+        {
+          "id": "0",
+          "tag": "h2",
+          "text": "1. Before you begin"
+        },
+        {
+          "id": "prerequisites",
+          "tag": "h2",
+          "text": "Prerequisites"
+        },
+        {
+          "id": "what-youll-learn",
+          "tag": "h2",
+          "text": "What you'll learn"
+        },
+        {
+          "id": "what-youll-do",
+          "tag": "h2",
+          "text": "What you'll do"
+        },
+        {
+          "id": "what-you-need",
+          "tag": "h2",
+          "text": "What you need"
+        },
+        {
+          "id": "1",
+          "tag": "h2",
+          "text": "2. App overview"
+        },
+        {
+          "id": "2",
+          "tag": "h2",
+          "text": "3. Explore the Mars Photos starter app"
+        },
+        {
+          "id": "download-starter-code",
+          "tag": "h3",
+          "text": "Download starter code"
+        },
+        {
+          "id": "run-starter-code",
+          "tag": "h2",
+          "text": "Run starter code"
+        },
+        {
+          "id": "starter-code-walkthrough",
+          "tag": "h2",
+          "text": "Starter code walkthrough"
+        },
+        {
+          "id": "3",
+          "tag": "h2",
+          "text": "4. Introduction to web services"
+        },
+        {
+          "id": "4",
+          "tag": "h2",
+          "text": "5. Web services and Retrofit"
+        },
+        {
+          "id": "web-service-request",
+          "tag": "h2",
+          "text": "W eb service request"
+        },
+        {
+          "id": "external-libraries",
+          "tag": "h3",
+          "text": "External Libraries"
+        },
+        {
+          "id": "retrofit-library",
+          "tag": "h3",
+          "text": "Retrofit Library"
+        },
+        {
+          "id": "add-retrofit-dependencies",
+          "tag": "h2",
+          "text": "Add Retrofit dependencies"
+        },
+        {
+          "id": "5",
+          "tag": "h2",
+          "text": "6. Connecting to the Internet"
+        },
+        {
+          "id": "object-declarations",
+          "tag": "h3",
+          "text": "Object declarations"
+        },
+        {
+          "id": "call-the-web-service-in-marsviewmodel",
+          "tag": "h2",
+          "text": "Call the web service in MarsViewModel"
+        },
+        {
+          "id": "viewmodelscope",
+          "tag": "h3",
+          "text": "ViewModelScope"
+        },
+        {
+          "id": "6",
+          "tag": "h2",
+          "text": "7. Add Internet permission and Exception Handling"
+        },
+        {
+          "id": "android-permissions",
+          "tag": "h2",
+          "text": "Android Permissions"
+        },
+        {
+          "id": "exception-handling",
+          "tag": "h2",
+          "text": "Exception Handling"
+        },
+        {
+          "id": "exceptions",
+          "tag": "h3",
+          "text": "Exceptions"
+        },
+        {
+          "id": "add-state-ui",
+          "tag": "h3",
+          "text": "Add State UI"
+        },
+        {
+          "id": "7",
+          "tag": "h2",
+          "text": "8. Parse the JSON response with kotlinx.serialization"
+        },
+        {
+          "id": "json",
+          "tag": "h2",
+          "text": "JSON"
+        },
+        {
+          "id": "structure-of-sample-json-response",
+          "tag": "h3",
+          "text": "Structure of sample JSON response"
+        },
+        {
+          "id": "add-kotlinx.serialization-library-dependencies",
+          "tag": "h2",
+          "text": "Add kotlinx.serialization library dependencies"
+        },
+        {
+          "id": "implement-the-mars-photo-data-class",
+          "tag": "h2",
+          "text": "Implement the Mars Photo data class"
+        },
+        {
+          "id": "serialname-annotation",
+          "tag": "h3",
+          "text": "@SerialName Annotation"
+        },
+        {
+          "id": "update-marsapiservice-and-marsviewmodel",
+          "tag": "h2",
+          "text": "Update MarsApiService and MarsViewModel"
+        },
+        {
+          "id": "8",
+          "tag": "h2",
+          "text": "9. Solution code"
+        },
+        {
+          "id": "9",
+          "tag": "h2",
+          "text": "10. Summary"
+        },
+        {
+          "id": "rest-web-services",
+          "tag": "h3",
+          "text": "REST web services"
+        },
+        {
+          "id": "json-parsing",
+          "tag": "h3",
+          "text": "JSON parsing"
+        },
+        {
+          "id": "10",
+          "tag": "h2",
+          "text": "11. Learn more"
+        }
+      ],
+      "coverage": "complete-article-body",
+      "code_sha256": [
+        "1db58673b4a46b7e360c3e50ba4337253810fd53166887c294bf8b0b76e079c1",
+        "ee77161382e9413aead38ea9adc6effab0396480ddfc7ab1e93c29343a759061",
+        "9d04e6e6d74353f39f403b0938931aa2e820df930582da38d1b8054ebb73489a",
+        "40a512e076c320d6de1d40f04ff0d321c484a5ef71851c9d3facdb012ca75e4a",
+        "cfe8d6433c327b76432f909ea0733a7770c27d5efb9f83e52a006c4c051df615",
+        "5396be591f4395b81c7875c4664b7d24c612c2784949790d1e25ef07cc46a25a",
+        "bef86643cd620ff0d8f49ec3cc7fd910ca3a14853654c103b41e2b393c3f7fb1",
+        "82602642bed426713e294c21a1e480dccccfe7b53e64199c44f6fe42540a2d3d",
+        "7774d71a67805775ed6fc54893c38e788b152c386ad6044279bd2ef5c4e3d2cc",
+        "8a994cebaeea70bc017adcc0f9ae8f8b84220976f6ea07a927d2da7862470e93",
+        "148131cfac73b1725a2ed06c69f2980d330d872b024de00738bee5d2b27363cd",
+        "d2ff8d9c138865fe536bfd3004bb11e236dad2bfe40c536a93535f64972d5a4c",
+        "d0f92fc59eec46e9a713b2a4c27d88f472fab3663eee6842afc9b1375e30a2e7",
+        "f09529dbbc70b5f1618f5ce322453a4bf224af516e6f8d5f33473626f2b70905",
+        "2652ffeb486ba45d294a250ea40e51d56a524ab5a0d19a3c7ebcf51e3e16a327",
+        "23260aa6e7a0fee344fb67f9cf5ba31a107648fa42cc89e7f975d73d18d96cf7",
+        "83c3f7d8b1c4e780d6ad9530a901b8c092ffae0533d25aec447fbf88e5556761",
+        "ff8495ca3bd31aa28fabe61f9de8407a45b12afcf0b4c9e3c6f939ac163ae697",
+        "490f7198f044d31992e93f77d761a24a1b72c1d43375566610e7d7478ee26a63",
+        "37c855031a48938521c7f460969c60904abab3e16e8c004b11b0f579f96a5567",
+        "eb43038d858eb91507f1ff2af1ca2265911783a62d9227a5d10dc539d2d484c6",
+        "40ece66a9a4ccc21a7c9cac492e613a0f8a175ce14e9499dac937c53e74b7ef2",
+        "2b48484b9a63ac483b11659338b87dc16b1320dafb2e58ed5aec78751bf36226",
+        "4f2ea15c4e1086316087ee828662cd28194a5c17def0c886eb46df009e49cb30",
+        "1585eabf09423463fe6cb4b8acddcc9cbd873564e64f3c1db5f16581f003181d",
+        "139a237973eb9ac5a3c3151b63bda76b257719014bc7dc9427749b84e5d54823",
+        "369dbc17a623a61094e7836b894dfb48960c41c374f71e3a246ca787bdbb1cca",
+        "6365652ae9650df8e47fc2ee1b8e190b180de15130dfa28ca0aa2a154f4b1bcd",
+        "bd60f3c9bc453068be5484b688ecbe1f0f2a65e990b0c3ae33919ce08b6e1367",
+        "713921c2db9e33c23213254b629c95195d11ed8e2ecf0b48f23a96e74e2ef164",
+        "440417bda1d1f4020c033b39ed1ed94d0f271d02a581ed352c47571430aeb051",
+        "61ab476c71fb8bf7742817d85a99540b1cff707a5f027bf1b1a034a54eabb819",
+        "096ff201d040ea205f82bb26757e0c9cca512a09aeec22bddf5503978baf0114",
+        "544c8a956536933feb33b8b4c82d853a0252223f02b1ea9f5b6f3db405a62f4e",
+        "6942a4a0e31b69eff6eb58056eb45add045ace8e8a20a89cb4cc6d796d63a4d5",
+        "da6f5dfd16a99fbac84fcdd8b978893a824bbd0f7e2faa1d9cf751a4745f975d",
+        "084fe473f05967d12fa183bafaba80c986bdf41ff3309321cb8457ccd84c37f7",
+        "dd6cc2dd64e02faf820fa69dd2d928a1689098c2409b2ff949da6bc6773c6613",
+        "7980b5c97db5fcc2359ac4846a736855cb42ff18dc5330e7d73a95c26cd856a8",
+        "5e46ea4fea27977a6e8947a747cca653560673389f893beaeb33b1d2203b410d",
+        "778c74e2b1a8d02480a5d5baaba8766d2e012aecffdc063bba15c06dab54ec54",
+        "d7f3694d45fbe15e038ac320f33840b53f482cae03f271118466f78aa2fb75c6",
+        "6885d1157b624b4a5672cad7b30b1adacbf716c4022a85c131e5df3faa98d4ba",
+        "1e206843d85d82be9626d1ebb39c6355ee4f1f535defa2a88a0bb193b2199225",
+        "8b3671c173596108f26d1577c738ccabebbad7fd344713012930787d57fdf807",
+        "b5bdbc1811dda64e8f6f16d8ba6c9de2a8e62811dadaff0b59d67532f0a6a111",
+        "24ff2584e69c8aa805c31147fa20a3fac16cd23e0bbe42cc4bdd95038748e896",
+        "90b41c09b6d71827f99e363f200c85e8be0e1a84cc7737484754d01866ef14c0"
+      ],
+      "inline_code": [
+        "ViewModel",
+        "build.gradle.kts",
+        "Text",
+        "starter",
+        "Mars Photos",
+        "basic-android-kotlin-compose-training-mars-photos",
+        "ui",
+        "ui\\MarsPhotosApp.kt",
+        "MarsPhotosApp",
+        "HomeScreen",
+        "screens\\MarsViewModel.kt",
+        "MarsPhotosApp",
+        "MutableState",
+        "marsUiState",
+        "getMarsPhotos()",
+        "MutableState",
+        "ViewModel",
+        "screens\\HomeScreen.kt",
+        "HomeScreen",
+        "ResultScreen",
+        "ResultScreen",
+        "Box",
+        "marsUiState",
+        "Text",
+        "MainActivity.kt",
+        "ViewModel",
+        "MarsPhotosApp",
+        "ViewModel",
+        "MarsViewModel",
+        "ViewModel",
+        "MutableState",
+        "build.gradle.kts (Module :app)",
+        "dependencies",
+        "String",
+        "String",
+        "Text",
+        "String",
+        "ViewModel",
+        "MarsApiService",
+        "MarsApiService",
+        "network/MarsApiService.kt",
+        "String",
+        "ScalarsConverter",
+        "addConverterFactory()",
+        "ScalarsConverterFactory",
+        "baseUrl()",
+        "build()",
+        "MarsApiService",
+        "getPhotos()",
+        "MarsApiService",
+        "@GET",
+        "photos",
+        "getPhotos()",
+        "photos",
+        "String",
+        "object",
+        "create()",
+        "MarsApiService",
+        "MarsApi",
+        "MarsApi",
+        "retrofitService",
+        "MarsApiService",
+        "retrofitService",
+        "retrofit.create()",
+        "MarsApiService",
+        "MarsApi.retrofitService",
+        "MarsApiService",
+        "getMarsPhotos()",
+        "viewModelScope",
+        "ViewModel",
+        "ViewModel",
+        "viewModelScope",
+        "viewModelScope",
+        "ViewModel",
+        "MarsApiService.kt",
+        "getPhotos()",
+        "viewModelScope",
+        "ui/screens/MarsViewModel.kt",
+        "getMarsPhotos()",
+        "\"Set the Mars API Response here!\"",
+        "getMarsPhotos()",
+        "getMarsPhotos()",
+        "viewModelScope.launch",
+        "viewModelScope",
+        "MarsApi",
+        "getPhotos()",
+        "retrofitService",
+        "val",
+        "listResult",
+        "marsUiState",
+        "marsUiState",
+        "------- beginning of crash",
+        "INTERNET",
+        "INTERNET",
+        "<uses-permission>",
+        "AndroidManifest.xml",
+        "manifests/AndroidManifest.xml",
+        "<application>",
+        "id",
+        "img_src",
+        "IllegalArgumentException",
+        "try-catch",
+        "try",
+        "catch",
+        "catch",
+        "getMarsPhotos()",
+        "launch",
+        "try",
+        "MarsApi",
+        "catch",
+        "try",
+        "MarsViewModel",
+        "marsUiState",
+        "sealed interface",
+        "marsUiState",
+        "Success",
+        "Loading",
+        "Error",
+        "data",
+        "Object",
+        "ui/MarsViewModel.kt",
+        "MarsUiState",
+        "MarsUiState",
+        "MarsViewModel",
+        "marsUiState",
+        "MarsUiState",
+        "MarsUiState.Loading",
+        "marsUiState",
+        "getMarsPhotos()",
+        "marsUiState",
+        "MarsUiState.Success",
+        "listResult",
+        "catch",
+        "MarsUiState",
+        "Error",
+        "marsUiState",
+        "try-catch",
+        "screens/HomeScreen.kt",
+        "when",
+        "marsUiState",
+        "marsUiState",
+        "MarsUiState.Success",
+        "ResultScreen",
+        "marsUiState.photos",
+        "marsUiState",
+        "MarsUiState",
+        "MarsUiState.Loading",
+        "MarsUiState.Success",
+        "MarsUiState.Error",
+        "when",
+        "MarsUiState.Loading",
+        "MarsUiState.Error",
+        "LoadingScreen",
+        "ResultScreen",
+        "ErrorScreen",
+        "MarsUiState",
+        "interface",
+        "sealed",
+        "else",
+        "sealed",
+        "res/drawable/loading_animation.xml",
+        "loading_img.xml",
+        "screens/HomeScreen.kt",
+        "HomeScreen",
+        "LoadingScreen",
+        "loading_img",
+        "LoadingScreen",
+        "ErrorScreen",
+        "img_src",
+        "kotlinx.serialization",
+        "kotlinx.serialization",
+        "kotlinx.serialization",
+        "build.gradle.kts (Module :app)",
+        "plugins",
+        "kotlinx serialization",
+        "dependencies",
+        "kotlinx.serialization",
+        "dependencies",
+        "kotlinx-serialization-converter",
+        "id",
+        "\" \"",
+        "String",
+        "Integer",
+        "img_src",
+        "MarsPhoto",
+        "MarsPhoto",
+        "MarsPhoto.kt",
+        "network",
+        "MarsPhoto",
+        "data",
+        "{}",
+        "()",
+        "MarsPhoto",
+        "MarsPhoto",
+        "@Serializable",
+        "MarsPhoto",
+        "String",
+        "kotlinx serialization",
+        "img_src",
+        "@SerialName",
+        "imgSrc",
+        "img_src",
+        "@SerialName(value = \"img_src\")",
+        "img_src",
+        "kotlinx.serialization",
+        "network/MarsApiService.kt",
+        "ScalarsConverterFactory",
+        "ScalarConverterFactory",
+        "retrofit",
+        "kotlinx.serialization",
+        "ScalarConverterFactory",
+        "kotlinx.serialization.ExperimentalSerializationApi",
+        "kotlinx.serialization",
+        "MarsPhoto",
+        "MarsApiService",
+        "MarsPhoto",
+        "String",
+        "viewModel",
+        "MarsViewModel.kt",
+        "getMarsPhotos()",
+        "getMarsPhotos()",
+        "listResult",
+        "List<MarsPhoto>",
+        "String",
+        "marsUiState",
+        "repo-starter",
+        "ScalarsConverter",
+        "String",
+        "\"android.permission.INTERNET\"",
+        "@SerialName",
+        "value"
+      ]
+    },
+    {
+      "slug": "06-cancellation",
+      "title": "异步任务的取消与超时",
+      "englishTitle": "Cancellation and timeouts",
+      "url": "https://kotlinlang.org/docs/coroutines-cancellation.html",
+      "retrieval_url": "https://kotlinlang.org/docs/coroutines-cancellation.html",
+      "part": 2,
+      "date": "2026-10-13",
+      "source_sha256": "c15875681e6e2ebd24b0a9366ff5cd6cd6c40a644b6823a167498fe4cd83dc85",
+      "units": 62,
+      "words": 2367,
+      "codeBlocks": 10,
+      "images": 1,
+      "headings": [
+        {
+          "id": "coroutines-cancellation.md",
+          "tag": "h1",
+          "text": "Cancellation and timeouts"
+        },
+        {
+          "id": "cancel-coroutines",
+          "tag": "h2",
+          "text": "Cancel coroutines"
+        },
+        {
+          "id": "cancellation-propagation",
+          "tag": "h3",
+          "text": "Cancellation propagation"
+        },
+        {
+          "id": "cancellation-is-cooperative",
+          "tag": "h2",
+          "text": "Make coroutines react to cancellation"
+        },
+        {
+          "id": "suspension-points-and-cancellation",
+          "tag": "h3",
+          "text": "Suspension points and cancellation"
+        },
+        {
+          "id": "the-yield-suspending-function",
+          "tag": "h3",
+          "text": "The yield() suspending function"
+        },
+        {
+          "id": "check-for-cancellation-explicitly",
+          "tag": "h3",
+          "text": "Check for cancellation explicitly"
+        },
+        {
+          "id": "interrupt-blocking-code-when-coroutines-are-canceled",
+          "tag": "h3",
+          "text": "Interrupt blocking code when coroutines are canceled"
+        },
+        {
+          "id": "handle-values-safely-when-canceling-coroutines",
+          "tag": "h2",
+          "text": "Handle values safely when canceling coroutines"
+        },
+        {
+          "id": "run-non-cancelable-blocks",
+          "tag": "h3",
+          "text": "Run non-cancelable blocks"
+        },
+        {
+          "id": "timeout",
+          "tag": "h2",
+          "text": "Timeout"
+        }
+      ],
+      "unitIds": [
+        "06-cancellation-001",
+        "06-cancellation-002",
+        "06-cancellation-003",
+        "06-cancellation-004",
+        "06-cancellation-005",
+        "06-cancellation-006",
+        "06-cancellation-007",
+        "06-cancellation-008",
+        "06-cancellation-009",
+        "06-cancellation-010",
+        "06-cancellation-011",
+        "06-cancellation-012",
+        "06-cancellation-013",
+        "06-cancellation-014",
+        "06-cancellation-015",
+        "06-cancellation-016",
+        "06-cancellation-017",
+        "06-cancellation-018",
+        "06-cancellation-019",
+        "06-cancellation-020",
+        "06-cancellation-021",
+        "06-cancellation-022",
+        "06-cancellation-023",
+        "06-cancellation-024",
+        "06-cancellation-025",
+        "06-cancellation-026",
+        "06-cancellation-027",
+        "06-cancellation-028",
+        "06-cancellation-029",
+        "06-cancellation-030",
+        "06-cancellation-031",
+        "06-cancellation-032",
+        "06-cancellation-033",
+        "06-cancellation-034",
+        "06-cancellation-035",
+        "06-cancellation-036",
+        "06-cancellation-037",
+        "06-cancellation-038",
+        "06-cancellation-039",
+        "06-cancellation-040",
+        "06-cancellation-041",
+        "06-cancellation-042",
+        "06-cancellation-043",
+        "06-cancellation-044",
+        "06-cancellation-045",
+        "06-cancellation-046",
+        "06-cancellation-047",
+        "06-cancellation-048",
+        "06-cancellation-049",
+        "06-cancellation-050",
+        "06-cancellation-051",
+        "06-cancellation-052",
+        "06-cancellation-053",
+        "06-cancellation-054",
+        "06-cancellation-055",
+        "06-cancellation-056",
+        "06-cancellation-057",
+        "06-cancellation-058",
+        "06-cancellation-059",
+        "06-cancellation-060",
+        "06-cancellation-061",
+        "06-cancellation-062"
+      ],
+      "source_headings": [
+        {
+          "id": "coroutines-cancellation.md",
+          "tag": "h1",
+          "text": "Cancellation and timeouts"
+        },
+        {
+          "id": "cancel-coroutines",
+          "tag": "h2",
+          "text": "Cancel coroutines"
+        },
+        {
+          "id": "cancellation-propagation",
+          "tag": "h3",
+          "text": "Cancellation propagation"
+        },
+        {
+          "id": "cancellation-is-cooperative",
+          "tag": "h2",
+          "text": "Make coroutines react to cancellation"
+        },
+        {
+          "id": "suspension-points-and-cancellation",
+          "tag": "h3",
+          "text": "Suspension points and cancellation"
+        },
+        {
+          "id": "the-yield-suspending-function",
+          "tag": "h3",
+          "text": "The yield() suspending function"
+        },
+        {
+          "id": "check-for-cancellation-explicitly",
+          "tag": "h3",
+          "text": "Check for cancellation explicitly"
+        },
+        {
+          "id": "interrupt-blocking-code-when-coroutines-are-canceled",
+          "tag": "h3",
+          "text": "Interrupt blocking code when coroutines are canceled"
+        },
+        {
+          "id": "handle-values-safely-when-canceling-coroutines",
+          "tag": "h2",
+          "text": "Handle values safely when canceling coroutines"
+        },
+        {
+          "id": "run-non-cancelable-blocks",
+          "tag": "h3",
+          "text": "Run non-cancelable blocks"
+        },
+        {
+          "id": "timeout",
+          "tag": "h2",
+          "text": "Timeout"
+        }
+      ],
+      "coverage": "complete-article-body",
+      "code_sha256": [
+        "f81b4fd23f82f2116695e5ded754cdb9d736bbfbfa385373ac750149f9672ff1",
+        "a17b1b3c1715d6128d4c189a8994a2af49548d622dc633b1ab0f18664c48c75b",
+        "8b06c26d9878abfa9018ca67e2187be3ada788e671d0c7573d60a14cdcb13ba2",
+        "40d4ef2979e28c74ff70e2a2c1e9a77f4606bee58e69a67f740f77cb8bf5bd4d",
+        "2d1f14c38193585e134c4948d2c5956eb48edee9bf24554d16bdb4c78211064a",
+        "5b027363b8bc321859caab0bb777ddce31a9f78423c5ff475d18a0d8de9cdd70",
+        "c20f4c2437cad42c96551fff650f9207f4e58616aa705ed7d45ac0677f27a56c",
+        "a983651ac4f117c953c84a249e7316dc153205a0b403851b5792cde6db85ad0d",
+        "99a022295e8a53788b781b121c6b5d5a3c798f3b97db084eade2c9a098d23f57",
+        "2a111024e4eeb3917b64f6f6e8c8b6319817eb25434baa14c0527293358c6e14"
+      ],
+      "inline_code": [
+        "Job",
+        "Job",
+        "cancel()",
+        "Job",
+        ".launch()",
+        "Job",
+        ".async()",
+        "Deferred",
+        "Job",
+        "cancel()",
+        "CancellationException",
+        "kotlinx.coroutines",
+        "delay()",
+        "awaitCancellation()",
+        "delay(Duration.INFINITE)",
+        "CompletableDeferred",
+        "complete()",
+        "await()",
+        "CompletableDeferred",
+        "Deferred",
+        "Job",
+        "async()",
+        "CancellationException",
+        "finally",
+        "CompletableDeferred",
+        "CancellationException",
+        "suspend",
+        "Deferred",
+        "Deferred",
+        "kotlinx.coroutines",
+        "suspendCancellableCoroutine()",
+        "suspendCoroutine()",
+        "yield()",
+        "yield()",
+        "yield()",
+        "CancellationException",
+        "yield()",
+        "yield()",
+        "isActive",
+        "false",
+        "ensureActive()",
+        "CancellationException",
+        "Thread.sleep()",
+        "BlockingQueue.take()",
+        "runInterruptible()",
+        "CancellationException",
+        "withContext(Dispatchers.IO)",
+        "updateUi()",
+        "leaveScreen()",
+        "withContext(Dispatchers.IO)",
+        "AutoCloseable",
+        "BufferedReader",
+        "finally",
+        "NonCancellable",
+        "withContext()",
+        "NonCancellable",
+        ".launch()",
+        ".async()",
+        "NonCancellable",
+        "close()",
+        "withTimeoutOrNull()",
+        "Duration",
+        "Duration",
+        "withTimeoutOrNull()",
+        "null"
+      ]
+    },
+    {
+      "slug": "07-sql",
+      "title": "数据库与 SQL 入门",
+      "englishTitle": "Use SQL to read and write to a database",
+      "url": "https://developer.android.com/codelabs/basic-android-kotlin-compose-sql?hl=en",
+      "retrieval_url": "https://developer.android.google.cn/codelabs/basic-android-kotlin-compose-sql?hl=en",
+      "part": 3,
+      "date": "2026-10-13",
+      "source_sha256": "0f1b8fa855974c261f38d63704a11e653c1255a26fda8e8730d524282a0595bc",
+      "units": 202,
+      "words": 4482,
+      "codeBlocks": 26,
+      "images": 57,
+      "headings": [
+        {
+          "id": "0",
+          "tag": "h2",
+          "text": "1. Before you begin"
+        },
+        {
+          "id": "1",
+          "tag": "h2",
+          "text": "2. Key concepts of relational databases"
+        },
+        {
+          "id": "what-is-a-database",
+          "tag": "h2",
+          "text": "What is a database?"
+        },
+        {
+          "id": "what-is-sqlite",
+          "tag": "h2",
+          "text": "What is SQLite?"
+        },
+        {
+          "id": "representing-data-with-sqlite",
+          "tag": "h2",
+          "text": "Representing data with SQLite"
+        },
+        {
+          "id": "2",
+          "tag": "h2",
+          "text": "3. Download the starter data set"
+        },
+        {
+          "id": "use-the-database-inspector",
+          "tag": "h2",
+          "text": "Use the Database Inspector"
+        },
+        {
+          "id": "3",
+          "tag": "h2",
+          "text": "4. Read data with a SELECT statement"
+        },
+        {
+          "id": "sql-select-statement",
+          "tag": "h2",
+          "text": "SQL SELECT statement"
+        },
+        {
+          "id": "read-email-data-using-a-select-statement",
+          "tag": "h2",
+          "text": "Read email data using a SELECT statement"
+        },
+        {
+          "id": "4",
+          "tag": "h2",
+          "text": "5. Use SELECT statements with aggregate functions and distinct values"
+        },
+        {
+          "id": "reduce-columns-with-aggregate-functions",
+          "tag": "h2",
+          "text": "Reduce columns with aggregate functions"
+        },
+        {
+          "id": "filter-duplicate-results-with-distinct",
+          "tag": "h2",
+          "text": "Filter duplicate results with DISTINCT"
+        },
+        {
+          "id": "5",
+          "tag": "h2",
+          "text": "6. Filter queries with a WHERE clause"
+        },
+        {
+          "id": "logical-operators-with-where-clauses",
+          "tag": "h2",
+          "text": "Logical operators with WHERE clauses"
+        },
+        {
+          "id": "search-for-text-using-like",
+          "tag": "h2",
+          "text": "Search for text using LIKE"
+        },
+        {
+          "id": "6",
+          "tag": "h2",
+          "text": "7. Group, order, and limit results"
+        },
+        {
+          "id": "group-results-with-group-by",
+          "tag": "h2",
+          "text": "Group results with GROUP BY"
+        },
+        {
+          "id": "sort-results-with-order-by",
+          "tag": "h2",
+          "text": "Sort results with ORDER BY"
+        },
+        {
+          "id": "restrict-the-number-of-results-with-limit",
+          "tag": "h2",
+          "text": "Restrict the number of results with LIMIT"
+        },
+        {
+          "id": "7",
+          "tag": "h2",
+          "text": "8. Insert, update, and delete data in a database"
+        },
+        {
+          "id": "insert-data-into-a-database",
+          "tag": "h2",
+          "text": "Insert data into a database"
+        },
+        {
+          "id": "update-existing-data-in-a-database",
+          "tag": "h2",
+          "text": "Update existing data in a database"
+        },
+        {
+          "id": "delete-a-row-from-a-database",
+          "tag": "h2",
+          "text": "Delete a row from a database"
+        },
+        {
+          "id": "8",
+          "tag": "h2",
+          "text": "9. Summary"
+        },
+        {
+          "id": "9",
+          "tag": "h2",
+          "text": "10. Learn more"
+        }
+      ],
+      "unitIds": [
+        "07-sql-001",
+        "07-sql-002",
+        "07-sql-003",
+        "07-sql-004",
+        "07-sql-005",
+        "07-sql-006",
+        "07-sql-007",
+        "07-sql-008",
+        "07-sql-009",
+        "07-sql-010",
+        "07-sql-011",
+        "07-sql-012",
+        "07-sql-013",
+        "07-sql-014",
+        "07-sql-015",
+        "07-sql-016",
+        "07-sql-017",
+        "07-sql-018",
+        "07-sql-019",
+        "07-sql-020",
+        "07-sql-021",
+        "07-sql-022",
+        "07-sql-023",
+        "07-sql-024",
+        "07-sql-025",
+        "07-sql-026",
+        "07-sql-027",
+        "07-sql-028",
+        "07-sql-029",
+        "07-sql-030",
+        "07-sql-031",
+        "07-sql-032",
+        "07-sql-033",
+        "07-sql-034",
+        "07-sql-035",
+        "07-sql-036",
+        "07-sql-037",
+        "07-sql-038",
+        "07-sql-039",
+        "07-sql-040",
+        "07-sql-041",
+        "07-sql-042",
+        "07-sql-043",
+        "07-sql-044",
+        "07-sql-045",
+        "07-sql-046",
+        "07-sql-047",
+        "07-sql-048",
+        "07-sql-049",
+        "07-sql-050",
+        "07-sql-051",
+        "07-sql-052",
+        "07-sql-053",
+        "07-sql-054",
+        "07-sql-055",
+        "07-sql-056",
+        "07-sql-057",
+        "07-sql-058",
+        "07-sql-059",
+        "07-sql-060",
+        "07-sql-061",
+        "07-sql-062",
+        "07-sql-063",
+        "07-sql-064",
+        "07-sql-065",
+        "07-sql-066",
+        "07-sql-067",
+        "07-sql-068",
+        "07-sql-069",
+        "07-sql-070",
+        "07-sql-071",
+        "07-sql-072",
+        "07-sql-073",
+        "07-sql-074",
+        "07-sql-075",
+        "07-sql-076",
+        "07-sql-077",
+        "07-sql-078",
+        "07-sql-079",
+        "07-sql-080",
+        "07-sql-081",
+        "07-sql-082",
+        "07-sql-083",
+        "07-sql-084",
+        "07-sql-085",
+        "07-sql-086",
+        "07-sql-087",
+        "07-sql-088",
+        "07-sql-089",
+        "07-sql-090",
+        "07-sql-091",
+        "07-sql-092",
+        "07-sql-093",
+        "07-sql-094",
+        "07-sql-095",
+        "07-sql-096",
+        "07-sql-097",
+        "07-sql-098",
+        "07-sql-099",
+        "07-sql-100",
+        "07-sql-101",
+        "07-sql-102",
+        "07-sql-103",
+        "07-sql-104",
+        "07-sql-105",
+        "07-sql-106",
+        "07-sql-107",
+        "07-sql-108",
+        "07-sql-109",
+        "07-sql-110",
+        "07-sql-111",
+        "07-sql-112",
+        "07-sql-113",
+        "07-sql-114",
+        "07-sql-115",
+        "07-sql-116",
+        "07-sql-117",
+        "07-sql-118",
+        "07-sql-119",
+        "07-sql-120",
+        "07-sql-121",
+        "07-sql-122",
+        "07-sql-123",
+        "07-sql-124",
+        "07-sql-125",
+        "07-sql-126",
+        "07-sql-127",
+        "07-sql-128",
+        "07-sql-129",
+        "07-sql-130",
+        "07-sql-131",
+        "07-sql-132",
+        "07-sql-133",
+        "07-sql-134",
+        "07-sql-135",
+        "07-sql-136",
+        "07-sql-137",
+        "07-sql-138",
+        "07-sql-139",
+        "07-sql-140",
+        "07-sql-141",
+        "07-sql-142",
+        "07-sql-143",
+        "07-sql-144",
+        "07-sql-145",
+        "07-sql-146",
+        "07-sql-147",
+        "07-sql-148",
+        "07-sql-149",
+        "07-sql-150",
+        "07-sql-151",
+        "07-sql-152",
+        "07-sql-153",
+        "07-sql-154",
+        "07-sql-155",
+        "07-sql-156",
+        "07-sql-157",
+        "07-sql-158",
+        "07-sql-159",
+        "07-sql-160",
+        "07-sql-161",
+        "07-sql-162",
+        "07-sql-163",
+        "07-sql-164",
+        "07-sql-165",
+        "07-sql-166",
+        "07-sql-167",
+        "07-sql-168",
+        "07-sql-169",
+        "07-sql-170",
+        "07-sql-171",
+        "07-sql-172",
+        "07-sql-173",
+        "07-sql-174",
+        "07-sql-175",
+        "07-sql-176",
+        "07-sql-177",
+        "07-sql-178",
+        "07-sql-179",
+        "07-sql-180",
+        "07-sql-181",
+        "07-sql-182",
+        "07-sql-183",
+        "07-sql-184",
+        "07-sql-185",
+        "07-sql-186",
+        "07-sql-187",
+        "07-sql-188",
+        "07-sql-189",
+        "07-sql-190",
+        "07-sql-191",
+        "07-sql-192",
+        "07-sql-193",
+        "07-sql-194",
+        "07-sql-195",
+        "07-sql-196",
+        "07-sql-197",
+        "07-sql-198",
+        "07-sql-199",
+        "07-sql-200",
+        "07-sql-201",
+        "07-sql-202"
+      ],
+      "source_headings": [
+        {
+          "id": "0",
+          "tag": "h2",
+          "text": "1. Before you begin"
+        },
+        {
+          "id": "1",
+          "tag": "h2",
+          "text": "2. Key concepts of relational databases"
+        },
+        {
+          "id": "what-is-a-database",
+          "tag": "h2",
+          "text": "What is a database?"
+        },
+        {
+          "id": "what-is-sqlite",
+          "tag": "h2",
+          "text": "What is SQLite?"
+        },
+        {
+          "id": "representing-data-with-sqlite",
+          "tag": "h2",
+          "text": "Representing data with SQLite"
+        },
+        {
+          "id": "2",
+          "tag": "h2",
+          "text": "3. Download the starter data set"
+        },
+        {
+          "id": "use-the-database-inspector",
+          "tag": "h2",
+          "text": "Use the Database Inspector"
+        },
+        {
+          "id": "3",
+          "tag": "h2",
+          "text": "4. Read data with a SELECT statement"
+        },
+        {
+          "id": "sql-select-statement",
+          "tag": "h2",
+          "text": "SQL SELECT statement"
+        },
+        {
+          "id": "read-email-data-using-a-select-statement",
+          "tag": "h2",
+          "text": "Read email data using a SELECT statement"
+        },
+        {
+          "id": "4",
+          "tag": "h2",
+          "text": "5. Use SELECT statements with aggregate functions and distinct values"
+        },
+        {
+          "id": "reduce-columns-with-aggregate-functions",
+          "tag": "h2",
+          "text": "Reduce columns with aggregate functions"
+        },
+        {
+          "id": "filter-duplicate-results-with-distinct",
+          "tag": "h2",
+          "text": "Filter duplicate results with DISTINCT"
+        },
+        {
+          "id": "5",
+          "tag": "h2",
+          "text": "6. Filter queries with a WHERE clause"
+        },
+        {
+          "id": "logical-operators-with-where-clauses",
+          "tag": "h2",
+          "text": "Logical operators with WHERE clauses"
+        },
+        {
+          "id": "search-for-text-using-like",
+          "tag": "h2",
+          "text": "Search for text using LIKE"
+        },
+        {
+          "id": "6",
+          "tag": "h2",
+          "text": "7. Group, order, and limit results"
+        },
+        {
+          "id": "group-results-with-group-by",
+          "tag": "h2",
+          "text": "Group results with GROUP BY"
+        },
+        {
+          "id": "sort-results-with-order-by",
+          "tag": "h2",
+          "text": "Sort results with ORDER BY"
+        },
+        {
+          "id": "restrict-the-number-of-results-with-limit",
+          "tag": "h2",
+          "text": "Restrict the number of results with LIMIT"
+        },
+        {
+          "id": "7",
+          "tag": "h2",
+          "text": "8. Insert, update, and delete data in a database"
+        },
+        {
+          "id": "insert-data-into-a-database",
+          "tag": "h2",
+          "text": "Insert data into a database"
+        },
+        {
+          "id": "update-existing-data-in-a-database",
+          "tag": "h2",
+          "text": "Update existing data in a database"
+        },
+        {
+          "id": "delete-a-row-from-a-database",
+          "tag": "h2",
+          "text": "Delete a row from a database"
+        },
+        {
+          "id": "8",
+          "tag": "h2",
+          "text": "9. Summary"
+        },
+        {
+          "id": "9",
+          "tag": "h2",
+          "text": "10. Learn more"
+        }
+      ],
+      "coverage": "complete-article-body",
+      "code_sha256": [
+        "e2249728d56a2c0556edcce6342906fd43d7e0078cd70426e3966304762cdbe8",
+        "2fca06c7ac603f2c70bd9601cd002aed1303ab5ac686f8a094c9687a9b33a7a2",
+        "c069e50ff63d8f5bf5718fbd05bad3e2dfbaac147b8b8970300a04c8df347048",
+        "a3df66bb6899f9458c9021e530ca454a9c834fa137750b4e20c706e3f1667eab",
+        "12da57c30b8cf2ee0dee5e8c2fc0e3721c6b2fba544cdef3d07cc15e4d93c569",
+        "8b0ac5242ae05547486078ffecb4b399583583232aa7bdcc18ead86d52fa10e6",
+        "7a3e337a846f32e0937aca4819e43af1e50f2cf1ab8a4a8f43b28044f3fe565b",
+        "5542c2c56334373aad86f025fc82ca8d6eaaec933c1cd856b298a093a360fbb1",
+        "441bdcc7bb95489d447d73de5f7a3b67da0d8f533d6d3d59bed724ce0337355c",
+        "de31d23ca3d5ab0d4fe1b1524e10362451c0330fc43154a0e0b702b3db2766c0",
+        "39090f107ddc5ae4f2fa37b9ef83780cc01857a86727583e8ab358505952f030",
+        "4d01f5a8497246d722af6f7e6f70fd921a600969e4395e9deb10a30146cbdce7",
+        "673b175f36d8f933c52dc7b3224614e2c620b85513bc1098f078f3a6e71aa2b5",
+        "9e5a5c8387c41e4f1f4610234dc3ff993c678e36758b90ecc1a15032e98c69f0",
+        "637546799d207d734b697a8fed1f6e35418859bd39097ad701d4268c1fd08236",
+        "547dbec036ba1981712e997c70ac6e698edea7ad340694febb8a3639bf371735",
+        "d08d528fed29cde8d9f1ee9fe30bcca6c6370eb6ad655b3da76e2352aabbb644",
+        "206823495ad2f1947f12c6fa5ba966de65df5ec3d1c9c3169f28593c085d5f1d",
+        "5d45206fa07714861221253147dcc5e713b1b919f12eeba07f2be60e78e6d6f3",
+        "9c0a4afb4024b1eac71c95d383420a7cb0183bcfa38c4a2cf3e21e1bcf3bce72",
+        "d7fa255d536bb7be7b46062a468f149618171b71b483afd5d4be02a518e91bbb",
+        "3278200484b48a5f7faceae58a8e736d688d895684caea19a3e654bb06132ca9",
+        "3ff04ca99ac95f4021228fc4913ce4a0d665df2f672cf336cf299aaa37ea5ff6",
+        "43dfb6dbe2af9fcd345188f88007288ca3f0734ae5c2e8ab596a239d965dab32",
+        "55bca1aa06cdad52fd47db3dbbe2d4e2bd5f56206739955120a65901a0ba3a4d",
+        "3c61d390f712aa3d318949bd39f38b00e20a23b95fcc7ca2aeea1e812fe88ffc"
+      ],
+      "inline_code": [
+        "teacher",
+        "student",
+        "course",
+        "teachers",
+        "students",
+        "courses",
+        "Int",
+        "Boolean",
+        "Int",
+        "String",
+        "Boolean",
+        "Float",
+        "Double",
+        "compose",
+        "email",
+        "id",
+        "subject",
+        "sender",
+        "folder",
+        "starred",
+        "read",
+        "received",
+        "SELECT",
+        "SELECT",
+        "SELECT",
+        "SELECT",
+        "FROM",
+        ";",
+        "SELECT",
+        "*",
+        "SELECT",
+        ";",
+        "SELECT",
+        "SELECT",
+        "email",
+        "email",
+        "email",
+        "SELECT",
+        "SELECT",
+        "COUNT()",
+        "SUM()",
+        "AVG()",
+        "MIN()",
+        "MAX()",
+        "email",
+        "COUNT()",
+        "*",
+        "MAX()",
+        "DISTINCT",
+        "DISTINCT",
+        "sender",
+        "DISTINCT",
+        "DISTINCT",
+        "COUNT()",
+        "DISTINCT",
+        "sender",
+        "SELECT",
+        "DISTINCT sender",
+        "COUNT()",
+        "WHERE",
+        "SELECT",
+        "WHERE",
+        "WHERE",
+        "SELECT",
+        "*",
+        "email",
+        "WHERE",
+        "folder = 'inbox'",
+        "=",
+        "==",
+        "!=",
+        "<",
+        "<=",
+        ">",
+        ">=",
+        "WHERE",
+        "WHERE",
+        "AND",
+        "&&",
+        "OR",
+        "||",
+        "NOT",
+        "WHERE",
+        "email",
+        "OR",
+        "starred = true",
+        "NOT folder = 'spam'",
+        "folder != 'spam'",
+        "LIKE",
+        "WHERE",
+        "LIKE",
+        "%",
+        "%",
+        "%",
+        "%",
+        "email",
+        "sender",
+        "h",
+        "helena@example.com",
+        "hyppolytus@example.com",
+        "hermia@example.com",
+        "GROUP BY",
+        "WHERE",
+        "GROUP BY",
+        "GROUP BY",
+        "SELECT",
+        "GROUP BY",
+        "GROUP BY",
+        "'inbox'",
+        "'spam'",
+        "folder",
+        "COUNT()",
+        "folder",
+        "GROUP BY",
+        "COUNT()",
+        "GROUP BY",
+        "folder",
+        "GROUP BY",
+        "ORDER BY",
+        "ORDER BY",
+        "ORDER BY",
+        "a",
+        "ORDER BY",
+        "DESC",
+        "ORDER BY",
+        "ORDER BY",
+        "received",
+        "DESC",
+        "ORDER BY",
+        "WHERE",
+        "ASC",
+        "ORDER BY",
+        "GROUP BY",
+        "ORDER BY",
+        "LIMIT",
+        "LIMIT",
+        "LIMIT",
+        "LIMIT",
+        "ORDER BY",
+        "OFFSET",
+        "LIMIT 10 OFFSET 10",
+        "LIMIT",
+        "SELECT",
+        "OFFSET",
+        "10",
+        "INSERT",
+        "INSERT",
+        "INSERT INTO",
+        "VALUES",
+        "INSERT",
+        "email",
+        "INSERT",
+        "folder",
+        "NULL",
+        "id",
+        "id",
+        "CURRENT_TIMESTAMP",
+        "id",
+        "44",
+        "UPDATE",
+        "UPDATE",
+        "UPDATE",
+        "SET",
+        "SET",
+        "SET",
+        "UPDATE",
+        "WHERE",
+        "UPDATE",
+        "UPDATE",
+        "id",
+        "44",
+        "read",
+        "true",
+        "SELECT",
+        "1",
+        "0",
+        "DELETE",
+        "DELETE",
+        "DELETE",
+        "FROM",
+        "WHERE",
+        "DELETE",
+        "DELETE",
+        "id",
+        "44",
+        "SELECT",
+        "id",
+        "44",
+        "SELECT",
+        "WHERE",
+        "GROUP BY",
+        "ORDER BY",
+        "LIMIT",
+        "DISTINCT",
+        "LIKE",
+        "INSERT",
+        "UPDATE",
+        "DELETE",
+        "SELECT"
+      ]
+    },
+    {
+      "slug": "08-room",
+      "title": "Room 整体认识",
+      "englishTitle": "Save data in a local database using Room",
+      "url": "https://developer.android.com/training/data-storage/room?hl=en",
+      "retrieval_url": "https://developer.android.google.cn/training/data-storage/room?hl=en",
+      "part": 3,
+      "date": "2026-10-13",
+      "source_sha256": "fed517ebc30324b748431b324e78940e73961150d8357eb01b9402b78f43f84d",
+      "units": 42,
+      "words": 823,
+      "codeBlocks": 7,
+      "images": 2,
+      "headings": [
+        {
+          "id": "save_data_in_a_local_database_using_room",
+          "tag": "h1",
+          "text": "Save data in a local database using Room Part of Android Jetpack ."
+        },
+        {
+          "id": "setup",
+          "tag": "h2",
+          "text": "Setup"
+        },
+        {
+          "id": "kts",
+          "tag": "h3",
+          "text": "Kotlin"
+        },
+        {
+          "id": "groovy",
+          "tag": "h3",
+          "text": "Groovy"
+        },
+        {
+          "id": "components",
+          "tag": "h2",
+          "text": "Primary components"
+        },
+        {
+          "id": "sample-implementation",
+          "tag": "h2",
+          "text": "Sample implementation"
+        },
+        {
+          "id": "data-entity",
+          "tag": "h3",
+          "text": "Data entity"
+        },
+        {
+          "id": "dao",
+          "tag": "h3",
+          "text": "Data access object (DAO)"
+        },
+        {
+          "id": "database",
+          "tag": "h3",
+          "text": "Database"
+        },
+        {
+          "id": "usage",
+          "tag": "h3",
+          "text": "Usage"
+        },
+        {
+          "id": "additional-resources",
+          "tag": "h2",
+          "text": "Additional resources"
+        },
+        {
+          "id": "samples",
+          "tag": "h3",
+          "text": "Samples"
+        }
+      ],
+      "unitIds": [
+        "08-room-001",
+        "08-room-002",
+        "08-room-003",
+        "08-room-004",
+        "08-room-005",
+        "08-room-006",
+        "08-room-007",
+        "08-room-008",
+        "08-room-009",
+        "08-room-010",
+        "08-room-011",
+        "08-room-012",
+        "08-room-013",
+        "08-room-014",
+        "08-room-015",
+        "08-room-016",
+        "08-room-017",
+        "08-room-018",
+        "08-room-019",
+        "08-room-020",
+        "08-room-021",
+        "08-room-022",
+        "08-room-023",
+        "08-room-024",
+        "08-room-025",
+        "08-room-026",
+        "08-room-027",
+        "08-room-028",
+        "08-room-029",
+        "08-room-030",
+        "08-room-031",
+        "08-room-032",
+        "08-room-033",
+        "08-room-034",
+        "08-room-035",
+        "08-room-036",
+        "08-room-037",
+        "08-room-038",
+        "08-room-039",
+        "08-room-040",
+        "08-room-041",
+        "08-room-042"
+      ],
+      "source_headings": [
+        {
+          "id": "save_data_in_a_local_database_using_room",
+          "tag": "h1",
+          "text": "Save data in a local database using Room Part of Android Jetpack ."
+        },
+        {
+          "id": "setup",
+          "tag": "h2",
+          "text": "Setup"
+        },
+        {
+          "id": "kts",
+          "tag": "h3",
+          "text": "Kotlin"
+        },
+        {
+          "id": "groovy",
+          "tag": "h3",
+          "text": "Groovy"
+        },
+        {
+          "id": "components",
+          "tag": "h2",
+          "text": "Primary components"
+        },
+        {
+          "id": "sample-implementation",
+          "tag": "h2",
+          "text": "Sample implementation"
+        },
+        {
+          "id": "data-entity",
+          "tag": "h3",
+          "text": "Data entity"
+        },
+        {
+          "id": "dao",
+          "tag": "h3",
+          "text": "Data access object (DAO)"
+        },
+        {
+          "id": "database",
+          "tag": "h3",
+          "text": "Database"
+        },
+        {
+          "id": "usage",
+          "tag": "h3",
+          "text": "Usage"
+        },
+        {
+          "id": "additional-resources",
+          "tag": "h2",
+          "text": "Additional resources"
+        },
+        {
+          "id": "samples",
+          "tag": "h3",
+          "text": "Samples"
+        }
+      ],
+      "coverage": "complete-article-body",
+      "code_sha256": [
+        "2d1a845b7b5da63c7b01a0824fc3c84a600360f7834eb18d55e50a87059fa1de",
+        "5ec455f6116046886498f943771e3a01d54540b0a281e193bbf8a1333dfa0a72",
+        "c7ac5a5313ccee7815268048a858635561808158c6cd0b92f75e98c6ab011614",
+        "0b2cee46979ebfbcebc46b8be7c31eb360c3b5d7f0fab9de1e0c5886508b5b92",
+        "7906325a21b5bc62fc45cd70ae63e2c082a2d7047d4f15cc64fa99d8e6f76d71",
+        "b12f2db2340f6da48d1c1bf9ef1534fb994c1d937107b284ed324420e45d94a6",
+        "e6304aa270e95cb6f00c2b690e2c80c101cb17710381d6b588a142b0029b80e0"
+      ],
+      "inline_code": [
+        "build.gradle.kts",
+        "User",
+        "User",
+        "user",
+        "UserDao",
+        "UserDao",
+        "user",
+        "AppDatabase",
+        "AppDatabase",
+        "@Database",
+        "entities",
+        "RoomDatabase",
+        "AppDatabase",
+        "RoomDatabase",
+        "enableMultiInstanceInvalidation()",
+        "AppDatabase",
+        "AppDatabase",
+        "AppDatabase"
+      ]
+    },
+    {
+      "slug": "09-entities",
+      "title": "用 Entity 定义保存的数据",
+      "englishTitle": "Define data using Room entities",
+      "url": "https://developer.android.com/training/data-storage/room/defining-data?hl=en",
+      "retrieval_url": "https://developer.android.google.cn/training/data-storage/room/defining-data?hl=en",
+      "part": 3,
+      "date": "2026-10-13",
+      "source_sha256": "8d53c0be38ddb0f0e569c85929f36e771f2ff0580801101f46e7f5691b8123c3",
+      "units": 29,
+      "words": 972,
+      "codeBlocks": 10,
+      "images": 0,
+      "headings": [
+        {
+          "id": "anatomy",
+          "tag": "h2",
+          "text": "Anatomy of an entity"
+        },
+        {
+          "id": "primary-key",
+          "tag": "h2",
+          "text": "Define a primary key"
+        },
+        {
+          "id": "composite-key",
+          "tag": "h3",
+          "text": "Define a composite primary key"
+        },
+        {
+          "id": "ignore",
+          "tag": "h2",
+          "text": "Ignore properties"
+        },
+        {
+          "id": "search",
+          "tag": "h2",
+          "text": "Provide table search support"
+        },
+        {
+          "id": "fts",
+          "tag": "h3",
+          "text": "Support full-text search"
+        },
+        {
+          "id": "column-indexing",
+          "tag": "h3",
+          "text": "Index specific columns"
+        }
+      ],
+      "unitIds": [
+        "09-entities-001",
+        "09-entities-002",
+        "09-entities-003",
+        "09-entities-004",
+        "09-entities-005",
+        "09-entities-006",
+        "09-entities-007",
+        "09-entities-008",
+        "09-entities-009",
+        "09-entities-010",
+        "09-entities-011",
+        "09-entities-012",
+        "09-entities-013",
+        "09-entities-014",
+        "09-entities-015",
+        "09-entities-016",
+        "09-entities-017",
+        "09-entities-018",
+        "09-entities-019",
+        "09-entities-020",
+        "09-entities-021",
+        "09-entities-022",
+        "09-entities-023",
+        "09-entities-024",
+        "09-entities-025",
+        "09-entities-026",
+        "09-entities-027",
+        "09-entities-028",
+        "09-entities-029"
+      ],
+      "source_headings": [
+        {
+          "id": "anatomy",
+          "tag": "h2",
+          "text": "Anatomy of an entity"
+        },
+        {
+          "id": "primary-key",
+          "tag": "h2",
+          "text": "Define a primary key"
+        },
+        {
+          "id": "composite-key",
+          "tag": "h3",
+          "text": "Define a composite primary key"
+        },
+        {
+          "id": "ignore",
+          "tag": "h2",
+          "text": "Ignore properties"
+        },
+        {
+          "id": "search",
+          "tag": "h2",
+          "text": "Provide table search support"
+        },
+        {
+          "id": "fts",
+          "tag": "h3",
+          "text": "Support full-text search"
+        },
+        {
+          "id": "column-indexing",
+          "tag": "h3",
+          "text": "Index specific columns"
+        }
+      ],
+      "coverage": "complete-article-body",
+      "code_sha256": [
+        "616b1de25f2a204c2117b951a700d86caca836e02f5d78b65976e80ae7cc9ced",
+        "90006785c897e76c43033cecc04beec3b6e2b7ab26ff834317c0072180a52357",
+        "459eee0f231944f6b2f42ed62b97c1b82ca9da3b78b4564b2a7a717f5910b359",
+        "d055af06d5dc5cf72eb0969a95fa7db8c1dcbee284939f88cc809479ccf327c2",
+        "a605fbef516f6d65af09b2b7696dd3977bdfdcfcd7ac3eedb43dc7ddd3fa7531",
+        "c183eb4abdbeaaba31d1cc56323b273cafc76dfa87ddd05d1833cf03f9859422",
+        "57f8960e12b9695ed889a57b5c25dfa9150a8cbb3e6a7b66cf3e50a287a0ead7",
+        "94a72a322f3d73f60dfb1895b37add3bb8687cb16c2ef6a65451e0a79c92fc80",
+        "166b9b917b8434a3c0e636ef3eae32cd60045440c36521964f9b14b3c3e31490",
+        "6087d9b5d05b96236816d5aea3dc8a9e80f3d8a38ceed8d2d8ee9c4e00b93786"
+      ],
+      "inline_code": [
+        "@Entity",
+        "User",
+        "tableName",
+        "@Entity",
+        "@ColumnInfo",
+        "name",
+        "@PrimaryKey",
+        "autoGenerate",
+        "@PrimaryKey",
+        "true",
+        "primaryKeys",
+        "@Entity",
+        "@Ignore",
+        "null",
+        "ignoredColumns",
+        "@Entity",
+        "@Fts3",
+        "@Fts4",
+        "@Fts5",
+        "INTEGER",
+        "\"rowid\"",
+        "tokenizer",
+        "FtsOptions",
+        "TOKENIZER_SIMPLE",
+        "TOKENIZER_PORTER",
+        "TOKENIZER_UNICODE61",
+        "FtsOptions",
+        "AndroidSQLiteDriver",
+        "BundledSQLiteDriver",
+        "indices",
+        "@Entity",
+        "unique",
+        "@Index",
+        "true"
+      ]
+    },
+    {
+      "slug": "10-dao",
+      "title": "用 DAO 读写数据",
+      "englishTitle": "Access data using Room DAOs",
+      "url": "https://developer.android.com/training/data-storage/room/accessing-data?hl=en",
+      "retrieval_url": "https://developer.android.google.cn/training/data-storage/room/accessing-data?hl=en",
+      "part": 3,
+      "date": "2026-10-13",
+      "source_sha256": "708455182d8aea690cdb7697bef9426f9c1953c453904b8a721e2844f902c8ff",
+      "units": 70,
+      "words": 2228,
+      "codeBlocks": 20,
+      "images": 0,
+      "headings": [
+        {
+          "id": "anatomy",
+          "tag": "h2",
+          "text": "Anatomy of a DAO"
+        },
+        {
+          "id": "convenience",
+          "tag": "h2",
+          "text": "Convenience functions"
+        },
+        {
+          "id": "convenience-insert",
+          "tag": "h3",
+          "text": "Insert"
+        },
+        {
+          "id": "convenience-update",
+          "tag": "h3",
+          "text": "Update"
+        },
+        {
+          "id": "convenience-delete",
+          "tag": "h3",
+          "text": "Delete"
+        },
+        {
+          "id": "convenience-upsert",
+          "tag": "h3",
+          "text": "Upsert"
+        },
+        {
+          "id": "query",
+          "tag": "h2",
+          "text": "Query functions"
+        },
+        {
+          "id": "simple-queries",
+          "tag": "h3",
+          "text": "Simple queries"
+        },
+        {
+          "id": "return-subset",
+          "tag": "h3",
+          "text": "Return a subset of a table's columns"
+        },
+        {
+          "id": "simple-parameters",
+          "tag": "h3",
+          "text": "Pass simple parameters to a query"
+        },
+        {
+          "id": "collection-parameters",
+          "tag": "h3",
+          "text": "Pass a collection of parameters to a query"
+        },
+        {
+          "id": "multiple-tables",
+          "tag": "h3",
+          "text": "Query multiple tables"
+        },
+        {
+          "id": "multimap",
+          "tag": "h3",
+          "text": "Return a multimap"
+        },
+        {
+          "id": "special-return-types",
+          "tag": "h2",
+          "text": "Special return types"
+        },
+        {
+          "id": "paging-integration",
+          "tag": "h3",
+          "text": "Paginated queries with the Paging library"
+        },
+        {
+          "id": "query-connection",
+          "tag": "h3",
+          "text": "Direct database connection access"
+        }
+      ],
+      "unitIds": [
+        "10-dao-001",
+        "10-dao-002",
+        "10-dao-003",
+        "10-dao-004",
+        "10-dao-005",
+        "10-dao-006",
+        "10-dao-007",
+        "10-dao-008",
+        "10-dao-009",
+        "10-dao-010",
+        "10-dao-011",
+        "10-dao-012",
+        "10-dao-013",
+        "10-dao-014",
+        "10-dao-015",
+        "10-dao-016",
+        "10-dao-017",
+        "10-dao-018",
+        "10-dao-019",
+        "10-dao-020",
+        "10-dao-021",
+        "10-dao-022",
+        "10-dao-023",
+        "10-dao-024",
+        "10-dao-025",
+        "10-dao-026",
+        "10-dao-027",
+        "10-dao-028",
+        "10-dao-029",
+        "10-dao-030",
+        "10-dao-031",
+        "10-dao-032",
+        "10-dao-033",
+        "10-dao-034",
+        "10-dao-035",
+        "10-dao-036",
+        "10-dao-037",
+        "10-dao-038",
+        "10-dao-039",
+        "10-dao-040",
+        "10-dao-041",
+        "10-dao-042",
+        "10-dao-043",
+        "10-dao-044",
+        "10-dao-045",
+        "10-dao-046",
+        "10-dao-047",
+        "10-dao-048",
+        "10-dao-049",
+        "10-dao-050",
+        "10-dao-051",
+        "10-dao-052",
+        "10-dao-053",
+        "10-dao-054",
+        "10-dao-055",
+        "10-dao-056",
+        "10-dao-057",
+        "10-dao-058",
+        "10-dao-059",
+        "10-dao-060",
+        "10-dao-061",
+        "10-dao-062",
+        "10-dao-063",
+        "10-dao-064",
+        "10-dao-065",
+        "10-dao-066",
+        "10-dao-067",
+        "10-dao-068",
+        "10-dao-069",
+        "10-dao-070"
+      ],
+      "source_headings": [
+        {
+          "id": "anatomy",
+          "tag": "h2",
+          "text": "Anatomy of a DAO"
+        },
+        {
+          "id": "convenience",
+          "tag": "h2",
+          "text": "Convenience functions"
+        },
+        {
+          "id": "convenience-insert",
+          "tag": "h3",
+          "text": "Insert"
+        },
+        {
+          "id": "convenience-update",
+          "tag": "h3",
+          "text": "Update"
+        },
+        {
+          "id": "convenience-delete",
+          "tag": "h3",
+          "text": "Delete"
+        },
+        {
+          "id": "convenience-upsert",
+          "tag": "h3",
+          "text": "Upsert"
+        },
+        {
+          "id": "query",
+          "tag": "h2",
+          "text": "Query functions"
+        },
+        {
+          "id": "simple-queries",
+          "tag": "h3",
+          "text": "Simple queries"
+        },
+        {
+          "id": "return-subset",
+          "tag": "h3",
+          "text": "Return a subset of a table's columns"
+        },
+        {
+          "id": "simple-parameters",
+          "tag": "h3",
+          "text": "Pass simple parameters to a query"
+        },
+        {
+          "id": "collection-parameters",
+          "tag": "h3",
+          "text": "Pass a collection of parameters to a query"
+        },
+        {
+          "id": "multiple-tables",
+          "tag": "h3",
+          "text": "Query multiple tables"
+        },
+        {
+          "id": "multimap",
+          "tag": "h3",
+          "text": "Return a multimap"
+        },
+        {
+          "id": "special-return-types",
+          "tag": "h2",
+          "text": "Special return types"
+        },
+        {
+          "id": "paging-integration",
+          "tag": "h3",
+          "text": "Paginated queries with the Paging library"
+        },
+        {
+          "id": "query-connection",
+          "tag": "h3",
+          "text": "Direct database connection access"
+        }
+      ],
+      "coverage": "complete-article-body",
+      "code_sha256": [
+        "0ace0da32d2ec100c5fd1418daacc35d18d8b0d53cc9ce52989e2d00dd515937",
+        "78afb5be703119f513e706098092cf2559d93f285369750861eabf0049fd1ee1",
+        "1aa63dc28b4d7579ce386cebd174763c778864e5e0fff6409861ceaca620e56b",
+        "97ec2c2683532c58bf0318785955fb3b89babdab987452bb3ba3b65930f12ec6",
+        "91c3ee899694facf0a85017148aa7264bdb92b53dc3d76b240267dcaba7e314a",
+        "cc658c8e241d30b73517fe9d1e5990586b768878adb920ecbbec6253f553576e",
+        "4de223737bce3c3ca741b8710d7ff6bd53eb11521fe9e7b3d9c84c04af210946",
+        "0c9284b90a90079573b691544ee1d2428efc95d1fd93485ab7bb33f00ee824e0",
+        "f6c6dcbc584630c16ec2eec2827e2e61c2d4c0147a54c5100dfa51ce8f47de0e",
+        "4608284e4fb558188b406e378e08027fac181721b86724e19fb7e6dd748b9764",
+        "72f109d391b8fe38051029833d63a8e021074a6ceb696b393078087d9385fd7d",
+        "acd41e39853af07f8964affcb2734bd9e753660678142c5c64a70f3a2c03f5f0",
+        "a205687981885d4a205b38824cc03c7c943f5b86a53fcce323c007c5280ec5f2",
+        "6636b1d1b49e2a0222b66a3a82f084d2f24b082683d790ef6474ca6c9f515282",
+        "16bd9812c903b74729d254d73b497aeb7682306582a5102517738f0c7430bcb2",
+        "f0da8f6e5360c8f76b5bebd205d47a2d78cc969b03ba6207140e1d79d5c4a678",
+        "1f51251cde8f61be65d980c8d223b6a959b6e69b34bfebd21eff67f57144569e",
+        "1214a12f27fe9c7b5398338fbc8a5337beba5e6b1a4d5a490f0efe09d02572f3",
+        "b879e90e0cb12b0fd742b3695dfe35792dfd1263ed51eea68cb77d1fd389d2dc",
+        "7777be6c6a6483339e0541fb0185d635fda09395e22decd88f276ffd02b0b885"
+      ],
+      "inline_code": [
+        "@Dao",
+        "User",
+        "@Insert",
+        "@Insert",
+        "User",
+        "@Insert",
+        "@Entity",
+        "@Insert",
+        "@Insert",
+        "Long",
+        "rowId",
+        "Long",
+        "rowId",
+        "rowId",
+        "@Insert",
+        "@Update",
+        "@Insert",
+        "@Update",
+        "@Update",
+        "User",
+        "@Update",
+        "Int",
+        "@Delete",
+        "@Insert",
+        "@Delete",
+        "@Delete",
+        "User",
+        "@Delete",
+        "Int",
+        "@Upsert",
+        "@Insert",
+        "@Update",
+        "@Upsert",
+        "@Upsert",
+        "User",
+        "@Upsert",
+        "Long",
+        "rowId",
+        "-1",
+        "Long",
+        "@Query",
+        "SELECT",
+        "User",
+        "first_name",
+        "last_name",
+        "NameTuple",
+        "kotlin.Pair",
+        "kotlin.Triple",
+        "SELECT",
+        "Pair",
+        "Triple",
+        "JOIN",
+        "User",
+        "Book",
+        "User",
+        "Book",
+        "GROUP BY",
+        "loadUserAndBookNames",
+        "@MapColumn",
+        "androidx.room3:room3-paging",
+        "@Database",
+        "@Dao",
+        "@DaoReturnTypeConverters(PagingSourceDaoReturnTypeConverter::class)",
+        "PagingSource",
+        "PagingSource",
+        "useReaderConnection",
+        "useWriterConnection",
+        "RoomDatabase",
+        "usePrepared",
+        "immediateTransaction",
+        "deferredTransaction",
+        "exclusiveTransaction",
+        "Transactor",
+        "useWriterConnection",
+        "withReadTransaction",
+        "withWriteTransaction",
+        "RoomDatabase",
+        "Cursor",
+        "SupportSQLiteDatabase",
+        "SQLiteConnection",
+        "SQLiteStatement",
+        "androidx.sqlite",
+        "SupportSQLiteDatabase",
+        "androidx.room3:room3-sqlite-wrapper",
+        "RoomDatabase.getSupportWrapper"
+      ]
+    }
+  ]
+}
