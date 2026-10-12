@@ -1,0 +1,238 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>用 DAO 读写数据 · Android 应用的数据与状态</title><link rel="stylesheet" href="../../reader.css"><link rel="stylesheet" href="../source.css"><link rel="manifest" href="../../../manifest.webmanifest"></head><body><nav class="site-nav"><a href="../index.html">← Android 应用的数据与状态</a><a href="https://developer.android.com/training/data-storage/room/accessing-data?hl=en">官方英文原文 ↗</a></nav><main class="reader"><header class="chapter-header"><span class="chapter-kicker">10 · 中文阅读版</span><h1>用 DAO 读写数据</h1><p class="byline">Access data using Room DAOs · Android Developers / Google</p><div class="title-rule"></div><p class="edition-nav"><strong aria-current="page">中文阅读版</strong> · <a href="english.html">英文对照</a> · <a href="literal.html">第一轮直译稿</a></p><aside class="learning-note"><span class="note-kind">编者导读 · 不属于原文</span><p><strong>应用怎样通过 Kotlin 函数查询、插入、更新和删除记录？</strong></p><p>先读 DAO 的组成、便捷函数和简单查询，再把参数绑定与结果映射连起来。</p><p><strong>第一轮阅读：</strong>首轮读插入、更新、删除、Upsert 和简单参数查询；多表连接、multimap、分页与底层连接随后回访。</p><details class="editor-notes"><summary>版本与适用范围校注（1 条）</summary><p>本文后段包含 Room 3.0 的返回类型转换器与底层连接 API。旧版本项目不能直接沿用，正文与原文代码均按快照保留。</p></details></aside><details class="source-details"><summary>本篇目录与翻译范围</summary><p>官方英文文章正文全文；保留原文顺序、代码、图示、表格与延伸链接。代码与图中文字保持原样。编者导读与校注单独标明，阅读不要求同时安装、运行或编写示例。</p><ul><li class="toc-h2"><a href="#anatomy">DAO 的组成</a></li><li class="toc-h2"><a href="#convenience">便捷函数</a></li><li class="toc-h3"><a href="#convenience-insert">插入</a></li><li class="toc-h3"><a href="#convenience-update">更新</a></li><li class="toc-h3"><a href="#convenience-delete">删除</a></li><li class="toc-h3"><a href="#convenience-upsert">Upsert</a></li><li class="toc-h2"><a href="#query">查询函数</a></li><li class="toc-h3"><a href="#simple-queries">简单查询</a></li><li class="toc-h3"><a href="#return-subset">返回表的一部分列</a></li><li class="toc-h3"><a href="#simple-parameters">向查询传入简单参数</a></li><li class="toc-h3"><a href="#collection-parameters">向查询传入参数集合</a></li><li class="toc-h3"><a href="#multiple-tables">查询多张表</a></li><li class="toc-h3"><a href="#multimap">返回 multimap</a></li><li class="toc-h2"><a href="#special-return-types">特殊返回类型</a></li><li class="toc-h3"><a href="#paging-integration">使用 Paging 库进行分页查询</a></li><li class="toc-h3"><a href="#query-connection">直接访问数据库连接</a></li></ul></details><nav class="chapter-switcher" aria-label="章节导航"><a href="../09-entities/index.html">← 用 Entity 定义保存的数据</a><a class="course-home" href="../index.html">全部章节</a><a href="../index.html">回到阅读目录 →</a></nav></header><article class="translated-article">
+<p data-unit="10-dao-001">使用 Room 时，通过<em>数据访问对象（DAO）</em>读取和修改数据库。DAO 声明抽象访问函数，Room 在编译时自动生成实现。</p>
+<p data-unit="10-dao-002">用 DAO 而不是查询构建器或直接查询访问数据库，可以保持<a href="https://developer.android.google.cn/jetpack/guide#separation-of-concerns">职责分离</a>这一重要架构原则。DAO 也让你在<a href="https://developer.android.google.cn/training/data-storage/room/testing-db">测试应用</a>时模拟数据库访问。</p>
+<h2 data-unit="10-dao-003" id="anatomy">DAO 的组成</h2>
+<p data-unit="10-dao-004">DAO 可以是接口，也可以是抽象类。基础场景通常使用接口，两者都必须添加 <a href="https://developer.android.google.cn/reference/kotlin/androidx/room3/Dao"><code>@Dao</code></a>。DAO 不定义属性，而是定义操作数据库的函数。</p>
+<p data-unit="10-dao-005">下例定义一个 DAO，提供在 Room 数据库中插入、删除、查询 <code>User</code> 对象的函数：</p>
+<p>
+</p><div></div><div><pre class="source-code" id="android_room3_accessing_data_simple_dao-code-sample-kotlin"><code>@Dao
+interface UserDao {
+    @Insert
+    suspend fun insertAll(vararg users: User)
+
+    @Delete
+    suspend fun delete(user: User)
+
+    @Query("SELECT * FROM user")
+    suspend fun getAll(): List&lt;User&gt;
+}AccessingDataSnippets.kt</code></pre></div>
+<p data-unit="10-dao-006">定义数据库交互的 DAO 函数分为两类：</p>
+<ul>
+<li data-unit="10-dao-007">便捷函数，无须 SQL 即可插入、更新、删除行。</li>
+<li data-unit="10-dao-008">查询函数，允许编写自己的 SQL 来操作数据库。</li>
+</ul>
+<p data-unit="10-dao-009">以下各节展示如何用这两类函数定义应用需要的数据库交互。</p>
+<h2 data-unit="10-dao-010" id="convenience">便捷函数</h2>
+<p data-unit="10-dao-011">Room 提供便捷标注，无须编写 SQL 即可定义插入、更新、删除函数。</p>
+<p data-unit="10-dao-012">如果需要更复杂的插入、更新、删除，或需要查询数据，应使用<a href="https://developer.android.google.cn/training/data-storage/room/accessing-data?hl=en#query">查询函数</a>。</p>
+<h3 data-unit="10-dao-013" id="convenience-insert">插入</h3>
+<p data-unit="10-dao-014"><a href="https://developer.android.google.cn/reference/kotlin/androidx/room3/Insert"><code>@Insert</code></a> 可以定义把参数插入相应表的函数。下例展示插入一个或多个 <code>User</code> 的有效 <code>@Insert</code> 函数：</p>
+<p>
+</p><div></div><div><pre class="source-code" id="android_room3_accessing_data_insert_convenience-code-sample-kotlin"><code>@Dao
+interface UserDao {
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertUsers(vararg users: User)
+
+    @Insert
+    suspend fun insertBothUsers(user1: User, user2: User)
+
+    @Insert
+    suspend fun insertUsersAndFriends(user: User, friends: List&lt;User&gt;)
+}AccessingDataSnippets.kt</code></pre></div>
+<p data-unit="10-dao-015"><code>@Insert</code> 的每个参数，都必须是带 <code>@Entity</code> 标注的 <a href="https://developer.android.google.cn/training/data-storage/room/defining-data">Room 数据实体类</a>实例，或实体实例集合。调用 <code>@Insert</code> 时，Room 将每个传入实例插入相应表。</p>
+<p data-unit="10-dao-016"><code>@Insert</code> 接收一个参数时，可返回 <code>Long</code>，表示新插入条目的 <code>rowId</code>。接收数组或集合时，则返回 <code>Long</code> 数组或集合，每个值是相应条目的 <code>rowId</code>。返回 <code>rowId</code> 的详情，请参阅 <a href="https://developer.android.google.cn/reference/kotlin/androidx/room3/Insert"><code>@Insert</code></a> 和 <a class="external" href="https://www.sqlite.org/rowidtable.html">SQLite rowid 表文档</a>。</p>
+<h3 data-unit="10-dao-017" id="convenience-update">更新</h3>
+<p data-unit="10-dao-018"><a href="https://developer.android.google.cn/reference/kotlin/androidx/room3/Update"><code>@Update</code></a> 定义更新特定行的函数。与 <code>@Insert</code> 一样，<code>@Update</code> 接收实体实例。下面的 <code>@Update</code> 示例尝试更新一个或多个 <code>User</code>：</p>
+<p>
+</p><div></div><div><pre class="source-code" id="android_room3_accessing_data_update_convenience-code-sample-kotlin"><code>@Dao
+interface UserDao {
+    @Update
+    suspend fun updateUsers(vararg users: User)
+}AccessingDataSnippets.kt</code></pre></div>
+<p data-unit="10-dao-019">Room 用<a href="https://developer.android.google.cn/training/data-storage/room/defining-data#primary-key">主键</a>将参数中的实体匹配到表中的行。若没有主键相同的行，不进行修改。</p>
+<p data-unit="10-dao-020"><code>@Update</code> 可以选择返回 <code>Int</code>，表示成功更新的行数。</p>
+<h3 data-unit="10-dao-021" id="convenience-delete">删除</h3>
+<p data-unit="10-dao-022"><a href="https://developer.android.google.cn/reference/kotlin/androidx/room3/Delete"><code>@Delete</code></a> 用来定义删除特定行的函数。与 <code>@Insert</code> 一样，<code>@Delete</code> 接收实体实例。下例的 <code>@Delete</code> 尝试删除一个或多个 <code>User</code>：</p>
+<p>
+</p><div></div><div><pre class="source-code" id="android_room3_accessing_data_delete_convenience-code-sample-kotlin"><code>@Dao
+interface UserDao {
+    @Delete
+    suspend fun deleteUsers(vararg users: User)
+}AccessingDataSnippets.kt</code></pre></div>
+<p data-unit="10-dao-023">Room 用<a href="https://developer.android.google.cn/training/data-storage/room/defining-data#primary-key">主键</a>将参数中的实体匹配到表中的行。若没有主键相同的行，不进行修改。</p>
+<p data-unit="10-dao-024"><code>@Delete</code> 可以选择返回 <code>Int</code>，表示成功删除的行数。</p>
+<h3 data-unit="10-dao-025" id="convenience-upsert">Upsert</h3>
+<p data-unit="10-dao-026"><a href="https://developer.android.google.cn/reference/kotlin/androidx/room3/Upsert"><code>@Upsert</code></a> 表示“没有匹配行就插入，有相同主键就更新”。</p>
+<p data-unit="10-dao-027">与 <code>@Insert</code>、<code>@Update</code> 一样，<code>@Upsert</code> 接收实体实例。下例的 <code>@Upsert</code> 尝试对一个或多个 <code>User</code> 执行 upsert：</p>
+<p>
+</p><div></div><div><pre class="source-code" id="android_room3_accessing_data_upsert_convenience-code-sample-kotlin"><code>@Dao
+interface UserDao {
+    @Upsert
+    suspend fun upsertUsers(vararg users: User)
+}AccessingDataSnippets.kt</code></pre></div>
+<p data-unit="10-dao-028">若 <code>@Upsert</code> 接收单个参数，可以返回 <code>Long</code>。若插入新行，返回新行的 <code>rowId</code>；若更新已有行，返回 <code>-1</code>。参数为数组或集合时，则返回 <code>Long</code> 数组或集合。</p>
+<h2 data-unit="10-dao-029" id="query">查询函数</h2>
+<p data-unit="10-dao-030"><a href="https://developer.android.google.cn/reference/kotlin/androidx/room3/Query"><code>@Query</code></a> 允许编写 SQL 并将其暴露为 DAO 函数，用于查询数据，或执行更复杂的插入、更新、删除。</p>
+<p data-unit="10-dao-031">Room 在编译时验证 SQL 查询。因此，查询有问题时会出现编译错误，而不是运行时失败。</p>
+<h3 data-unit="10-dao-032" id="simple-queries">简单查询</h3>
+<p data-unit="10-dao-033">下例用 <code>SELECT</code> 查询返回数据库中的全部 <code>User</code> 对象：</p>
+<p>
+</p><div></div><div><pre class="source-code" id="android_room3_accessing_data_simple_query-code-sample-kotlin"><code>@Query("SELECT * FROM user")
+suspend fun loadAllUsers(): List&lt;User&gt;AccessingDataSnippets.kt</code></pre></div>
+<p data-unit="10-dao-034">以下各节展示如何针对典型场景修改此示例。</p>
+<h3 data-unit="10-dao-035" id="return-subset">返回表的一部分列</h3>
+<p data-unit="10-dao-036">查询通常只需返回页面需要的列。例如，页面只显示姓名，就不必读取用户全部详情。只查询需要的属性，能节省资源并简化执行。</p>
+<p data-unit="10-dao-037">只要结果列可以映射到返回对象，Room 就允许查询返回数据对象。例如，定义以下对象保存用户名字和姓氏：</p>
+<p>
+</p><div></div><div><pre class="source-code" id="android_room3_accessing_data_subset_query_tuple-code-sample-kotlin"><code>data class NameTuple(
+    @ColumnInfo(name = "first_name") val firstName: String,
+    @ColumnInfo(name = "last_name") val lastName: String
+)AccessingDataSnippets.kt</code></pre></div>
+<p data-unit="10-dao-038">随后，查询函数可以返回这个对象：</p>
+<p>
+</p><div></div><div><pre class="source-code" id="android_room3_accessing_data_subset_query_method-code-sample-kotlin"><code>@Query("SELECT first_name, last_name FROM user")
+suspend fun loadFullName(): List&lt;NameTuple&gt;AccessingDataSnippets.kt</code></pre></div>
+<p data-unit="10-dao-039">查询返回 <code>first_name</code> 和 <code>last_name</code> 列，因此 Room 将值映射到 <code>NameTuple</code> 的属性。若某个返回列无法映射到对象属性，Room 会显示警告。</p>
+<p data-unit="10-dao-040">上例使用自定义数据类返回部分列。为方便起见，查询恰好返回两列或三列时，Room 还支持 <code>kotlin.Pair</code>、<code>kotlin.Triple</code>。列按查询中定义的顺序映射，因此 <code>SELECT</code> 中列的顺序必须与 <code>Pair</code>、<code>Triple</code> 中类型的顺序一致。</p>
+<h3 data-unit="10-dao-041" id="simple-parameters">向查询传入简单参数</h3>
+<p data-unit="10-dao-042">DAO 通常通过参数筛选数据。Room 可以把函数参数绑定到 SQL 查询中的参数位置。</p>
+<p data-unit="10-dao-043">例如，下例返回年龄高于某个值的所有用户：</p>
+<p>
+</p><div></div><div><pre class="source-code" id="android_room3_accessing_data_query_param-code-sample-kotlin"><code>@Query("SELECT * FROM user WHERE age &gt; :minAge")
+suspend fun loadAllUsersOlderThan(minAge: Int): Array&lt;User&gt;AccessingDataSnippets.kt</code></pre></div>
+<p data-unit="10-dao-044">也可以传入多个参数，或在同一查询中多次引用同一参数，如下所示：</p>
+<p>
+</p><div></div><div><pre class="source-code" id="android_room3_accessing_data_query_params-code-sample-kotlin"><code>@Query("SELECT * FROM user WHERE age BETWEEN :minAge AND :maxAge")
+suspend fun loadAllUsersBetweenAges(minAge: Int, maxAge: Int): Array&lt;User&gt;
+
+@Query(
+    """
+    SELECT * FROM user
+    WHERE first_name LIKE :search OR last_name LIKE :search
+    """
+)
+suspend fun findUserWithName(search: String): List&lt;User&gt;AccessingDataSnippets.kt</code></pre></div>
+<h3 data-unit="10-dao-045" id="collection-parameters">向查询传入参数集合</h3>
+<p data-unit="10-dao-046">有些查询的参数数量直到运行时才确定。参数若是集合，Room 会根据集合大小在运行时自动展开。</p>
+<p data-unit="10-dao-047">例如，下例返回指定地区子集中所有用户的信息：</p>
+<p>
+</p><div></div><div><pre class="source-code" id="android_room3_accessing_data_query_collection-code-sample-kotlin"><code>@Query("SELECT * FROM user WHERE region IN (:regions)")
+suspend fun loadUsersFromRegions(regions: List&lt;String&gt;): List&lt;User&gt;AccessingDataSnippets.kt</code></pre></div>
+<h3 data-unit="10-dao-048" id="multiple-tables">查询多张表</h3>
+<p data-unit="10-dao-049">有些查询需要访问多张表计算结果，可以使用 <code>JOIN</code> 引用多个表。</p>
+<p data-unit="10-dao-050">下例连接三张表，返回特定用户当前借出的书：</p>
+<p>
+</p><div></div><div><pre class="source-code" id="android_room3_accessing_data_query_multitable-code-sample-kotlin"><code>@Query(
+    """
+    SELECT * FROM book
+    INNER JOIN loan ON loan.book_id = book.id
+    INNER JOIN user ON user.id = loan.user_id
+    WHERE user.name LIKE :userName
+    """
+)
+suspend fun findBooksBorrowedByName(userName: String): List&lt;Book&gt;AccessingDataSnippets.kt</code></pre></div>
+<p data-unit="10-dao-051">也可以定义数据对象，返回多个连接表的一部分列。详情请参阅<a href="https://developer.android.google.cn/training/data-storage/room/accessing-data?hl=en#return-subset">返回表的一部分列</a>。下例 DAO 返回用户姓名及其借书名称：</p>
+<p>
+</p><div></div><div><pre class="source-code" id="android_room3_accessing_data_query_flow-code-sample-kotlin"><code>interface UserBookDao {
+    @Query(
+        """
+        SELECT user.name AS userName, book.name AS bookName
+        FROM user, book
+        WHERE user.id = book.user_id
+        """
+    )
+    fun loadUserAndBookNames(): Flow&lt;List&lt;UserBook&gt;&gt;
+}
+
+data class UserBook(val userName: String, val bookName: String)AccessingDataSnippets.kt</code></pre></div>
+<h3 data-unit="10-dao-052" id="multimap">返回 multimap</h3>
+<p data-unit="10-dao-053">连接操作也可以直接返回 <a class="external" href="https://en.wikipedia.org/wiki/Multimap">multimap</a>，查询多个表的列，而不必额外定义数据类。</p>
+<p data-unit="10-dao-054">考虑<a href="https://developer.android.google.cn/training/data-storage/room/accessing-data?hl=en#multiple-tables">查询多张表</a>的示例。可以直接从查询返回 <code>User</code> 与 <code>Book</code> 的映射，而不是返回把 <code>User</code>、<code>Book</code> 配对的自定义数据类实例列表：</p>
+<p>
+</p><div></div><div><pre class="source-code" id="android_room3_accessing_data_multimap-code-sample-kotlin"><code>@Query(
+    """
+    SELECT * FROM user
+    JOIN book ON user.id = book.user_id
+    """
+)
+suspend fun loadUserAndBookNames(): Map&lt;User, List&lt;Book&gt;&gt;AccessingDataSnippets.kt</code></pre></div>
+<p data-unit="10-dao-055">查询返回 multimap 时，可以使用 <code>GROUP BY</code>，利用 SQL 的高级计算和筛选能力。例如，修改 <code>loadUserAndBookNames</code>，只返回借了至少三本书的用户：</p>
+<p>
+</p><div></div><div><pre class="source-code" id="android_room3_accessing_data_multimap_groupby-code-sample-kotlin"><code>@Query(
+    """
+    SELECT * FROM user
+    JOIN book ON user.id = book.user_id
+    GROUP BY user.name HAVING COUNT(book.id) &gt;= 3
+    """
+)
+suspend fun loadUserAndBookNamesGrouped(): Map&lt;User, List&lt;Book&gt;&gt;AccessingDataSnippets.kt</code></pre></div>
+<p data-unit="10-dao-056">如果无需映射完整对象，还可以在返回类型的泛型参数上添加 <a href="https://developer.android.google.cn/reference/kotlin/androidx/room3/MapColumn"><code>@MapColumn</code></a>，直接返回特定列之间的映射。</p>
+<p>
+</p><div></div><div><pre class="source-code" id="android_room3_accessing_data_multimap_mapcolumn-code-sample-kotlin"><code>@Query(
+    """
+    SELECT user.name AS username, book.name AS bookname FROM user
+    JOIN book ON user.id = book.user_id
+    """
+)
+suspend fun loadUserAndBookNamesColumns(): Map&lt;
+    @MapColumn(columnName = "username") String,
+    List&lt;@MapColumn(columnName = "bookname") String&gt;
+    &gt;AccessingDataSnippets.kt</code></pre></div>
+<h2 data-unit="10-dao-057" id="special-return-types">特殊返回类型</h2>
+<p data-unit="10-dao-058">Room 提供特殊返回类型，用于整合其他 API 库。</p>
+<aside class="note"><span class="source-text" data-unit="10-dao-059"><strong>注意：</strong><span>Room 通过 <strong>DAO 返回类型转换器</strong>支持 RxJava、LiveData、Guava 等特殊返回类型，必须注册相应转换器类。详情请参阅<a href="https://developer.android.google.cn/training/data-storage/room/async-queries">编写异步 DAO 查询</a>。</span></span></aside>
+<h3 data-unit="10-dao-060" id="paging-integration">使用 Paging 库进行分页查询</h3>
+<p data-unit="10-dao-061">Room 通过与 <a href="https://developer.android.google.cn/topic/libraries/architecture/paging/v3-overview">Paging 库</a>整合支持分页。要使用 Paging 3 返回类型，必须在数据库或 DAO 中注册相应返回类型转换器：</p>
+<ol>
+<li data-unit="10-dao-062">在构建配置中包含 <code>androidx.room3:room3-paging</code> 组件。</li>
+<li data-unit="10-dao-063">为 <code>@Database</code> 或 <code>@Dao</code> 声明添加 <code>@DaoReturnTypeConverters(PagingSourceDaoReturnTypeConverter::class)</code>。</li>
+</ol>
+<p data-unit="10-dao-064">注册后，DAO 可以返回 <a href="https://developer.android.google.cn/reference/kotlin/androidx/paging/PagingSource"><code>PagingSource</code></a>，供 <a href="https://developer.android.google.cn/topic/libraries/architecture/paging/v3-overview">Paging 3</a> 使用：</p>
+<p>
+</p><div></div><div><pre class="source-code" id="android_room3_accessing_data_paging-code-sample-kotlin"><code>@Dao
+@DaoReturnTypeConverters(PagingSourceDaoReturnTypeConverter::class)
+interface UserDao {
+    @Query("SELECT * FROM users WHERE label LIKE :query")
+    fun pagingSource(query: String): PagingSource&lt;Int, User&gt;
+}AccessingDataSnippets.kt</code></pre></div>
+<p data-unit="10-dao-065"><code>PagingSource</code> 的类型参数选择，请参阅<a href="https://developer.android.google.cn/topic/libraries/architecture/paging/v3-paged-data#key-value">选择键和值的类型</a>。</p>
+<h3 data-unit="10-dao-066" id="query-connection">直接访问数据库连接</h3>
+<p data-unit="10-dao-067">若应用逻辑需要直接、低层访问数据库连接，可以使用 Room 连接 API。对 <code>RoomDatabase</code> 实例，用 <a href="https://developer.android.google.cn/reference/kotlin/androidx/room3/RoomDatabase#(androidx.room3.RoomDatabase).useReaderConnection(kotlin.coroutines.SuspendFunction1)"><code>useReaderConnection</code></a> 获取只读连接，或用 <a href="https://developer.android.google.cn/reference/kotlin/androidx/room3/RoomDatabase#(androidx.room3.RoomDatabase).useWriterConnection(kotlin.coroutines.SuspendFunction1)"><code>useWriterConnection</code></a> 获取写连接，再用 <a href="https://developer.android.google.cn/reference/kotlin/androidx/room3/PooledConnection#usePrepared(kotlin.String,kotlin.coroutines.SuspendFunction1)"><code>usePrepared</code></a> 执行语句：</p>
+<p>
+</p><div></div><div><pre class="source-code" id="android_room3_accessing_data_connection_reader-code-sample-kotlin"><code>val result: List&lt;Pair&lt;Long, String&gt;&gt; =
+    roomDatabase.useReaderConnection { connection -&gt;
+        connection.usePrepared(
+            "SELECT * FROM user WHERE age &gt; :minAge LIMIT 5"
+        ) { stmt -&gt;
+            // Bind arguments if needed
+            stmt.bindLong(1, minAge.toLong())
+            buildList {
+                // Step through the results
+                while (stmt.step()) {
+                    add(stmt.getLong(0) to stmt.getText(1))
+                }
+            }
+        }
+    }AccessingDataSnippets.kt</code></pre></div>
+<p data-unit="10-dao-068">若需要直接在连接上执行低层事务，可在 <code>useWriterConnection</code> 块中的 <a href="https://developer.android.google.cn/reference/kotlin/androidx/room3/Transactor"><code>Transactor</code></a> 实例上使用 <a href="https://developer.android.google.cn/reference/kotlin/androidx/room3/Transactor#(androidx.room3.Transactor).immediateTransaction(kotlin.coroutines.SuspendFunction1)"><code>immediateTransaction</code></a>、<a href="https://developer.android.google.cn/reference/kotlin/androidx/room3/Transactor#(androidx.room3.Transactor).deferredTransaction(kotlin.coroutines.SuspendFunction1)"><code>deferredTransaction</code></a> 或 <a href="https://developer.android.google.cn/reference/kotlin/androidx/room3/Transactor#(androidx.room3.Transactor).exclusiveTransaction(kotlin.coroutines.SuspendFunction1)"><code>exclusiveTransaction</code></a> 辅助函数：</p>
+<p>
+</p><div></div><div><pre class="source-code" id="android_room3_accessing_data_connection_transaction-code-sample-kotlin"><code>roomDatabase.useWriterConnection { transactor -&gt;
+    transactor.immediateTransaction {
+        // Perform transactional database operations using transactor
+    }
+}AccessingDataSnippets.kt</code></pre></div>
+<p data-unit="10-dao-069">若只需在事务中执行高层 DAO 操作，则可对 <code>RoomDatabase</code> 使用 <a href="https://developer.android.google.cn/reference/kotlin/androidx/room3/RoomDatabase#(androidx.room3.RoomDatabase).withReadTransaction(kotlin.coroutines.SuspendFunction1)"><code>withReadTransaction</code></a> 或 <a href="https://developer.android.google.cn/reference/kotlin/androidx/room3/RoomDatabase#(androidx.room3.RoomDatabase).withWriteTransaction(kotlin.coroutines.SuspendFunction1)"><code>withWriteTransaction</code></a> 辅助扩展函数：</p>
+<p>
+</p><div></div><div><pre class="source-code" id="android_room3_accessing_data_highlevel_transaction-code-sample-kotlin"><code>// Perform transactional read operations (DEFERRED transaction)
+val userCount = roomDatabase.withReadTransaction {
+    userDao.countUsers()
+}
+
+// Perform transactional write operations (IMMEDIATE transaction)
+roomDatabase.withWriteTransaction {
+    userDao.insert(newUser)
+    userDao.update(existingUser)
+}AccessingDataSnippets.kt</code></pre></div>
+<aside class="special"><span class="source-text" data-unit="10-dao-070"><strong>重要：</strong><span>Room 3.0 默认不支持标准 Android <code>Cursor</code>、<code>SupportSQLiteDatabase</code>。低层操作改用 <code>androidx.sqlite</code> 包的 <code>SQLiteConnection</code>、<code>SQLiteStatement</code>。如果项目仍大量使用旧 <code>SupportSQLiteDatabase</code> API，可引入 <code>androidx.room3:room3-sqlite-wrapper</code> 兼容组件，再通过 <code>RoomDatabase.getSupportWrapper</code> 取得包装对象，以便逐步迁移。</span></span></aside>
+<div class="nocontent"></div>
+</article><nav class="chapter-switcher" aria-label="章节导航"><a href="../09-entities/index.html">← 用 Entity 定义保存的数据</a><a class="course-home" href="../index.html">全部章节</a><a href="../index.html">回到阅读目录 →</a></nav><footer class="license-note"><p>原文：<a href="https://developer.android.com/training/data-storage/room/accessing-data?hl=en">Access data using Room DAOs</a>，Android Developers / Google。英文快照：2026-10-13。非官方中文翻译与表达优化：Codex。原有示例和代码保留；<a href="../NOTICE.html">来源与许可</a>。</p></footer></main></body></html>

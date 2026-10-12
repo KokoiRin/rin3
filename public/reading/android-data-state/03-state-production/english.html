@@ -1,0 +1,556 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>UI State production · Android 应用的数据与状态</title><link rel="stylesheet" href="../../reader.css"><link rel="stylesheet" href="../source.css"><link rel="manifest" href="../../../manifest.webmanifest"></head><body><nav class="site-nav"><a href="../index.html">← Android 应用的数据与状态</a><a href="https://developer.android.com/topic/architecture/ui-layer/state-production?hl=en">官方英文原文 ↗</a></nav><main class="reader"><header class="chapter-header"><span class="chapter-kicker">03 · English source</span><h1>UI State production</h1><p class="byline">UI State production · Android Developers / Google</p><div class="title-rule"></div><p class="edition-nav"><a href="index.html">中文阅读版</a> · <strong aria-current="page">英文对照</strong> · <a href="literal.html">第一轮直译稿</a></p><aside class="learning-note"><span class="note-kind">编者导读 · 不属于原文</span><p><strong>一次加载的输入，怎样变成 UI 持续读取的状态？</strong></p><p>先看事件与状态的区别，再认识输入、state holder 和输出。首轮关注一次性异步操作的状态更新。</p><p><strong>第一轮阅读：</strong>先读状态生成管线和一次性 API；多条 Flow 的组合、初始化和 Compose 并发状态随后回访。</p><details class="editor-notes"><summary>版本与适用范围校注（2 条）</summary><p>原文以“5 秒或更久”给出长任务的简化建议；实际是否使用 WorkManager，取决于工作是否需要可靠地跨页面、进程结束后继续执行，以及平台后台限制，不能仅用耗时阈值决定。</p><p>本文的主线程安全指不阻塞主线程；suspend 标记本身不自动切换线程。</p></details></aside><details class="source-details"><summary>本篇目录与翻译范围</summary><p>官方英文文章正文全文；保留原文顺序、代码、图示、表格与延伸链接。代码与图中文字保持原样。编者导读与校注单独标明，阅读不要求同时安装、运行或编写示例。</p><ul><li class="toc-h2"><a href="#ui-state">The UI state production pipeline</a></li><li class="toc-h2"><a href="#state-production">State production APIs</a></li><li class="toc-h2"><a href="#state-production-pipeline">State production pipeline assembly</a></li><li class="toc-h2"><a href="#inputs-state">Inputs in state production pipelines</a></li><li class="toc-h3"><a href="#one-shot-apis">One-shot APIs as sources of state change</a></li><li class="toc-h3"><a href="#compose-state">Compose State</a></li><li class="toc-h3"><a href="#stateflow">StateFlow</a></li><li class="toc-h4"><a href="#mutating_the_ui_state_from_asynchronous_calls">Mutating the UI state from asynchronous calls</a></li><li class="toc-h3"><a href="#compose-state_1">Compose State</a></li><li class="toc-h3"><a href="#stateflow_1">StateFlow</a></li><li class="toc-h4"><a href="#mutating_the_ui_state_from_background_threads">Mutating the UI state from background threads</a></li><li class="toc-h3"><a href="#compose-state_2">Compose State</a></li><li class="toc-h3"><a href="#stateflow_2">StateFlow</a></li><li class="toc-h3"><a href="#stream-apis">Stream APIs as sources of state change</a></li><li class="toc-h3"><a href="#one-shot-and">One-shot and stream APIs as sources of state change</a></li><li class="toc-h3"><a href="#compose-state_3">Compose State</a></li><li class="toc-h3"><a href="#stateflow_3">StateFlow</a></li><li class="toc-h2"><a href="#output-types">Output types in state production pipelines</a></li><li class="toc-h2"><a href="#initializing-state-production">State production pipeline initialization</a></li><li class="toc-h2"><a href="#samples">Samples</a></li><li class="toc-h2"><a href="#resources">Additional resources</a></li><li class="toc-h3"><a href="#documentation">Documentation</a></li><li class="toc-h3"><a href="#views">Views content</a></li></ul></details><nav class="chapter-switcher" aria-label="章节导航"><a href="../02-ui-events/english.html">← 用户操作与事件</a><a class="course-home" href="../index.html">全部章节</a><a href="../04-data-layer/english.html">数据由谁管理 →</a></nav></header><article class="translated-article">
+<p data-unit="03-state-production-001">Modern UIs are rarely static. The state of the UI changes when the user
+interacts with the UI or when the app needs to display new data.</p>
+<p data-unit="03-state-production-002">This document prescribes guidelines for the production and management of UI
+state. It is meant to help you understand the following:</p>
+<ul>
+<li data-unit="03-state-production-003">What APIs to use to produce UI state. This depends on the nature of the
+sources of state change available in your state holders, following
+<a href="https://developer.android.google.cn/topic/architecture/ui-layer#udf">unidirectional data flow</a> principles.</li>
+<li data-unit="03-state-production-004">How to scope the production of UI state to be conscious of system resources.</li>
+<li data-unit="03-state-production-005">How to expose the UI state for consumption by the UI.</li>
+</ul>
+<p data-unit="03-state-production-006">Fundamentally, state production is the incremental application of these changes
+to the UI state. State always exists, and it changes as a result of events. The
+differences between events and state are summarized in the table below:</p>
+<div class="table-wrapper" tabindex="0"><table>
+<thead>
+<tr>
+<th data-unit="03-state-production-007">Events</th>
+<th data-unit="03-state-production-008">State</th>
+</tr>
+</thead>
+<tr>
+<td data-unit="03-state-production-009">Transient, unpredictable, and exist for a finite period.</td>
+<td data-unit="03-state-production-010">Always exists.</td>
+</tr>
+<tr>
+<td data-unit="03-state-production-011">The inputs of state production.</td>
+<td data-unit="03-state-production-012">The output of state production.</td>
+</tr>
+<tr>
+<td data-unit="03-state-production-013">The product of the UI or other sources.</td>
+<td data-unit="03-state-production-014">Is consumed by the UI.</td>
+</tr>
+</table></div>
+<p data-unit="03-state-production-015">A great mnemonic that summarizes the above is <strong>state is; events happen</strong>. The
+diagram below helps visualize changes to state as events occur in a timeline.
+Each event is processed by the appropriate <a href="https://developer.android.google.cn/topic/architecture/ui-layer/stateholders">state holder</a> and it results in a
+state change:</p>
+<figure id="image-1">
+<img alt="Events vs. state" data-original-src="https://developer.android.google.cn/static/images/topic/architecture/ui-layer/events-vs-state.png" loading="eager" src="../assets/11c8762a914b9d32.png" width="80%"/>
+<figcaption data-unit="03-state-production-016"><b>Figure 1</b>: Events cause state to change</figcaption>
+</figure>
+<p data-unit="03-state-production-017">Events can come from the following:</p>
+<ul>
+<li data-unit="03-state-production-018"><strong>Users</strong>: As they interact with the app's UI.</li>
+<li data-unit="03-state-production-019"><strong>Other sources of state change</strong>: APIs that present app data from UI,
+domain, or data layers like Snackbar timeout events, use cases, or
+repositories, respectively.</li>
+</ul>
+<h2 data-unit="03-state-production-020" id="ui-state">The UI state production pipeline</h2>
+<p data-unit="03-state-production-021">State production in Android apps can be thought of as a processing pipeline
+comprising the following:</p>
+<ul>
+<li><span class="source-text" data-unit="03-state-production-022"><strong>Inputs</strong>: The sources of state change. They can be:
+</span><ul>
+<li data-unit="03-state-production-023">Local to the UI layer: These might be user events like a user entering a
+title for a "to-do" in a task management app, or APIs that provide
+access to <a href="https://developer.android.google.cn/topic/architecture/ui-layer/stateholders#ui-logic">UI logic</a> that drives changes in UI state—for example,
+calling the <a href="https://developer.android.google.cn/reference/kotlin/androidx/compose/material/DrawerState#open()"><code>open</code></a> method on <a href="https://developer.android.google.cn/reference/kotlin/androidx/compose/material/DrawerState"><code>DrawerState</code></a> in Jetpack Compose.</li>
+<li data-unit="03-state-production-024">External to the UI layer: These are sources from the domain or data
+layers that cause changes to UI state—for example, news that finished
+loading from a <code>NewsRepository</code> or other events.</li>
+<li data-unit="03-state-production-025">A mixture of the above.</li>
+</ul></li>
+<li data-unit="03-state-production-026"><a href="https://developer.android.google.cn/topic/architecture/ui-layer/stateholders"><strong>State holders</strong></a>: Types that apply <a href="https://developer.android.google.cn/topic/architecture/ui-layer/stateholders#business-logic">business logic</a> and <a href="https://developer.android.google.cn/topic/architecture/ui-layer/stateholders#ui-logic">UI
+logic</a> to sources of state change, and that process user events to
+produce UI state.</li>
+<li data-unit="03-state-production-027"><strong>Output</strong>: The UI State that the app can render to provide users the
+information they need.</li>
+</ul>
+<figure id="image-2">
+<img alt="The state production pipeline" data-original-src="https://developer.android.google.cn/static/images/topic/architecture/ui-layer/state-production-pipeline.png" loading="eager" src="../assets/fcc90a12a33f10fb.png" width="70%"/>
+<figcaption data-unit="03-state-production-028"><b>Figure 2</b>: The state production pipeline</figcaption>
+</figure>
+<h2 data-unit="03-state-production-029" id="state-production">State production APIs</h2>
+<p data-unit="03-state-production-030">There are two main APIs used in state production depending on what stage of the
+pipeline you're in:</p>
+<div class="table-wrapper" tabindex="0"><table>
+<thead>
+<tr>
+<th data-unit="03-state-production-031">Pipeline stage</th>
+<th data-unit="03-state-production-032">API</th>
+</tr>
+</thead>
+<tr>
+<td data-unit="03-state-production-033">Input</td>
+<td data-unit="03-state-production-034">Use asynchronous APIs like Coroutines and Flows to perform work off the
+    UI thread to keep the UI jank-free.</td>
+</tr>
+<tr>
+<td data-unit="03-state-production-035">Output</td>
+<td data-unit="03-state-production-036">Use observable data holder APIs like Compose State or StateFlow to
+    invalidate and re-render the UI when state changes. Observable data holders
+    ensure that the UI always has a UI state to display on the screen.</td>
+</tr>
+</table></div>
+<p data-unit="03-state-production-037">The choice of asynchronous API for input has a greater influence on the nature
+of the state production pipeline than the choice of observable API for output.
+This is because the inputs <strong>dictate the kind of processing that can be applied
+to the pipeline</strong>.</p>
+<h2 data-unit="03-state-production-038" id="state-production-pipeline">State production pipeline assembly</h2>
+<p data-unit="03-state-production-039">The next sections cover state production techniques best suited for various
+inputs, and the output APIs that match. Each state production pipeline is a
+combination of inputs and outputs and must be the following:</p>
+<ul>
+<li data-unit="03-state-production-040"><strong>Lifecycle aware</strong>: In the case where the UI is not visible or active, the
+state production pipeline must not consume any resources unless explicitly
+required.</li>
+<li data-unit="03-state-production-041"><strong>Easy to consume</strong>: The UI must be able to easily render the produced UI
+state. In Jetpack Compose, state consumption is central to the UI, because
+composables can update based on state changes.</li>
+</ul>
+<h2 data-unit="03-state-production-042" id="inputs-state">Inputs in state production pipelines</h2>
+<p data-unit="03-state-production-043">Inputs in a state production pipeline provide their sources of state change
+through the following:</p>
+<ul>
+<li data-unit="03-state-production-044">One-shot operations that can be synchronous or asynchronous—for example,
+calls to <code>suspend</code> functions.</li>
+<li data-unit="03-state-production-045">Stream APIs—for example, <code>Flows</code>.</li>
+<li data-unit="03-state-production-046">All of the above.</li>
+</ul>
+<p data-unit="03-state-production-047">The following sections cover how you can assemble a state production pipeline
+for each of the above inputs.</p>
+<h3 data-unit="03-state-production-048" id="one-shot-apis">One-shot APIs as sources of state change</h3>
+<p data-unit="03-state-production-049">Manage state with observable data holders. Use the <a href="https://developer.android.google.cn/reference/kotlin/androidx/compose/runtime/package-summary#mutableStateOf(kotlin.Any,androidx.compose.runtime.SnapshotMutationPolicy)"><code>mutableStateOf</code></a> API,
+especially when working with <a href="https://medium.com/androiddevelopers/effective-state-management-for-textfield-in-compose-d6e5b070fbe5">Compose text APIs</a>. For more complex state
+management or when integrating with other architectural components, use the
+<a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-mutable-state-flow/"><code>MutableStateFlow</code></a> API. Both APIs offer methods that allow safe atomic
+updates to the values they host, whether the updates are synchronous or
+asynchronous.</p>
+<p data-unit="03-state-production-050">For example, consider state updates in a simple dice-rolling app. Each roll of
+the dice from the user invokes the synchronous <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.random/next-int.html"><code>Random.nextInt</code></a> method,
+and the result is written into the UI state.</p>
+<div><div>
+<section><h3 data-unit="03-state-production-051" id="compose-state">Compose State</h3><div></div><div><pre class="source-code"><code>@Stable
+interface DiceUiState {
+    val firstDieValue: Int?
+    val secondDieValue: Int?
+    val numberOfRolls: Int?
+}
+
+private class MutableDiceUiState: DiceUiState {
+    override var firstDieValue: Int? by mutableStateOf(null)
+    override var secondDieValue: Int? by mutableStateOf(null)
+    override var numberOfRolls: Int by mutableStateOf(0)
+}
+
+class DiceRollViewModel : ViewModel() {
+
+    private val _uiState = MutableDiceUiState()
+    val uiState: DiceUiState = _uiState
+
+    // Called from the UI
+    fun rollDice() {
+        _uiState.firstDieValue = Random.nextInt(from = 1, until = 7)
+        _uiState.secondDieValue = Random.nextInt(from = 1, until = 7)
+        _uiState.numberOfRolls = _uiState.numberOfRolls + 1
+    }
+}
+</code></pre></div></section>
+<section><h3 data-unit="03-state-production-052" id="stateflow">StateFlow</h3><div></div><div><pre class="source-code"><code>data class DiceUiState(
+    val firstDieValue: Int? = null,
+    val secondDieValue: Int? = null,
+    val numberOfRolls: Int = 0,
+)
+
+class DiceRollViewModel : ViewModel() {
+
+    private val _uiState = MutableStateFlow(DiceUiState())
+    val uiState: StateFlow&lt;DiceUiState&gt; = _uiState.asStateFlow()
+
+    // Called from the UI
+    fun rollDice() {
+        _uiState.update { currentState -&gt;
+            currentState.copy(
+            firstDieValue = Random.nextInt(from = 1, until = 7),
+            secondDieValue = Random.nextInt(from = 1, until = 7),
+            numberOfRolls = currentState.numberOfRolls + 1,
+            )
+        }
+    }
+}
+</code></pre></div></section>
+</div></div>
+<h4 data-unit="03-state-production-053" id="mutating_the_ui_state_from_asynchronous_calls">Mutating the UI state from asynchronous calls</h4>
+<p data-unit="03-state-production-054">For state changes that require an asynchronous result, launch a Coroutine in the
+appropriate <code>CoroutineScope</code>. This allows the app to discard the work when the
+<code>CoroutineScope</code> is canceled. The state holder then writes the result of the
+suspend method call into the observable API used to expose the UI state.</p>
+<p data-unit="03-state-production-055">For example, consider the <code>AddEditTaskViewModel</code> in the
+<a href="https://github.com/android/architecture-samples">Architecture sample</a>. When the suspending <code>saveTask</code> method saves a task
+asynchronously, the <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/update.html"><code>update</code></a> method on the MutableStateFlow propagates the
+state change to the UI state.</p>
+<div><div>
+<section><h3 data-unit="03-state-production-056" id="compose-state_1">Compose State</h3><div></div><div><pre class="source-code"><code>@Stable
+interface AddEditTaskUiState {
+    val title: String
+    val description: String
+    val isTaskCompleted: Boolean
+    val isLoading: Boolean
+    val userMessage: String?
+    val isTaskSaved: Boolean
+}
+
+private class MutableAddEditTaskUiState : AddEditTaskUiState() {
+    override var title: String by mutableStateOf("")
+    override var description: String by mutableStateOf("")
+    override var isTaskCompleted: Boolean by mutableStateOf(false)
+    override var isLoading: Boolean by mutableStateOf(false)
+    override var userMessage: String? by mutableStateOf&lt;String?&gt;(null)
+    override var isTaskSaved: Boolean by mutableStateOf(false)
+}
+
+class AddEditTaskViewModel(...) : ViewModel() {
+
+   private val _uiState = MutableAddEditTaskUiState()
+   val uiState: AddEditTaskUiState = _uiState
+
+   private fun createNewTask() {
+        viewModelScope.launch {
+            val newTask = Task(uiState.value.title, uiState.value.description)
+            try {
+                tasksRepository.saveTask(newTask)
+                // Write data into the UI state.
+                _uiState.isTaskSaved = true
+            }
+            catch(cancellationException: CancellationException) {
+                throw cancellationException
+            }
+            catch(exception: Exception) {
+                _uiState.userMessage = getErrorMessage(exception))
+            }
+        }
+    }
+}
+</code></pre></div></section>
+<section><h3 data-unit="03-state-production-057" id="stateflow_1">StateFlow</h3><div></div><div><pre class="source-code"><code>data class AddEditTaskUiState(
+    val title: String = "",
+    val description: String = "",
+    val isTaskCompleted: Boolean = false,
+    val isLoading: Boolean = false,
+    val userMessage: String? = null,
+    val isTaskSaved: Boolean = false
+)
+
+class AddEditTaskViewModel(...) : ViewModel() {
+
+   private val _uiState = MutableStateFlow(AddEditTaskUiState())
+   val uiState: StateFlow&lt;AddEditTaskUiState&gt; = _uiState.asStateFlow()
+
+   private fun createNewTask() {
+        viewModelScope.launch {
+            val newTask = Task(uiState.value.title, uiState.value.description)
+            try {
+                tasksRepository.saveTask(newTask)
+                // Write data into the UI state.
+                _uiState.update {
+                    it.copy(isTaskSaved = true)
+                }
+            }
+            catch(cancellationException: CancellationException) {
+                throw cancellationException
+            }
+            catch(exception: Exception) {
+                _uiState.update {
+                    it.copy(userMessage = getErrorMessage(exception))
+                }
+            }
+        }
+    }
+}
+</code></pre></div></section>
+</div></div><aside class="note"><span class="source-text" data-unit="03-state-production-058"><strong>Note:</strong><span> Coroutines launched in the <code>viewModelScope</code> of an
+<a href="https://developer.android.google.cn/topic/libraries/architecture/viewmodel">AAC</a> <a href="https://developer.android.google.cn/topic/libraries/architecture/viewmodel"><code>ViewModel</code></a>, run to completion, exceptionally or otherwise. This
+occurs whether the UI is visible or not, unless the Coroutines are explicitly
+canceled or the <code>ViewModel</code> is cleared. This is typically fine for most requests
+as they tend to be short lived. Don't use the <code>viewModelScope</code> to run requests
+that last for 5 seconds or more. Instead, enqueue them as deferred or
+long-running work with WorkManager.</span></span></aside>
+<h4 data-unit="03-state-production-059" id="mutating_the_ui_state_from_background_threads">Mutating the UI state from background threads</h4>
+<p data-unit="03-state-production-060">It's preferable to launch Coroutines on the main dispatcher for the production
+of UI state—that is, outside the <code>withContext</code> block in the code snippets below.
+However, if you need to update the UI state in a different background context,
+you can do the following:</p>
+<ul>
+<li data-unit="03-state-production-061">Use the <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/with-context.html"><code>withContext</code></a> method to run Coroutines in a different
+concurrent context.</li>
+<li data-unit="03-state-production-062">When using <code>MutableStateFlow</code>, use the <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/update.html"><code>update</code></a> method as usual.</li>
+<li data-unit="03-state-production-063">When using Compose State, use the <a href="https://developer.android.google.cn/reference/kotlin/androidx/compose/runtime/snapshots/Snapshot.Companion#withMutableSnapshot(kotlin.Function0)"><code>Snapshot.withMutableSnapshot</code></a>
+method to guarantee atomic updates to State in the concurrent context.</li>
+</ul>
+<p data-unit="03-state-production-064">For example, assume that in the <code>DiceRollViewModel</code> snippet below,
+<code>SlowRandom.nextInt</code> is a computationally intensive <code>suspend</code> function that
+needs to be called from a CPU-bound Coroutine.</p>
+<div><div>
+<section><h3 data-unit="03-state-production-065" id="compose-state_2">Compose State</h3><div></div><div><pre class="source-code"><code>class DiceRollViewModel(
+    private val defaultDispatcher: CoroutineScope = Dispatchers.Default
+) : ViewModel() {
+
+    private val _uiState = MutableDiceUiState()
+    val uiState: DiceUiState = _uiState
+
+  // Called from the UI
+  fun rollDice() {
+        viewModelScope.launch() {
+            // Other Coroutines that may be called from the current context
+            …
+            withContext(defaultDispatcher) {
+                Snapshot.withMutableSnapshot {
+                    _uiState.firstDieValue = SlowRandom.nextInt(from = 1, until = 7)
+                    _uiState.secondDieValue = SlowRandom.nextInt(from = 1, until = 7)
+                    _uiState.numberOfRolls = _uiState.numberOfRolls + 1
+                }
+            }
+        }
+    }
+}
+</code></pre></div></section>
+<section><h3 data-unit="03-state-production-066" id="stateflow_2">StateFlow</h3><div></div><div><pre class="source-code"><code>class DiceRollViewModel(
+    private val defaultDispatcher: CoroutineScope = Dispatchers.Default
+) : ViewModel() {
+
+    private val _uiState = MutableStateFlow(DiceUiState())
+    val uiState: StateFlow&lt;DiceUiState&gt; = _uiState.asStateFlow()
+
+  // Called from the UI
+  fun rollDice() {
+        viewModelScope.launch() {
+            // Other Coroutines that may be called from the current context
+            …
+            withContext(defaultDispatcher) {
+                _uiState.update { currentState -&gt;
+                    currentState.copy(
+                        firstDieValue = SlowRandom.nextInt(from = 1, until = 7),
+                        secondDieValue = SlowRandom.nextInt(from = 1, until = 7),
+                        numberOfRolls = currentState.numberOfRolls + 1,
+                    )
+                }
+            }
+        }
+    }
+}
+</code></pre></div></section>
+</div></div><aside class="note"><span class="source-text" data-unit="03-state-production-067"><strong>Note:</strong><span> If all coroutines launched need to be called from a different context, you
+can call <code>viewModelScope.launch(defaultDispatcher){ }</code> directly.</span></span></aside><aside class="warning"><span class="source-text" data-unit="03-state-production-068"><strong>Warning:</strong><span> Updating Compose state from a non-UI thread without using
+<code>Snapshot.withMutableSnapshot{ }</code> can cause inconsistencies in the state
+produced.</span></span></aside>
+<h3 data-unit="03-state-production-069" id="stream-apis">Stream APIs as sources of state change</h3>
+<p data-unit="03-state-production-070">For sources of state change that produce multiple values over time in streams,
+aggregating the outputs of all the sources into a cohesive whole is a
+straightforward approach to state production.</p>
+<p data-unit="03-state-production-071">When using Kotlin Flows, you can achieve this with the <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/combine.html">combine</a> function.
+An example of this can be seen in the <a href="https://github.com/android/nowinandroid">"Now in Android" sample</a> in the
+<code>InterestsViewModel</code>:</p>
+<div></div><div><pre class="source-code"><code>class InterestsViewModel(
+    authorsRepository: AuthorsRepository,
+    topicsRepository: TopicsRepository
+) : ViewModel() {
+
+    val uiState = combine(
+        authorsRepository.getAuthorsStream(),
+        topicsRepository.getTopicsStream(),
+    ) { availableAuthors, availableTopics -&gt;
+        InterestsUiState.Interests(
+            authors = availableAuthors,
+            topics = availableTopics
+        )
+    }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = InterestsUiState.Loading
+    )
+}
+</code></pre></div><aside class="note"><span class="source-text" data-unit="03-state-production-072"><strong>Note:</strong><span> You can use the <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/state-in.html"><code>stateIn</code></a> operator to convert the
+combined <code>Flow</code> into a <a href="https://developer.android.google.cn/kotlin/flow/stateflow-and-sharedflow"><code>StateFlow</code></a> as the observable API for UI state.</span></span></aside>
+<p data-unit="03-state-production-073">Use of the <code>stateIn</code> operator to create <code>StateFlows</code> gives the UI finer grained
+control over the activity of the state production pipeline as it might need to
+be active only when the UI is visible.</p>
+<ul>
+<li data-unit="03-state-production-074">Use <code>SharingStarted.WhileSubscribed</code> if the pipeline needs to be active only
+when the UI is visible while collecting the flow in a lifecycle-aware
+manner.</li>
+<li data-unit="03-state-production-075">Use <code>SharingStarted.Lazily</code> if the pipeline needs to be active as long as
+the user might return to the UI—that is, the UI is on the backstack or in
+another tab offscreen.</li>
+</ul>
+<p data-unit="03-state-production-076">In cases where aggregating stream-based sources of state does not apply, stream
+APIs like Kotlin Flows offer a rich set of transformations such as
+<a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/merge.html?query=fun%20%3CT%3E%20merge(vararg%20flows:%20Flow%3CT%3E">merging</a>, <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/flat-map-latest.html?query=inline%20fun%20%3CT,%20R%3E%20Flow%3CT%3E.flatMapLatest(crossinline%20transform:%20suspend%20(T">flattening</a>, and so on to help with processing the streams
+into UI state.</p>
+<aside class="key-point"><span class="source-text" data-unit="03-state-production-077"><strong>Key Point:</strong><span> In most cases, combine is an advisable approach to producing state
+from stream APIs.</span></span></aside>
+<h3 data-unit="03-state-production-078" id="one-shot-and">One-shot and stream APIs as sources of state change</h3>
+<p data-unit="03-state-production-079">In the case where the state production pipeline depends on both one-shot calls
+and streams as sources of state change, streams are the defining constraint.
+Therefore, convert the one-shot calls into streams APIs, or pipe their output
+into streams and resume processing as described in the streams section above.</p>
+<p data-unit="03-state-production-080">With flows, this typically means creating one or more private backing
+<code>MutableStateFlow</code> instances to propagate state changes. You can also <a href="https://developer.android.google.cn/reference/kotlin/androidx/compose/runtime/package-summary#snapshotFlow(kotlin.Function0)">create
+snapshot flows</a> from Compose state.</p>
+<p data-unit="03-state-production-081">Consider the <code>TaskDetailViewModel</code> from the <a href="https://github.com/android/architecture-samples">architecture-samples</a>
+repository. The UI state depends on a stream for the current task (<code>_task</code>) and
+a one-shot source (<code>_isTaskDeleted</code>) that updates when the task is deleted. This
+flag is necessary to differentiate between when a task is not found in the
+database because of an incorrect ID, and when it is not found because the user
+just deleted it:</p>
+<div><div>
+<section><h3 data-unit="03-state-production-082" id="compose-state_3">Compose State</h3><div></div><div><pre class="source-code"><code>class TaskDetailViewModel @Inject constructor(
+    private val tasksRepository: TasksRepository,
+    savedStateHandle: SavedStateHandle
+) : ViewModel() {
+
+    private var _isTaskDeleted by mutableStateOf(false)
+    private val _task = tasksRepository.getTaskStream(taskId)
+
+    val uiState: StateFlow&lt;TaskDetailUiState&gt; = combine(
+        snapshotFlow { _isTaskDeleted },
+        _task
+    ) { isTaskDeleted, taskAsync -&gt;
+        TaskDetailUiState(
+            task = taskAsync.data,
+            isTaskDeleted = isTaskDeleted
+        )
+    }
+        // Convert the result to the appropriate observable API for the UI
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = TaskDetailUiState()
+        )
+
+    fun deleteTask() = viewModelScope.launch {
+        tasksRepository.deleteTask(taskId)
+        _isTaskDeleted = true
+    }
+}
+</code></pre></div></section>
+<section><h3 data-unit="03-state-production-083" id="stateflow_3">StateFlow</h3><div></div><div><pre class="source-code"><code>class TaskDetailViewModel @Inject constructor(
+    private val tasksRepository: TasksRepository,
+    savedStateHandle: SavedStateHandle
+) : ViewModel() {
+
+    private val _isTaskDeleted = MutableStateFlow(false)
+    private val _task = tasksRepository.getTaskStream(taskId)
+
+    val uiState: StateFlow&lt;TaskDetailUiState&gt; = combine(
+        _isTaskDeleted,
+        _task
+    ) { isTaskDeleted, taskAsync -&gt;
+        TaskDetailUiState(
+            task = taskAsync.data,
+            isTaskDeleted = isTaskDeleted
+        )
+    }
+        // Convert the result to the appropriate observable API for the UI
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = TaskDetailUiState()
+        )
+
+    fun deleteTask() = viewModelScope.launch {
+        tasksRepository.deleteTask(taskId)
+        _isTaskDeleted.update { true }
+    }
+}
+</code></pre></div></section>
+</div></div><aside class="note"><span class="source-text" data-unit="03-state-production-084"><strong>Note:</strong><span> Compose <code>State</code> is converted to a flow using the
+<a href="https://developer.android.google.cn/reference/kotlin/androidx/compose/runtime/package-summary#snapshotFlow(kotlin.Function0)"><code>snapshotFlow</code></a> API.</span></span></aside>
+<h2 data-unit="03-state-production-085" id="output-types">Output types in state production pipelines</h2>
+<p data-unit="03-state-production-086">The choice of the output API for UI state and the nature of its presentation
+depend largely on the API your app uses to render the UI, such as Compose.
+<a href="https://developer.android.google.cn/compose">Jetpack Compose</a> is the recommended modern toolkit for building native UI.
+Considerations here include the following:</p>
+<ul>
+<li data-unit="03-state-production-087">Reading state in a <a href="https://medium.com/androiddevelopers/consuming-flows-safely-in-jetpack-compose-cde014d0d5a3">lifecycle-aware</a> manner.</li>
+<li data-unit="03-state-production-088">Whether to <a href="https://developer.android.google.cn/topic/architecture/ui-layer#additional-considerations">expose state in one or multiple fields</a> from the state
+holder.</li>
+</ul>
+<p data-unit="03-state-production-089">The following table summarizes what APIs to use for your state production
+pipeline when using Jetpack Compose:</p>
+<div class="table-wrapper" tabindex="0"><table>
+<thead>
+<tr>
+<th data-unit="03-state-production-090">Input</th>
+<th data-unit="03-state-production-091">Output</th>
+</tr>
+</thead>
+<tr>
+<td data-unit="03-state-production-092">One-shot APIs</td>
+<td data-unit="03-state-production-093"><code>StateFlow</code> or Compose <code>State</code></td>
+</tr>
+<tr>
+<td data-unit="03-state-production-094">Stream APIs</td>
+<td data-unit="03-state-production-095"><code>StateFlow</code></td>
+</tr>
+<tr>
+<td data-unit="03-state-production-096">One-shot and stream APIs</td>
+<td data-unit="03-state-production-097"><code>StateFlow</code></td>
+</tr>
+</table></div>
+<h2 data-unit="03-state-production-098" id="initializing-state-production">State production pipeline initialization</h2>
+<p data-unit="03-state-production-099">Initializing state production pipelines involves setting the initial conditions
+for the pipeline to run. This might involve providing initial input values
+critical to the starting of the pipeline—for example, an <code>id</code> for the detail
+view of a news article, or starting an asynchronous load.</p>
+<p data-unit="03-state-production-100">When possible, initialize the state production pipeline lazily to conserve
+system resources. Practically, this often means waiting until there is a
+consumer of the output. <code>Flow</code> APIs allow for this with the <code>started</code> argument
+in the <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/state-in.html"><code>stateIn</code></a> method. In the cases where this is inapplicable, define
+an <a href="https://en.wikipedia.org/wiki/Idempotence">idempotent</a> <code>initialize</code> function to explicitly start the state
+production pipeline as shown in the following snippet:</p>
+<div></div><div><pre class="source-code"><code>class MyViewModel : ViewModel() {
+
+    private var initializeCalled = false
+
+    // This function is idempotent provided it is only called from the UI thread.
+    @MainThread
+    fun initialize() {
+        if(initializeCalled) return
+        initializeCalled = true
+
+        viewModelScope.launch {
+            // seed the state production pipeline
+        }
+    }
+}
+</code></pre></div><aside class="warning"><span class="source-text" data-unit="03-state-production-101"><strong>Warning:</strong><span> Don't launch asynchronous operations in the <code>init</code> block or
+constructor of a <code>ViewModel</code>. You must avoid launching asynchronous operations
+as side effects of creating an object because the asynchronous code can read
+from or write to the object before it is fully initialized. This is also
+referred to as leaking the object, and it can lead to subtle and hard to
+diagnose errors. This is particularly important when working with Compose State.
+When the ViewModel holds Compose State fields, don't launch a Coroutine in the
+<code>init</code> block of the <code>ViewModel</code> that updates the Compose State fields;
+otherwise, an <code>IllegalStateException</code> can occur.</span></span></aside>
+<h2 data-unit="03-state-production-102" id="samples">Samples</h2>
+<p data-unit="03-state-production-103">The following Google samples demonstrate the production of state in the UI
+layer. Go explore them to see this guidance in practice:</p>
+<p></p><div>
+</div>
+<h2 data-unit="03-state-production-104" id="resources">Additional resources</h2>
+<p data-unit="03-state-production-105">For more information about UI state, see the following additional resources:</p>
+<h3 data-unit="03-state-production-106" id="documentation">Documentation</h3>
+<ul>
+<li data-unit="03-state-production-107"><a href="https://developer.android.google.cn/develop/ui/compose/state">State and Jetpack Compose</a></li>
+<li data-unit="03-state-production-108"><a href="https://developer.android.google.cn/topic/architecture/ui-layer/stateholders">State holders and UI state</a></li>
+</ul>
+<h3 data-unit="03-state-production-109" id="views">Views content</h3>
+<ul>
+<li data-unit="03-state-production-110"><a href="https://developer.android.google.cn/topic/libraries/architecture/views/state-production-views">UI State production (Views)</a></li>
+</ul>
+<div class="nocontent"></div>
+</article><nav class="chapter-switcher" aria-label="章节导航"><a href="../02-ui-events/english.html">← 用户操作与事件</a><a class="course-home" href="../index.html">全部章节</a><a href="../04-data-layer/english.html">数据由谁管理 →</a></nav><footer class="license-note"><p>原文：<a href="https://developer.android.com/topic/architecture/ui-layer/state-production?hl=en">UI State production</a>，Android Developers / Google。英文快照：2026-10-13。非官方中文翻译与表达优化：Codex。原有示例和代码保留；<a href="../NOTICE.html">来源与许可</a>。</p></footer></main></body></html>

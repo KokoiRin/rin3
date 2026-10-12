@@ -1,0 +1,177 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Save data in a local database using Room · Android 应用的数据与状态</title><link rel="stylesheet" href="../../reader.css"><link rel="stylesheet" href="../source.css"><link rel="manifest" href="../../../manifest.webmanifest"></head><body><nav class="site-nav"><a href="../index.html">← Android 应用的数据与状态</a><a href="https://developer.android.com/training/data-storage/room?hl=en">官方英文原文 ↗</a></nav><main class="reader"><header class="chapter-header"><span class="chapter-kicker">08 · English source</span><h1>Save data in a local database using Room</h1><p class="byline">Save data in a local database using Room · Android Developers / Google</p><div class="title-rule"></div><p class="edition-nav"><a href="index.html">中文阅读版</a> · <strong aria-current="page">英文对照</strong> · <a href="literal.html">第一轮直译稿</a></p><aside class="learning-note"><span class="note-kind">编者导读 · 不属于原文</span><p><strong>Room 的数据库、Entity、DAO 三个部分怎样配合？</strong></p><p>先看三个组件的关系，再读 User、UserDao 和数据库类的原例；配置细节留到实际运行时核对。</p><p><strong>第一轮阅读：</strong>先读主要组件、实现示例和使用；依赖配置与 KMP 链接按需要回查。</p><details class="editor-notes"><summary>版本与适用范围校注（1 条）</summary><p>本次英文快照已经包含 Room 3.0 和 KSP 用法；不得把这些配置直接套进使用旧版 Room 的项目。全文保持此快照，不混合不同版本示例。</p></details></aside><details class="source-details"><summary>本篇目录与翻译范围</summary><p>官方英文文章正文全文；保留原文顺序、代码、图示、表格与延伸链接。代码与图中文字保持原样。编者导读与校注单独标明，阅读不要求同时安装、运行或编写示例。</p><ul><li class="toc-h2"><a href="#setup">Setup</a></li><li class="toc-h3"><a href="#kts">Kotlin</a></li><li class="toc-h3"><a href="#groovy">Groovy</a></li><li class="toc-h2"><a href="#components">Primary components</a></li><li class="toc-h2"><a href="#sample-implementation">Sample implementation</a></li><li class="toc-h3"><a href="#data-entity">Data entity</a></li><li class="toc-h3"><a href="#dao">Data access object (DAO)</a></li><li class="toc-h3"><a href="#database">Database</a></li><li class="toc-h3"><a href="#usage">Usage</a></li><li class="toc-h2"><a href="#additional-resources">Additional resources</a></li><li class="toc-h3"><a href="#samples">Samples</a></li></ul></details><nav class="chapter-switcher" aria-label="章节导航"><a href="../07-sql/english.html">← 数据库与 SQL 入门</a><a class="course-home" href="../index.html">全部章节</a><a href="../09-entities/english.html">用 Entity 定义保存的数据 →</a></nav></header><article class="translated-article">
+<h1 class="page-title" data-unit="08-room-001" id="save_data_in_a_local_database_using_room">Save data in a local database using Room 
+
+  <span class="dac-jetpack"><span>Part of <a href="https://developer.android.google.cn/jetpack">Android Jetpack</a>.</span></span></h1>
+<p>
+</p><div class="android-page-banner android-page-banner-image-bottom-right">
+<div class="android-page-banner-content">
+<div class="android-page-banner-title"><span class="source-text" data-unit="08-room-002">
+        Try with Kotlin Multiplatform
+      </span></div>
+<div class="android-page-banner-description"><span class="source-text" data-unit="08-room-003">
+        Kotlin Multiplatform allows sharing the database layer with other platforms. Learn how to set up and work with Room Database in KMP
+      </span></div>
+<div class="android-page-banner-cta"><span class="source-text" data-unit="08-room-004">
+<a href="https://developer.android.google.cn/kotlin/multiplatform/room">
+          Set up Room Database for KMP →
+        </a>
+</span></div>
+</div>
+<div class="android-page-banner-media">
+<picture>
+<img alt="" class="android-page-banner-image" data-original-src="https://developer.android.google.cn/static/images/android-kmp-logo.png" loading="eager" src="../assets/1d370d0aad0e844f.png"/>
+</picture>
+</div>
+</div>
+<p data-unit="08-room-005">Apps that handle non-trivial amounts of structured data can benefit greatly from
+persisting that data locally. The most common use case is to cache relevant
+pieces of data so that when the device can't access the network, your users can
+still browse that content while they're offline.</p>
+<p data-unit="08-room-006">The Room persistence library provides an abstraction layer over SQLite to allow
+fluent database access while harnessing the full power of SQLite. In particular,
+Room provides the following benefits:</p>
+<ul>
+<li data-unit="08-room-007">Compile-time verification of SQL queries.</li>
+<li data-unit="08-room-008">Convenience annotations that minimize repetitive and error-prone boilerplate
+code.</li>
+<li data-unit="08-room-009">Streamlined database migration paths.</li>
+</ul>
+<p data-unit="08-room-010">We recommend using Room instead of <a href="https://developer.android.google.cn/training/data-storage/sqlite">using the SQLite APIs directly</a>.</p>
+<h2 data-unit="08-room-011" id="setup">Setup</h2>
+<p data-unit="08-room-012">To use Room in your app, add the following dependencies to your module's
+<code>build.gradle.kts</code> file. Room 3.0 requires KSP for annotation processing.</p>
+<div>
+<div class="ds-selector-tabs"><section><h3 class="two-line-tab" data-unit="08-room-013" id="kts">Kotlin</h3>
+<div></div><div><pre class="source-code"><code>dependencies {
+    val room_version = "3.0.3"
+
+    implementation("androidx.room3:room3-runtime:$room_version")
+    ksp("androidx.room3:room3-compiler:$room_version")
+}</code></pre></div>
+</section><section><h3 class="two-line-tab" data-unit="08-room-014" id="groovy">Groovy</h3>
+<div></div><div><pre class="source-code"><code>dependencies {
+    def room_version = "3.0.3"
+
+    implementation "androidx.room3:room3-runtime:$room_version"
+
+    ksp "androidx.room3:room3-compiler:$room_version"
+}</code></pre></div>
+</section></div>
+</div>
+<h2 data-unit="08-room-015" id="components">Primary components</h2>
+<p data-unit="08-room-016">There are three major components in Room:</p>
+<ul>
+<li data-unit="08-room-017">The <a href="https://developer.android.google.cn/reference/kotlin/androidx/room3/Database">database class</a> that holds the database and serves as the main access
+point for the underlying connection to your app's persisted data.</li>
+<li data-unit="08-room-018">The <a href="https://developer.android.google.cn/training/data-storage/room/defining-data">data entities</a> that represent tables in your app's database.</li>
+<li data-unit="08-room-019">The <a href="https://developer.android.google.cn/training/data-storage/room/accessing-data">data access objects (DAOs)</a> that provide functions that your app can
+use to query, update, insert, and delete data in the database.</li>
+</ul>
+<p data-unit="08-room-020">The database class provides your app with instances of the DAOs associated with
+that database. In turn, the app can use the DAOs to retrieve data from the
+database as instances of the associated data entity objects. The app can also
+use the defined data entities to update rows from the corresponding tables, or
+to create new rows for insertion. Figure 1 illustrates the relationship between
+the different components of Room.</p>
+<figure id="fig-room-arch">
+<img alt="" data-original-src="https://developer.android.google.cn/static/images/training/data-storage/room_architecture.png" loading="eager" src="../assets/538e4072a49af4e7.png" width="600"/>
+<figcaption data-unit="08-room-021"><b>Figure 1.</b> Diagram of Room library architecture.</figcaption>
+</figure>
+<h2 data-unit="08-room-022" id="sample-implementation">Sample implementation</h2>
+<p data-unit="08-room-023">This section presents an example implementation of a Room database with a single
+data entity and a single DAO.</p>
+<h3 data-unit="08-room-024" id="data-entity">Data entity</h3>
+<p data-unit="08-room-025">The following code defines a <code>User</code> data entity. Each instance of <code>User</code>
+represents a row in a <code>user</code> table in the app's database.</p>
+<p>
+</p><div></div><div><pre class="source-code" id="android_room3_index_entity-code-sample-kotlin"><code>@Entity
+data class User(
+    @PrimaryKey val uid: Int,
+    @ColumnInfo(name = "first_name") val firstName: String,
+    @ColumnInfo(name = "last_name") val lastName: String
+)IndexSnippets.kt</code></pre></div>
+<p data-unit="08-room-026">To learn more about data entities in Room, see <a href="https://developer.android.google.cn/training/data-storage/room/defining-data">Defining data using Room
+entities</a>.</p>
+<h3 data-unit="08-room-027" id="dao">Data access object (DAO)</h3>
+<p data-unit="08-room-028">The following code defines a DAO called <code>UserDao</code>. <code>UserDao</code> provides the
+functions that the rest of the app uses to interact with data in the <code>user</code>
+table.</p>
+<p>
+</p><div></div><div><pre class="source-code" id="android_room3_index_dao-code-sample-kotlin"><code>@Dao
+interface UserDao {
+    @Query("SELECT * FROM user")
+    suspend fun getAll(): List&lt;User&gt;
+
+    @Query("SELECT * FROM user WHERE uid IN (:userIds)")
+    suspend fun loadAllByIds(userIds: IntArray): List&lt;User&gt;
+
+    @Query(
+        """
+        SELECT * FROM user
+        WHERE first_name LIKE :first AND last_name LIKE :last LIMIT 1
+        """
+    )
+    suspend fun findByName(first: String, last: String): User
+
+    @Insert
+    suspend fun insertAll(vararg users: User)
+
+    @Delete
+    suspend fun delete(user: User)
+}IndexSnippets.kt</code></pre></div>
+<p data-unit="08-room-029">To learn more about DAOs, see <a href="https://developer.android.google.cn/training/data-storage/room/accessing-data">Accessing data using Room
+DAOs</a>.</p>
+<h3 data-unit="08-room-030" id="database">Database</h3>
+<p data-unit="08-room-031">The following code defines an <code>AppDatabase</code> class to hold the database.
+<code>AppDatabase</code> defines the database configuration and serves as the app's main
+access point to the persisted data. The database class must satisfy the
+following conditions:</p>
+<ul>
+<li data-unit="08-room-032">The class must be annotated with a
+<a href="https://developer.android.google.cn/reference/kotlin/androidx/room3/Database"><code>@Database</code></a> annotation that
+includes an <a href="https://developer.android.google.cn/reference/kotlin/androidx/room3/Database#entities()"><code>entities</code></a>
+array that lists all of the data entities associated with the database.</li>
+<li data-unit="08-room-033">The class must be an abstract class that extends
+<a href="https://developer.android.google.cn/reference/kotlin/androidx/room3/RoomDatabase"><code>RoomDatabase</code></a>.</li>
+<li data-unit="08-room-034">For each DAO class associated with the database, the database class must
+define an abstract function that takes no arguments and returns an instance
+of the DAO class.</li>
+</ul>
+<p>
+</p><div></div><div><pre class="source-code" id="android_room3_index_database-code-sample-kotlin"><code>@Database(entities = [User::class], version = 1)
+abstract class AppDatabase : RoomDatabase() {
+    abstract fun userDao(): UserDao
+}IndexSnippets.kt</code></pre></div>
+<div class="note">
+<p data-unit="08-room-035"><b>Note: </b> If your app runs in a single process, you should follow the
+  singleton design pattern when instantiating an <code>AppDatabase</code>
+  object. Each <code>RoomDatabase</code> instance is fairly expensive, and you
+  rarely need access to multiple instances within a single process.</p>
+<p data-unit="08-room-036">If your app runs in multiple processes, include
+  <code>enableMultiInstanceInvalidation()</code> in your database builder
+  invocation. That way, when you have an instance of <code>AppDatabase</code>
+  in each process, you can invalidate the shared database file in one process,
+  and this invalidation automatically propagates to the instances of
+  <code>AppDatabase</code> within other processes.</p>
+</div>
+<h3 data-unit="08-room-037" id="usage">Usage</h3>
+<p data-unit="08-room-038">After you have defined the data entity, the DAO, and the database object, you
+can use the following code to create an instance of the database:</p>
+<p>
+</p><div></div><div><pre class="source-code" id="android_room3_index_create-code-sample-kotlin"><code>val db =
+    Room.databaseBuilder&lt;AppDatabase&gt;(applicationContext, "database-name")
+        .setDriver(AndroidSQLiteDriver())
+        .build()IndexSnippets.kt</code></pre></div>
+<p data-unit="08-room-039">You can then use the abstract functions from the <code>AppDatabase</code> to get an
+instance of the DAO. In turn, you can use the functions from the DAO
+instance to interact with the database:</p>
+<p>
+</p><div></div><div><pre class="source-code" id="android_room3_index_usage-code-sample-kotlin"><code>val userDao = db.userDao()
+val users: List&lt;User&gt; = userDao.getAll()IndexSnippets.kt</code></pre></div>
+<h2 data-unit="08-room-040" id="additional-resources">Additional resources</h2>
+<p data-unit="08-room-041">To learn more about Room, see the following additional resources:</p>
+<h3 data-unit="08-room-042" id="samples">Samples</h3>
+<p></p><div>
+</div>
+<div class="nocontent"></div>
+</article><nav class="chapter-switcher" aria-label="章节导航"><a href="../07-sql/english.html">← 数据库与 SQL 入门</a><a class="course-home" href="../index.html">全部章节</a><a href="../09-entities/english.html">用 Entity 定义保存的数据 →</a></nav><footer class="license-note"><p>原文：<a href="https://developer.android.com/training/data-storage/room?hl=en">Save data in a local database using Room</a>，Android Developers / Google。英文快照：2026-10-13。非官方中文翻译与表达优化：Codex。原有示例和代码保留；<a href="../NOTICE.html">来源与许可</a>。</p></footer></main></body></html>

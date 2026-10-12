@@ -1,0 +1,150 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Define data using Room entities · Android 应用的数据与状态</title><link rel="stylesheet" href="../../reader.css"><link rel="stylesheet" href="../source.css"><link rel="manifest" href="../../../manifest.webmanifest"></head><body><nav class="site-nav"><a href="../index.html">← Android 应用的数据与状态</a><a href="https://developer.android.com/training/data-storage/room/defining-data?hl=en">官方英文原文 ↗</a></nav><main class="reader"><header class="chapter-header"><span class="chapter-kicker">09 · English source</span><h1>Define data using Room entities</h1><p class="byline">Define data using Room entities · Android Developers / Google</p><div class="title-rule"></div><p class="edition-nav"><a href="index.html">中文阅读版</a> · <strong aria-current="page">英文对照</strong> · <a href="literal.html">第一轮直译稿</a></p><aside class="learning-note"><span class="note-kind">编者导读 · 不属于原文</span><p><strong>Kotlin 对象怎样对应数据库中的表和行？</strong></p><p>先认识 Entity、列名和主键，再看哪些字段保存、哪些忽略。</p><p><strong>第一轮阅读：</strong>首轮读实体组成、主键、复合主键和忽略属性；全文搜索与索引留作后续深化。</p><details class="editor-notes"><summary>版本与适用范围校注（1 条）</summary><p>本次原文的部分 API 与链接属于 Room 3.0。迁移或实践时应核对项目版本；FTS 和驱动支持按原文列出的条件理解。</p></details></aside><details class="source-details"><summary>本篇目录与翻译范围</summary><p>官方英文文章正文全文；保留原文顺序、代码、图示、表格与延伸链接。代码与图中文字保持原样。编者导读与校注单独标明，阅读不要求同时安装、运行或编写示例。</p><ul><li class="toc-h2"><a href="#anatomy">Anatomy of an entity</a></li><li class="toc-h2"><a href="#primary-key">Define a primary key</a></li><li class="toc-h3"><a href="#composite-key">Define a composite primary key</a></li><li class="toc-h2"><a href="#ignore">Ignore properties</a></li><li class="toc-h2"><a href="#search">Provide table search support</a></li><li class="toc-h3"><a href="#fts">Support full-text search</a></li><li class="toc-h3"><a href="#column-indexing">Index specific columns</a></li></ul></details><nav class="chapter-switcher" aria-label="章节导航"><a href="../08-room/english.html">← Room 整体认识</a><a class="course-home" href="../index.html">全部章节</a><a href="../10-dao/english.html">用 DAO 读写数据 →</a></nav></header><article class="translated-article">
+<p data-unit="09-entities-001">When you use the <a href="https://developer.android.google.cn/training/data-storage/room">Room persistence library</a> to store your app's data, you
+define entities to represent the objects that you want to store. Each entity
+corresponds to a table in the associated Room database, and each instance of an
+entity represents a row of data in the corresponding table.</p>
+<p data-unit="09-entities-002">Using Room entities lets you define your <a class="external" href="https://www.sqlite.org/schematab.html">database schema</a> 
+without writing any SQL code.</p>
+<h2 data-unit="09-entities-003" id="anatomy">Anatomy of an entity</h2>
+<p data-unit="09-entities-004">You define each Room entity as a class annotated with <a href="https://developer.android.google.cn/reference/kotlin/androidx/room3/Entity"><code>@Entity</code></a>. A Room
+entity includes properties for each column in the corresponding table in the
+database, including one or more columns that make up the <a href="https://developer.android.google.cn/training/data-storage/room/defining-data?hl=en#primary-key">primary key</a>.</p>
+<p data-unit="09-entities-005">The following code is an example of an entity that defines a <code>User</code> table
+with columns for ID, first name, and last name:</p>
+<p>
+</p><div></div><div><pre class="source-code" id="android_room3_defining_data_simple_entity-code-sample-kotlin"><code>@Entity
+data class User(
+    @PrimaryKey val id: Int,
+    val firstName: String,
+    val lastName: String
+)DefiningDataSnippets.kt</code></pre></div>
+<aside class="note"><span class="source-text" data-unit="09-entities-006"><strong>Note:</strong><span> To persist a property, Room needs access to it. To make sure Room
+has access to a property, either make it public or provide getter and
+setter functions for it.</span></span></aside>
+<p data-unit="09-entities-007">By default, Room uses the class name as the database table name. If you want the
+table to have a different name, set the <a href="https://developer.android.google.cn/reference/kotlin/androidx/room3/Entity#tableName()"><code>tableName</code></a> property of the
+<code>@Entity</code> annotation. Similarly, Room uses the property names as column names in
+the database by default. If you want a column to have a different name, add the
+<a href="https://developer.android.google.cn/reference/kotlin/androidx/room3/ColumnInfo"><code>@ColumnInfo</code></a> annotation to the property and set the <a href="https://developer.android.google.cn/reference/kotlin/androidx/room3/ColumnInfo#name()"><code>name</code></a> property.
+The following example shows custom names for a table and its columns:</p>
+<p>
+</p><div></div><div><pre class="source-code" id="android_room3_defining_data_custom_entity-code-sample-kotlin"><code>@Entity(tableName = "users")
+data class User(
+    @PrimaryKey val id: Int,
+    @ColumnInfo(name = "first_name") val firstName: String,
+    @ColumnInfo(name = "last_name") val lastName: String
+)DefiningDataSnippets.kt</code></pre></div>
+<aside class="note"><span class="source-text" data-unit="09-entities-008"><strong>Note:</strong><span> Table and column names in SQLite are <em>case-insensitive</em>.</span></span></aside>
+<h2 data-unit="09-entities-009" id="primary-key">Define a primary key</h2>
+<p data-unit="09-entities-010">You must define a <a class="external" href="https://learn.microsoft.com/en-us/sql/relational-databases/tables/create-primary-keys?view=sql-server-ver16">primary key</a> for each Room entity to
+uniquely identify each row in the corresponding database table. To do this,
+annotate a single column with <a href="https://developer.android.google.cn/reference/kotlin/androidx/room3/PrimaryKey"><code>@PrimaryKey</code></a>:</p>
+<p>
+</p><div></div><div><pre class="source-code" id="android_room3_defining_data_pk-code-sample-kotlin"><code>@PrimaryKey val id: IntDefiningDataSnippets.kt</code></pre></div>
+<aside class="note"><span class="source-text" data-unit="09-entities-011"><strong>Note:</strong><span> If you need Room to assign automatic IDs to entity instances, set the
+<a href="https://developer.android.google.cn/reference/kotlin/androidx/room3/PrimaryKey#autoGenerate()"><code>autoGenerate</code></a> property of <code>@PrimaryKey</code> to <code>true</code>.</span></span></aside>
+<h3 data-unit="09-entities-012" id="composite-key">Define a composite primary key</h3>
+<p data-unit="09-entities-013">If you need instances of an entity to be uniquely identified by a combination of
+multiple columns, you can define a <em>composite primary key</em> by listing those
+columns in the <a href="https://developer.android.google.cn/reference/kotlin/androidx/room3/Entity#primaryKeys()"><code>primaryKeys</code></a> property of <code>@Entity</code>:</p>
+<p>
+</p><div></div><div><pre class="source-code" id="android_room3_defining_data_composite_pk-code-sample-kotlin"><code>@Entity(primaryKeys = ["firstName", "lastName"])
+data class User(
+    val firstName: String,
+    val lastName: String
+)DefiningDataSnippets.kt</code></pre></div>
+<h2 data-unit="09-entities-014" id="ignore">Ignore properties</h2>
+<p data-unit="09-entities-015">By default, Room creates a column for each property defined in the entity.
+To prevent Room from persisting a property, annotate it with <a href="https://developer.android.google.cn/reference/kotlin/androidx/room3/Ignore"><code>@Ignore</code></a>:</p>
+<p>
+</p><div></div><div><pre class="source-code" id="android_room3_defining_data_ignore-code-sample-kotlin"><code>@Entity
+data class User(
+    @PrimaryKey val id: Int,
+    val firstName: String,
+    val lastName: String,
+    @Ignore val picture: Bitmap? = null
+)DefiningDataSnippets.kt</code></pre></div>
+<aside class="note"><span class="source-text" data-unit="09-entities-016"><strong>Note:</strong><span> If an ignored property is declared in the entity's primary constructor,
+you must provide a default value for it, such as <code>null</code>.
+This default value is necessary because Room ignores the property when
+creating the database table. However, Room still calls the primary
+constructor when instantiating the class from query results.</span></span></aside>
+<p data-unit="09-entities-017">If an entity inherits properties from a parent entity, use the
+<a href="https://developer.android.google.cn/reference/kotlin/androidx/room3/Entity#ignoredColumns()"><code>ignoredColumns</code></a> property of the <code>@Entity</code> annotation:</p>
+<p>
+</p><div></div><div><pre class="source-code" id="android_room3_defining_data_inherited_ignore-code-sample-kotlin"><code>open class User {
+    var picture: Bitmap? = null
+}
+
+@Entity(ignoredColumns = ["picture"])
+data class RemoteUser(
+    @PrimaryKey val id: Int,
+    val hasVpn: Boolean
+) : User()DefiningDataSnippets.kt</code></pre></div>
+<h2 data-unit="09-entities-018" id="search">Provide table search support</h2>
+<p data-unit="09-entities-019">Room supports several annotations that let you search for details in your
+database tables.</p>
+<h3 data-unit="09-entities-020" id="fts">Support full-text search</h3>
+<p data-unit="09-entities-021">If your app requires fast full-text search (FTS), back your entities with a
+virtual table. Use the <a class="external" href="https://www.sqlite.org/fts3.html">FTS3 or FTS4 SQLite extension</a> or the
+<a class="external" href="https://www.sqlite.org/fts5.html">FTS5 SQLite extension</a>.</p>
+<p data-unit="09-entities-022">To use this capability, add the <a href="https://developer.android.google.cn/reference/kotlin/androidx/room3/Fts3"><code>@Fts3</code></a>, <a href="https://developer.android.google.cn/reference/kotlin/androidx/room3/Fts4"><code>@Fts4</code></a>, or <a href="https://developer.android.google.cn/reference/kotlin/androidx/room3/Fts5"><code>@Fts5</code></a>
+annotation to an entity.</p>
+<p>
+</p><div></div><div><pre class="source-code" id="android_room3_defining_data_fts4-code-sample-kotlin"><code>// Use `@Fts3` only if your app has strict disk space requirements.
+@Fts4
+@Entity(tableName = "users")
+data class User(
+    // Specifying a primary key for an FTS-table-backed entity is optional,
+    // but if you include one, it must an INTEGER type and column name "rowid".
+    @PrimaryKey @ColumnInfo(name = "rowid") val id: Long,
+    @ColumnInfo(name = "first_name") val firstName: String
+)DefiningDataSnippets.kt</code></pre></div>
+<aside class="note"><span class="source-text" data-unit="09-entities-023"><strong>Note:</strong><span> FTS-enabled tables always use a primary key of type <code>INTEGER</code> and with the
+column name <code>"rowid"</code>. If your FTS-table-backed entity defines a primary key, it
+<em>must</em> use that type and column name.</span></span></aside>
+<p data-unit="09-entities-024">To customize how database information is tokenized in FTS tables, use the
+<code>tokenizer</code> option. Room provides several built-in tokenizers through
+<a href="https://developer.android.google.cn/reference/kotlin/androidx/room3/FtsOptions"><code>FtsOptions</code></a>, including <code>TOKENIZER_SIMPLE</code>, <code>TOKENIZER_PORTER</code>, and
+<code>TOKENIZER_UNICODE61</code>:</p>
+<p>
+</p><div></div><div><pre class="source-code" id="android_room3_defining_data_fts4_tokenizer-code-sample-kotlin"><code>@Fts4(tokenizer = FtsOptions.TOKENIZER_UNICODE61)
+@Entity(tableName = "users")
+data class User(
+    @PrimaryKey @ColumnInfo(name = "rowid") val id: Long,
+    @ColumnInfo(name = "first_name") val firstName: String
+)DefiningDataSnippets.kt</code></pre></div>
+<p data-unit="09-entities-025">Room provides several other options for defining FTS-backed entities, including
+result ordering, removing indexes from columns, and tables managed as external
+content. For more information about these options, see the <a href="https://developer.android.google.cn/reference/kotlin/androidx/room3/FtsOptions"><code>FtsOptions</code></a>
+reference.</p>
+<h3 data-unit="09-entities-026" id="column-indexing">Index specific columns</h3>
+<p data-unit="09-entities-027">If you're using <a href="https://developer.android.google.cn/reference/kotlin/androidx/sqlite/driver/AndroidSQLiteDriver"><code>AndroidSQLiteDriver</code></a> and you need to support SDK
+versions that don't support FTS3-, FTS4-, or FTS5-table-backed entities, you
+can still index certain columns in the database to speed up your queries. If
+you use <a href="https://developer.android.google.cn/reference/kotlin/androidx/sqlite/driver/bundled/BundledSQLiteDriver"><code>BundledSQLiteDriver</code></a>, Room supports all FTS versions
+regardless of the Android SDK version.</p>
+<p data-unit="09-entities-028">To add indexes to an entity, include the <a href="https://developer.android.google.cn/reference/kotlin/androidx/room3/Entity#indices()"><code>indices</code></a> property in the
+<a href="https://developer.android.google.cn/reference/kotlin/androidx/room3/Entity"><code>@Entity</code></a> annotation. List the column names to include in the index or
+composite index. The following code snippet shows how to add indexes:</p>
+<p>
+</p><div></div><div><pre class="source-code" id="android_room3_defining_data_index-code-sample-kotlin"><code>@Entity(indices = [Index(value = ["last_name", "address"])])
+data class User(
+    @PrimaryKey val id: Int,
+    @ColumnInfo(name = "first_name") val firstName: String,
+    @ColumnInfo(name = "last_name") val lastName: String,
+    val address: String?,
+)DefiningDataSnippets.kt</code></pre></div>
+<p data-unit="09-entities-029">Sometimes, certain columns or groups of columns in a database need to contain
+unique values. To enforce this uniqueness, set the <a href="https://developer.android.google.cn/reference/kotlin/androidx/room3#unique()"><code>unique</code></a> property of
+an <a href="https://developer.android.google.cn/reference/kotlin/androidx/room3"><code>@Index</code></a> annotation to <code>true</code>. The following code sample shows how to
+enforce this uniqueness:</p>
+<p>
+</p><div></div><div><pre class="source-code" id="android_room3_defining_data_unique_index-code-sample-kotlin"><code>@Entity(indices = [Index(value = ["first_name", "last_name"], unique = true)])
+data class User(
+    @PrimaryKey val id: Int,
+    @ColumnInfo(name = "first_name") val firstName: String,
+    @ColumnInfo(name = "last_name") val lastName: String,
+)DefiningDataSnippets.kt</code></pre></div>
+<div class="nocontent"></div>
+</article><nav class="chapter-switcher" aria-label="章节导航"><a href="../08-room/english.html">← Room 整体认识</a><a class="course-home" href="../index.html">全部章节</a><a href="../10-dao/english.html">用 DAO 读写数据 →</a></nav><footer class="license-note"><p>原文：<a href="https://developer.android.com/training/data-storage/room/defining-data?hl=en">Define data using Room entities</a>，Android Developers / Google。英文快照：2026-10-13。非官方中文翻译与表达优化：Codex。原有示例和代码保留；<a href="../NOTICE.html">来源与许可</a>。</p></footer></main></body></html>

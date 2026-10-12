@@ -1,0 +1,329 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>数据由谁管理 · Android 应用的数据与状态</title><link rel="stylesheet" href="../../reader.css"><link rel="stylesheet" href="../source.css"><link rel="manifest" href="../../../manifest.webmanifest"></head><body><nav class="site-nav"><a href="../index.html">← Android 应用的数据与状态</a><a href="https://developer.android.com/topic/architecture/data-layer?hl=en">官方英文原文 ↗</a></nav><main class="reader"><header class="chapter-header"><span class="chapter-kicker">04 · 第一轮直译稿</span><h1>数据由谁管理</h1><p class="byline">Data layer · Android Developers / Google</p><div class="title-rule"></div><p class="edition-nav"><a href="index.html">中文阅读版</a> · <a href="english.html">英文对照</a> · <strong aria-current="page">第一轮直译稿</strong></p><aside class="learning-note"><span class="note-kind">编者导读 · 不属于原文</span><p><strong>网络、缓存和本地数据由谁组织，页面向谁要数据？</strong></p><p>Repository 负责对外提供业务数据；DataSource 连接具体来源。沿新闻应用原例阅读请求、缓存与磁盘保存。</p><p><strong>第一轮阅读：</strong>先读架构、暴露 API、事实来源和网络请求；内存缓存和任务存活范围随后继续。</p><details class="editor-notes"><summary>版本与适用范围校注（2 条）</summary><p>原文“面向业务的操作不能取消”描述的是业务要求，不表示 WorkManager 在技术上不可取消。持久性工作也可以被显式取消，具体策略由需求决定。</p><p>内存中的业务缓存与 HTTP 缓存是两个层次；本篇主要说明前者。</p></details></aside><details class="source-details"><summary>本篇目录与翻译范围</summary><p>官方英文文章正文全文；保留原文顺序、代码、图示、表格与延伸链接。代码与图中文字保持原样。编者导读与校注单独标明，阅读不要求同时安装、运行或编写示例。</p><ul><li class="toc-h2"><a href="#architecture">数据层架构</a></li><li class="toc-h2"><a href="#expose-apis">暴露 API</a></li><li class="toc-h2"><a href="#naming-conventions">本指南的命名约定</a></li><li class="toc-h2"><a href="#multiple-levels">多层 Repository</a></li><li class="toc-h2"><a href="#source-of-truth">事实来源</a></li><li class="toc-h2"><a href="#threading">线程</a></li><li class="toc-h2"><a href="#lifecycle">生命周期</a></li><li class="toc-h2"><a href="#business-models">表示业务模型</a></li><li class="toc-h2"><a href="#data-operation-types">数据操作的类型</a></li><li class="toc-h3"><a href="#ui-operations">面向 UI 的操作</a></li><li class="toc-h3"><a href="#app-operations">面向应用的操作</a></li><li class="toc-h3"><a href="#business-operations">面向业务的操作</a></li><li class="toc-h2"><a href="#expose-errors">暴露错误</a></li><li class="toc-h2"><a href="#common-tasks">常见任务</a></li><li class="toc-h3"><a href="#network-request">发起网络请求</a></li><li class="toc-h4"><a href="#create_the_data_source">创建 DataSource</a></li><li class="toc-h4"><a href="#create_the_repository">创建 Repository</a></li><li class="toc-h3"><a href="#in-memory-cache">实现内存数据缓存</a></li><li class="toc-h4"><a href="#caches">缓存</a></li><li class="toc-h4"><a href="#cache_the_result_of_the_network_request">缓存网络请求结果</a></li><li class="toc-h4"><a href="#make_an_operation_live_longer_than_the_screen">让操作存活得比页面更久</a></li><li class="toc-h3"><a href="#save-retrieve-data">从磁盘保存与读取数据</a></li><li class="toc-h4"><a href="#room_as_a_data_source">Room 作为数据来源</a></li><li class="toc-h4"><a href="#datastore_as_a_data_source">DataStore 作为数据来源</a></li><li class="toc-h4"><a href="#a_file_as_a_data_source">文件作为数据来源</a></li><li class="toc-h3"><a href="#workmanager">使用 WorkManager 调度任务</a></li><li class="toc-h2"><a href="#testing">测试</a></li><li class="toc-h3"><a href="#unit-tests">单元测试</a></li><li class="toc-h3"><a href="#integration-tests">集成测试</a></li><li class="toc-h2"><a href="#resources">其他资源</a></li><li class="toc-h3"><a href="#samples">示例</a></li></ul></details><nav class="chapter-switcher" aria-label="章节导航"><a href="../03-state-production/literal.html">← 状态怎样更新</a><a class="course-home" href="../index.html">全部章节</a><a href="../05-network-request/literal.html">安卓中的网络请求 →</a></nav></header><article class="translated-article">
+<p data-unit="04-data-layer-001">UI 层包含与 UI 相关的状态和 UI 逻辑，数据层则包含<em>应用数据</em>与<em>业务逻辑</em>。业务逻辑为应用带来价值，它由现实业务规则构成，决定应用数据必须怎样创建、存储和改变。</p>
+<p data-unit="04-data-layer-002">这种职责分离让数据层可以被多个页面使用，让应用不同部分共享信息，也能在 UI 之外复现业务逻辑进行单元测试。数据层好处的更多信息，请参阅<a href="https://developer.android.google.cn/jetpack/guide">架构概览</a>。</p>
+<aside class="note"><span class="source-text" data-unit="04-data-layer-003"><strong>注意：</strong><span>本页建议和最佳实践适用于多种应用，有助于扩展规模、提高质量和健壮性，并改善可测试性。不过，应把它们视为指导原则，并根据自身需求调整。</span></span></aside>
+<div class="video-wrapper-full-width">
+<iframe class="devsite-embedded-youtube-video" data-video-id="r5AseKQh2ZE">
+</iframe>
+</div>
+<h2 data-unit="04-data-layer-004" id="architecture">数据层架构</h2>
+<p data-unit="04-data-layer-005">数据层由 <em>Repository</em> 组成，每个 Repository 可以包含零个到多个<em>数据来源</em>。应为应用处理的每一种不同数据创建 Repository 类。例如，为电影数据创建 <code>MoviesRepository</code>，为付款数据创建 <code>PaymentsRepository</code>。</p>
+<figure id="data-overview">
+<img alt="In a typical architecture, the data layer's repositories provide data
+    to the rest of the app and depend on the data sources." data-original-src="https://developer.android.google.cn/static/topic/libraries/architecture/images/mad-arch-data-overview.png" loading="eager" src="../assets/4a0f39de6adc2c98.png" width="500"/>
+<figcaption data-unit="04-data-layer-006"><b>图 1。</b>数据层在应用架构中的位置。</figcaption>
+</figure>
+<p data-unit="04-data-layer-007">Repository 类负责以下任务：</p>
+<ul>
+<li data-unit="04-data-layer-008">向应用其余部分暴露数据。</li>
+<li data-unit="04-data-layer-009">集中管理数据变化。</li>
+<li data-unit="04-data-layer-010">解决多个数据来源之间的冲突。</li>
+<li data-unit="04-data-layer-011">对应用其余部分隐藏数据来源的具体实现。</li>
+<li data-unit="04-data-layer-012">包含业务逻辑。</li>
+</ul>
+<p data-unit="04-data-layer-013">每个 DataSource 类应只负责一个数据来源，可以是文件、网络来源或本地数据库。DataSource 类是应用与系统之间执行数据操作的桥梁。</p>
+<p data-unit="04-data-layer-014">其他层不应直接访问数据来源，数据层入口始终是 Repository 类。state holder 类（参阅 <a href="https://developer.android.google.cn/jetpack/guide/ui-layer#state-holders">UI 层指南</a>）或 UseCase 类（参阅<a href="https://developer.android.google.cn/jetpack/guide/domain-layer">领域层指南</a>）不应直接依赖 DataSource。通过 Repository 进入数据层，可以让架构中的各层独立扩展。</p>
+<p data-unit="04-data-layer-015"><strong>这一层暴露的数据应不可变</strong>，防止其他类修改它们，造成值不一致。不可变数据也可以由多个线程安全处理。详情请参阅<a href="https://developer.android.google.cn/topic/architecture/data-layer?hl=en#threading">线程</a>一节。</p>
+<p data-unit="04-data-layer-016">遵循<a href="https://developer.android.google.cn/training/dependency-injection">依赖注入</a>最佳实践，Repository 在构造器中接收 DataSource 依赖：</p>
+<div></div><div><pre class="source-code"><code>class ExampleRepository(
+    private val exampleRemoteDataSource: ExampleRemoteDataSource, // network
+    private val exampleLocalDataSource: ExampleLocalDataSource // database
+) { /* ... */ }
+</code></pre></div><aside class="note"><span class="source-text" data-unit="04-data-layer-017"><strong>注意：</strong><span>如果 Repository 只有一个 DataSource，且不依赖其他 Repository，开发者经常把两者的职责合并到 Repository 类中。采用这种方式时，如果后续版本需要处理其他数据来源，不要忘记拆分相关功能。</span></span></aside>
+<h2 data-unit="04-data-layer-018" id="expose-apis">暴露 API</h2>
+<p data-unit="04-data-layer-019">数据层的类通常暴露函数，用于执行一次性的创建、读取、更新、删除（CRUD）调用，或接收随时间发生的数据变化通知。对于这两种情况，数据层应分别暴露：</p>
+<ul>
+<li data-unit="04-data-layer-020"><strong>一次性操作</strong>：暴露挂起函数。</li>
+<li data-unit="04-data-layer-021"><strong>持续接收数据变化通知</strong>：暴露 <a href="https://developer.android.google.cn/kotlin/flow">Flow</a>。</li>
+</ul>
+<div></div><div><pre class="source-code"><code>class ExampleRepository(
+    private val exampleRemoteDataSource: ExampleRemoteDataSource, // network
+    private val exampleLocalDataSource: ExampleLocalDataSource // database
+) {
+
+    val data: Flow&lt;Example&gt; = ...
+
+    suspend fun modifyData(example: Example) { ... }
+}
+</code></pre></div>
+<h2 data-unit="04-data-layer-022" id="naming-conventions">本指南的命名约定</h2>
+<p data-unit="04-data-layer-023">本指南根据 Repository 负责的数据为其命名，约定如下：</p>
+<p data-unit="04-data-layer-024"><em>数据类型</em> + <em>Repository</em>。</p>
+<p data-unit="04-data-layer-025">例如：<code>NewsRepository</code>、<code>MoviesRepository</code> 或 <code>PaymentsRepository</code>。</p>
+<p data-unit="04-data-layer-026">DataSource 类根据它负责的数据及使用的来源命名，约定如下：</p>
+<p data-unit="04-data-layer-027"><em>数据类型</em> + <em>来源类型</em> + <em>DataSource</em>。</p>
+<p data-unit="04-data-layer-028">来源类型可使用 <em>Remote</em> 或 <em>Local</em> 等通用名称，因为实现可能变化。例如：<code>NewsRemoteDataSource</code> 或 <code>NewsLocalDataSource</code>。如果具体来源很重要，也可以使用来源类型作为名称，例如：<code>NewsNetworkDataSource</code> 或 <code>NewsDiskDataSource</code>。</p>
+<p data-unit="04-data-layer-029">不要根据实现细节命名 DataSource，例如 <code>UserSharedPreferencesDataSource</code>，因为使用它的 Repository 不应知道数据怎样保存。遵循这一规则，就能在不影响调用层的情况下修改 DataSource 实现，例如从 <a href="https://developer.android.google.cn/training/data-storage/shared-preferences">SharedPreferences</a> 迁移到 <a href="https://developer.android.google.cn/topic/libraries/architecture/datastore">DataStore</a>。</p>
+<aside class="note"><span class="source-text" data-unit="04-data-layer-030"><strong>注意：</strong><span>迁移到新的 DataSource 实现时，可能会为 DataSource 创建接口，并同时提供旧技术与新技术两种实现。这时，可以在 DataSource 类名中使用技术名称，虽然它属于实现细节，因为 Repository 只接触接口，不接触这些具体类。迁移完成后，可以重命名新类，去掉名称中的实现细节。</span></span></aside>
+<h2 data-unit="04-data-layer-031" id="multiple-levels">多层 Repository</h2>
+<p data-unit="04-data-layer-032">当业务需求更复杂时，某个 Repository 可能需要依赖其他 Repository。原因可能是相关数据需要聚合多个来源，或某项职责需要封装在另一个 Repository 类中。</p>
+<p data-unit="04-data-layer-033">例如，处理用户认证数据的 <code>UserRepository</code>，可能需要依赖 <code>LoginRepository</code> 和 <code>RegistrationRepository</code> 等其他 Repository 来满足需求。</p>
+<figure id="data-multiple-repos">
+<img alt="In the example, UserRepository depends on two other repository classes:
+    LoginRepository, which depends on other login data sources; and
+    RegistrationRepository, which depends on other registration data sources." data-original-src="https://developer.android.google.cn/static/topic/libraries/architecture/images/mad-arch-data-multiple-repos.png" loading="eager" src="../assets/dd172204ed789e0a.png" width="500"/>
+<figcaption data-unit="04-data-layer-034"><b>图 2。</b>一个依赖其他 Repository 的 Repository 的依赖图。</figcaption>
+</figure>
+<aside class="note"><span class="source-text" data-unit="04-data-layer-035"><strong>注意：</strong><span>传统上，一些开发者把依赖其他 Repository 的 Repository 类称为 <em>Manager</em>，例如用 <code>UserManager</code> 而不是 <code>UserRepository</code>。也可以按自己的偏好采用这种命名约定。</span></span></aside>
+<h2 data-unit="04-data-layer-036" id="source-of-truth">事实来源</h2>
+<p data-unit="04-data-layer-037">每个 Repository 都应定义单一事实来源，这一点很重要。事实来源始终包含一致、正确且最新的数据。实际上，Repository 暴露的数据应始终直接来自事实来源。</p>
+<p data-unit="04-data-layer-038">事实来源可以是 DataSource，例如数据库，也可以是 Repository 内的内存缓存。Repository 组合不同的数据来源并解决潜在冲突，定期或响应用户输入事件更新单一事实来源。</p>
+<p data-unit="04-data-layer-039">应用中的不同 Repository 可以有不同事实来源。例如，<code>LoginRepository</code> 可以使用缓存，<code>PaymentsRepository</code> 可以使用网络 DataSource。</p>
+<p data-unit="04-data-layer-040">为支持离线优先，<strong>推荐把数据库等本地 DataSource 作为事实来源</strong>。</p>
+<h2 data-unit="04-data-layer-041" id="threading">线程</h2>
+<p data-unit="04-data-layer-042">调用 DataSource 和 Repository 应当是<em>主线程安全</em>的，即能安全地从主线程调用。执行长时间的阻塞操作时，这些类负责把逻辑切换到适当线程。例如，DataSource 读取文件，或 Repository 对大列表执行高成本筛选，都应确保从主线程调用是安全的。</p>
+<p data-unit="04-data-layer-043">多数 DataSource 已提供主线程安全的 API，例如 <a href="https://developer.android.google.cn/training/data-storage/room">Room</a>、<a href="https://square.github.io/retrofit/">Retrofit</a> 或 <a href="https://ktor.io/">Ktor</a> 提供的挂起方法。API 可用时，Repository 可以直接利用这些能力。</p>
+<p data-unit="04-data-layer-044">线程的更多信息，请参阅<a href="https://developer.android.google.cn/guide/background">后台处理指南</a>。对于 Kotlin 用户，推荐使用<a href="https://developer.android.google.cn/kotlin/coroutines">协程</a>。</p>
+<h2 data-unit="04-data-layer-045" id="lifecycle">生命周期</h2>
+<p data-unit="04-data-layer-046">只要数据层实例仍能从垃圾回收根访问到，通常是被应用中的其他对象引用，它们就会继续留在内存中。</p>
+<p data-unit="04-data-layer-047">如果一个类包含内存中的数据，例如缓存，可能需要在某段时间内复用同一实例。这段时间也称为该类实例的<em>生命周期</em>。</p>
+<p data-unit="04-data-layer-048">如果类的职责对整个应用都很重要，可以把它的实例<em>限定作用域</em>到 <code>Application</code> 类，让实例遵循应用生命周期。如果只需在特定流程中复用实例，例如注册或登录流程，则应将实例限定到拥有该流程生命周期的类。例如，可把持有内存数据的 <code>RegistrationRepository</code> 限定到 <code>RegistrationActivity</code>，或使用 <a href="https://developer.android.google.cn/guide/navigation/navigation-3/naventrydecorators#apply-decorators"><code>NavEntryDecorator</code></a> 限定到返回栈。</p>
+<p data-unit="04-data-layer-049">实例生命周期是决定如何提供应用依赖的重要因素。推荐遵循<a href="https://developer.android.google.cn/training/dependency-injection">依赖注入</a>最佳实践，通过依赖容器管理依赖并限定作用域。Android 作用域的更多信息，请参阅 <a href="https://medium.com/androiddevelopers/scoping-in-android-and-hilt-c2e5222317c0">Android 与 Hilt 中的作用域</a>博客文章。</p>
+<h2 data-unit="04-data-layer-050" id="business-models">表示业务模型</h2>
+<p data-unit="04-data-layer-051">数据层希望暴露的数据模型，可能只是各个 DataSource 提供信息的一个子集。理想情况下，网络或本地 DataSource 都只返回应用需要的信息，但实际通常并非如此。</p>
+<p data-unit="04-data-layer-052">例如，一个新闻 API 服务器不仅返回文章信息，还返回编辑历史、用户评论和一些元数据：</p>
+<div></div><div><pre class="source-code"><code>data class ArticleApiModel(
+    val id: Long,
+    val title: String,
+    val content: String,
+    val publicationDate: Date,
+    val modifications: Array&lt;ArticleApiModel&gt;,
+    val comments: Array&lt;CommentApiModel&gt;,
+    val lastModificationDate: Date,
+    val authorId: Long,
+    val authorName: String,
+    val authorDateOfBirth: Date,
+    val readTimeMin: Int
+)
+</code></pre></div>
+<p data-unit="04-data-layer-053">应用不需要那么多信息，因为它只显示文章正文及作者的基本信息。将模型类分开，让 Repository 只暴露其他层所需数据，是一种良好做法。例如，可以精简网络返回的 <code>ArticleApiModel</code>，向领域层和 UI 层暴露 <code>Article</code> 模型类：</p>
+<div></div><div><pre class="source-code"><code>data class Article(
+    val id: Long,
+    val title: String,
+    val content: String,
+    val publicationDate: Date,
+    val authorName: String,
+    val readTimeMin: Int
+)
+</code></pre></div>
+<p data-unit="04-data-layer-054">分离模型类有以下好处：</p>
+<ul>
+<li data-unit="04-data-layer-055">只保留所需数据，节省应用内存。</li>
+<li data-unit="04-data-layer-056">将外部数据类型转换成应用采用的类型，例如应用可能使用不同的日期表示类型。</li>
+<li data-unit="04-data-layer-057">改善职责分离。例如，预先定义好模型类后，大型团队的成员就可以分别开发某项功能的网络部分和 UI 部分。</li>
+</ul>
+<p data-unit="04-data-layer-058">也可以把这种做法扩展到架构的其他部分，例如在 DataSource 类和 ViewModel 中定义不同模型。不过，这需要额外的类与逻辑，应做好文档说明和测试。<strong>至少在 DataSource 接收的数据与应用其他部分的期望不一致时，建议创建新的模型。</strong></p>
+<h2 data-unit="04-data-layer-059" id="data-operation-types">数据操作的类型</h2>
+<p data-unit="04-data-layer-060">数据层可以按重要性处理不同类型的操作：面向 UI、面向应用和面向业务的操作。</p>
+<h3 data-unit="04-data-layer-061" id="ui-operations">面向 UI 的操作</h3>
+<p data-unit="04-data-layer-062">面向 UI 的操作只在用户停留在特定页面时有意义，用户离开页面后就会取消。例如，显示从数据库取得的数据。</p>
+<p data-unit="04-data-layer-063">这类操作通常由 UI 层触发，并遵循调用方的生命周期，例如 ViewModel 的生命周期。<a href="https://developer.android.google.cn/topic/architecture/data-layer?hl=en#network-request">发起网络请求</a>一节给出了示例。</p>
+<h3 data-unit="04-data-layer-064" id="app-operations">面向应用的操作</h3>
+<p data-unit="04-data-layer-065">面向应用的操作在应用保持打开时都有意义。应用关闭或进程被终止时，这些操作会取消。例如，缓存网络请求结果以供后续使用。详情请参阅<a href="https://developer.android.google.cn/topic/architecture/data-layer?hl=en#in-memory-cache">实现内存数据缓存</a>一节。</p>
+<p data-unit="04-data-layer-066">这类操作通常遵循 <code>Application</code> 类或数据层的生命周期。示例请参阅<a href="https://developer.android.google.cn/topic/architecture/data-layer?hl=en#make_an_operation_live_longer_than_the_screen">让操作存活得比页面更久</a>。</p>
+<h3 data-unit="04-data-layer-067" id="business-operations">面向业务的操作</h3>
+<p data-unit="04-data-layer-068">面向业务的操作不能取消，应在进程死亡后继续存活。例如，完成用户要发布到个人资料中的照片上传。</p>
+<p data-unit="04-data-layer-069">这类操作推荐使用 WorkManager。详情请参阅<a href="https://developer.android.google.cn/topic/architecture/data-layer?hl=en#workmanager">使用 WorkManager 调度任务</a>。</p>
+<h2 data-unit="04-data-layer-070" id="expose-errors">暴露错误</h2>
+<p data-unit="04-data-layer-071">与 Repository 和 DataSource 交互时，操作可能成功，也可能在失败时抛出异常。协程与 Flow 应采用 Kotlin <a href="https://kotlinlang.org/docs/exception-handling.html">内置错误处理机制</a>。对于挂起函数可能产生的错误，适当地使用 <code>try/catch</code> 块；对于 Flow，使用 <a href="https://kotlin.github.io/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/catch.html"><code>catch</code></a> 操作符。在这种方式下，UI 层应在调用数据层时处理异常。</p>
+<p data-unit="04-data-layer-072">数据层可以理解和处理不同错误，并通过自定义异常暴露它们，例如 <code>UserNotAuthenticatedException</code>。</p>
+<aside class="note"><span class="source-text" data-unit="04-data-layer-073"><strong>注意：</strong><span>另一种表示数据层交互结果的方法，是使用 <code>Result</code> 类。该模式为结果处理过程中可能发生的错误和其他信号建模，让数据层返回 <code>Result&lt;T&gt;</code> 而非 <code>T</code>，使 UI 能识别特定场景下可能发生的<em>已知</em>错误。</span></span></aside>
+<p data-unit="04-data-layer-074">协程错误的更多信息，请参阅<a href="https://medium.com/androiddevelopers/exceptions-in-coroutines-ce8da1ec060c">协程中的异常</a>博客文章。</p>
+<h2 data-unit="04-data-layer-075" id="common-tasks">常见任务</h2>
+<p data-unit="04-data-layer-076">以下各节通过示例介绍 Android 应用中常见数据层任务的实现与架构组织。示例沿用本指南前述新闻应用。</p>
+<h3 data-unit="04-data-layer-077" id="network-request">发起网络请求</h3>
+<p data-unit="04-data-layer-078">网络请求是 Android 应用最常执行的任务之一。新闻应用需要显示从网络取得的最新新闻，因此需要一个管理网络操作的 DataSource 类：<code>NewsRemoteDataSource</code>。为向应用其余部分暴露数据，还要创建处理新闻数据的 Repository：<code>NewsRepository</code>。</p>
+<p data-unit="04-data-layer-079">需求是每次用户打开页面都更新最新新闻，因此这属于<em>面向 UI 的操作</em>。</p>
+<h4 data-unit="04-data-layer-080" id="create_the_data_source">创建 DataSource</h4>
+<p data-unit="04-data-layer-081">DataSource 需要暴露返回最新新闻的函数，结果是一组 <code>ArticleHeadline</code> 实例。它还需要提供一种主线程安全的网络获取方式，因此必须依赖用于执行任务的 <code>CoroutineDispatcher</code> 或 <code>Executor</code>。</p>
+<p data-unit="04-data-layer-082">网络请求是一次性调用，由新的 <code>fetchLatestNews()</code> 方法处理：</p>
+<div></div><div><pre class="source-code"><code>class NewsRemoteDataSource(
+  private val newsApi: NewsApi,
+  private val ioDispatcher: CoroutineDispatcher
+) {
+    /**
+     * Fetches the latest news from the network and returns the result.
+     * This executes on an IO-optimized thread pool, the function is main-safe.
+     */
+    suspend fun fetchLatestNews(): List&lt;ArticleHeadline&gt; =
+        // Move the execution to an IO-optimized thread since the ApiService
+        // doesn't support coroutines and makes synchronous requests.
+        withContext(ioDispatcher) {
+            newsApi.fetchLatestNews()
+        }
+    }
+
+// Makes news-related network synchronous requests.
+interface NewsApi {
+    fun fetchLatestNews(): List&lt;ArticleHeadline&gt;
+}
+</code></pre></div>
+<p data-unit="04-data-layer-083"><code>NewsApi</code> 接口隐藏网络 API 客户端的实现，底层采用 <a href="https://square.github.io/retrofit/">Retrofit</a> 还是 <a href="https://developer.android.google.cn/reference/java/net/HttpURLConnection"><code>HttpURLConnection</code></a> 都不影响调用。依赖接口让应用中的 API 实现可以替换。</p>
+<aside class="key-point"><span class="source-text" data-unit="04-data-layer-084"><strong>要点：</strong><span><strong>依赖接口让应用中的 API 实现可以替换。</strong>除了方便扩展和替换依赖，它还改善了可测试性，因为测试时可以注入假的 DataSource 实现。</span></span></aside>
+<h4 data-unit="04-data-layer-085" id="create_the_repository">创建 Repository</h4>
+<p data-unit="04-data-layer-086">这个任务中 Repository 无须额外逻辑，因此 <code>NewsRepository</code> 充当网络 DataSource 的代理。增加这一抽象层的好处会在<a href="https://developer.android.google.cn/topic/architecture/data-layer?hl=en#in-memory-cache">内存缓存</a>一节解释。</p>
+<div></div><div><pre class="source-code"><code>// NewsRepository is consumed from other layers of the hierarchy.
+class NewsRepository(
+    private val newsRemoteDataSource: NewsRemoteDataSource
+) {
+    suspend fun fetchLatestNews(): List&lt;ArticleHeadline&gt; =
+        newsRemoteDataSource.fetchLatestNews()
+}
+</code></pre></div>
+<p data-unit="04-data-layer-087">在 UI 层直接使用 Repository 的方法，请参阅 <a href="https://developer.android.google.cn/jetpack/guide/ui-layer">UI 层</a>指南。</p>
+<h3 data-unit="04-data-layer-088" id="in-memory-cache">实现内存数据缓存</h3>
+<p data-unit="04-data-layer-089">假设新闻应用增加一个需求：用户打开页面时，如果之前请求过数据，就显示缓存新闻；否则发起请求，获取最新新闻。</p>
+<p data-unit="04-data-layer-090">这要求应用在保持打开期间，把最新新闻保存在内存中，因此属于<em>面向应用的操作</em>。</p>
+<h4 data-unit="04-data-layer-091" id="caches">缓存</h4>
+<p data-unit="04-data-layer-092">添加内存数据缓存，可以在用户使用应用期间保留数据。缓存会在特定时间内把部分信息留在内存中，本例是整个应用打开期间。缓存实现有多种形式，从简单的可变变量，到保护多线程读写的复杂类。根据场景，缓存可以放在 Repository 或 DataSource 类中。</p>
+<h4 data-unit="04-data-layer-093" id="cache_the_result_of_the_network_request">缓存网络请求结果</h4>
+<p data-unit="04-data-layer-094">为了简单起见，<code>NewsRepository</code> 使用可变变量缓存最新新闻，并用 <a href="https://kotlin.github.io/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.sync/-mutex/"><code>Mutex</code></a> 保护不同线程的读写。关于共享可变状态与并发，请参阅 <a href="https://kotlinlang.org/docs/shared-mutable-state-and-concurrency.html#shared-mutable-state-and-concurrency">Kotlin 文档</a>。</p>
+<p data-unit="04-data-layer-095">以下实现把最新新闻存入 Repository 中受 <code>Mutex</code> 写保护的变量。网络请求成功后，数据赋给 <code>latestNews</code> 变量。</p>
+<div></div><div><pre class="source-code"><code>class NewsRepository(
+  private val newsRemoteDataSource: NewsRemoteDataSource
+) {
+    // Mutex to make writes to cached values thread-safe.
+    private val latestNewsMutex = Mutex()
+
+    // Cache of the latest news got from the network.
+    private var latestNews: List&lt;ArticleHeadline&gt; = emptyList()
+
+    suspend fun getLatestNews(refresh: Boolean = false): List&lt;ArticleHeadline&gt; {
+        if (refresh || latestNews.isEmpty()) {
+            val networkResult = newsRemoteDataSource.fetchLatestNews()
+            // Thread-safe write to latestNews
+            latestNewsMutex.withLock {
+                this.latestNews = networkResult
+            }
+        }
+
+        return latestNewsMutex.withLock { this.latestNews }
+    }
+}
+</code></pre></div>
+<h4 data-unit="04-data-layer-096" id="make_an_operation_live_longer_than_the_screen">让操作存活得比页面更久</h4>
+<p data-unit="04-data-layer-097">如果用户在请求进行时离开页面，请求就会取消，结果也无法缓存。<code>NewsRepository</code> 不应使用调用方的 <code>CoroutineScope</code> 执行这段逻辑，而应使用与自身生命周期关联的 <code>CoroutineScope</code>。<strong>获取最新新闻需要改成面向应用的操作。</strong>这里的 <code>NewsRepository</code> 应采用这一作用域。</p>
+<p data-unit="04-data-layer-098">遵循依赖注入最佳实践，<code>NewsRepository</code> 应通过构造器参数接收作用域，而不是创建自己的 <code>CoroutineScope</code>。由于 Repository 的大部分工作应在后台线程执行，应将 <code>CoroutineScope</code> 配置为 <code>Dispatchers.Default</code> 或自己的线程池。</p>
+<div></div><div><pre class="source-code"><code>class NewsRepository(
+    ...,
+    // This could be CoroutineScope(SupervisorJob() + Dispatchers.Default).
+    private val externalScope: CoroutineScope
+) { ... }
+</code></pre></div>
+<p data-unit="04-data-layer-099"><code>NewsRepository</code> 已通过外部 <code>CoroutineScope</code> 准备好执行面向应用的操作，因此需要在该作用域启动的新协程中调用 DataSource，并保存结果：</p>
+<div></div><div><pre class="source-code"><code>class NewsRepository(
+    private val newsRemoteDataSource: NewsRemoteDataSource,
+    private val externalScope: CoroutineScope
+) {
+    /* ... */
+
+    suspend fun getLatestNews(refresh: Boolean = false): List&lt;ArticleHeadline&gt; {
+        return if (refresh) {
+            externalScope.async {
+                newsRemoteDataSource.fetchLatestNews().also { networkResult -&gt;
+                    // Thread-safe write to latestNews.
+                    latestNewsMutex.withLock {
+                        latestNews = networkResult
+                    }
+                }
+            }.await()
+        } else {
+            return latestNewsMutex.withLock { this.latestNews }
+        }
+    }
+}
+</code></pre></div>
+<p data-unit="04-data-layer-100"><code>async</code> 在外部作用域启动协程。对新协程调用 <code>await</code>，会挂起，等待网络结果返回并保存到缓存。如果用户此时还在页面中，就会看到最新新闻；如果已经离开页面，<code>await</code> 会取消，但 <code>async</code> 内部逻辑仍会继续。</p>
+<p data-unit="04-data-layer-101">更多内容，请参阅 <a href="https://medium.com/androiddevelopers/coroutines-patterns-for-work-that-shouldnt-be-cancelled-e26c40f142ad"><code>CoroutineScope</code> 的使用模式</a>。</p>
+<h3 data-unit="04-data-layer-102" id="save-retrieve-data">从磁盘保存与读取数据</h3>
+<p data-unit="04-data-layer-103">假设需要保存收藏新闻、用户偏好等数据。这类数据应在进程死亡后保留，并在没有网络时仍可访问。</p>
+<p data-unit="04-data-layer-104">若数据需要在进程死亡后保留，就应通过以下方式之一存到磁盘：</p>
+<ul>
+<li data-unit="04-data-layer-105">对需要查询、引用完整性或局部更新的<em>大规模数据集</em>，保存到 <em>Room 数据库</em>。例如，新闻文章或作者信息可以存入数据库。</li>
+<li data-unit="04-data-layer-106">对只需整体读取和设置、不需要查询或局部更新的<em>小规模数据集</em>，使用 <em>DataStore</em>。例如，用户偏好的日期格式或其他显示偏好。</li>
+<li data-unit="04-data-layer-107">对 JSON 对象等<em>整块数据</em>，使用<em>文件</em>。</li>
+</ul>
+<p data-unit="04-data-layer-108">如<a href="https://developer.android.google.cn/topic/architecture/data-layer?hl=en#source-of-truth">事实来源</a>一节所述，每个 DataSource 只处理一个来源，并对应一种特定数据类型，例如 <code>News</code>、<code>Authors</code>、<code>NewsAndAuthors</code> 或 <code>UserPreferences</code>。使用它的类不应知道数据是存进数据库还是文件。</p>
+<h4 data-unit="04-data-layer-109" id="room_as_a_data_source">Room 作为数据来源</h4>
+<p data-unit="04-data-layer-110">每个 DataSource 应只负责某种数据的一个来源，因此 Room DataSource 会接收<a href="https://developer.android.google.cn/training/data-storage/room/accessing-data">数据访问对象（DAO）</a>或数据库作为参数。例如，<code>NewsLocalDataSource</code> 接收 <code>NewsDao</code> 实例，<code>AuthorsLocalDataSource</code> 接收 <code>AuthorsDao</code> 实例。</p>
+<p data-unit="04-data-layer-111">如果不需要额外逻辑，有些情况下可以直接把 DAO 注入 Repository，因为 DAO 是易于在测试中替换的接口。</p>
+<p data-unit="04-data-layer-112">Room API 的更多信息，请参阅 <a href="https://developer.android.google.cn/training/data-storage/room">Room 指南</a>。</p>
+<h4 data-unit="04-data-layer-113" id="datastore_as_a_data_source">DataStore 作为数据来源</h4>
+<p data-unit="04-data-layer-114"><a href="https://developer.android.google.cn/topic/libraries/architecture/datastore">DataStore</a> 很适合保存用户设置等键值对，例如时间格式、通知偏好，或读过新闻后是否隐藏条目。DataStore 也可以通过 <a href="https://developers.google.cn/protocol-buffers">Protocol Buffers</a> 保存带类型的对象。</p>
+<p data-unit="04-data-layer-115">与其他对象一样，基于 DataStore 的 DataSource 应只包含一种数据，或应用某一部分的数据。DataStore 的读取通过 Flow 暴露，每次值变化都会发出新值，因此这一点尤其重要。相关偏好应保存在同一 DataStore 中。</p>
+<p data-unit="04-data-layer-116">例如，可以用 <code>NotificationsDataStore</code> 只处理通知偏好，用 <code>NewsPreferencesDataStore</code> 只处理新闻页面的偏好。这样能更好地限定更新范围，因为 <code>newsScreenPreferencesDataStore.data</code> Flow 只在该页面相关偏好变化时发出新值。此外，对象生命周期也可以更短，只需在新闻页面显示期间存活。</p>
+<p data-unit="04-data-layer-117">DataStore API 的更多信息，请参阅 <a href="https://developer.android.google.cn/topic/libraries/architecture/datastore">DataStore 指南</a>。</p>
+<h4 data-unit="04-data-layer-118" id="a_file_as_a_data_source">文件作为数据来源</h4>
+<p data-unit="04-data-layer-119">使用 JSON 对象或位图等大型对象时，需要使用 <code>File</code> 对象，并处理线程切换。</p>
+<p data-unit="04-data-layer-120">文件存储的更多信息，请参阅<a href="https://developer.android.google.cn/training/data-storage">存储概览</a>。</p>
+<h3 data-unit="04-data-layer-121" id="workmanager">使用 WorkManager 调度任务</h3>
+<p data-unit="04-data-layer-122">假设新闻应用增加另一个需求：只要设备在充电并连接不按流量计费的网络，就定期自动获取最新新闻。这属于<em>面向业务</em>的操作。如此一来，用户打开应用时即使没有网络，也能看到较新的新闻。</p>
+<p data-unit="04-data-layer-123"><a href="https://developer.android.google.cn/topic/libraries/architecture/workmanager">WorkManager</a> 便于调度可靠的异步工作，并能管理执行约束，是持久性工作的推荐库。实现上述任务时，创建一个 <a href="https://developer.android.google.cn/topic/libraries/architecture/workmanager/advanced/coroutineworker"><code>Worker</code></a> 类：<code>RefreshLatestNewsWorker</code>，它依赖 <code>NewsRepository</code>，获取最新新闻并缓存到磁盘。</p>
+<div></div><div><pre class="source-code"><code>class RefreshLatestNewsWorker(
+    private val newsRepository: NewsRepository,
+    context: Context,
+    params: WorkerParameters
+) : CoroutineWorker(context, params) {
+
+    override suspend fun doWork(): Result = try {
+        newsRepository.refreshLatestNews()
+        Result.success()
+    } catch (error: Throwable) {
+        Result.failure()
+    }
+}
+</code></pre></div>
+<p data-unit="04-data-layer-124">这类任务的业务逻辑应封装在独立类中，视为单独的 DataSource。WorkManager 只负责在满足所有约束时，保证工作在后台线程执行。遵循这一模式，就能按需快速替换不同环境下的实现。</p>
+<p data-unit="04-data-layer-125">在本例中，这个新闻任务必须从 <code>NewsRepository</code> 调用，它依赖新的 DataSource：<code>NewsTasksDataSource</code>，实现如下：</p>
+<div></div><div><pre class="source-code"><code>private const val REFRESH_RATE_HOURS = 4L
+private const val FETCH_LATEST_NEWS_TASK = "FetchLatestNewsTask"
+private const val TAG_FETCH_LATEST_NEWS = "FetchLatestNewsTaskTag"
+
+class NewsTasksDataSource(
+    private val workManager: WorkManager
+) {
+    fun fetchNewsPeriodically() {
+        val fetchNewsRequest = PeriodicWorkRequestBuilder&lt;RefreshLatestNewsWorker&gt;(
+            REFRESH_RATE_HOURS, TimeUnit.HOURS
+        ).setConstraints(
+            Constraints.Builder()
+                .setRequiredNetworkType(NetworkType.TEMPORARILY_UNMETERED)
+                .setRequiresCharging(true)
+                .build()
+        )
+            .addTag(TAG_FETCH_LATEST_NEWS)
+
+        workManager.enqueueUniquePeriodicWork(
+            FETCH_LATEST_NEWS_TASK,
+            ExistingPeriodicWorkPolicy.KEEP,
+            fetchNewsRequest.build()
+        )
+    }
+
+    fun cancelFetchingNewsPeriodically() {
+        workManager.cancelAllWorkByTag(TAG_FETCH_LATEST_NEWS)
+    }
+}
+</code></pre></div>
+<p data-unit="04-data-layer-126">这类类按所负责的数据命名，例如 <code>NewsTasksDataSource</code> 或 <code>PaymentsTasksDataSource</code>。某种数据的所有相关任务，应封装在同一个类中。</p>
+<p data-unit="04-data-layer-127">如果需要在应用启动时触发任务，推荐通过 <a href="https://developer.android.google.cn/topic/libraries/app-startup">App Startup</a> 库提交 WorkManager 请求，并从 <a href="https://developer.android.google.cn/reference/kotlin/androidx/startup/Initializer"><code>Initializer</code></a> 调用 Repository。</p>
+<p data-unit="04-data-layer-128">WorkManager API 的更多信息，请参阅 <a href="https://developer.android.google.cn/topic/libraries/architecture/workmanager">WorkManager 指南</a>。</p>
+<h2 data-unit="04-data-layer-129" id="testing">测试</h2>
+<p data-unit="04-data-layer-130"><a href="https://developer.android.google.cn/training/dependency-injection">依赖注入</a>最佳实践有助于测试。与外部资源通信的类采用接口，也能提供帮助。测试某个单元时，可以注入假的依赖，让测试确定且可靠。</p>
+<h3 data-unit="04-data-layer-131" id="unit-tests">单元测试</h3>
+<p data-unit="04-data-layer-132">数据层测试也遵循<a href="https://developer.android.google.cn/training/testing">通用测试指导</a>。单元测试应按需使用真实对象，并用假的依赖替换文件读取、网络读取等访问外部来源的依赖。</p>
+<h3 data-unit="04-data-layer-133" id="integration-tests">集成测试</h3>
+<p data-unit="04-data-layer-134">访问外部来源的集成测试通常确定性较低，因为它们需要在真实设备上运行。推荐在受控环境执行，提高可靠性。</p>
+<p data-unit="04-data-layer-135">Room 支持创建内存数据库，让测试完全控制数据库。更多信息请参阅<a href="https://developer.android.google.cn/training/data-storage/room/testing-db#android">测试与调试数据库</a>。</p>
+<p data-unit="04-data-layer-136">对于网络，<a href="http://wiremock.org/">WireMock</a>、<a href="https://github.com/square/okhttp/tree/master/mockwebserver">MockWebServer</a> 等常用库允许模拟 HTTP、HTTPS 调用，并验证请求是否按预期发送。</p>
+<h2 data-unit="04-data-layer-137" id="resources">其他资源</h2>
+<h3 data-unit="04-data-layer-138" id="samples">示例</h3>
+<ul>
+<li data-unit="04-data-layer-139"><a href="https://github.com/android/compose-samples/tree/main/Jetcaster">Jetcaster</a></li>
+<li data-unit="04-data-layer-140"><a href="https://github.com/android/architecture-templates/tree/multimodule">架构起始模板（多模块）</a></li>
+<li data-unit="04-data-layer-141"><a href="https://github.com/android/architecture-samples/tree/main">Architecture</a></li>
+<li data-unit="04-data-layer-142"><a href="https://github.com/android/architecture-templates/tree/base">架构起始模板（单模块）</a></li>
+<li data-unit="04-data-layer-143"><a href="https://github.com/android/nowinandroid/tree/main">Now in Android 应用</a></li>
+</ul>
+<div class="nocontent"></div>
+</article><nav class="chapter-switcher" aria-label="章节导航"><a href="../03-state-production/literal.html">← 状态怎样更新</a><a class="course-home" href="../index.html">全部章节</a><a href="../05-network-request/literal.html">安卓中的网络请求 →</a></nav><footer class="license-note"><p>原文：<a href="https://developer.android.com/topic/architecture/data-layer?hl=en">Data layer</a>，Android Developers / Google。英文快照：2026-10-13。非官方中文翻译与表达优化：Codex。原有示例和代码保留；<a href="../NOTICE.html">来源与许可</a>。</p></footer></main></body></html>

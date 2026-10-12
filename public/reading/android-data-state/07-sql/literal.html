@@ -1,0 +1,494 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>数据库与 SQL 入门 · Android 应用的数据与状态</title><link rel="stylesheet" href="../../reader.css"><link rel="stylesheet" href="../source.css"><link rel="manifest" href="../../../manifest.webmanifest"></head><body><nav class="site-nav"><a href="../index.html">← Android 应用的数据与状态</a><a href="https://developer.android.com/codelabs/basic-android-kotlin-compose-sql?hl=en">官方英文原文 ↗</a></nav><main class="reader"><header class="chapter-header"><span class="chapter-kicker">07 · 第一轮直译稿</span><h1>数据库与 SQL 入门</h1><p class="byline">Use SQL to read and write to a database · Android Developers / Google</p><div class="title-rule"></div><p class="edition-nav"><a href="index.html">中文阅读版</a> · <a href="english.html">英文对照</a> · <strong aria-current="page">第一轮直译稿</strong></p><aside class="learning-note"><span class="note-kind">编者导读 · 不属于原文</span><p><strong>表、行、列是什么，怎样读取和修改保存的数据？</strong></p><p>沿邮件数据库原例，从结构、SELECT 和 WHERE 开始，再看排序、数量限制和增删改。</p><p><strong>第一轮阅读：</strong>先读关系型数据库概念、SELECT 和 WHERE；聚合、分组及写入可以分批阅读。Database Inspector 操作不是阅读前置条件。</p><details class="editor-notes"><summary>版本与适用范围校注（4 条）</summary><p>原文把 SQL 说成“不是实际的编程语言”，是面向初学者的简化。SQL 是用于描述数据查询和操作的语言，不必因此先学习 C。</p><p>SQLite 并不要求每张表显式声明主键；普通 rowid 表可有隐式 rowid。本篇的主键说明是其数据建模入门场景。</p><p>GROUP BY 用于按键分组并进行聚合，不是只改变返回顺序；如果需要有保证的排序，应显式使用 ORDER BY。正文忠实保留原文表述，本条校注与原文分开。</p><p>SQLite 没有独立的布尔存储类型，通常用整数 0/1 表示真假。类型表中的 BOOLEAN 是声明类型的教学写法，不能等同于独立布尔存储类别。</p></details></aside><details class="source-details"><summary>本篇目录与翻译范围</summary><p>官方英文文章正文全文；保留原文顺序、代码、图示、表格与延伸链接。代码与图中文字保持原样。编者导读与校注单独标明，阅读不要求同时安装、运行或编写示例。</p><ul><li class="toc-h2"><a href="#0">1. 开始之前</a></li><li class="toc-h2"><a href="#1">2. 关系型数据库的关键概念</a></li><li class="toc-h2"><a href="#what-is-a-database">什么是数据库？</a></li><li class="toc-h2"><a href="#what-is-sqlite">什么是 SQLite？</a></li><li class="toc-h2"><a href="#representing-data-with-sqlite">用 SQLite 表示数据</a></li><li class="toc-h2"><a href="#2">3. 下载起始数据集</a></li><li class="toc-h2"><a href="#use-the-database-inspector">使用 Database Inspector</a></li><li class="toc-h2"><a href="#3">4. 用 SELECT 语句读取数据</a></li><li class="toc-h2"><a href="#sql-select-statement">SQL SELECT 语句</a></li><li class="toc-h2"><a href="#read-email-data-using-a-select-statement">用 SELECT 语句读取邮件数据</a></li><li class="toc-h2"><a href="#4">5. 在 SELECT 中使用聚合函数与不同值</a></li><li class="toc-h2"><a href="#reduce-columns-with-aggregate-functions">用聚合函数汇总列</a></li><li class="toc-h2"><a href="#filter-duplicate-results-with-distinct">用 DISTINCT 过滤重复结果</a></li><li class="toc-h2"><a href="#5">6. 用 WHERE 子句筛选查询</a></li><li class="toc-h2"><a href="#logical-operators-with-where-clauses">WHERE 子句中的逻辑运算符</a></li><li class="toc-h2"><a href="#search-for-text-using-like">用 LIKE 搜索文本</a></li><li class="toc-h2"><a href="#6">7. 对结果分组、排序和限制数量</a></li><li class="toc-h2"><a href="#group-results-with-group-by">用 GROUP BY 分组</a></li><li class="toc-h2"><a href="#sort-results-with-order-by">用 ORDER BY 排序</a></li><li class="toc-h2"><a href="#restrict-the-number-of-results-with-limit">用 LIMIT 限制结果数量</a></li><li class="toc-h2"><a href="#7">8. 插入、更新和删除数据库数据</a></li><li class="toc-h2"><a href="#insert-data-into-a-database">插入数据</a></li><li class="toc-h2"><a href="#update-existing-data-in-a-database">更新已有数据</a></li><li class="toc-h2"><a href="#delete-a-row-from-a-database">删除一行</a></li><li class="toc-h2"><a href="#8">9. 总结</a></li><li class="toc-h2"><a href="#9">10. 了解更多</a></li></ul></details><nav class="chapter-switcher" aria-label="章节导航"><a href="../06-cancellation/literal.html">← 异步任务的取消与超时</a><a class="course-home" href="../index.html">全部章节</a><a href="../08-room/literal.html">Room 整体认识 →</a></nav></header><article class="translated-article">
+<div></div>
+<div id="basic-android-kotlin-compose-sql" title="Use SQL to read and write to a database">
+<div>
+<div>
+</div>
+<h2 class="step-title" data-unit="07-sql-001" id="0">1. 开始之前</h2>
+<p data-unit="07-sql-002">许多应用会直接在设备上保存数据。时钟保存重复闹钟，Google Maps 保存最近搜索列表，通讯录允许添加、编辑和删除联系人信息。</p>
+<p data-unit="07-sql-003">数据持久化，即把数据保存在设备上，是 Android 开发的重要部分。它保证用户生成的内容不会在应用关闭后丢失，也能保存互联网下载的数据，避免之后再次下载。</p>
+<p data-unit="07-sql-004">SQLite 是 Android SDK 为应用提供的常见持久化方式。它提供关系型数据库，让你以类似 Kotlin 类组织数据的方式表示数据。本篇介绍 SQL（结构化查询语言）基础。它虽不是实际的编程语言，但能用几行代码，以简单灵活的方式读取、修改 SQLite 数据库。</p>
+<p data-unit="07-sql-005">掌握 SQL 基础后，就能在本单元后续课程中，使用 Room 为应用添加持久化能力。</p>
+<aside class="special"><p data-unit="07-sql-006"><strong>注意：</strong>Android 有内部、外部存储等多种数据保存方式。本单元讨论 Room 与 Preferences DataStore。更多方式请参阅<a href="https://developer.android.google.cn/training/data-storage">数据与文件存储概览</a>。</p>
+</aside>
+</div>
+<div>
+<h2 class="step-title" data-unit="07-sql-007" id="1">2. 关系型数据库的关键概念</h2>
+<h2 data-unit="07-sql-008" id="what-is-a-database">什么是数据库？</h2>
+<p data-unit="07-sql-009">如果熟悉 Google Sheets 等电子表格程序，就已经了解了数据库的一个基本类比。</p>
+<p data-unit="07-sql-010">电子表格由不同数据表组成，也就是同一工作簿中的各张工作表。</p>
+<p class="image-container"><img alt="1f2b00d3ca083c4a.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/1f2b00d3ca083c4a.png" loading="eager" src="../assets/738149da9851e1be.png"/></p>
+<p data-unit="07-sql-011">每张表的列定义数据表示什么，行表示具有各列值的具体条目。例如，可以定义学生 ID、姓名、专业和成绩等列。</p>
+<p class="image-container"><img alt="a441da5cc7be346b.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/a441da5cc7be346b.png" loading="eager" src="../assets/f671053e6141b909.png"/></p>
+<p data-unit="07-sql-012">每一行包含一名学生的数据，以及每列的值。</p>
+<p class="image-container"><img alt="6131d8a59996f521.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/6131d8a59996f521.png" loading="eager" src="../assets/2a872465b2d4c826.png"/></p>
+<p data-unit="07-sql-013">关系型数据库的工作方式相同。</p>
+<ul>
+<li data-unit="07-sql-014">表定义要表示的数据的大类，例如学生和教授。</li>
+<li data-unit="07-sql-015">列定义每行包含哪些数据。</li>
+<li data-unit="07-sql-016">行包含实际数据，即各列对应的值。</li>
+</ul>
+<p data-unit="07-sql-017">关系型数据库的结构，也对应你已经学过的 Kotlin 类和对象。</p>
+<div></div><div><pre class="source-code"><code>data class Student(
+    id: Int,
+    name: String,
+    major: String,
+    gpa: Double
+)
+</code></pre></div>
+<ul>
+<li data-unit="07-sql-018">类像表一样，对应用中要表示的数据建模。</li>
+<li data-unit="07-sql-019">属性像列一样，定义每个类实例应包含的具体数据。</li>
+<li data-unit="07-sql-020">对象像行一样，是实际的数据。对象拥有每个属性的值，就像表中每行拥有各列的值。</li>
+</ul>
+<p data-unit="07-sql-021">如同工作簿可以包含多张工作表、应用可以包含多个类，数据库也可以包含多张表。能够建模表间关系的数据库称为关系型数据库。例如，一名研究生只有一位导师，而一位教授可以指导多名研究生。</p>
+<p class="image-container"><img alt="7f1b56e05520dc3.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/7f1b56e05520dc3.png" loading="eager" src="../assets/9bd8d481567b65a1.png"/></p>
+<p data-unit="07-sql-022">关系型数据库的每张表都有用于唯一标识行的标识符，例如每行值自动递增的整数列，称为主键。</p>
+<p data-unit="07-sql-023">当一张表引用另一张表的主键时，这个引用称为外键。存在外键就表示表之间存在关系。</p>
+<aside class="special"><p data-unit="07-sql-024"><strong>注意：</strong>与 Kotlin 类一样，数据库表名通常使用单数。因此，上例命名为 <code>teacher</code>、<code>student</code>、<code>course</code>，而不是复数形式 <code>teachers</code>、<code>students</code>、<code>courses</code>。</p>
+</aside>
+<h2 data-unit="07-sql-025" id="what-is-sqlite">什么是 SQLite？</h2>
+<p data-unit="07-sql-026">SQLite 是常用的关系型数据库，具体指一个轻量级 C 库，用结构化查询语言管理关系型数据库。这种语言简称 SQL，有时读作“sequel”。</p>
+<p data-unit="07-sql-027">使用关系型数据库，无须学习 C 或一种全新的编程语言。SQL 只是一种用几行代码添加、取得关系型数据库数据的方式。</p>
+<aside class="special"><p data-unit="07-sql-028"><strong>注意：</strong>并非所有数据库都按表、列和行组织。NoSQL 等其他数据库的结构类似含嵌套键值对的 JSON 对象，例如 Redis、<a href="https://firebase.google.cn/docs/firestore">Cloud Firestore</a>。</p>
+</aside>
+<h2 data-unit="07-sql-029" id="representing-data-with-sqlite">用 SQLite 表示数据</h2>
+<p data-unit="07-sql-030">Kotlin 的 <code>Int</code>、<code>Boolean</code> 等数据类型你已熟悉。SQLite 也使用数据类型，表的各列必须具有特定类型。下表将常见 Kotlin 类型映射到 SQLite 对应类型。</p>
+<div class="table-wrapper" tabindex="0"><table class="vertical-rules">
+<tr><td colspan="1" rowspan="1"><p data-unit="07-sql-031"><strong>Kotlin 数据类型</strong></p>
+</td><td colspan="1" rowspan="1"><p data-unit="07-sql-032"><strong>SQLite 数据类型</strong></p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p data-unit="07-sql-033"><code>Int</code></p>
+</td><td colspan="1" rowspan="1"><p data-unit="07-sql-034">INTEGER</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p data-unit="07-sql-035"><code>String</code></p>
+</td><td colspan="1" rowspan="1"><p data-unit="07-sql-036">VARCHAR 或 TEXT</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p data-unit="07-sql-037"><code>Boolean</code></p>
+</td><td colspan="1" rowspan="1"><p data-unit="07-sql-038">BOOLEAN</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p data-unit="07-sql-039"><code>Float</code>、<code>Double</code></p>
+</td><td colspan="1" rowspan="1"><p data-unit="07-sql-040">REAL</p>
+</td></tr>
+</table></div>
+<p data-unit="07-sql-041">数据库中的表及各表的列，统称为 <em>schema（结构定义）</em>。下一节下载起始数据集，进一步认识其结构。</p>
+</div>
+<div>
+<h2 class="step-title" data-unit="07-sql-042" id="2">3. 下载起始数据集</h2>
+<p data-unit="07-sql-043">本篇数据库用于一个假想邮件应用，通过排序、筛选邮件，按主题或发件人搜索等熟悉场景，展示 SQL 的能力。这也让你在后续学习 Room 前，先接触应用中可能遇到的数据场景。</p>
+<p data-unit="07-sql-044">从 SQL Basics GitHub 仓库的 <code>compose</code> 分支，<a href="https://github.com/google-developer-training/android-basics-kotlin-sql-basics-app/tree/compose">下载起始项目</a>。</p>
+<h2 data-unit="07-sql-045" id="use-the-database-inspector">使用 Database Inspector</h2>
+<p data-unit="07-sql-046">使用 Database Inspector 的步骤如下：</p>
+<ol>
+<li data-unit="07-sql-047">在 Android Studio 中运行 SQL Basics 应用，启动后显示如下页面。</li>
+</ol>
+<p class="image-container"><img alt="76e94dfe2234c2b1.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/76e94dfe2234c2b1.png" loading="eager" src="../assets/d9b5337dda8753d3.png"/></p>
+<ol>
+<li data-unit="07-sql-048">在 Android Studio 中点击 <strong>View</strong> &gt; <strong>Tool Windows</strong> &gt; <strong>App Inspection</strong>。</li>
+</ol>
+<p class="image-container"><img alt="cd5dd859d31cbab3.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/cd5dd859d31cbab3.png" loading="eager" src="../assets/8407302d0a92b4d5.png"/></p>
+<p data-unit="07-sql-049">底部出现 <strong>App Inspection</strong> 标签，选中 <strong>Database Inspector</strong>。另外两个标签本篇不用。加载可能需要几秒，然后左侧显示数据表列表，可选择某张表执行查询。</p>
+<p class="image-container"><img alt="5ace24ac5cc15abc.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/5ace24ac5cc15abc.png" loading="eager" src="../assets/78c1596ccc6809bf.png"/></p>
+<ol>
+<li data-unit="07-sql-050">点击 <strong>Open New Query Tab</strong>，打开查询输入面板。</li>
+</ol>
+<p class="image-container"><img alt="277ecff401ca5f1a.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/277ecff401ca5f1a.png" loading="eager" src="../assets/57bf0240ff98cab4.png"/></p>
+<p data-unit="07-sql-051"><code>email</code> 表有 7 列：</p>
+<ul>
+<li data-unit="07-sql-052"><code>id</code>：主键。</li>
+<li data-unit="07-sql-053"><code>subject</code>：邮件主题。</li>
+<li data-unit="07-sql-054"><code>sender</code>：邮件的发件人地址。</li>
+<li data-unit="07-sql-055"><code>folder</code>：邮件所在文件夹，例如收件箱或垃圾邮件。</li>
+<li data-unit="07-sql-056"><code>starred</code>：用户是否为邮件加星标。</li>
+<li data-unit="07-sql-057"><code>read</code>：用户是否读过邮件。</li>
+<li data-unit="07-sql-058"><code>received</code>：收到邮件的时间戳。</li>
+</ul>
+<aside class="warning"><p data-unit="07-sql-059"><strong>提示：</strong>点击 <strong>Keep Database Connections Open</strong><img alt="c344609191760f79.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/c344609191760f79.png" loading="eager" src="../assets/8bedcc36c57fdef9.png"/> 按钮，模拟器关闭后仍可继续操作数据库。</p>
+<p class="image-container"><img alt="582d2d5ec3a738e0.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/582d2d5ec3a738e0.png" loading="eager" src="../assets/3e7701f8dd9bb6c5.png"/></p>
+</aside>
+</div>
+<div>
+<h2 class="step-title" data-unit="07-sql-060" id="3">4. 用 SELECT 语句读取数据</h2>
+<h2 data-unit="07-sql-061" id="sql-select-statement">SQL <code>SELECT</code> 语句</h2>
+<p data-unit="07-sql-062">SQL 语句有时也称为查询，用于读取或操作数据库。</p>
+<p data-unit="07-sql-063">用 <code>SELECT</code> 语句读取 SQLite 数据库。简单的 <code>SELECT</code> 语句由 <code>SELECT</code> 关键字、列名、<code>FROM</code> 关键字和表名组成。每条 SQL 语句以分号（<code>;</code>）结束。</p>
+<p class="image-container"><img alt="2d7ff99736b072b9.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/2d7ff99736b072b9.png" loading="eager" src="../assets/4ec0a42653ecb65e.png"/></p>
+<p data-unit="07-sql-064"><code>SELECT</code> 也可以返回多列数据，列名之间用逗号分隔。</p>
+<p class="image-container"><img alt="cf94edd5de825043.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/cf94edd5de825043.png" loading="eager" src="../assets/de0b769f5d0d6c4b.png"/></p>
+<p data-unit="07-sql-065">如果希望选中所有列，使用通配符（<code>*</code>）代替列名。</p>
+<p class="image-container"><img alt="fb75d3033c59949a.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/fb75d3033c59949a.png" loading="eager" src="../assets/7d0aa006a21c4d4d.png"/></p>
+<p data-unit="07-sql-066">两种情况下，这类简单 <code>SELECT</code> 语句都会返回表中每一行，只需指定返回哪些列。</p>
+<aside class="special"><p data-unit="07-sql-067"><strong>注意：</strong>SQL 语句通常用分号（<code>;</code>）结尾，但 Android Studio 的 Database Inspector 等编辑器可能允许省略。本文图示在每个完整查询后保留分号。</p>
+</aside>
+<h2 data-unit="07-sql-068" id="read-email-data-using-a-select-statement">用 <code>SELECT</code> 语句读取邮件数据</h2>
+<p data-unit="07-sql-069">显示邮件列表是邮件应用的主要功能之一，可以用 <code>SELECT</code> 从数据库取得所需信息。</p>
+<ol>
+<li data-unit="07-sql-070">确认在 <strong>Database Inspector</strong> 中选中 <strong>email</strong> 表。</li>
+</ol>
+<p class="image-container"><img alt="ffc77f938ea09071.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/ffc77f938ea09071.png" loading="eager" src="../assets/48ea2f594d2a095c.png"/></p>
+<ol>
+<li data-unit="07-sql-071">首先尝试选中 <code>email</code> 表每行的每列。</li>
+</ol>
+<div></div><div><pre class="source-code"><code>SELECT * FROM email;
+</code></pre></div>
+<ol>
+<li data-unit="07-sql-072">点击文本框右下角的 <strong>Run</strong>，可以看到整个 <code>email</code> 表被返回。</li>
+</ol>
+<p class="image-container"><img alt="4c3ea237c6ed2b57.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/4c3ea237c6ed2b57.png" loading="eager" src="../assets/bb2c50706b2c96be.png"/></p>
+<ol>
+<li data-unit="07-sql-073">现在尝试只选中每行的主题。</li>
+</ol>
+<div></div><div><pre class="source-code"><code>SELECT subject FROM email;
+</code></pre></div>
+<ol>
+<li data-unit="07-sql-074">查询仍返回每一行，但仅有这一列。</li>
+</ol>
+<p class="image-container"><img alt="69a20935721dcc2.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/69a20935721dcc2.png" loading="eager" src="../assets/ef65e07569abc4d9.png"/></p>
+<ol>
+<li data-unit="07-sql-075">也可以同时选多列，尝试选择主题和发件人。</li>
+</ol>
+<div></div><div><pre class="source-code"><code>SELECT subject, sender FROM email;
+</code></pre></div>
+<ol>
+<li data-unit="07-sql-076">查询返回 <code>email</code> 表的每一行，但只包含主题和发件人列的值。</li>
+</ol>
+<p class="image-container"><img alt="4ae739dad54397ea.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/4ae739dad54397ea.png" loading="eager" src="../assets/942a77475d67f3d5.png"/></p>
+<p data-unit="07-sql-077">你已经执行了第一个查询。这只是起点，可以把它视为 SQL 的“hello world”。</p>
+<p data-unit="07-sql-078">为 <code>SELECT</code> 添加子句，可以更准确地指定数据子集，甚至修改输出格式。以下各节介绍 <code>SELECT</code> 的常见子句和数据格式化。</p>
+</div>
+<div>
+<h2 class="step-title" data-unit="07-sql-079" id="4">5. 在 SELECT 中使用聚合函数与不同值</h2>
+<h2 data-unit="07-sql-080" id="reduce-columns-with-aggregate-functions">用聚合函数汇总列</h2>
+<p data-unit="07-sql-081">SQL 不只可以返回行，还提供对某列进行操作或计算的函数，例如找最大值，或统计该列不同值的数量。这类函数称为<strong>聚合函数</strong>。它们可以从列中返回一个值，而不是返回整列数据。</p>
+<p data-unit="07-sql-082">SQL 聚合函数的例子包括：</p>
+<ul>
+<li data-unit="07-sql-083"><code>COUNT()</code>：返回满足查询条件的行数。</li>
+<li data-unit="07-sql-084"><code>SUM()</code>：返回选定列所有行的值之和。</li>
+<li data-unit="07-sql-085"><code>AVG()</code>：返回选定列所有值的平均值。</li>
+<li data-unit="07-sql-086"><code>MIN()</code>：返回选定列的最小值。</li>
+<li data-unit="07-sql-087"><code>MAX()</code>：返回选定列的最大值。</li>
+</ul>
+<p data-unit="07-sql-088">可以用聚合函数代替列名，并在括号中传入列名。</p>
+<p class="image-container"><img alt="6730a62d583a0d9.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/6730a62d583a0d9.png" loading="eager" src="../assets/6995703dc15d1a5c.png"/></p>
+<p data-unit="07-sql-089">聚合函数返回单个值，而不是逐行返回该列的值。</p>
+<p data-unit="07-sql-090">如果无须读取数据库的全部数据，聚合函数可高效计算。例如，求某列平均值时，不必先把所有数据加载进 List 再手动计算。</p>
+<p data-unit="07-sql-091">通过 <code>email</code> 表观察一些聚合函数：</p>
+<ol>
+<li data-unit="07-sql-092">应用可能需要知道邮件总数，可使用 <code>COUNT()</code> 与通配符（<code>*</code>）。</li>
+</ol>
+<div></div><div><pre class="source-code"><code>SELECT COUNT(*) FROM email;
+</code></pre></div>
+<ol>
+<li data-unit="07-sql-093">查询返回单个值。无需 Kotlin 代码手动统计，可以完全通过 SQL 完成。</li>
+</ol>
+<p class="image-container"><img alt="5d49b987545184bb.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/5d49b987545184bb.png" loading="eager" src="../assets/0e48afc42d114bde.png"/></p>
+<ol>
+<li data-unit="07-sql-094">要取得最近邮件的接收时间，可以对接收时间列使用 <code>MAX()</code>，因为最新 Unix 时间戳数值最大。</li>
+</ol>
+<div></div><div><pre class="source-code"><code>SELECT MAX(received) FROM email;
+</code></pre></div>
+<ol>
+<li data-unit="07-sql-095">查询返回单个结果，即接收时间列的最大值、最新时间戳。</li>
+</ol>
+<p class="image-container"><img alt="d0241dce845c3955.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/d0241dce845c3955.png" loading="eager" src="../assets/cba415d3045313a4.png"/></p>
+<h2 data-unit="07-sql-096" id="filter-duplicate-results-with-distinct">用 <code>DISTINCT</code> 过滤重复结果</h2>
+<p data-unit="07-sql-097">选择某列时，可以在列名前加 <code>DISTINCT</code>，去掉结果中的重复值。</p>
+<p class="image-container"><img alt="4f02533256302f26.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/4f02533256302f26.png" loading="eager" src="../assets/d360adc91cab39c6.png"/></p>
+<p data-unit="07-sql-098">例如，许多邮件应用提供地址自动补全，希望把收到邮件的所有发件人地址列出来。</p>
+<ol>
+<li data-unit="07-sql-099">执行以下查询，返回每行的 <code>sender</code> 列。</li>
+</ol>
+<div></div><div><pre class="source-code"><code>SELECT sender FROM email;
+</code></pre></div>
+<ol>
+<li data-unit="07-sql-100">可以看到结果包含许多重复项，体验并不理想。</li>
+</ol>
+<p class="image-container"><img alt="4f0489d1668dbede.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/4f0489d1668dbede.png" loading="eager" src="../assets/62e0546b677e4766.png"/></p>
+<ol>
+<li data-unit="07-sql-101">在发件人列前加 <code>DISTINCT</code>，再次运行。</li>
+</ol>
+<div></div><div><pre class="source-code"><code>SELECT DISTINCT sender FROM email;
+</code></pre></div>
+<ol>
+<li data-unit="07-sql-102">结果更少，而且每个值都唯一。</li>
+</ol>
+<p class="image-container"><img alt="43a47ad8d18fee6e.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/43a47ad8d18fee6e.png" loading="eager" src="../assets/46895b0bc6105477.png"/></p>
+<p data-unit="07-sql-103">也可以在聚合函数中的列名前加 <code>DISTINCT</code>。</p>
+<p class="image-container"><img alt="55c45cb9c258e882.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/55c45cb9c258e882.png" loading="eager" src="../assets/d37443611f7fbc88.png"/></p>
+<p data-unit="07-sql-104">假设要知道数据库中不同发件人的数量，可以对 <code>sender</code> 列结合 <code>COUNT()</code> 聚合函数与 <code>DISTINCT</code> 关键字统计。</p>
+<ol>
+<li data-unit="07-sql-105">执行 <code>SELECT</code>，把 <code>DISTINCT sender</code> 传给 <code>COUNT()</code>。</li>
+</ol>
+<div></div><div><pre class="source-code"><code>SELECT COUNT(DISTINCT sender) FROM email;
+</code></pre></div>
+<ol>
+<li data-unit="07-sql-106">结果显示有 14 个不同发件人。</li>
+</ol>
+<p class="image-container"><img alt="19ae43b0bc9a927e.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/19ae43b0bc9a927e.png" loading="eager" src="../assets/e4b9a69ab83a8c28.png"/></p>
+</div>
+<div>
+<h2 class="step-title" data-unit="07-sql-107" id="5">6. 用 WHERE 子句筛选查询</h2>
+<p data-unit="07-sql-108">很多邮件应用允许按数据、搜索词、文件夹、发件人等条件筛选邮件。为实现这类功能，可以给 <code>SELECT</code> 查询添加 <code>WHERE</code> 子句。</p>
+<p data-unit="07-sql-109">在表名后换行添加 <code>WHERE</code>，后面跟一个表达式。复杂 SQL 查询通常把各子句放在独立行，便于阅读。</p>
+<p class="image-container"><img alt="707b0641aa2de0f.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/707b0641aa2de0f.png" loading="eager" src="../assets/ba729994b483d47e.png"/></p>
+<p data-unit="07-sql-110">查询对每个选中的行进行布尔检查，结果为 true 的行进入查询结果，为 false 的行不包含在结果中。</p>
+<p data-unit="07-sql-111">例如，邮件应用可能有垃圾邮件、废纸篓、草稿或用户自定义筛选。以下步骤使用 <code>WHERE</code> 实现：</p>
+<ol>
+<li data-unit="07-sql-112">执行 <code>SELECT</code>，从 <code>email</code> 表返回全部列（<code>*</code>），并加入 <code>WHERE</code> 检查 <code>folder = 'inbox'</code>。这里没有写错：SQL 用单个等号比较相等，字符串使用单引号而非双引号。</li>
+</ol>
+<div></div><div><pre class="source-code"><code>SELECT * FROM email
+WHERE folder = 'inbox';
+</code></pre></div>
+<ol>
+<li data-unit="07-sql-113">结果只包含用户收件箱中的邮件。</li>
+</ol>
+<p class="image-container"><img alt="6e9f2a17186d7faa.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/6e9f2a17186d7faa.png" loading="eager" src="../assets/a67a397b8e3fecfd.png"/></p>
+<aside class="special"><p data-unit="07-sql-114"><strong>注意：</strong>特别留意 SQL 比较运算符。</p>
+<p data-unit="07-sql-115">与 Kotlin 不同，SQL 使用单等号（<code>=</code>）比较相等，而非双等号（<code>==</code>）。</p>
+<p data-unit="07-sql-116">不等运算符（<code>!=</code>）与 Kotlin 相同。SQL 还提供 <code>&lt;</code>、<code>&lt;=</code>、<code>&gt;</code>、<code>&gt;=</code>。</p>
+</aside>
+<h2 data-unit="07-sql-117" id="logical-operators-with-where-clauses"><code>WHERE</code> 子句中的逻辑运算符</h2>
+<p data-unit="07-sql-118">SQL 的 <code>WHERE</code> 不限于一个表达式。可使用 <code>AND</code>，相当于 Kotlin 的<strong>与</strong>运算符（<code>&amp;&amp;</code>），只返回同时满足两个条件的结果。</p>
+<p class="image-container"><img alt="d8a698416e55d11b.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/d8a698416e55d11b.png" loading="eager" src="../assets/aa82d4631d3e46b8.png"/></p>
+<p data-unit="07-sql-119">也可以使用 <code>OR</code>，相当于 Kotlin 的<strong>或</strong>运算符（<code>||</code>），返回满足任一条件的行。</p>
+<p class="image-container"><img alt="f3cecac289e7650d.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/f3cecac289e7650d.png" loading="eager" src="../assets/efb78dc1d164474f.png"/></p>
+<p data-unit="07-sql-120">为提高可读性，还可以用 <code>NOT</code> 对表达式取反。</p>
+<p class="image-container"><img alt="27300a0a38ef0343.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/27300a0a38ef0343.png" loading="eager" src="../assets/de6746a3f4fd24cc.png"/></p>
+<p data-unit="07-sql-121">许多邮件应用支持组合筛选，例如只显示未读邮件。</p>
+<p data-unit="07-sql-122">对 <code>email</code> 表尝试以下更复杂的 <code>WHERE</code>：</p>
+<ol>
+<li data-unit="07-sql-123">在只返回收件箱邮件的基础上，再限制为未读邮件，即 read 列为 false。</li>
+</ol>
+<div></div><div><pre class="source-code"><code>SELECT * FROM email
+WHERE folder = 'inbox' AND read = false;
+</code></pre></div>
+<ol>
+<li data-unit="07-sql-124">执行后，结果只包含收件箱中的未读邮件。</li>
+</ol>
+<p class="image-container"><img alt="d9ebd307a146d320.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/d9ebd307a146d320.png" loading="eager" src="../assets/76fdf24aa79faca7.png"/></p>
+<ol>
+<li data-unit="07-sql-125">返回位于 <strong>important</strong> 文件夹<code>OR</code>已加<strong>星标</strong>（<code>starred = true</code>）的邮件。也就是说，只要加了星标，即使在不同文件夹也会包含在结果中。</li>
+</ol>
+<div></div><div><pre class="source-code"><code>SELECT * FROM email
+WHERE folder = 'important' OR starred = true;
+</code></pre></div>
+<ol>
+<li data-unit="07-sql-126">观察结果。</li>
+</ol>
+<p class="image-container"><img alt="fd2f0dc7b6444956.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/fd2f0dc7b6444956.png" loading="eager" src="../assets/53c0dec8758f0cce.png"/></p>
+<aside class="special"><p data-unit="07-sql-127"><strong>注意：</strong>SQL 条件 <code>NOT folder = 'spam'</code> 也可以写成 <code>folder != 'spam'</code>。</p>
+</aside>
+<h2 data-unit="07-sql-128" id="search-for-text-using-like">用 <code>LIKE</code> 搜索文本</h2>
+<p data-unit="07-sql-129"><code>WHERE</code> 一个很实用的用途，是在某列中搜索文本：指定列名，接着写 <code>LIKE</code>，然后写搜索字符串。</p>
+<p class="image-container"><img alt="6692c0d491b6f9af.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/6692c0d491b6f9af.png" loading="eager" src="../assets/4f6c54aa1b3603ae.png"/></p>
+<p data-unit="07-sql-130">搜索字符串以百分号（<code>%</code>）开头，接着是搜索词，最后再加百分号（<code>%</code>）。</p>
+<p class="image-container"><img alt="c69c15f654645ee2.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/c69c15f654645ee2.png" loading="eager" src="../assets/bcd0511f3c969bb9.png"/></p>
+<p data-unit="07-sql-131">如果搜索指定文本开头的结果，即前缀匹配，省略第一个百分号（<code>%</code>）。</p>
+<p class="image-container"><img alt="fbe6a94daaf173ae.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/fbe6a94daaf173ae.png" loading="eager" src="../assets/c2b39161f6f70f29.png"/></p>
+<p data-unit="07-sql-132">如果搜索后缀，省略最后一个百分号（<code>%</code>）。</p>
+<p class="image-container"><img alt="141f567c9cbc4029.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/141f567c9cbc4029.png" loading="eager" src="../assets/41096c7ba64c6b39.png"/></p>
+<p data-unit="07-sql-133">应用有很多文本搜索场景，例如搜索主题包含特定文本的邮件，或在用户输入时更新自动补全建议。</p>
+<p data-unit="07-sql-134">以下步骤在查询 <code>email</code> 表时使用文本搜索。</p>
+<ol>
+<li data-unit="07-sql-135">数据库里的莎士比亚人物喜欢谈论“fool”。执行以下查询，统计主题包含“fool”的邮件总数。</li>
+</ol>
+<div></div><div><pre class="source-code"><code>SELECT COUNT(*) FROM email
+WHERE subject LIKE '%fool%';
+</code></pre></div>
+<ol>
+<li data-unit="07-sql-136">观察结果。</li>
+</ol>
+<p class="image-container"><img alt="fd2ff96969824b0d.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/fd2ff96969824b0d.png" loading="eager" src="../assets/279e4db5badadf45.png"/></p>
+<ol>
+<li data-unit="07-sql-137">执行以下查询，返回主题以 fool 结尾的所有行和全部列。</li>
+</ol>
+<div></div><div><pre class="source-code"><code>SELECT * FROM email
+WHERE subject LIKE '%fool';
+</code></pre></div>
+<ol>
+<li data-unit="07-sql-138">可以看到返回两行。</li>
+</ol>
+<p class="image-container"><img alt="a23379e507e39c0b.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/a23379e507e39c0b.png" loading="eager" src="../assets/4657e56cc994c11a.png"/></p>
+<ol>
+<li data-unit="07-sql-139">执行以下查询，返回 <code>sender</code> 列中以字母 <code>h</code> 开头的不同值。</li>
+</ol>
+<div></div><div><pre class="source-code"><code>SELECT DISTINCT sender FROM email
+WHERE sender LIKE 'h%';
+</code></pre></div>
+<ol>
+<li data-unit="07-sql-140">查询返回三个值：<code>helena@example.com</code>、<code>hyppolytus@example.com</code>、<code>hermia@example.com</code>。</li>
+</ol>
+<p class="image-container"><img alt="47ada07aee5cd8d9.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/47ada07aee5cd8d9.png" loading="eager" src="../assets/16dfd07d38089a7c.png"/></p>
+</div>
+<div>
+<h2 class="step-title" data-unit="07-sql-141" id="6">7. 对结果分组、排序和限制数量</h2>
+<h2 data-unit="07-sql-142" id="group-results-with-group-by">用 <code>GROUP BY</code> 分组</h2>
+<p data-unit="07-sql-143">前面介绍了聚合函数和 <code>WHERE</code> 对结果的筛选、汇总。SQL 还提供分组、排序、限制数量等子句，帮助组织查询结果。</p>
+<p data-unit="07-sql-144"><code>GROUP BY</code> 可以让给定列值相同的行，在结果中相邻分组。它不改变结果，只改变返回顺序。</p>
+<p data-unit="07-sql-145">为 <code>SELECT</code> 添加 <code>GROUP BY</code> 时，写 <code>GROUP BY</code>，再写作为分组依据的列名。</p>
+<p class="image-container"><img alt="6be095e981498bbf.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/6be095e981498bbf.png" loading="eager" src="../assets/588064e132bccd74.png"/></p>
+<p data-unit="07-sql-146">常见用法是把 <code>GROUP BY</code> 与聚合函数结合，根据不同类别（例如某列的值）分别聚合。假设想知道 <code>'inbox'</code>、<code>'spam'</code> 等每个文件夹中的邮件数量，可同时选择 <code>folder</code> 列和 <code>COUNT()</code> 聚合函数，并在 <code>GROUP BY</code> 中指定 <code>folder</code> 列。</p>
+<ol>
+<li data-unit="07-sql-147">执行以下查询，选择文件夹列和 <code>COUNT()</code> 的结果，并用 <code>GROUP BY</code> 按 <code>folder</code> 的值分组。</li>
+</ol>
+<div></div><div><pre class="source-code"><code>SELECT folder, COUNT(*) FROM email
+GROUP BY folder;
+</code></pre></div>
+<ol>
+<li data-unit="07-sql-148">可以看到查询返回每个文件夹的邮件总数。</li>
+</ol>
+<p class="image-container"><img alt="13b9eb8f5c8230c4.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/13b9eb8f5c8230c4.png" loading="eager" src="../assets/a73584aadafcbcd3.png"/></p>
+<aside class="special"><p data-unit="07-sql-149"><strong>注意：</strong>如需按另一列把各组进一步分成子组，可以在 <code>GROUP BY</code> 中指定多个以逗号分隔的列。</p>
+</aside>
+<h2 data-unit="07-sql-150" id="sort-results-with-order-by">用 <code>ORDER BY</code> 排序</h2>
+<p data-unit="07-sql-151"><code>ORDER BY</code> 可以修改查询结果的顺序。写 <code>ORDER BY</code>，再写列名和排序方向。</p>
+<p class="image-container"><img alt="9cf561c6346ed6e0.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/9cf561c6346ed6e0.png" loading="eager" src="../assets/0964df3f2b604866.png"/></p>
+<p data-unit="07-sql-152">默认按 <code>a</code>（升序）排列，可在 <code>ORDER BY</code> 中省略方向。若需要降序，在列名后加 <code>DESC</code>。</p>
+<p data-unit="07-sql-153">用户通常希望邮件应用先显示最新邮件，可通过以下 <code>ORDER BY</code> 步骤实现。</p>
+<ol>
+<li data-unit="07-sql-154">添加 <code>ORDER BY</code>，根据 <code>received</code> 对未读邮件排序。默认升序会先显示最小值、最早邮件，因此需要 <code>DESC</code>。</li>
+</ol>
+<div></div><div><pre class="source-code"><code>SELECT * FROM email
+ORDER BY received DESC;
+</code></pre></div>
+<ol>
+<li data-unit="07-sql-155">观察结果。</li>
+</ol>
+<p class="image-container"><img alt="6e28aef784a16d1b.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/6e28aef784a16d1b.png" loading="eager" src="../assets/65d9b7d6ce2814cf.png"/></p>
+<p data-unit="07-sql-156"><code>ORDER BY</code> 可以与 <code>WHERE</code> 配合使用。假设用户要搜索含 <em>fool</em> 的旧邮件，可以按升序让最早的邮件先出现。</p>
+<ol>
+<li data-unit="07-sql-157">选择主题包含“fool”的全部邮件，并按升序排列。升序是未指定方向时的默认顺序，所以在 <code>ORDER BY</code> 中使用 <code>ASC</code> 是可选的。</li>
+</ol>
+<div></div><div><pre class="source-code"><code>SELECT * FROM email
+WHERE subject LIKE '%fool%'
+ORDER BY received ASC;
+</code></pre></div>
+<ol>
+<li data-unit="07-sql-158">筛选后的结果先显示最早邮件，即 received 列值最小的邮件。</li>
+</ol>
+<p class="image-container"><img alt="77ada71b663afab6.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/77ada71b663afab6.png" loading="eager" src="../assets/c71cd4716c774a8b.png"/></p>
+<aside class="special"><p data-unit="07-sql-159"><strong>注意：</strong>同一查询同时使用时，<code>GROUP BY</code> 应放在 <code>ORDER BY</code> 前。</p>
+</aside>
+<h2 data-unit="07-sql-160" id="restrict-the-number-of-results-with-limit">用 <code>LIMIT</code> 限制结果数量</h2>
+<p data-unit="07-sql-161">前面的示例返回所有满足条件的结果，但应用经常只需显示有限行数。可添加 <code>LIMIT</code>，只返回指定数量：写 <code>LIMIT</code>，再写最大返回行数。如果查询包含 <code>ORDER BY</code>，<code>LIMIT</code> 应放在其后。</p>
+<p class="image-container"><img alt="122152adf15a9fca.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/122152adf15a9fca.png" loading="eager" src="../assets/6c5beaa6fd5175dc.png"/></p>
+<p data-unit="07-sql-162">还可以使用 <code>OFFSET</code> 和另一个数字，指定跳过多少行。例如，想要前十条之后的十条，而非一次返回二十条，可以使用 <code>LIMIT 10 OFFSET 10</code>。</p>
+<p class="image-container"><img alt="37ad836862573d55.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/37ad836862573d55.png" loading="eager" src="../assets/2cb536f6072029d6.png"/></p>
+<p data-unit="07-sql-163">应用可能只返回收件箱最前面的十封邮件，以加快加载，用户再滚动查看后续页面。以下步骤用 <code>LIMIT</code> 实现。</p>
+<ol>
+<li data-unit="07-sql-164">执行以下 <code>SELECT</code>，以降序取得收件箱邮件，只返回前十条。</li>
+</ol>
+<div></div><div><pre class="source-code"><code>SELECT * FROM email
+WHERE folder = 'inbox'
+ORDER BY received DESC
+LIMIT 10;
+</code></pre></div>
+<ol>
+<li data-unit="07-sql-165">可以看到只返回十条结果。</li>
+</ol>
+<p class="image-container"><img alt="5b228d8053956489.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/5b228d8053956489.png" loading="eager" src="../assets/3e38e5285a70f9a5.png"/></p>
+<ol>
+<li data-unit="07-sql-166">修改查询，加入值为 <code>10</code> 的 <code>OFFSET</code>，再次执行。</li>
+</ol>
+<div></div><div><pre class="source-code"><code>SELECT * FROM email
+WHERE folder = 'inbox'
+ORDER BY received DESC
+LIMIT 10 OFFSET 10;
+</code></pre></div>
+<ol>
+<li data-unit="07-sql-167">查询按降序返回十条结果，但跳过了最前面的十条。</li>
+</ol>
+<p class="image-container"><img alt="83a6ddbf6ef92b89.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/83a6ddbf6ef92b89.png" loading="eager" src="../assets/0e9c136caa384245.png"/></p>
+</div>
+<div>
+<h2 class="step-title" data-unit="07-sql-168" id="7">8. 插入、更新和删除数据库数据</h2>
+<h2 data-unit="07-sql-169" id="insert-data-into-a-database">插入数据</h2>
+<p data-unit="07-sql-170">SQL 不仅能读取数据库，也有不同语句写入数据。数据最初也需要通过某种方式进入数据库。</p>
+<p data-unit="07-sql-171">用 <code>INSERT</code> 添加新行。<code>INSERT</code> 以 <code>INSERT INTO</code> 和目标表名开头，再在新行写 <code>VALUES</code>，后面用括号包含逗号分隔的值。值的顺序必须与数据库列顺序相同。</p>
+<p class="image-container"><img alt="97b93929d6de2d0e.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/97b93929d6de2d0e.png" loading="eager" src="../assets/0cd986d336c277df.png"/></p>
+<p data-unit="07-sql-172">假设用户收到新邮件，需要保存在应用数据库，可以用 <code>INSERT</code> 为 <code>email</code> 表添加新行。</p>
+<ol>
+<li data-unit="07-sql-173">用以下新邮件数据执行 <code>INSERT</code>。新邮件未读，起初位于收件箱 <code>folder</code>。为 <code>id</code> 提供 <code>NULL</code>，使 <code>id</code> 自动生成下一个可用的自增整数。</li>
+</ol>
+<div></div><div><pre class="source-code"><code>INSERT INTO email
+VALUES (
+    NULL, 'Lorem ipsum dolor sit amet', 'sender@example.com', 'inbox', false, false, CURRENT_TIMESTAMP
+);
+</code></pre></div>
+<aside class="special"><p data-unit="07-sql-174"><strong>注意：</strong><code>CURRENT_TIMESTAMP</code> 是一个特殊变量，查询运行时会替换为当前 <a href="https://en.wikipedia.org/wiki/Coordinated_Universal_Time">UTC</a> 时间，插入新行时很方便。</p>
+</aside>
+<ol>
+<li data-unit="07-sql-175">可以看到数据已插入，<code>id</code> 为 <code>44</code>。</li>
+</ol>
+<div></div><div><pre class="source-code"><code>SELECT * FROM email
+WHERE sender = 'sender@example.com';
+</code></pre></div>
+<p class="image-container"><img alt="12a3e77309771dd8.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/12a3e77309771dd8.png" loading="eager" src="../assets/e6cd08ee04e22c2b.png"/></p>
+<h2 data-unit="07-sql-176" id="update-existing-data-in-a-database">更新已有数据</h2>
+<p data-unit="07-sql-177">数据插入后仍可修改。用 <code>UPDATE</code> 更新一列或多列的值。<code>UPDATE</code> 由 <code>UPDATE</code>、表名和 <code>SET</code> 组成。</p>
+<p class="image-container"><img alt="8ee88a5985aec77e.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/8ee88a5985aec77e.png" loading="eager" src="../assets/04008c25246cf323.png"/></p>
+<p data-unit="07-sql-178"><code>SET</code> 由 <code>SET</code> 及要更新的列名组成。</p>
+<p class="image-container"><img alt="bc255ece789859f.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/bc255ece789859f.png" loading="eager" src="../assets/7685ad20a2415211.png"/></p>
+<p data-unit="07-sql-179"><code>UPDATE</code> 通常包含 <code>WHERE</code>，指定哪些行要按相应的列值对更新。</p>
+<p class="image-container"><img alt="e64b7b343feb6224.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/e64b7b343feb6224.png" loading="eager" src="../assets/5a4f54c97bdaa0e1.png"/></p>
+<p data-unit="07-sql-180">例如，用户把邮件标记为已读时，需要用 <code>UPDATE</code> 更新数据库。以下步骤把刚插入的邮件标为已读。</p>
+<ol>
+<li data-unit="07-sql-181">执行以下 <code>UPDATE</code>，把 <code>id</code> 为 <code>44</code> 的行的 <code>read</code> 设为 <code>true</code>。</li>
+</ol>
+<div></div><div><pre class="source-code"><code>UPDATE email
+SET read = true
+WHERE id = 44;
+</code></pre></div>
+<ol>
+<li data-unit="07-sql-182">针对该行执行 <code>SELECT</code>，验证结果。</li>
+</ol>
+<div></div><div><pre class="source-code"><code>SELECT read FROM email
+WHERE id = 44;
+</code></pre></div>
+<ol>
+<li data-unit="07-sql-183">read 列现在为表示 true 的 <code>1</code>，而非表示 false 的 <code>0</code>。</li>
+</ol>
+<p class="image-container"><img alt="74e9af167fa49ba3.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/74e9af167fa49ba3.png" loading="eager" src="../assets/58d37a418a862167.png"/></p>
+<h2 data-unit="07-sql-184" id="delete-a-row-from-a-database">删除一行</h2>
+<p data-unit="07-sql-185">最后，可以用 SQL <code>DELETE</code> 删除一行或多行。<code>DELETE</code> 由 <code>DELETE</code>、<code>FROM</code>、表名及指定目标行的 <code>WHERE</code> 组成。</p>
+<p class="image-container"><img alt="a7e56405c5e5aaab.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/a7e56405c5e5aaab.png" loading="eager" src="../assets/fdcf37c93c1e48b5.png"/></p>
+<p data-unit="07-sql-186">以下步骤用 <code>DELETE</code> 删除之前插入并更新的行。</p>
+<ol>
+<li data-unit="07-sql-187">执行以下 <code>DELETE</code>，删除 <code>id</code> 为 <code>44</code> 的行。</li>
+</ol>
+<div></div><div><pre class="source-code"><code>DELETE FROM email
+WHERE id = 44;
+</code></pre></div>
+<ol>
+<li data-unit="07-sql-188">用 <code>SELECT</code> 验证修改。</li>
+</ol>
+<div></div><div><pre class="source-code"><code>SELECT * FROM email
+WHERE id = 44;
+</code></pre></div>
+<ol>
+<li data-unit="07-sql-189">可以看到 <code>id</code> 为 <code>44</code> 的行已不存在。</li>
+</ol>
+<p class="image-container"><img alt="b026810cf2fd6e44.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/b026810cf2fd6e44.png" loading="eager" src="../assets/bd1cc2370830fc52.png"/></p>
+</div>
+<div>
+<h2 class="step-title" data-unit="07-sql-190" id="8">9. 总结</h2>
+<p data-unit="07-sql-191">你已经学会用 <code>SELECT</code> 读取数据库，以及用 <code>WHERE</code>、<code>GROUP BY</code>、<code>ORDER BY</code>、<code>LIMIT</code> 子句筛选结果；还了解了常见聚合函数、指定唯一结果的 <code>DISTINCT</code>、搜索列中文本的 <code>LIKE</code>，以及怎样 <code>INSERT</code>、<code>UPDATE</code>、<code>DELETE</code> 数据表中的行。</p>
+<p data-unit="07-sql-192">这些技能可以直接用于 Room。掌握 SQL 后，就更有准备为后续应用加入数据持久化。</p>
+<p data-unit="07-sql-193"><code>SELECT</code> 语句语法：</p>
+<p class="image-container"><img alt="346bed4fda774ca7.png" data-original-src="https://developer.android.google.cn/static/codelabs/basic-android-kotlin-compose-sql/img/346bed4fda774ca7.png" loading="eager" src="../assets/de980d6eebb2eb96.png"/></p>
+</div>
+<div>
+<h2 class="step-title" data-unit="07-sql-194" id="9">10. 了解更多</h2>
+<p data-unit="07-sql-195">本篇集中介绍 SQL 基础及 Android 常见用法，SQL 还有更多能力。以下资源可用于复习或继续深入。</p>
+<ul>
+<li data-unit="07-sql-196"><a href="https://developer.android.google.cn/studio/inspect/database">Database Inspector</a></li>
+<li data-unit="07-sql-197"><a href="https://developer.android.google.cn/training/data-storage/sqlite">用 SQLite 保存数据</a></li>
+<li data-unit="07-sql-198"><a href="https://www.sqlite.org/lang_aggfunc.html">聚合函数</a></li>
+<li data-unit="07-sql-199"><a href="https://www.w3schools.com/sql/sql_quickref.asp">SQL 快速参考</a></li>
+<li data-unit="07-sql-200"><a href="https://www.w3schools.com/sql/sql_create_db.asp">创建数据表</a></li>
+<li data-unit="07-sql-201"><a href="https://www.w3schools.com/sql/sql_join.asp">SQL 连接</a></li>
+<li data-unit="07-sql-202"><a href="https://developer.android.google.cn/topic/performance/sqlite-performance-best-practices">SQLite 性能</a></li>
+</ul>
+</div>
+</div>
+</article><nav class="chapter-switcher" aria-label="章节导航"><a href="../06-cancellation/literal.html">← 异步任务的取消与超时</a><a class="course-home" href="../index.html">全部章节</a><a href="../08-room/literal.html">Room 整体认识 →</a></nav><footer class="license-note"><p>原文：<a href="https://developer.android.com/codelabs/basic-android-kotlin-compose-sql?hl=en">Use SQL to read and write to a database</a>，Android Developers / Google。英文快照：2026-10-13。非官方中文翻译与表达优化：Codex。原有示例和代码保留；<a href="../NOTICE.html">来源与许可</a>。</p></footer></main></body></html>

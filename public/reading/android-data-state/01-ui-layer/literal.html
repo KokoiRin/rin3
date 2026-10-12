@@ -1,0 +1,297 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>界面与状态 · Android 应用的数据与状态</title><link rel="stylesheet" href="../../reader.css"><link rel="stylesheet" href="../source.css"><link rel="manifest" href="../../../manifest.webmanifest"></head><body><nav class="site-nav"><a href="../index.html">← Android 应用的数据与状态</a><a href="https://developer.android.com/topic/architecture/ui-layer?hl=en">官方英文原文 ↗</a></nav><main class="reader"><header class="chapter-header"><span class="chapter-kicker">01 · 第一轮直译稿</span><h1>界面与状态</h1><p class="byline">UI layer · Android Developers / Google</p><div class="title-rule"></div><p class="edition-nav"><a href="index.html">中文阅读版</a> · <a href="english.html">英文对照</a> · <strong aria-current="page">第一轮直译稿</strong></p><aside class="learning-note"><span class="note-kind">编者导读 · 不属于原文</span><p><strong>页面显示的内容由哪些数据决定，用户操作又怎样改变它？</strong></p><p>先认识 UI、UI state、ViewModel 的职责，再沿新闻阅读与收藏的原例连接状态和事件。</p><p><strong>第一轮阅读：</strong>第一轮先读基本案例、定义 UI state、单向数据流；状态暴露与读取随后继续。</p><details class="editor-notes"><summary>版本与适用范围校注（1 条）</summary><p>本文中的 UI state 指渲染界面所需的数据；ViewModel、Repository、StateFlow 保留英文名称。布局和绘制不是本文的重点。</p></details></aside><details class="source-details"><summary>本篇目录与翻译范围</summary><p>官方英文文章正文全文；保留原文顺序、代码、图示、表格与延伸链接。代码与图中文字保持原样。编者导读与校注单独标明，阅读不要求同时安装、运行或编写示例。</p><ul><li class="toc-h2"><a href="#case-study">一个基本案例</a></li><li class="toc-h2"><a href="#architecture">UI 层架构</a></li><li class="toc-h2"><a href="#define-ui-state">定义 UI state</a></li><li class="toc-h3"><a href="#state-immutability">不可变性</a></li><li class="toc-h3"><a href="#naming-conventions">本指南的命名约定</a></li><li class="toc-h2"><a href="#udf">用单向数据流管理状态</a></li><li class="toc-h3"><a href="#state-holders">State holder</a></li><li class="toc-h3"><a href="#logic-types">逻辑的类型</a></li><li class="toc-h3"><a href="#why-use-udf">为什么使用 UDF？</a></li><li class="toc-h2"><a href="#expose-ui-state">暴露 UI state</a></li><li class="toc-h3"><a href="#additional-considerations">其他注意事项</a></li><li class="toc-h2"><a href="#consume-ui-state">读取 UI state</a></li><li class="toc-h3"><a href="#show-operations">显示进行中的操作</a></li><li class="toc-h3"><a href="#show-errors">在屏幕上显示错误</a></li><li class="toc-h2"><a href="#threading-concurrency">线程与并发</a></li><li class="toc-h2"><a href="#navigation">导航</a></li><li class="toc-h2"><a href="#paging">分页</a></li><li class="toc-h2"><a href="#animations">动画</a></li><li class="toc-h2"><a href="#additional-resources">其他资源</a></li><li class="toc-h3"><a href="#views">View 相关内容</a></li><li class="toc-h2"><a href="#samples">示例</a></li></ul></details><nav class="chapter-switcher" aria-label="章节导航"><span></span><a class="course-home" href="../index.html">全部章节</a><a href="../02-ui-events/literal.html">用户操作与事件 →</a></nav></header><article class="translated-article">
+<p data-unit="01-ui-layer-001">UI 的职责是在屏幕上显示应用数据。UI 也是用户交互的主要入口。每当数据因用户交互（例如按下按钮）或外部输入（例如网络响应）而发生变化时，UI 都会更新，以反映这些变化。<em>实际上，UI 是从数据层取得的应用状态的可视化表示。</em></p>
+<p data-unit="01-ui-layer-002">但是，从数据层取得的应用数据通常与需要显示的信息采用不同的格式。例如，UI 可能只需要其中一部分数据，也可能需要合并两个不同的数据来源，才能向用户呈现相关信息。无论应用了什么逻辑，都需要向 UI 提供完整渲染所需的全部信息。<em>UI 层是一条处理管线：它把应用数据的变化转换成 UI 能够呈现的形式，然后显示出来。</em></p>
+<figure id="ui-overview">
+<img alt="In a typical architecture, the UI layer's UI elements depend on state
+    holders, which in turn depend on classes from either the data layer or the
+    optional domain layer." data-original-src="https://developer.android.google.cn/static/topic/libraries/architecture/images/mad-arch-ui-overview.png" loading="eager" src="../assets/1211a6d69a38eae1.png" width="500"/>
+</figure>
+<figcaption data-unit="01-ui-layer-003"><b>图 1。</b>UI 层在应用架构中的位置。</figcaption>
+<aside class="note"><span class="source-text" data-unit="01-ui-layer-004"><strong>注意：</strong><span>本页的建议和最佳实践适用于多种应用，帮助它们扩展规模、提高质量和健壮性，并更容易测试。请把这些内容视为指导原则，根据自身需求进行调整。</span></span></aside>
+<div class="video-wrapper-full-width">
+<iframe class="devsite-embedded-youtube-video" data-video-id="p9VR8KbmzEE">
+</iframe>
+</div>
+<h2 data-unit="01-ui-layer-005" id="case-study">一个基本案例</h2>
+<p data-unit="01-ui-layer-006">考虑一个获取新闻文章供用户阅读的应用。它的文章页面显示可阅读的文章，也允许已登录的用户收藏特别喜欢的文章。由于文章可能很多，读者必须能按分类浏览。概括而言，该应用让用户完成以下操作：</p>
+<ul>
+<li data-unit="01-ui-layer-007">查看可阅读的文章。</li>
+<li data-unit="01-ui-layer-008">按分类浏览文章。</li>
+<li data-unit="01-ui-layer-009">登录并收藏特定文章。</li>
+<li data-unit="01-ui-layer-010">在符合条件时使用某些高级功能。</li>
+</ul>
+<figure id="ui-basic-case-study">
+<img alt="A sample news app showing article previews, one of which is bookmarked." data-original-src="https://developer.android.google.cn/static/topic/libraries/architecture/images/mad-arch-ui-basic-case-study.png" loading="eager" src="../assets/5ea365e41d724a0e.png" width="300"/>
+</figure>
+<figcaption data-unit="01-ui-layer-011"><b>图 2。</b>用于 UI 案例分析的新闻应用示例。</figcaption>
+<p data-unit="01-ui-layer-012">以下各节使用这个案例介绍单向数据流的原则，并说明这些原则在 UI 层应用架构中帮助解决的问题。</p>
+<h2 data-unit="01-ui-layer-013" id="architecture">UI 层架构</h2>
+<p data-unit="01-ui-layer-014"><em>UI</em> 指容器、可组合函数等用于显示数据的 UI 元素。构建 Android UI 时，推荐使用 <a href="https://developer.android.google.cn/compose">Jetpack Compose</a> 工具包。由于<a href="https://developer.android.google.cn/jetpack/guide/data-layer">数据层</a>负责持有、管理应用数据并提供访问入口，UI 层必须执行以下步骤：</p>
+<ol>
+<li data-unit="01-ui-layer-015">读取应用数据，把它转换成 UI 容易渲染的数据。</li>
+<li data-unit="01-ui-layer-016">读取可供 UI 渲染的数据，把它转换成呈现给用户的 UI 元素。</li>
+<li data-unit="01-ui-layer-017">接收这些 UI 元素产生的用户输入事件，并按需把事件的影响反映到 UI 数据中。</li>
+<li data-unit="01-ui-layer-018">根据需要重复步骤 1 至 3。</li>
+</ol>
+<p data-unit="01-ui-layer-019">本指南的其余部分说明如何实现执行这些步骤的 UI 层，具体涵盖以下任务和概念：</p>
+<ul>
+<li data-unit="01-ui-layer-020">如何定义 UI state。</li>
+<li data-unit="01-ui-layer-021">使用单向数据流（UDF）生成和管理 UI state。</li>
+<li data-unit="01-ui-layer-022">如何遵循 UDF 原则，用可观察数据类型暴露 UI state。</li>
+<li data-unit="01-ui-layer-023">如何实现读取可观察 UI state 的 UI。</li>
+</ul>
+<p data-unit="01-ui-layer-024">其中最基础的是 UI state 的定义。</p>
+<h2 data-unit="01-ui-layer-025" id="define-ui-state">定义 UI state</h2>
+<p data-unit="01-ui-layer-026">在前述<a href="https://developer.android.google.cn/topic/architecture/ui-layer?hl=en#case-study">案例</a>中，UI 显示文章列表以及文章的一些元数据。应用呈现给用户的这些信息就是 UI state。</p>
+<p data-unit="01-ui-layer-027">换言之，如果 UI 是用户看到的内容，UI state 就是应用认为用户应当看到的内容。两者如同硬币的两面：UI 是 UI state 的可视化表示，UI state 的任何变化都会立即反映在 UI 中。</p>
+<figure id="ui-elements_state">
+<img alt="UI is a result of binding UI elements on the screen with the UI state." data-original-src="https://developer.android.google.cn/static/topic/libraries/architecture/images/mad-arch-ui-elements-state.png" loading="eager" src="../assets/c3c6be2150ae68a0.png" width="500"/>
+</figure>
+<figcaption data-unit="01-ui-layer-028"><b>图 3。</b>把屏幕上的 UI 元素与 UI state 绑定，就得到了 UI。</figcaption>
+<p data-unit="01-ui-layer-029">在这个案例中，为满足新闻应用的需求，完整渲染 UI 所需的信息可以封装在如下定义的 <code>NewsUiState</code> 数据类中：</p>
+<p>
+</p><div></div><div><pre class="source-code" id="android_architecture_ui_layer_news_ui_state-code-sample-kotlin"><code>data class NewsUiState(
+    val isSignedIn: Boolean = false,
+    val isPremium: Boolean = false,
+    val newsItems: List&lt;NewsItemUiState&gt; = listOf(),
+    val userMessages: List&lt;Message&gt; = listOf()
+)
+
+data class NewsItemUiState(
+    val title: String,
+    val body: String,
+    val bookmarked: Boolean = false,
+    // ...
+)UiLayer.kt</code></pre></div>
+<p data-unit="01-ui-layer-030">更多 UI state 信息，请参阅<a href="https://developer.android.google.cn/develop/ui/compose/state">状态与 Jetpack Compose</a>。</p>
+<h3 data-unit="01-ui-layer-031" id="state-immutability">不可变性</h3>
+<p data-unit="01-ui-layer-032">上例中的 UI state 定义是不可变的。其主要好处是，不可变对象能保证应用在某一时刻的状态。这使 UI 可以专注于主要职责：读取状态并相应更新 UI 元素。除非 UI 本身就是相关数据的唯一来源，否则绝不要直接在 UI 中修改 UI state。违反这一原则会使同一份信息出现多个事实来源，导致数据不一致和隐蔽的错误。</p>
+<p data-unit="01-ui-layer-033">以前述案例为例，如果在 <code>Activity</code> 类中更新 UI state 里的 <code>NewsItemUiState</code> 对象的 <code>bookmarked</code> 标记，这个标记就会与数据层竞争，成为文章收藏状态的事实来源。不可变数据类很适合防止这类不一致。</p>
+<aside class="key-point"><span class="source-text" data-unit="01-ui-layer-034"><strong>要点：</strong><span>只有数据来源或数据所有者，才应负责更新它们暴露的数据。</span></span></aside>
+<h3 data-unit="01-ui-layer-035" id="naming-conventions">本指南的命名约定</h3>
+<p data-unit="01-ui-layer-036">本指南根据屏幕或屏幕局部的功能，为 UI state 类命名。约定如下：</p>
+<p data-unit="01-ui-layer-037"><em>功能名称</em> + <em>UiState</em>。</p>
+<p data-unit="01-ui-layer-038">例如，新闻页面的状态可以叫作 <code>NewsUiState</code>，新闻列表中一个条目的状态可以叫作 <code>NewsItemUiState</code>。</p>
+<h2 data-unit="01-ui-layer-039" id="udf">用单向数据流管理状态</h2>
+<p data-unit="01-ui-layer-040">前一节说明，UI state 是渲染 UI 所需信息的不可变快照。不过，应用中的状态会随时间变化，变化可能来自用户交互，也可能来自修改底层数据来源的其他事件。</p>
+<p data-unit="01-ui-layer-041">这些交互可以交由一个中间角色处理：它定义处理各个事件的逻辑，并转换底层数据来源以生成 UI state。虽然这些交互及其逻辑也可以放在 UI 中，但 UI 承担过多职责后，会很快变得难以管理。此外，代码会因此紧密耦合，影响可测试性。除非 UI state 很简单，否则应确保 UI 的唯一职责是读取并显示 UI state。</p>
+<p data-unit="01-ui-layer-042">本节讨论单向数据流（UDF）。这种架构模式有助于落实上述清晰的职责分离。</p>
+<h3 data-unit="01-ui-layer-043" id="state-holders">State holder</h3>
+<p data-unit="01-ui-layer-044">State holder 是负责生成 UI state 及其生成逻辑的类。它的规模取决于所管理的 UI 元素范围，可以小到一个<a href="https://developer.android.google.cn/develop/ui/compose/components/app-bars#bottom">底部应用栏</a>，也可以大到整个页面或导航目标。</p>
+<p data-unit="01-ui-layer-045">对于后者，典型实现是 <a href="https://developer.android.google.cn/topic/libraries/architecture/viewmodel">ViewModel</a> 实例，不过根据具体需求，一个普通类也可能足够。例如，<a href="https://developer.android.google.cn/topic/architecture/ui-layer?hl=en#case-study">案例</a>中的新闻应用使用 <code>NewsViewModel</code> 类作为 state holder，生成该页面显示的 UI state。</p>
+<aside class="key-point"><span class="source-text" data-unit="01-ui-layer-046"><strong>要点：</strong><span>对于需要访问数据层的屏幕级 UI state，推荐使用 <a href="https://developer.android.google.cn/topic/libraries/architecture/viewmodel"><code>ViewModel</code></a> 类型进行管理。此外，它会自动在配置变化后继续存活。<code>ViewModel</code> 类定义处理应用事件的逻辑，并据此生成更新后的 UI state。</span></span></aside>
+<p data-unit="01-ui-layer-047">UI 与其状态生成者之间的相互依赖可以有多种建模方式。不过，UI 与它的 <code>ViewModel</code> 类之间的关系，基本可以理解为事件<em>输入</em>与随之产生的状态<em>输出</em>，因此可以用下图表示：</p>
+<figure id="ui-udf">
+<img alt="Application data flows from the data layer to the ViewModel. UI state
+    flows from the ViewModel to the UI elements, and events flow from the UI
+    elements back to the ViewModel." data-original-src="https://developer.android.google.cn/static/topic/libraries/architecture/images/mad-arch-ui-udf.png" loading="eager" src="../assets/2952c795b464b7e2.png" width="500"/>
+</figure>
+<figcaption data-unit="01-ui-layer-048"><b>图 4。</b>说明 UDF 工作方式的图。</figcaption>
+<p data-unit="01-ui-layer-049">状态向下传递、事件向上传递的模式称为单向数据流（UDF）。这对应用架构有以下影响：</p>
+<ul>
+<li data-unit="01-ui-layer-050">ViewModel 持有并暴露 UI 读取的状态。UI state 是经 ViewModel 转换后的应用数据。</li>
+<li data-unit="01-ui-layer-051">UI 把用户事件通知给 ViewModel。</li>
+<li data-unit="01-ui-layer-052">ViewModel 处理用户操作并更新状态。</li>
+<li data-unit="01-ui-layer-053">更新后的状态传回 UI，由 UI 渲染。</li>
+<li data-unit="01-ui-layer-054">每当有事件使状态发生变化时，就重复上述过程。</li>
+</ul>
+<p data-unit="01-ui-layer-055">对于导航目标或页面，ViewModel 与 Repository 或 UseCase 类协作，取得数据并转换成 UI state，同时纳入可能使状态变化的事件影响。前述<a href="https://developer.android.google.cn/topic/architecture/ui-layer?hl=en#case-study">案例</a>包含一组文章，每篇都有标题、描述、来源、作者姓名、发布日期和收藏状态。每个文章条目的 UI 如下：</p>
+<figure id="ui-basic-case-study-item">
+<img alt="A single article item from the case study app. The UI shows a thumbnail, the article title, the author, the estimated reading time for the article, and a bookmark icon." data-original-src="https://developer.android.google.cn/static/topic/libraries/architecture/images/mad-arch-ui-basic-case-study-item.png" loading="eager" src="../assets/f269ff5da58dad31.png" width="400"/>
+</figure>
+<figcaption data-unit="01-ui-layer-056"><b>图 5。</b>案例应用中的文章条目 UI。</figcaption>
+<p data-unit="01-ui-layer-057">用户请求收藏文章，就是一个可能使状态变化的事件。作为状态生成者，ViewModel 负责定义填充全部 UI state 字段所需的逻辑，并处理使 UI 能够完整渲染的事件。</p>
+<figure id="ui-udf-in-action">
+<img alt="A UI event occurs when the user bookmarks an artcile. The ViewModel
+    notifies the data layer of the state change. The data layer persists the
+    data change and updates the application data. The new app data with the
+    bookmarked article is passed up to the ViewModel, which then produces the
+    new UI state and passes it to the UI elements for display." data-original-src="https://developer.android.google.cn/static/topic/libraries/architecture/images/mad-arch-ui-udf-in-action.png" loading="eager" src="../assets/ce6ae31e245aa891.png" width="600"/>
+</figure>
+<figcaption data-unit="01-ui-layer-058"><b>图 6。</b>说明 UDF 中事件与数据循环的图。</figcaption>
+<p data-unit="01-ui-layer-059">以下各节进一步说明哪些事件会使状态变化，以及如何通过 UDF 处理它们。</p>
+<h3 data-unit="01-ui-layer-060" id="logic-types">逻辑的类型</h3>
+<p data-unit="01-ui-layer-061">收藏文章是<em>业务逻辑</em>的例子，因为它为应用带来价值。详情请参阅<a href="https://developer.android.google.cn/jetpack/guide/data-layer">数据层</a>页面。不过，还需要区分以下逻辑类型：</p>
+<ul>
+<li data-unit="01-ui-layer-062"><strong>业务逻辑</strong>实现针对应用数据的产品需求。如前所述，案例应用中的收藏文章就是一个例子。业务逻辑通常放在领域层或数据层，绝不放在 UI 层。</li>
+<li data-unit="01-ui-layer-063"><strong>UI 行为逻辑</strong>或 <strong>UI 逻辑</strong>负责<em>怎样</em>在屏幕上显示状态变化。例如，使用 Android <a href="https://developer.android.google.cn/reference/android/content/res/Resources"><code>Resources</code></a>取得要显示的正确文本；用户点击按钮后导航到特定页面；或者通过 <a href="https://developer.android.google.cn/guide/topics/ui/notifiers/toasts">toast</a>、<a href="https://developer.android.google.cn/develop/ui/compose/components/snackbar">snackbar</a>在屏幕上向用户显示消息。</li>
+</ul>
+<p data-unit="01-ui-layer-064">把 UI 逻辑留在 UI 中，不要放进 ViewModel，尤其是涉及 <a href="https://developer.android.google.cn/reference/android/content/Context"><code>Context</code></a> 等 UI 类型时。如果 UI 变复杂，希望将 UI 逻辑委托给另一个类以提高可测试性并分离职责，<strong>可以创建一个普通类作为 state holder</strong>。在 UI 中创建的普通类可以依赖 Android SDK，因为它们遵循 UI 的生命周期；ViewModel 对象的存活时间更长。</p>
+<p data-unit="01-ui-layer-065">关于 state holder 及其在构建 UI 时的位置，请参阅 <a href="https://developer.android.google.cn/jetpack/compose/state#managing-state">Jetpack Compose 状态指南</a>。</p>
+<h3 data-unit="01-ui-layer-066" id="why-use-udf">为什么使用 UDF？</h3>
+<p data-unit="01-ui-layer-067">UDF 对图 4 所示的状态生成循环进行建模，还把状态变化的起点、转换位置和最终读取位置分开。这使 UI 能做到它名称所表达的事情：观察状态变化来显示信息，并把变化传给 ViewModel，以传达用户意图。</p>
+<p data-unit="01-ui-layer-068">换言之，UDF 提供以下能力：</p>
+<ul>
+<li data-unit="01-ui-layer-069"><strong>数据一致性。</strong>UI 具有单一事实来源。</li>
+<li data-unit="01-ui-layer-070"><strong>可测试性。</strong>状态来源被隔离，因此可以脱离 UI 独立测试。</li>
+<li data-unit="01-ui-layer-071"><strong>可维护性。</strong>状态变化遵循明确模式，变化来自用户事件以及这些事件使用的数据来源。</li>
+</ul>
+<h2 data-unit="01-ui-layer-072" id="expose-ui-state">暴露 UI state</h2>
+<p data-unit="01-ui-layer-073">定义好 UI state 并确定如何管理其生成后，下一步是把生成的状态提供给 UI。</p>
+<p data-unit="01-ui-layer-074">用 UDF 管理状态生成时，可以把生成的状态看作一条流，即随时间产生的多个状态版本。应通过 <code>StateFlow</code> 等可观察数据容器暴露 UI state。这样 UI 可以响应状态的变化，无须手动直接向 ViewModel 拉取数据。此外，容器会始终缓存最新版本的 UI state，有利于配置变化后快速恢复状态。</p>
+<p>
+</p><div></div><div><pre class="source-code" id="android_architecture_ui_layer_viewmodel_expose_state-code-sample-kotlin"><code>class NewsViewModel(
+    // ...
+) : ViewModel() {
+
+    val uiState: NewsUiState = /* ... */
+}UiLayer.kt</code></pre></div>
+<p data-unit="01-ui-layer-075">Kotlin Flow 入门请参阅 <a href="https://developer.android.google.cn/kotlin/flow">Android 上的 Kotlin Flow</a>。使用 <code>StateFlow</code> 作为可观察数据容器的方法，请参阅 <a href="https://developer.android.google.cn/codelabs/jetpack-compose-advanced-state-side-effects">Jetpack Compose 中的高级状态与副作用</a> Codelab。</p>
+<aside class="note"><span class="source-text" data-unit="01-ui-layer-076"><strong>注意：</strong><span>在 Jetpack Compose 应用中，可以使用 Compose 的可观察 <a href="https://developer.android.google.cn/jetpack/compose/state#state-in-composables">State API</a>，如 <code>mutableStateOf</code> 或 <code>snapshotFlow</code>，来暴露 UI state。本指南中的 <code>StateFlow</code> 等可观察数据容器，都可以通过适当的<a href="https://developer.android.google.cn/jetpack/compose/libraries#streams">扩展</a>在 Compose 中读取。</span></span></aside>
+<p data-unit="01-ui-layer-077">即使暴露给 UI 的数据比较简单，通常也值得把它包装在一个 UI state 类型中，因为这样能体现 state holder 的输出与相应页面或 UI 元素之间的关系。随着 UI 元素变复杂，可以直接扩展 UI state 的定义，容纳渲染该 UI 元素所需的额外信息。</p>
+<p data-unit="01-ui-layer-078">创建 <code>UiState</code> 流的一种常见方式，是通过 <code>private set</code> 暴露一个 <code>mutableStateOf</code> 属性，使状态在 ViewModel 内部可变、对 UI 只读。</p>
+<p>
+</p><div></div><div><pre class="source-code" id="android_architecture_ui_layer_viewmodel_mutable_state-code-sample-kotlin"><code>class NewsViewModel(
+    // ...
+) : ViewModel() {
+
+    var uiState by mutableStateOf(NewsUiState())
+        private set
+
+    // ...
+}UiLayer.kt</code></pre></div>
+<p data-unit="01-ui-layer-079">随后，ViewModel 可以暴露在内部修改状态的方法，发布更新供 UI 读取。例如，需要执行异步操作时，可以使用 <a href="https://developer.android.google.cn/topic/libraries/architecture/coroutines#viewmodelscope"><code>viewModelScope</code></a>启动协程，在完成后更新可变状态。</p>
+<p>
+</p><div></div><div><pre class="source-code" id="android_architecture_ui_layer_viewmodel_fetch_articles-code-sample-kotlin"><code>class NewsViewModel(
+    private val repository: NewsRepository,
+    // ...
+) : ViewModel() {
+
+    var uiState by mutableStateOf(NewsUiState())
+        private set
+
+    private var fetchJob: Job? = null
+
+    fun fetchArticles(category: String) {
+        fetchJob?.cancel()
+        fetchJob = viewModelScope.launch {
+            try {
+                val newsItems = repository.newsItemsForCategory(category)
+                uiState = uiState.copy(newsItems = newsItems)
+            } catch (ioe: IOException) {
+                // Handle the error and notify the UI when appropriate.
+                val messages = getMessagesFromThrowable(ioe)
+                uiState = uiState.copy(userMessages = messages)
+            }
+        }
+    }
+}UiLayer.kt</code></pre></div>
+<p data-unit="01-ui-layer-080">上例中的 <code>NewsViewModel</code> 类尝试获取某个分类的文章，然后把成功或失败的结果反映到 UI state 中，供 UI 作出适当响应。错误处理的更多信息，请参阅<a href="https://developer.android.google.cn/topic/architecture/ui-layer?hl=en#show-errors">在屏幕上显示错误</a>一节。</p>
+<aside class="note"><span class="source-text" data-unit="01-ui-layer-081"><strong>注意：</strong><span>上例通过 ViewModel 上的函数修改状态，是单向数据流较常见的实现模式之一。</span></span></aside>
+<h3 data-unit="01-ui-layer-082" id="additional-considerations">其他注意事项</h3>
+<p data-unit="01-ui-layer-083">除上述指导外，暴露 UI state 时还应考虑以下内容：</p>
+<ul>
+<li><p data-unit="01-ui-layer-084"><strong>用单个 UI state 对象处理相互关联的状态。</strong>这样可以减少不一致，让代码更容易理解。如果用两条不同的流暴露新闻列表和收藏数量，可能出现其中一个更新而另一个未更新的情况。使用单条流可以让两者同步保持最新。此外，一些业务逻辑需要组合多个来源。例如，只有用户已登录<em>并且</em>订阅了高级新闻服务时，才显示收藏按钮。可以定义如下 UI state 类：</p>
+<p>
+</p><div></div><div><pre class="source-code" id="android_architecture_ui_layer_news_can_bookmark-code-sample-kotlin"><code>data class NewsUiState(
+    val isSignedIn: Boolean = false,
+    val isPremium: Boolean = false,
+    val newsItems: List&lt;NewsItemUiState&gt; = listOf()
+)
+
+val NewsUiState.canBookmarkNews: Boolean get() = isSignedIn &amp;&amp; isPremiumUiLayer.kt</code></pre></div>
+<p data-unit="01-ui-layer-085">在这个声明中，收藏按钮的可见性由另外两个属性推导出来。业务逻辑越复杂，使用一个让所有属性都能立即访问的 <code>UiState</code> 类就越重要。</p></li>
+<li><p data-unit="01-ui-layer-086"><strong>UI state：单条流还是多条流？</strong>选择单条流或多条流暴露 UI state 时，主要依据是所发出各项数据之间的关系。单条流最大的优势是便利与数据一致性：状态读取者在任何时刻都能取得最新信息。不过，某些情况下也适合由 ViewModel 提供独立的状态流：</p>
+<ul>
+<li><p data-unit="01-ui-layer-087"><strong>不相关的数据类型：</strong>渲染 UI 所需的某些状态可能完全独立。这时，把不同状态捆绑在一起的成本可能超过收益，尤其是其中一个状态比另一个更新得更频繁时。</p></li>
+<li><p data-unit="01-ui-layer-088"><strong><code>UiState</code> 差异比较：</strong><code>UiState</code> 对象中的字段越多，越可能因某个字段更新而使流发出新值。UI 元素没有用于判断连续两次输出相同还是不同的差异比较机制，因此每次输出都会使 UI 元素更新。这意味着可能需要使用 <code>Flow</code> API 的 <a href="https://kotlin.github.io/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/distinct-until-changed.html"><code>distinctUntilChanged()</code></a> 等方法来缓解这一问题。</p></li>
+</ul></li>
+</ul>
+<p data-unit="01-ui-layer-089">关于渲染与 UI state 的更多信息，请参阅<a href="https://developer.android.google.cn/develop/ui/compose/lifecycle">可组合函数的生命周期</a>。</p>
+<h2 data-unit="01-ui-layer-090" id="consume-ui-state">读取 UI state</h2>
+<p data-unit="01-ui-layer-091">在 UI 中读取 <code>UiState</code> 对象流时，使用对应可观察数据类型的终端操作符。例如，对 Kotlin Flow 使用 <code>collect()</code> 方法或其变体。</p>
+<p data-unit="01-ui-layer-092">在 UI 中读取可观察数据容器时，务必考虑 UI 的生命周期。可组合函数未向用户显示时，不要让 UI 观察 UI state。详情请参阅这篇<a href="https://medium.com/androiddevelopers/consuming-flows-safely-in-jetpack-compose-cde014d0d5a3">博客文章</a>。使用 Flow 时，最好通过适当的协程作用域和 <code>collectAsStateWithLifecycle</code> API 处理生命周期问题：</p>
+<p>
+</p><div></div><div><pre class="source-code" id="android_compose_state_hoisting_vm_usage-code-sample"><code>@Composable
+private fun ConversationScreen(
+    conversationViewModel: ConversationViewModel = viewModel()
+) {
+
+    val messages by conversationViewModel.messages.collectAsStateWithLifecycle()
+
+    ConversationScreen(
+        messages = messages,
+        onSendMessage = { message: Message -&gt; conversationViewModel.sendMessage(message) }
+    )
+}
+
+@Composable
+private fun ConversationScreen(
+    messages: List&lt;Message&gt;,
+    onSendMessage: (Message) -&gt; Unit
+) {
+
+    MessagesList(messages, onSendMessage)
+    /* ... */
+}StateHoistingSnippets.kt</code></pre></div>
+<h3 data-unit="01-ui-layer-093" id="show-operations">显示进行中的操作</h3>
+<p data-unit="01-ui-layer-094">在 <code>UiState</code> 类中，用布尔字段表示加载状态是一种简单方式：</p>
+<p>
+</p><div></div><div><pre class="source-code" id="android_architecture_ui_layer_news_fetching_state-code-sample-kotlin"><code>data class NewsUiState(
+    val isFetchingArticles: Boolean = false,
+    // ...
+)UiLayer.kt</code></pre></div>
+<p data-unit="01-ui-layer-095">这个标记的值表示 UI 中是否存在进度条。</p>
+<p>
+</p><div></div><div><pre class="source-code" id="android_architecture_ui_layer_latest_news_screen-code-sample-kotlin"><code>@Composable
+fun LatestNewsScreen(
+    modifier: Modifier = Modifier,
+    viewModel: NewsViewModel = viewModel()
+) {
+    Box(modifier.fillMaxSize()) {
+
+        if (viewModel.uiState.isFetchingArticles) {
+            CircularProgressIndicator(Modifier.align(Alignment.Center))
+        }
+
+        // Add other UI elements. For example, the list.
+    }
+}UiLayer.kt</code></pre></div>
+<h3 data-unit="01-ui-layer-096" id="show-errors">在屏幕上显示错误</h3>
+<p data-unit="01-ui-layer-097">错误与进行中的操作都容易用布尔值表示是否存在，因此它们在 UI 中的显示方式相似。不过，错误还可能附带要告诉用户的消息，或用于重试失败操作的关联操作。所以，进行中的操作只有加载与未加载两种情况，而错误状态可能需要用数据类建模，保存适合当前错误情境的元数据。</p>
+<p data-unit="01-ui-layer-098">考虑前述获取文章时显示进度条的例子。如果操作失败，可能希望向用户显示一条或多条消息，说明哪里出了问题。</p>
+<p>
+</p><div></div><div><pre class="source-code" id="android_architecture_ui_layer_news_user_messages-code-sample-kotlin"><code>data class Message(val id: Long, val message: String)
+
+data class NewsUiState(
+    val userMessages: List&lt;Message&gt; = listOf(),
+    // ...
+)UiLayer.kt</code></pre></div>
+<p data-unit="01-ui-layer-099">随后，可以通过 <a href="https://developer.android.google.cn/develop/ui/compose/components/snackbar">snackbar</a> 等 UI 元素向用户呈现错误消息。关于 UI 事件如何生成和读取，请参阅 <a href="https://developer.android.google.cn/jetpack/guide/ui-layer/events">UI events</a>。</p>
+<h2 data-unit="01-ui-layer-100" id="threading-concurrency">线程与并发</h2>
+<p data-unit="01-ui-layer-101">确保 ViewModel 执行的所有工作都是<em>主线程安全</em>的，即可以安全地从主线程调用。数据层和领域层负责把工作切换到其他线程。</p>
+<p data-unit="01-ui-layer-102">如果 ViewModel 执行长时间运行的操作，它也负责把相应逻辑切换到后台线程。Kotlin 协程适合管理并发操作，Jetpack 架构组件也内置了协程支持。关于在 Android 应用中使用协程，请参阅 <a href="https://developer.android.google.cn/kotlin/coroutines">Android 上的 Kotlin 协程</a>。</p>
+<h2 data-unit="01-ui-layer-103" id="navigation">导航</h2>
+<p data-unit="01-ui-layer-104">应用导航的变化经常由类似事件的输出驱动。例如，<code>SignInViewModel</code> 类执行登录后，<code>UiState</code> 中的 <code>isSignedIn</code> 字段可能会设为 <code>true</code>。应像前面的<a href="https://developer.android.google.cn/topic/architecture/ui-layer?hl=en#consume-ui-state">读取 UI state</a>一节那样读取这些触发信号，但将具体的导航执行交给 <a href="https://developer.android.google.cn/guide/navigation">Navigation 组件</a>。</p>
+<p data-unit="01-ui-layer-105">UI 导航的更多信息，请参阅 <a href="https://developer.android.google.cn/guide/navigation/navigation-3">Navigation 3</a>。</p>
+<h2 data-unit="01-ui-layer-106" id="paging">分页</h2>
+<p data-unit="01-ui-layer-107">UI 通过 <code>PagingData</code> 类型使用 <a href="https://developer.android.google.cn/topic/libraries/architecture/paging/v3-overview">Paging 库</a>。由于 <code>PagingData</code> 表示并包含可能随时间变化的条目，也就是它并非不可变类型，因此不要把它放进不可变 UI state。应改为由 ViewModel 用独立的流暴露它。</p>
+<p data-unit="01-ui-layer-108">下例展示 Paging 库的 Compose API：</p>
+<p>
+</p><div></div><div><pre class="source-code" id="android_compose_libraries_paging_example-code-sample"><code>@Composable
+fun MyScreen(flow: Flow&lt;PagingData&lt;String&gt;&gt;) {
+    val lazyPagingItems = flow.collectAsLazyPagingItems()
+    LazyColumn {
+        items(
+            lazyPagingItems.itemCount,
+            key = lazyPagingItems.itemKey { it }
+        ) { index -&gt;
+            val item = lazyPagingItems[index]
+            Text("Item is $item")
+        }
+    }
+}ComposeWithOtherLibraries.kt</code></pre></div>
+<h2 data-unit="01-ui-layer-109" id="animations">动画</h2>
+<p data-unit="01-ui-layer-110">为了提供流畅的顶层导航过渡，可能需要等第二个页面加载数据后再开始动画。</p>
+<p data-unit="01-ui-layer-111">导航过渡的更多信息，请参阅 <a href="https://developer.android.google.cn/guide/navigation/navigation-3/animate-destinations">Navigation 3</a> 和 <a href="https://developer.android.google.cn/develop/ui/compose/animation/shared-elements">Compose 中的共享元素过渡</a>。</p>
+<h2 data-unit="01-ui-layer-112" id="additional-resources">其他资源</h2>
+<h3 data-unit="01-ui-layer-113" id="views">View 相关内容</h3>
+<ul>
+<li data-unit="01-ui-layer-114"><a href="https://developer.android.google.cn/topic/architecture/views/ui-layer">UI 层（View）</a></li>
+</ul>
+<h2 data-unit="01-ui-layer-115" id="samples">示例</h2>
+<p data-unit="01-ui-layer-116">以下 Google 示例展示 UI 层的使用方式。可以探索这些示例，了解如何在实践中应用本指南：</p>
+<p></p><div>
+</div>
+<div class="nocontent"></div>
+</article><nav class="chapter-switcher" aria-label="章节导航"><span></span><a class="course-home" href="../index.html">全部章节</a><a href="../02-ui-events/literal.html">用户操作与事件 →</a></nav><footer class="license-note"><p>原文：<a href="https://developer.android.com/topic/architecture/ui-layer?hl=en">UI layer</a>，Android Developers / Google。英文快照：2026-10-13。非官方中文翻译与表达优化：Codex。原有示例和代码保留；<a href="../NOTICE.html">来源与许可</a>。</p></footer></main></body></html>

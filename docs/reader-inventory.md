@@ -58,3 +58,10 @@ KaTeX 的 `public/reading/_shared/katex/` 是第三方数学排版资源，不�
 新增 `public/reading/network-requests/`：七篇中文润色版、七篇英文对照、七篇第一轮直译，以及目录和许可说明，共 23 个 HTML 页面。站内文章入口为 `content/computer-science/network-requests.md`。
 
 复用 `public/reading/reader.css`；系列 `source.css` 处理 MDN 正文与独立校注，16 张原图保留在 `assets/`。`sources.json`、`coverage.json` 与 `assets.json` 保留来源、原文单元顺序和图像哈希。章节导航接入 `check:course-readers`，页面关联全站应用清单；制作底稿留在文稿目录，不进入公开产物。
+
+
+## 2026-10-13：Android 应用的数据与状态
+
+新增 `public/reading/android-data-state/`：十篇中文阅读版、十篇英文对照、十篇第一轮直译，以及目录和许可说明，共 32 个 HTML 页面；站内入口为 `content/computer-science/android-data-state.md`。
+
+正文复用 `public/reading/reader.css`；系列 `source.css` 处理官方正文、代码变体、表格与独立校注。原文包含 1,130 个正文单元、162 个代码块、91 处图片引用（89 个独立原图）与 5 张表。`coverage.json` 保存原始单元序列、标题、代码哈希和行内代码；`tests/android-data-reader-completeness.test.mjs` 检查三版完整正文及全部图像哈希，课程导航接入 `check:course-readers`。两轮译稿、原文快照、表达修改记录与全文校验器留在文稿目录。

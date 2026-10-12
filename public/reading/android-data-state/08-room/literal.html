@@ -1,0 +1,127 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Room 整体认识 · Android 应用的数据与状态</title><link rel="stylesheet" href="../../reader.css"><link rel="stylesheet" href="../source.css"><link rel="manifest" href="../../../manifest.webmanifest"></head><body><nav class="site-nav"><a href="../index.html">← Android 应用的数据与状态</a><a href="https://developer.android.com/training/data-storage/room?hl=en">官方英文原文 ↗</a></nav><main class="reader"><header class="chapter-header"><span class="chapter-kicker">08 · 第一轮直译稿</span><h1>Room 整体认识</h1><p class="byline">Save data in a local database using Room · Android Developers / Google</p><div class="title-rule"></div><p class="edition-nav"><a href="index.html">中文阅读版</a> · <a href="english.html">英文对照</a> · <strong aria-current="page">第一轮直译稿</strong></p><aside class="learning-note"><span class="note-kind">编者导读 · 不属于原文</span><p><strong>Room 的数据库、Entity、DAO 三个部分怎样配合？</strong></p><p>先看三个组件的关系，再读 User、UserDao 和数据库类的原例；配置细节留到实际运行时核对。</p><p><strong>第一轮阅读：</strong>先读主要组件、实现示例和使用；依赖配置与 KMP 链接按需要回查。</p><details class="editor-notes"><summary>版本与适用范围校注（1 条）</summary><p>本次英文快照已经包含 Room 3.0 和 KSP 用法；不得把这些配置直接套进使用旧版 Room 的项目。全文保持此快照，不混合不同版本示例。</p></details></aside><details class="source-details"><summary>本篇目录与翻译范围</summary><p>官方英文文章正文全文；保留原文顺序、代码、图示、表格与延伸链接。代码与图中文字保持原样。编者导读与校注单独标明，阅读不要求同时安装、运行或编写示例。</p><ul><li class="toc-h2"><a href="#setup">配置</a></li><li class="toc-h3"><a href="#kts">Kotlin</a></li><li class="toc-h3"><a href="#groovy">Groovy</a></li><li class="toc-h2"><a href="#components">主要组件</a></li><li class="toc-h2"><a href="#sample-implementation">实现示例</a></li><li class="toc-h3"><a href="#data-entity">数据实体</a></li><li class="toc-h3"><a href="#dao">数据访问对象（DAO）</a></li><li class="toc-h3"><a href="#database">数据库</a></li><li class="toc-h3"><a href="#usage">使用</a></li><li class="toc-h2"><a href="#additional-resources">其他资源</a></li><li class="toc-h3"><a href="#samples">示例</a></li></ul></details><nav class="chapter-switcher" aria-label="章节导航"><a href="../07-sql/literal.html">← 数据库与 SQL 入门</a><a class="course-home" href="../index.html">全部章节</a><a href="../09-entities/literal.html">用 Entity 定义保存的数据 →</a></nav></header><article class="translated-article">
+<h1 class="page-title" data-unit="08-room-001" id="save_data_in_a_local_database_using_room">用 Room 在本地数据库保存数据 <span class="dac-jetpack"><span>属于 <a href="https://developer.android.google.cn/jetpack">Android Jetpack</a>。</span></span></h1>
+<p>
+</p><div class="android-page-banner android-page-banner-image-bottom-right">
+<div class="android-page-banner-content">
+<div class="android-page-banner-title"><span class="source-text" data-unit="08-room-002">尝试 Kotlin Multiplatform</span></div>
+<div class="android-page-banner-description"><span class="source-text" data-unit="08-room-003">Kotlin Multiplatform 允许与其他平台共享数据库层。了解怎样在 KMP 中配置和使用 Room 数据库。</span></div>
+<div class="android-page-banner-cta"><span class="source-text" data-unit="08-room-004"><a href="https://developer.android.google.cn/kotlin/multiplatform/room">配置 KMP 的 Room 数据库 →</a></span></div>
+</div>
+<div class="android-page-banner-media">
+<picture>
+<img alt="" class="android-page-banner-image" data-original-src="https://developer.android.google.cn/static/images/android-kmp-logo.png" loading="eager" src="../assets/1d370d0aad0e844f.png"/>
+</picture>
+</div>
+</div>
+<p data-unit="08-room-005">处理较多结构化数据的应用，可以从本地持久化中获得很大收益。最常见的用途是缓存相关数据，让设备无法访问网络时，用户仍可离线浏览。</p>
+<p data-unit="08-room-006">Room 持久化库在 SQLite 上提供抽象层，使数据库访问更流畅，同时利用 SQLite 的全部能力。它主要提供以下好处：</p>
+<ul>
+<li data-unit="08-room-007">编译时验证 SQL 查询。</li>
+<li data-unit="08-room-008">便捷标注，减少重复且容易出错的样板代码。</li>
+<li data-unit="08-room-009">简化数据库迁移流程。</li>
+</ul>
+<p data-unit="08-room-010">推荐使用 Room，而非<a href="https://developer.android.google.cn/training/data-storage/sqlite">直接使用 SQLite API</a>。</p>
+<h2 data-unit="08-room-011" id="setup">配置</h2>
+<p data-unit="08-room-012">使用 Room 时，在模块的 <code>build.gradle.kts</code> 文件中添加以下依赖。Room 3.0 要求使用 KSP 处理标注。</p>
+<div>
+<div class="ds-selector-tabs"><section><h3 class="two-line-tab" data-unit="08-room-013" id="kts">Kotlin</h3>
+<div></div><div><pre class="source-code"><code>dependencies {
+    val room_version = "3.0.3"
+
+    implementation("androidx.room3:room3-runtime:$room_version")
+    ksp("androidx.room3:room3-compiler:$room_version")
+}</code></pre></div>
+</section><section><h3 class="two-line-tab" data-unit="08-room-014" id="groovy">Groovy</h3>
+<div></div><div><pre class="source-code"><code>dependencies {
+    def room_version = "3.0.3"
+
+    implementation "androidx.room3:room3-runtime:$room_version"
+
+    ksp "androidx.room3:room3-compiler:$room_version"
+}</code></pre></div>
+</section></div>
+</div>
+<h2 data-unit="08-room-015" id="components">主要组件</h2>
+<p data-unit="08-room-016">Room 有三个主要组件：</p>
+<ul>
+<li data-unit="08-room-017"><a href="https://developer.android.google.cn/reference/kotlin/androidx/room3/Database">数据库类</a>持有数据库，是应用访问底层持久化数据连接的主要入口。</li>
+<li data-unit="08-room-018"><a href="https://developer.android.google.cn/training/data-storage/room/defining-data">数据实体</a>表示数据库中的表。</li>
+<li data-unit="08-room-019"><a href="https://developer.android.google.cn/training/data-storage/room/accessing-data">数据访问对象（DAO）</a>提供查询、更新、插入、删除数据库数据的函数。</li>
+</ul>
+<p data-unit="08-room-020">数据库类向应用提供相关 DAO 实例。应用再通过 DAO 取得数据，以对应实体对象表示；还可以用定义好的实体更新相应表中的行，或创建待插入的新行。图 1 展示这些组件的关系。</p>
+<figure id="fig-room-arch">
+<img alt="" data-original-src="https://developer.android.google.cn/static/images/training/data-storage/room_architecture.png" loading="eager" src="../assets/538e4072a49af4e7.png" width="600"/>
+<figcaption data-unit="08-room-021"><b>图 1。</b>Room 架构图。</figcaption>
+</figure>
+<h2 data-unit="08-room-022" id="sample-implementation">实现示例</h2>
+<p data-unit="08-room-023">本节展示只有一个数据实体和一个 DAO 的 Room 数据库实现。</p>
+<h3 data-unit="08-room-024" id="data-entity">数据实体</h3>
+<p data-unit="08-room-025">以下代码定义 <code>User</code> 实体，<code>User</code> 的每个实例都对应应用数据库 <code>user</code> 表中的一行。</p>
+<p>
+</p><div></div><div><pre class="source-code" id="android_room3_index_entity-code-sample-kotlin"><code>@Entity
+data class User(
+    @PrimaryKey val uid: Int,
+    @ColumnInfo(name = "first_name") val firstName: String,
+    @ColumnInfo(name = "last_name") val lastName: String
+)IndexSnippets.kt</code></pre></div>
+<p data-unit="08-room-026">实体的更多信息，请参阅<a href="https://developer.android.google.cn/training/data-storage/room/defining-data">用 Room 实体定义数据</a>。</p>
+<h3 data-unit="08-room-027" id="dao">数据访问对象（DAO）</h3>
+<p data-unit="08-room-028">以下代码定义名为 <code>UserDao</code> 的 DAO，<code>UserDao</code> 提供应用其他部分操作 <code>user</code> 表数据所需的函数。</p>
+<p>
+</p><div></div><div><pre class="source-code" id="android_room3_index_dao-code-sample-kotlin"><code>@Dao
+interface UserDao {
+    @Query("SELECT * FROM user")
+    suspend fun getAll(): List&lt;User&gt;
+
+    @Query("SELECT * FROM user WHERE uid IN (:userIds)")
+    suspend fun loadAllByIds(userIds: IntArray): List&lt;User&gt;
+
+    @Query(
+        """
+        SELECT * FROM user
+        WHERE first_name LIKE :first AND last_name LIKE :last LIMIT 1
+        """
+    )
+    suspend fun findByName(first: String, last: String): User
+
+    @Insert
+    suspend fun insertAll(vararg users: User)
+
+    @Delete
+    suspend fun delete(user: User)
+}IndexSnippets.kt</code></pre></div>
+<p data-unit="08-room-029">DAO 的更多信息，请参阅<a href="https://developer.android.google.cn/training/data-storage/room/accessing-data">用 Room DAO 访问数据</a>。</p>
+<h3 data-unit="08-room-030" id="database">数据库</h3>
+<p data-unit="08-room-031">以下代码定义 <code>AppDatabase</code> 类持有数据库。<code>AppDatabase</code> 定义数据库配置，并作为应用访问持久化数据的主要入口。数据库类必须满足：</p>
+<ul>
+<li data-unit="08-room-032">使用 <a href="https://developer.android.google.cn/reference/kotlin/androidx/room3/Database"><code>@Database</code></a> 标注，并在 <a href="https://developer.android.google.cn/reference/kotlin/androidx/room3/Database#entities()"><code>entities</code></a> 数组中列出关联数据库的全部实体。</li>
+<li data-unit="08-room-033">是继承 <a href="https://developer.android.google.cn/reference/kotlin/androidx/room3/RoomDatabase"><code>RoomDatabase</code></a> 的抽象类。</li>
+<li data-unit="08-room-034">为关联的每个 DAO 定义一个无参数、返回该 DAO 实例的抽象函数。</li>
+</ul>
+<p>
+</p><div></div><div><pre class="source-code" id="android_room3_index_database-code-sample-kotlin"><code>@Database(entities = [User::class], version = 1)
+abstract class AppDatabase : RoomDatabase() {
+    abstract fun userDao(): UserDao
+}IndexSnippets.kt</code></pre></div>
+<div class="note">
+<p data-unit="08-room-035"><b>注意：</b>单进程应用实例化 <code>AppDatabase</code> 时，应遵循单例模式。每个 <code>RoomDatabase</code> 实例的创建成本较高，一个进程内通常不需要多个实例。</p>
+<p data-unit="08-room-036">多进程应用应在数据库 builder 调用中加入 <code>enableMultiInstanceInvalidation()</code>。这样，每个进程各有 <code>AppDatabase</code> 实例时，一个进程使共享数据库文件失效，该失效会自动传播到其他进程的 <code>AppDatabase</code> 实例。</p>
+</div>
+<h3 data-unit="08-room-037" id="usage">使用</h3>
+<p data-unit="08-room-038">定义好实体、DAO 和数据库对象后，可以用以下代码创建数据库实例：</p>
+<p>
+</p><div></div><div><pre class="source-code" id="android_room3_index_create-code-sample-kotlin"><code>val db =
+    Room.databaseBuilder&lt;AppDatabase&gt;(applicationContext, "database-name")
+        .setDriver(AndroidSQLiteDriver())
+        .build()IndexSnippets.kt</code></pre></div>
+<p data-unit="08-room-039">随后使用 <code>AppDatabase</code> 的抽象函数取得 DAO，再调用 DAO 的函数操作数据库：</p>
+<p>
+</p><div></div><div><pre class="source-code" id="android_room3_index_usage-code-sample-kotlin"><code>val userDao = db.userDao()
+val users: List&lt;User&gt; = userDao.getAll()IndexSnippets.kt</code></pre></div>
+<h2 data-unit="08-room-040" id="additional-resources">其他资源</h2>
+<p data-unit="08-room-041">Room 的更多信息，请参阅以下资源：</p>
+<h3 data-unit="08-room-042" id="samples">示例</h3>
+<p></p><div>
+</div>
+<div class="nocontent"></div>
+</article><nav class="chapter-switcher" aria-label="章节导航"><a href="../07-sql/literal.html">← 数据库与 SQL 入门</a><a class="course-home" href="../index.html">全部章节</a><a href="../09-entities/literal.html">用 Entity 定义保存的数据 →</a></nav><footer class="license-note"><p>原文：<a href="https://developer.android.com/training/data-storage/room?hl=en">Save data in a local database using Room</a>，Android Developers / Google。英文快照：2026-10-13。非官方中文翻译与表达优化：Codex。原有示例和代码保留；<a href="../NOTICE.html">来源与许可</a>。</p></footer></main></body></html>
