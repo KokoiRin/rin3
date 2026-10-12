@@ -6,7 +6,7 @@ suspend fun main() {
 withContext(Dispatchers.Default) {
     // Used as a signal that the coroutine has started running
     val childStarted = CompletableDeferred&lt;Unit&gt;()
-    
+&#32;&#32;&#32;&#32;
     val childJob: Job = launch {
         println("The coroutine has started")
 
@@ -19,13 +19,13 @@ withContext(Dispatchers.Default) {
             awaitCancellation()
         } catch (e: CancellationException) {
             println("The coroutine was canceled: $e")
-          
+&#32;&#32;&#32;&#32;&#32;&#32;&#32;&#32;&#32;&#32;
             // Always rethrow cancellation exceptions!
             throw e
         }
         println("This line will never be executed")
     }
-  
+&#32;&#32;
     // Waits for the coroutine to start before canceling it
     childStarted.await()
 
@@ -117,10 +117,10 @@ withContext(Dispatchers.Default) {
             mutex.lock()
         }
     )
-    
+&#32;&#32;&#32;&#32;
     // Gives the child coroutines time to start and suspend
     delay(100.milliseconds)
-    
+&#32;&#32;&#32;&#32;
     // Cancels all child coroutines
     childJobs.forEach { it.cancel() }
 }
@@ -194,7 +194,7 @@ class ScreenWithButtons(private val scope: CoroutineScope) {
                 // This is a blocking call that doesn't react to cancellation
                 readLines(filename)
             }
-            
+&#32;&#32;&#32;&#32;&#32;&#32;&#32;&#32;&#32;&#32;&#32;&#32;
             // It's safe to call updateUi()
             // because withContext() doesn't return if the coroutine is canceled,
             // and no code running on the UI thread can dispose of the buttons before this call
@@ -234,7 +234,7 @@ class ScreenWithFileContents(private val scope: CoroutineScope) {
         scope.launch {
             // Stores the reader in a variable, so the finally block can close it
             var reader: BufferedReader? = null
-            
+&#32;&#32;&#32;&#32;&#32;&#32;&#32;&#32;&#32;&#32;&#32;&#32;
             try {
                 withContext(Dispatchers.IO) {
                     reader = Files.newBufferedReader(
