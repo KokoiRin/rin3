@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="函数：从调用过程到正式规则 · Dan Grossman 编程语言课程 Section 1 原创中文讲解"><title>函数：从调用过程到正式规则 · 编程语言 Part A / Section 1 · RIN III</title><link rel="stylesheet" href="../../reader.css"><link rel="stylesheet" href="../lesson.css"><link rel="manifest" href="../../../manifest.webmanifest"></head><body class="pl-course"><nav class="site-nav"><a href="../index.html">← 编程语言 · Section 1</a><a href="https://www.coursera.org/learn/programming-languages">原课程 ↗</a></nav><main class="reader"><header class="chapter-header"><span class="chapter-kicker">04 / 13 · 原创中文讲解</span><h1>函数：从调用过程到正式规则</h1><p class="lead">把参数、函数体、类型与调用过程接成一条清楚的执行链。</p><p class="byline">原课程：Dan Grossman · Programming Languages, Part A</p><p class="lesson-context">从参数与返回值，走到元组、列表与列表递归。建议按顺序阅读；遇到新符号，先跟随代码的执行过程，再回看规则。</p><details class="source-details"><summary>对应视频与本篇范围</summary><ul><li><a href="https://www.coursera.org/learn/programming-languages/lecture/CTpaX/functions-informally">V05 · Functions Informally</a></li><li><a href="https://www.coursera.org/learn/programming-languages/lecture/C28En/functions-formally">V06 · Functions Formally</a></li></ul><p>本系列依据 Dan Grossman 的 Programming Languages, Part A · Section 1 制作原创中文学习讲解，使用自己的解释与示例组织概念；不是逐字翻译、官方译本或课程视频字幕。</p><p>主要参考：对应视频的官方英文字幕、<a href="https://courses.cs.washington.edu/courses/cse341/19sp/unit1notes.pdf">UW Unit 1 讲义</a>、<a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec1slides.pdf">Lecture 1</a> / <a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec2slides.pdf">Lecture 2</a> / <a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec3slides.pdf">Lecture 3 幻灯片</a>及讲师示例。<a href="../index.html#sources">完整来源与映射说明</a>。</p></details><details class="lesson-toc"><summary>本篇目录</summary><ol><li class="toc-h2"><a href="#函数把一次计算变成可以反复使用的规则">函数把一次计算，变成可以反复使用的规则</a></li><li class="toc-h2"><a href="#原课的-pow用更小的问题定义当前问题">原课的 pow：用更小的问题定义当前问题</a></li><li class="toc-h2"><a href="#函数定义成功不等于函数体已经运行">函数定义成功，不等于函数体已经运行</a></li><li class="toc-h2"><a href="#参数递归名字和先前绑定怎样进入类型环境">参数、递归名字和先前绑定，怎样进入类型环境</a></li><li class="toc-h2"><a href="#调用一个函数按三个步骤走">调用一个函数，按三个步骤走</a></li><li class="toc-h2"><a href="#还有一个容易跳过的条件使用定义时的环境">还有一个容易跳过的条件：使用定义时的环境</a></li><li class="toc-h2"><a href="#对应原课与回看线索">对应原课与回看线索</a></li></ol></details><nav class="chapter-switcher" aria-label="章节导航"><a rel="prev" href="../03-shadowing/index.html">← 03 同名绑定：新名字怎样遮住旧名字</a><a class="course-home" href="../index.html">全部 13 篇</a><a rel="next" href="../05-tuples/index.html">05 元组：把不同数据装在一起 →</a></nav></header><article class="lesson-article translated-article"><h2 id="函数把一次计算变成可以反复使用的规则">函数把一次计算，变成可以反复使用的规则</h2>
+<p>前面每条 <code>val</code> 都在当时算出一个结果。如果我们想对不同输入执行同一种计算，就需要函数。函数接收输入，用函数体计算，最后得到一个结果；在这节 ML 代码里，不需要先把它放进类，也不需要 <code>this</code> 或 <code>return</code>。</p>
+<p>先用一个自编例子承接阅读页数：</p>
+<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>fun weekly_total (weekday_pages : int, weekend_pages : int) =</span></span>
+<span data-line=""><span>    weekday_pages * 5 + weekend_pages * 2;</span></span>
+<span data-line=""> </span>
+<span data-line=""><span>val first_plan = weekly_total(12, 18);</span></span>
+<span data-line=""><span>val second_plan = weekly_total(10, 20);</span></span></code></pre></figure>
+<p><code>fun</code> 表示建立函数绑定，<code>weekly_total</code> 是名字。参数后面的 <code>: int</code> 指定它们是整数。等号右边整体是函数体；计算结果就是调用结果，所以两个计划分别得到 <code>96</code> 与 <code>90</code>。</p>
+<p>本课初期把这里称作“两个参数”，便于描述；更准确地看，ML 的 <code>int * int</code> 是一对整数的元组类型。这一层结构在下一篇讲元组时再展开，不妨先准确使用 <code>f(x,y)</code> 这样的写法。</p>
+<h2 id="原课的-pow用更小的问题定义当前问题">原课的 pow：用更小的问题定义当前问题</h2>
+<p>老师用幂运算把函数和递归一起带进来：</p>
+<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>fun pow (x : int, y : int) =</span></span>
+<span data-line=""><span>    if y = 0</span></span>
+<span data-line=""><span>    then 1</span></span>
+<span data-line=""><span>    else x * pow(x, y - 1);</span></span>
+<span data-line=""> </span>
+<span data-line=""><span>fun cube (x : int) =</span></span>
+<span data-line=""><span>    pow(x, 3);</span></span></code></pre></figure>
+<p><code>pow(x,y)</code> 表示这份程序计算的 <code>x</code> 的 <code>y</code> 次方，前提是 <code>y >= 0</code>。它先看指数：如果为零，就直接得到 <code>1</code>；否则，把问题缩成指数小一的 <code>pow(x,y-1)</code>，再乘上一次 <code>x</code>。</p>
+<p>以 <code>pow(2,3)</code> 为例，求值关系可以逐层写开：</p>
+<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="text" data-theme="github-light"><code data-language="text" data-theme="github-light" style="display: grid;"><span data-line=""><span>pow(2,3)</span></span>
+<span data-line=""><span>= 2 * pow(2,2)</span></span>
+<span data-line=""><span>= 2 * (2 * pow(2,1))</span></span>
+<span data-line=""><span>= 2 * (2 * (2 * pow(2,0)))</span></span>
+<span data-line=""><span>= 2 * (2 * (2 * 1))</span></span>
+<span data-line=""><span>= 8</span></span></code></pre></figure>
+<p>这不是“定义自己，所以陷入循环”。对满足前提的指数，递归调用解决的是更小的问题，最终到达不再递归的 <code>y = 0</code>。不过如果传入负指数，<code>y - 1</code> 会继续远离零，这份程序就不提供正确性与正常结束的保证。类型 <code>int</code> 并没有表达“非负”这个额外条件。</p>
+<p><code>cube</code> 使用先前定义的 <code>pow</code>，把指数固定为三。因此 <code>cube(4)</code> 得到 <code>64</code>。一个参数的调用可以省略外围括号，写 <code>cube 4</code>；但不要凭这个经验把 <code>pow(2,3)</code> 的元组结构随意拆掉。</p>
+<h2 id="函数定义成功不等于函数体已经运行">函数定义成功，不等于函数体已经运行</h2>
+<p>REPL 可能打印出：</p>
+<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="text" data-theme="github-light"><code data-language="text" data-theme="github-light" style="display: grid;"><span data-line=""><span>val pow = fn : int * int -> int</span></span>
+<span data-line=""><span>val cube = fn : int -> int</span></span></code></pre></figure>
+<p><code>fn</code> 在这里表示结果是一个函数，不是报错，也不要求你把函数体再抄一遍。<code>int * int -> int</code> 表示输入是一对整数、结果为整数；<code>int -> int</code> 表示输入和结果都是整数。类型里的 <code>*</code> 不是乘法，它用于组合输入类型；表达式中的 <code>x * y</code> 才是乘法。</p>
+<p>定义函数时，动态环境记住这个可调用的函数，<strong>不会立刻把函数体拿来计算一次</strong>。<code>cube</code> 的参数 <code>x</code> 还没有具体数值，函数体当然也还没有为某次调用产生结果。等到 <code>cube(4)</code> 出现，才会给这次调用建立 <code>x → 4</code> 并计算函数体。</p>
+<p>不过，“没有运行函数体”不等于“不检查函数体”。函数定义时，类型检查器就要确认函数体中的各个表达式能够符合类型规则。下面即使从不调用，也有类型错误：</p>
+<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>(* 预期：类型错误，函数体把 int 和 bool 相加。 *)</span></span>
+<span data-line=""><span>fun broken (x : int) = x + true;</span></span></code></pre></figure>
+<p>所以要把两件事分清：定义时检查并得到函数值；调用时使用具体参数求值。</p>
+<h2 id="参数递归名字和先前绑定怎样进入类型环境">参数、递归名字和先前绑定，怎样进入类型环境</h2>
+<p>课程给函数绑定的一般写法是：</p>
+<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="text" data-theme="github-light"><code data-language="text" data-theme="github-light" style="display: grid;"><span data-line=""><span>fun f (x1 : t1, ..., xn : tn) = e</span></span></code></pre></figure>
+<p>检查函数体 <code>e</code> 时，它能使用三类名字：先前环境里已有的名字、这次函数的参数名字，以及函数自己 <code>f</code>。最后一项让递归调用成为可能。例如检查 <code>pow</code> 的函数体时，知道 <code>x : int</code>、<code>y : int</code>，也允许 <code>pow</code> 按相应的函数类型被调用。</p>
+<p>参数名字只在函数体中使用，不会因为定义了函数，就在顶层多出一个可以直接读取的 <code>x</code>。函数定义成功后，加入后续环境的是函数名及其类型；参数并没有获得一个全局值。</p>
+<p>返回类型没有被我们写出来，但 ML 能根据函数体推断。以 <code>pow</code> 为例，<code>y = 0</code> 是布尔判断；<code>then</code> 分支是整数 <code>1</code>；<code>else</code> 分支要进行整数乘法，递归调用的结果也要与之相容。整个条件表达式得到 <code>int</code>，因此返回类型为 <code>int</code>。</p>
+<p>这叫类型推断，不是“运行一次以后再看看返回了什么”。关于推断算法的细节，课程后面还会专门讲；现在先理解它建立的是运行前的类型约束。</p>
+<h2 id="调用一个函数按三个步骤走">调用一个函数，按三个步骤走</h2>
+<p>看这个带表达式实参的调用：</p>
+<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>(* 在前面的 pow 定义之后执行。 *)</span></span>
+<span data-line=""><span>val answer = pow(2, 2 + 2);</span></span></code></pre></figure>
+<p>第一步，求函数位置的表达式 <code>pow</code>，从动态环境中找到可调用的函数。第二步，先求所有实参的值：<code>2</code> 已经是值，<code>2 + 2</code> 则要先算成 <code>4</code>。第三步，用这些值建立本次调用的参数绑定，再计算函数体。因此这次函数体看到的是 <code>x → 2</code>、<code>y → 4</code>，并不知道这个 <code>4</code> 原先来自加法。</p>
+<p>这种“先把实参算完，再进入函数体”的方式，称作急切求值。先抓住这一点：即使函数体最终不用某个参数，相应的实参表达式也需要先完成求值。</p>
+<p>调用本身也要检查类型。函数位置得有函数类型；实参结构和各部分的类型必须匹配；满足后，整个调用表达式的类型就是函数的结果类型。<code>pow(2,true)</code> 不会因为函数体“也许碰不到 y”而放行，因为第二个位置要求 <code>int</code>。</p>
+<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>(* 预期：类型错误，第二个输入应为 int，而不是 bool。 *)</span></span>
+<span data-line=""><span>val wrong_call = pow(2, true);</span></span></code></pre></figure>
+<h2 id="还有一个容易跳过的条件使用定义时的环境">还有一个容易跳过的条件：使用定义时的环境</h2>
+<p>调用时用参数扩展的是哪个环境？原课给出的答案是：函数<strong>定义时</strong>的环境，而不是随便使用调用位置的新环境。完整的闭包机制会在后续章节展开，这里先用一个明确标记的扩展示例观察结果：</p>
+<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>(* 自编扩展：把本节规则与上一节的遮蔽接起来。 *)</span></span>
+<span data-line=""><span>val daily_pages = 12;</span></span>
+<span data-line=""><span>fun for_days (days : int) = daily_pages * days;</span></span>
+<span data-line=""><span>val daily_pages = 20;</span></span>
+<span data-line=""><span>val planned = for_days(5);</span></span></code></pre></figure>
+<p><code>planned</code> 为 <code>60</code>，不是 <code>100</code>。定义 <code>for_days</code> 时，它所处环境中的 <code>daily_pages</code> 对应 <code>12</code>；后来创建同名的新绑定，不会把这个旧环境改写。每次调用再加入本次参数，例如 <code>days → 5</code>，完成计算。</p>
+<p>函数也不能随意使用后面才定义的普通名字。原例把 <code>pow</code> 放在 <code>cube</code> 前面，是因为 <code>cube</code> 要调用它。函数自身的递归名字是规则允许的情况；多个函数需要相互调用时，还有专门的语法，课程会稍后处理，不需要在这里猜一种“万能定义顺序”。</p>
+<h2 id="对应原课与回看线索">对应原课与回看线索</h2>
+<p>本篇对应 <strong>V5：Functions Informally</strong> 和 <strong>V6：Functions Formally</strong>。第一次回看可跟着 <code>pow</code>、<code>cube</code> 理解递归和类型输出；第二次重点区分函数绑定与函数调用，并追踪实参先求值、参数只在函数体内可见，以及定义时环境这几个条件。</p>
+<ul class="rin-list rin-list-unordered">
+<li><a href="https://courses.cs.washington.edu/courses/cse341/19sp/videos/unit1/uncaptioned/007-functions-informally.mp4">官方 V5 视频</a></li>
+<li><a href="https://courses.cs.washington.edu/courses/cse341/19sp/videos/unit1/uncaptioned/008-functions-formally.mp4">官方 V6 视频</a></li>
+<li><a href="https://courses.cs.washington.edu/courses/cse341/19sp/unit1notes.pdf">官方阅读笔记：Function Bindings，第4–5页</a></li>
+<li><a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec2slides.pdf">官方 Lecture 2 课件</a>与<a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec2.sml">示例代码</a></li>
+</ul>
+<p>本篇的一周页数计划与最后的环境观察是自编扩展；<code>pow</code>、<code>cube</code> 和三套规则来自原课主题，讲解采用重新组织的中文叙述。</p></article><nav class="chapter-switcher" aria-label="章节导航"><a rel="prev" href="../03-shadowing/index.html">← 03 同名绑定：新名字怎样遮住旧名字</a><a class="course-home" href="../index.html">全部 13 篇</a><a rel="next" href="../05-tuples/index.html">05 元组：把不同数据装在一起 →</a></nav><footer class="lesson-footer">本系列依据 Dan Grossman 的 Programming Languages, Part A · Section 1 制作原创中文学习讲解，使用自己的解释与示例组织概念；不是逐字翻译、官方译本或课程视频字幕。<br><a href="../index.html#sources">来源、范围与 17 段视频映射</a> · 资料核对：2026-10-16</footer></main></body></html>

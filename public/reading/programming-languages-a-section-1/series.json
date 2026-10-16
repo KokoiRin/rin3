@@ -1,0 +1,293 @@
+{
+  "title": "Programming Languages, Part A · Section 1 中文讲解",
+  "date": "2026-10-16",
+  "attribution": "本系列依据 Dan Grossman 的 Programming Languages, Part A · Section 1 制作原创中文学习讲解，使用自己的解释与示例组织概念；不是逐字翻译、官方译本或课程视频字幕。",
+  "videos": [
+    {
+      "number": 1,
+      "title": "ML Variable Bindings and Expressions",
+      "href": "https://www.coursera.org/learn/programming-languages/lecture/hMa2t/ml-variable-bindings-and-expressions",
+      "duration": "PT14M32S",
+      "source": "Coursera 原课程视频",
+      "note": ""
+    },
+    {
+      "number": 2,
+      "title": "Rules for Expressions",
+      "href": "https://www.coursera.org/learn/programming-languages/lecture/ByEpU/rules-for-expressions",
+      "duration": "PT9M13S",
+      "source": "Coursera 原课程视频",
+      "note": ""
+    },
+    {
+      "number": 3,
+      "title": "The REPL and Errors",
+      "href": "https://www.coursera.org/learn/programming-languages/lecture/8b8EV/the-repl-and-errors",
+      "duration": "PT12M11S",
+      "source": "Coursera 原课程视频",
+      "note": ""
+    },
+    {
+      "number": 4,
+      "title": "Shadowing",
+      "href": "https://www.coursera.org/learn/programming-languages/lecture/qOEA2/shadowing",
+      "duration": "PT6M49S",
+      "source": "Coursera 原课程视频",
+      "note": ""
+    },
+    {
+      "number": 5,
+      "title": "Functions Informally",
+      "href": "https://www.coursera.org/learn/programming-languages/lecture/CTpaX/functions-informally",
+      "duration": "PT7M37S",
+      "source": "Coursera 原课程视频",
+      "note": ""
+    },
+    {
+      "number": 6,
+      "title": "Functions Formally",
+      "href": "https://www.coursera.org/learn/programming-languages/lecture/C28En/functions-formally",
+      "duration": "PT8M56S",
+      "source": "Coursera 原课程视频",
+      "note": ""
+    },
+    {
+      "number": 7,
+      "title": "Pairs and Other Tuples",
+      "href": "https://www.coursera.org/learn/programming-languages/lecture/lWE7L/pairs-and-other-tuples",
+      "duration": "PT9M16S",
+      "source": "Coursera 原课程视频",
+      "note": ""
+    },
+    {
+      "number": 8,
+      "title": "Introducing Lists",
+      "href": "https://www.coursera.org/learn/programming-languages/lecture/ArsQG/introducing-lists",
+      "duration": "PT10M34S",
+      "source": "Coursera 原课程视频",
+      "note": ""
+    },
+    {
+      "number": 9,
+      "title": "List Functions",
+      "href": "https://www.coursera.org/learn/programming-languages/lecture/FLlzm/list-functions",
+      "duration": "PT11M21S",
+      "source": "Coursera 原课程视频",
+      "note": ""
+    },
+    {
+      "number": 10,
+      "title": "Let Expressions",
+      "href": "https://www.coursera.org/learn/programming-languages/lecture/hQOtW/let-expressions",
+      "duration": "PT7M51S",
+      "source": "Coursera 原课程视频",
+      "note": ""
+    },
+    {
+      "number": 11,
+      "title": "Nested Functions",
+      "href": "https://www.coursera.org/learn/programming-languages/lecture/3RjQQ/nested-functions",
+      "duration": "PT7M38S",
+      "source": "Coursera 原课程视频",
+      "note": ""
+    },
+    {
+      "number": 12,
+      "title": "Let and Efficiency",
+      "href": "https://www.coursera.org/learn/programming-languages/lecture/r1kqG/let-and-efficiency",
+      "duration": "PT10M10S",
+      "source": "Coursera 原课程视频",
+      "note": ""
+    },
+    {
+      "number": 13,
+      "title": "Options",
+      "href": "https://www.coursera.org/learn/programming-languages/lecture/URpvs/options",
+      "duration": "PT9M9S",
+      "source": "Coursera 原课程视频",
+      "note": ""
+    },
+    {
+      "number": 14,
+      "title": "Booleans and Comparison Operations",
+      "href": "https://www.coursera.org/learn/programming-languages/lecture/YvAVp/booleans-and-comparison-operations",
+      "duration": "PT7M",
+      "source": "Coursera 原课程视频",
+      "note": ""
+    },
+    {
+      "number": 15,
+      "title": "Benefits of No Mutation",
+      "href": "https://www.coursera.org/learn/programming-languages/lecture/5br3F/benefits-of-no-mutation",
+      "duration": "PT7M24S",
+      "source": "Coursera 原课程视频",
+      "note": ""
+    },
+    {
+      "number": 16,
+      "title": "Optional: Java Mutation",
+      "href": "https://www.coursera.org/learn/programming-languages/lecture/aOQ26/optional-java-mutation",
+      "duration": "PT4M44S",
+      "source": "Coursera 原课程视频",
+      "note": ""
+    },
+    {
+      "number": 17,
+      "title": "Pieces of a Language",
+      "href": "https://www.coursera.org/learn/programming-languages/lecture/BL8NE/pieces-of-a-language",
+      "duration": "PT6M2S",
+      "source": "Coursera 原课程视频",
+      "note": ""
+    }
+  ],
+  "chapters": [
+    {
+      "slug": "01-expressions",
+      "title": "表达式与变量绑定",
+      "number": 1,
+      "videoNumbers": [
+        1,
+        2
+      ],
+      "phase": 0,
+      "sha256": "d5ddf684f3dc1b683452f0e65aa57334bb143574e149723f4eadf8f532146eca",
+      "headingCount": 7
+    },
+    {
+      "slug": "02-repl-errors",
+      "title": "REPL 与错误",
+      "number": 2,
+      "videoNumbers": [
+        3
+      ],
+      "phase": 0,
+      "sha256": "5d6fa5af86ffd5a6c40416e828cb424bede2ca79947acf1022b8c43a23bdc7fd",
+      "headingCount": 8
+    },
+    {
+      "slug": "03-shadowing",
+      "title": "同名绑定：新名字怎样遮住旧名字",
+      "number": 3,
+      "videoNumbers": [
+        4
+      ],
+      "phase": 0,
+      "sha256": "f41ac277a052bdbe1909f3bd0308dd4ba99969f88ca33ec37cc5b8595b4eb0d6",
+      "headingCount": 7
+    },
+    {
+      "slug": "04-functions",
+      "title": "函数：从调用过程到正式规则",
+      "number": 4,
+      "videoNumbers": [
+        5,
+        6
+      ],
+      "phase": 1,
+      "sha256": "25a9ed1da52e87d2802c3a3a2c48279bda5625e3fe4d2b4489496edc8ba13746",
+      "headingCount": 7
+    },
+    {
+      "slug": "05-tuples",
+      "title": "元组：把不同数据装在一起",
+      "number": 5,
+      "videoNumbers": [
+        7
+      ],
+      "phase": 1,
+      "sha256": "595defc6c546bfe41f0bbe0dc128de34314023ead717023dd8b331a052cccfd2",
+      "headingCount": 8
+    },
+    {
+      "slug": "06-lists",
+      "title": "列表：任意长度，同一种元素类型",
+      "number": 6,
+      "videoNumbers": [
+        8
+      ],
+      "phase": 1,
+      "sha256": "bd0c5d55afe4c99ace11ffbec84dc497ee37761b6fb059e830f79bfc998850ca",
+      "headingCount": 8
+    },
+    {
+      "slug": "07-list-recursion",
+      "title": "列表递归：空列表与剩下的部分",
+      "number": 7,
+      "videoNumbers": [
+        9
+      ],
+      "phase": 1,
+      "sha256": "bfba228ffb485a202b0831be1b382bb42d43ce4bd3cff11ffac982162e051135",
+      "headingCount": 8
+    },
+    {
+      "slug": "08-local-functions",
+      "title": "let 与局部函数：让名字有自己的范围",
+      "number": 8,
+      "videoNumbers": [
+        10,
+        11
+      ],
+      "phase": 2,
+      "sha256": "497cdcc9d3b5e33d7ce3d53b6fc6aab44bcf8b1a5326cfd5ff4c7188364a61ac",
+      "headingCount": 9
+    },
+    {
+      "slug": "09-efficiency",
+      "title": "let 与效率：避免重复计算",
+      "number": 9,
+      "videoNumbers": [
+        12
+      ],
+      "phase": 2,
+      "sha256": "e3e71b2323430b71bc6824bfae9dbc6c10289d25fa223badee72421cc1557a85",
+      "headingCount": 6
+    },
+    {
+      "slug": "10-options",
+      "title": "Option：明确表达可能没有结果",
+      "number": 10,
+      "videoNumbers": [
+        13
+      ],
+      "phase": 2,
+      "sha256": "ec4b622e2c1b6d42825c7c0f908d957321c30f08114ed04289ba8d66bba4961f",
+      "headingCount": 8
+    },
+    {
+      "slug": "11-booleans-comparison",
+      "title": "布尔与比较：读清条件和类型",
+      "number": 11,
+      "videoNumbers": [
+        14
+      ],
+      "phase": 2,
+      "sha256": "b069e333ac2ec9376ef59b745c393a7b5fb93aae8d251e86bef83a466b9a614a",
+      "headingCount": 7
+    },
+    {
+      "slug": "12-immutability",
+      "title": "不可变：旧值不变，推理怎样变简单",
+      "number": 12,
+      "videoNumbers": [
+        15,
+        16
+      ],
+      "phase": 3,
+      "sha256": "7333cf13d99f032ec05b34459455d2d8bfe588e8e83adc235687b0a63ea1a022",
+      "headingCount": 8
+    },
+    {
+      "slug": "13-language-map",
+      "title": "学一门语言的五个方面",
+      "number": 13,
+      "videoNumbers": [
+        17
+      ],
+      "phase": 3,
+      "sha256": "25e782495d391a6015158eb2a1a97cb545e2543cb7d71b0a99ecd6c827b9e2e2",
+      "headingCount": 7
+    }
+  ],
+  "partial": false
+}
