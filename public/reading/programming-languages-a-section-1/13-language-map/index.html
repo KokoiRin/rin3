@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="学一门语言的五个方面 · Dan Grossman 编程语言课程 Section 1 原创中文讲解"><title>学一门语言的五个方面 · 编程语言 Part A / Section 1 · RIN III</title><link rel="stylesheet" href="../../reader.css"><link rel="stylesheet" href="../lesson.css"><link rel="manifest" href="../../../manifest.webmanifest"></head><body class="pl-course"><nav class="site-nav"><a href="../index.html">← 编程语言 · Section 1</a><a href="https://www.coursera.org/learn/programming-languages">原课程 ↗</a></nav><main class="reader"><header class="chapter-header"><span class="chapter-kicker">13 / 13 · 原创中文讲解</span><h1>学一门语言的五个方面</h1><p class="lead">连接语法、语义、惯用法、库与工具，理解学会一门语言需要建立的整体认识。</p><p class="byline">原课程：Dan Grossman · Programming Languages, Part A</p><p class="lesson-context">理解不可变的价值，再连接语法、语义、惯用法、库与工具。建议按顺序阅读；遇到新符号，先跟随代码的执行过程，再回看规则。</p><details class="source-details"><summary>对应视频与本篇范围</summary><ul><li><a href="https://www.coursera.org/learn/programming-languages/lecture/BL8NE/pieces-of-a-language">V17 · Pieces of a Language</a></li></ul><p>本系列依据 Dan Grossman 的 Programming Languages, Part A · Section 1 制作原创中文学习讲解，使用自己的解释与示例组织概念；不是逐字翻译、官方译本或课程视频字幕。</p><p>主要参考：对应视频的官方英文字幕、<a href="https://courses.cs.washington.edu/courses/cse341/19sp/unit1notes.pdf">UW Unit 1 讲义</a>、<a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec1slides.pdf">Lecture 1</a> / <a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec2slides.pdf">Lecture 2</a> / <a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec3slides.pdf">Lecture 3 幻灯片</a>及讲师示例。<a href="../index.html#sources">完整来源与映射说明</a>。</p></details><details class="lesson-toc"><summary>本篇目录</summary><ol><li class="toc-h2"><a href="#学一门语言究竟是在学什么">学一门语言，究竟是在学什么</a></li><li class="toc-h2"><a href="#五个方面各自负责什么">五个方面各自负责什么</a></li><li class="toc-h2"><a href="#库与工具也不能混成一件事">库与工具也不能混成一件事</a></li><li class="toc-h2"><a href="#为什么这门课特别重视语义和惯用法">为什么这门课特别重视语义和惯用法</a></li><li class="toc-h2"><a href="#用一个完整函数把第一节串起来">用一个完整函数把第一节串起来</a></li><li class="toc-h2"><a href="#这些小例子与实际开发怎样连接">这些小例子与实际开发怎样连接</a></li><li class="toc-h2"><a href="#对应原课与回看线索">对应原课与回看线索</a></li></ol></details><nav class="chapter-switcher" aria-label="章节导航"><a rel="prev" href="../12-immutability/index.html">← 12 不可变：旧值不变，推理怎样变简单</a><a class="course-home" href="../index.html">全部 13 篇</a><span></span></nav></header><article class="lesson-article translated-article"><h2 id="学一门语言究竟是在学什么">学一门语言，究竟是在学什么</h2>
+<p>第一节看起来只做了几件小事：绑定几个名字，写递归，拼接列表，求最大值。但 Dan 最后把镜头拉远：这些例子的价值，不仅是学会一套 SML 写法，而是建立理解任何程序语言的方法。</p>
+<p>原课把学习一门语言分成五个方面：<strong>语法、语义、惯用法、库和工具</strong>。实际写程序时五个方面都重要，但它们回答的是不同问题。把它们分清，遇到陌生代码时才能知道自己究竟卡在哪里。</p>
+<h2 id="五个方面各自负责什么">五个方面各自负责什么</h2>
+<table>
+<thead>
+<tr>
+<th>方面</th>
+<th>它回答的问题</th>
+<th>第一节里的例子</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>语法（syntax）</td>
+<td>合法代码怎样写？</td>
+<td><code>val x = e</code>、<code>if … then … else …</code>、<code>let … in … end</code></td>
+</tr>
+<tr>
+<td>语义（semantics）</td>
+<td>代码是什么意思？</td>
+<td>怎样检查类型，按照什么规则求值</td>
+</tr>
+<tr>
+<td>惯用法（idioms）</td>
+<td>哪种问题通常适合怎样写？</td>
+<td>把专用辅助函数藏在局部，用 <code>let</code> 保存递归结果</td>
+</tr>
+<tr>
+<td>库（libraries）</td>
+<td>已经有哪些可用的功能？</td>
+<td>列表操作、文件读写、现成数据结构</td>
+</tr>
+<tr>
+<td>工具（tools）</td>
+<td>怎样更方便地编写、运行和排查？</td>
+<td>编辑器、REPL、格式化工具、调试器</td>
+</tr>
+</tbody>
+</table>
+<p>语法让你能够把程序写出来，但“符号写对了”只是起点。语义让你知道它是否通过类型检查、何时执行什么、最终会得到什么。比如同样看到一个名字出现两次，你需要理解环境与作用域，才能判断它们是不是同一个绑定。</p>
+<p>惯用法则比规则多走一步。语言允许在 <code>let</code> 里定义函数，这是语法和语义；当一个辅助函数只服务一个外层函数时，通常把它放在局部，这是使用经验。知道能做什么，与知道何时值得这样做，是两种相关但不同的能力。</p>
+<h2 id="库与工具也不能混成一件事">库与工具也不能混成一件事</h2>
+<p>库提供可调用、可组合的功能。有些功能需要语言实现或运行环境提供底层支持，例如文件读写不能仅凭整数加法和递归就凭空接触磁盘。另一些功能，例如树、哈希表、列表，可以在具备足够语言构造后自己实现，也可以直接使用现成库。</p>
+<p>现在我们使用语言提供的列表，后续会看到如何定义类似的数据结构。使用现成功能很有价值，但也应能区分：这是语言表达能力的限制，还是暂时没有学习相应库。</p>
+<p>工具帮助人工作，例如 REPL 让我们快速尝试表达式，调试器帮助观察运行，格式化工具统一排版。<strong>REPL 属于某个语言实现提供的工具，不是 SML 语义本身。</strong> 同一种语言可以有不同的实现和工具体验；不能因为某个实现的报错方式不友好，就据此判断语言的求值规则。</p>
+<p>把这几层分开，也能避免另一种误判：一套框架的 API 用不熟，不代表不理解程序语言；背熟语法却看不懂执行顺序，也不能单靠换一个编辑器解决。</p>
+<h2 id="为什么这门课特别重视语义和惯用法">为什么这门课特别重视语义和惯用法</h2>
+<p>Dan 并不否认语法、库、工具的重要性。只是它们会不断变化，也很容易让学习陷入个人偏好的争论。课程更想训练一种能迁移的能力：准确理解构造的规则，认出常见问题的结构，再选择清楚、可靠的写法。</p>
+<p>学习语义时反复问“类型规则是什么、求值规则是什么”，并不是为了增加术语，而是为了减少猜测。学习惯用法时反复问“为什么要局部辅助函数、为什么保存中间结果”，则是为了让正确的规则变成可靠的程序。</p>
+<p>这种能力也会帮助你学习新库：库函数接收什么输入、承诺什么结果、怎样失败、通常怎样组合？它们与分析语言构造时问的问题相通。因此，课程没有逐个介绍大型应用框架，并不意味着它与实际开发脱节。</p>
+<h2 id="用一个完整函数把第一节串起来">用一个完整函数把第一节串起来</h2>
+<p>把前面求最大值的想法收在一段程序里。输入是每天的阅读页数，输出可能没有答案，也可能是一个最大页数：</p>
+<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>fun best_day (pages : int list) =</span></span>
+<span data-line=""><span>    if null pages</span></span>
+<span data-line=""><span>    then NONE</span></span>
+<span data-line=""><span>    else</span></span>
+<span data-line=""><span>        let</span></span>
+<span data-line=""><span>            fun best_nonempty (xs : int list) =</span></span>
+<span data-line=""><span>                if null (tl xs)</span></span>
+<span data-line=""><span>                then hd xs</span></span>
+<span data-line=""><span>                else</span></span>
+<span data-line=""><span>                    let</span></span>
+<span data-line=""><span>                        val bestRest = best_nonempty (tl xs)</span></span>
+<span data-line=""><span>                    in</span></span>
+<span data-line=""><span>                        if hd xs > bestRest</span></span>
+<span data-line=""><span>                        then hd xs</span></span>
+<span data-line=""><span>                        else bestRest</span></span>
+<span data-line=""><span>                    end</span></span>
+<span data-line=""><span>        in</span></span>
+<span data-line=""><span>            SOME (best_nonempty pages)</span></span>
+<span data-line=""><span>        end</span></span>
+<span data-line=""> </span>
+<span data-line=""><span>val week = [12,18,0,24,16]</span></span>
+<span data-line=""><span>val answer = best_day week  (* SOME 24 *)</span></span></code></pre></figure>
+<p>先看输入输出的整体约定：<code>best_day</code> 的类型是 <code>int list -> int option</code>。列表允许天数变化；option 让空输入与真实最大值为零分开。这里没有给“页数必须非负”建立专门类型；补充说明，函数对任意整数列表都会求最大值，非负是应用场景的额外条件。</p>
+<p>再看执行过程。外层 <code>if</code> 判断是否为空；不为空时才进入局部辅助函数。辅助函数把列表拆成头和尾，以一个元素为终点递归。每一层用 <code>let</code> 保存尾部最大值，再进行一次比较。整个过程中没有修改原来的 <code>week</code>。</p>
+<p>最后看作用域。<code>best_nonempty</code> 只在外层函数内部可用，外部不能绕开入口检查；<code>bestRest</code> 只在对应的局部表达式内可用。每次递归都有自己的参数绑定，不能把不同调用中的同名 <code>xs</code> 误当作一个不停被改写的变量。</p>
+<p>这段代码用到的符号并不多，但已经连起了类型、求值、环境、递归、复合数据、局部绑定、效率和不可变性。这就是第一节想建立的基础。</p>
+<h2 id="这些小例子与实际开发怎样连接">这些小例子与实际开发怎样连接</h2>
+<p>最大值和列表拼接容易让人觉得“离应用太远”。原课选择它们，是为了把框架、网络和 UI 的额外复杂度暂时拿走，让语言规则能够完整地看清。它们不能用来衡量 SML、Racket 或 Ruby 是否能够开发真实系统；这些语言也有自己的库和应用生态，课程只是没有把教学重点放在那里。</p>
+<p>补充一个熟悉的场景：网络请求返回一组条目，程序要处理空结果、选出一个条目、组合新状态，再交给页面。这里同样要理解数据形状、缺失、函数调用、局部计算、共享与修改。具体 API 会变化，这些问题一直存在。</p>
+<p>接下来学习模式匹配时，我们会换一种更清楚的方式拆开列表、元组和 option；学习高阶函数时，又能把许多相似递归抽成共同模式。先把本节建立的关系理解稳，再看新语法，就能认出它是在改善已经见过的哪一个问题。</p>
+<h2 id="对应原课与回看线索">对应原课与回看线索</h2>
+<p>对应 <strong>V17 · Pieces of a Language</strong>。五个方面的区分、课程聚焦语义和惯用法的理由、库与工具的定位，以及为什么使用简单例子，均来自该视频；整合的 <code>best_day</code> 程序与客户端联系是本系列补充。</p>
+<p>来源：<a href="https://www.coursera.org/learn/programming-languages">Coursera：Programming Languages, Part A</a>、<a href="https://homes.cs.washington.edu/~djg/teachingMaterials/spl/">Dan Grossman 的官方课程材料说明</a>。目录页提供这段视频的直接回看链接。本文按其官方英文字幕核对，保留的是教学观点与概念关系，采用重新组织的中文说明。</p></article><nav class="chapter-switcher" aria-label="章节导航"><a rel="prev" href="../12-immutability/index.html">← 12 不可变：旧值不变，推理怎样变简单</a><a class="course-home" href="../index.html">全部 13 篇</a><span></span></nav><footer class="lesson-footer">本系列依据 Dan Grossman 的 Programming Languages, Part A · Section 1 制作原创中文学习讲解，使用自己的解释与示例组织概念；不是逐字翻译、官方译本或课程视频字幕。<br><a href="../index.html#sources">来源、范围与 17 段视频映射</a> · 资料核对：2026-10-16</footer></main></body></html>

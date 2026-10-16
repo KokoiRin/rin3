@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="表达式与变量绑定 · Dan Grossman 编程语言课程 Section 1 原创中文讲解"><title>表达式与变量绑定 · 编程语言 Part A / Section 1 · RIN III</title><link rel="stylesheet" href="../../reader.css"><link rel="stylesheet" href="../lesson.css"><link rel="manifest" href="../../../manifest.webmanifest"></head><body class="pl-course"><nav class="site-nav"><a href="../index.html">← 编程语言 · Section 1</a><a href="https://www.coursera.org/learn/programming-languages">原课程 ↗</a></nav><main class="reader"><header class="chapter-header"><span class="chapter-kicker">01 / 13 · 原创中文讲解</span><h1>表达式与变量绑定</h1><p class="lead">先分清表达式、值、类型与环境，再看 val 怎样给计算结果起名字。</p><p class="byline">原课程：Dan Grossman · Programming Languages, Part A</p><p class="lesson-context">表达式得到什么值，名字怎样影响后面的计算。建议按顺序阅读；遇到新符号，先跟随代码的执行过程，再回看规则。</p><details class="source-details"><summary>对应视频与本篇范围</summary><ul><li><a href="https://www.coursera.org/learn/programming-languages/lecture/hMa2t/ml-variable-bindings-and-expressions">V01 · ML Variable Bindings and Expressions</a></li><li><a href="https://www.coursera.org/learn/programming-languages/lecture/ByEpU/rules-for-expressions">V02 · Rules for Expressions</a></li></ul><p>本系列依据 Dan Grossman 的 Programming Languages, Part A · Section 1 制作原创中文学习讲解，使用自己的解释与示例组织概念；不是逐字翻译、官方译本或课程视频字幕。</p><p>主要参考：对应视频的官方英文字幕、<a href="https://courses.cs.washington.edu/courses/cse341/19sp/unit1notes.pdf">UW Unit 1 讲义</a>、<a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec1slides.pdf">Lecture 1</a> / <a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec2slides.pdf">Lecture 2</a> / <a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec3slides.pdf">Lecture 3 幻灯片</a>及讲师示例。<a href="../index.html#sources">完整来源与映射说明</a>。</p></details><details class="lesson-toc"><summary>本篇目录</summary><ol><li class="toc-h2"><a href="#先抓住一个过程算出右边再给结果一个名字">先抓住一个过程：算出右边，再给结果一个名字</a></li><li class="toc-h2"><a href="#一条绑定同时涉及类型和数值">一条绑定，同时涉及类型和数值</a></li><li class="toc-h2"><a href="#回到原课的第一段程序">回到原课的第一段程序</a></li><li class="toc-h2"><a href="#表达式和值不是同一个概念">表达式和值，不是同一个概念</a></li><li class="toc-h2"><a href="#学一个新表达式固定问三个问题">学一个新表达式，固定问三个问题</a></li><li class="toc-h2"><a href="#条件表达式检查两边运行时只选一边">条件表达式：检查两边，运行时只选一边</a></li><li class="toc-h2"><a href="#对应原课与回看线索">对应原课与回看线索</a></li></ol></details><nav class="chapter-switcher" aria-label="章节导航"><span></span><a class="course-home" href="../index.html">全部 13 篇</a><a rel="next" href="../02-repl-errors/index.html">02 REPL 与错误 →</a></nav></header><article class="lesson-article translated-article"><h2 id="先抓住一个过程算出右边再给结果一个名字">先抓住一个过程：算出右边，再给结果一个名字</h2>
+<p>这一节开始学习 Standard ML，后面简称 ML。它和 Kotlin、Java 的写法不同，但我们先不急着把每个符号翻译成旧语言里的对应物。先建立一个小而准确的模型：<strong>程序由一串绑定组成；表达式负责计算；绑定把计算结果接到一个名字上。</strong></p>
+<p>例如，假设我们记录一周的阅读页数：</p>
+<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>(* 自编例子：两天的阅读页数。 *)</span></span>
+<span data-line=""><span>val monday = 12;</span></span>
+<span data-line=""><span>val tuesday = 18;</span></span>
+<span data-line=""><span>val total = monday + tuesday;</span></span></code></pre></figure>
+<p>第一行注释以 <code>(*</code> 开始、以 <code>*)</code> 结束；ML 的注释还允许嵌套。真正的程序从 <code>val</code> 开始。这里不需要先写类、<code>main</code> 或方法，三个绑定本身就组成了程序。</p>
+<p>读 <code>val total = monday + tuesday</code> 时，先看右边：找到两个名字对应的值，算出 <code>30</code>。然后建立一个新绑定，让 <code>total</code> 对应 <code>30</code>。此处的 <code>=</code> 是绑定语法的一部分；不要把它直接想成“修改一个已有变量”。后面关于遮蔽的讲解会进一步说明这个区别。</p>
+<h2 id="一条绑定同时涉及类型和数值">一条绑定，同时涉及类型和数值</h2>
+<p>课程使用的最初形式是：</p>
+<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="text" data-theme="github-light"><code data-language="text" data-theme="github-light" style="display: grid;"><span data-line=""><span>val 名字 = 表达式;</span></span></code></pre></figure>
+<p>这里有两种不同的判断。类型检查关心“这个表达式有没有合法的类型”；求值关心“这个表达式运行后得到什么”。例如 <code>monday + tuesday</code> 的类型是 <code>int</code>，它的值是 <code>30</code>。<code>int</code> 告诉我们结果是整数，却没有告诉我们具体是哪一个整数。</p>
+<p>为了把它们分清，可以分别画两张表。老师把第一张称为<strong>静态环境</strong>，保存当前能用的名字及其类型；第二张称为<strong>动态环境</strong>，保存名字及其值。</p>
+<table>
+<thead>
+<tr>
+<th>处理完的绑定</th>
+<th>静态环境新增</th>
+<th>动态环境新增</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>val monday = 12</code></td>
+<td><code>monday : int</code></td>
+<td><code>monday → 12</code></td>
+</tr>
+<tr>
+<td><code>val tuesday = 18</code></td>
+<td><code>tuesday : int</code></td>
+<td><code>tuesday → 18</code></td>
+</tr>
+<tr>
+<td><code>val total = monday + tuesday</code></td>
+<td><code>total : int</code></td>
+<td><code>total → 30</code></td>
+</tr>
+</tbody>
+</table>
+<p>“环境”在这里不是操作系统的环境变量，也不是 Java 的 <code>static</code> 字段。它只是解释程序时用的名字对应表。读到一个名字，就到相应的表里查找。</p>
+<h2 id="回到原课的第一段程序">回到原课的第一段程序</h2>
+<p>原视频使用更简单的数字，目的是让我们专心追踪环境：</p>
+<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>val x = 34;</span></span>
+<span data-line=""><span>val y = 17;</span></span>
+<span data-line=""><span>val z = (x + y) + (y + 2);</span></span>
+<span data-line=""><span>val w = z + 1;</span></span></code></pre></figure>
+<p>处理 <code>z</code> 时，当前动态环境已经有 <code>x → 34</code>、<code>y → 17</code>。左边的子表达式 <code>x + y</code> 得到 <code>51</code>，右边的 <code>y + 2</code> 得到 <code>19</code>，再把两者相加得到 <code>70</code>。接着建立 <code>z → 70</code>，所以最后的 <code>w</code> 得到 <code>71</code>。</p>
+<p>类型检查做相似的追踪，但不需要算这些答案。它知道 <code>x</code>、<code>y</code> 都是 <code>int</code>，两次整数加法的结果仍是 <code>int</code>，所以 <code>z</code> 和 <code>w</code> 都是 <code>int</code>。这种区别会一直保留：<strong>知道结果的类型，不等于已经求出了结果。</strong></p>
+<p>绑定有顺序。上面的 <code>z</code> 可以使用已经出现的 <code>x</code>、<code>y</code>；反过来，在全新环境中先写 <code>val z = x + 1</code>，再写 <code>val x = 34</code>，第一行不能凭借“下面迟早会定义 x”而通过。检查第一行时，静态环境里还没有这个名字。</p>
+<h2 id="表达式和值不是同一个概念">表达式和值，不是同一个概念</h2>
+<p><code>34</code>、<code>x</code>、<code>x + 7</code> 都是表达式，但只有某些表达式已经不需要继续计算。课程把这样的表达式叫作<strong>值</strong>。</p>
+<table>
+<thead>
+<tr>
+<th>写法</th>
+<th>是表达式吗？</th>
+<th>已经是值吗？</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>34</code></td>
+<td>是</td>
+<td>是，求值仍得到自身</td>
+</tr>
+<tr>
+<td><code>true</code></td>
+<td>是</td>
+<td>是，类型是 <code>bool</code></td>
+</tr>
+<tr>
+<td><code>x</code></td>
+<td>是</td>
+<td>不是；要查动态环境</td>
+</tr>
+<tr>
+<td><code>8 + 9</code></td>
+<td>是</td>
+<td>不是；还要算成 <code>17</code></td>
+</tr>
+</tbody>
+</table>
+<p>因此，“所有值都是表达式，但并非所有表达式都是值”。这里判断的是表达式还需要做什么，不是它看起来长不长。后面看到函数、元组、列表时，也要继续问同一个问题。</p>
+<p>表达式能够嵌套。例如加法的某一边还可以是条件表达式，条件分支里又可以有加法。解释大表达式的方法，就是沿着它的结构，解释里面的小表达式。</p>
+<h2 id="学一个新表达式固定问三个问题">学一个新表达式，固定问三个问题</h2>
+<p>原课反复强调一套方法：先问<strong>语法怎么写</strong>，再问<strong>怎样检查类型</strong>，最后问<strong>怎样求值</strong>。语法说明写法；后两者说明它的含义，也就是本节使用的语义。</p>
+<table>
+<thead>
+<tr>
+<th>表达式</th>
+<th>类型规则</th>
+<th>求值规则</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>整数常量，如 <code>34</code></td>
+<td>类型为 <code>int</code></td>
+<td>得到自身</td>
+</tr>
+<tr>
+<td>名字，如 <code>x</code></td>
+<td>在静态环境中查类型</td>
+<td>在动态环境中查值</td>
+</tr>
+<tr>
+<td><code>e1 + e2</code></td>
+<td>本节整数例子中，两边都要有 <code>int</code> 类型，整体是 <code>int</code></td>
+<td>两边分别求值，再相加</td>
+</tr>
+<tr>
+<td><code>e1 &#x3C; e2</code></td>
+<td>本节整数例子中，两边为 <code>int</code>，整体为 <code>bool</code></td>
+<td>比较两个整数，得到 <code>true</code> 或 <code>false</code></td>
+</tr>
+</tbody>
+</table>
+<p>表里的 <code>e1</code>、<code>e2</code> 是“某个表达式”的占位写法，不是要求你把这两个名字原样输入。后面会学到其他数值类型；这里先把整数版本的规则建立稳。</p>
+<h2 id="条件表达式检查两边运行时只选一边">条件表达式：检查两边，运行时只选一边</h2>
+<p>原例接下来计算 <code>z</code> 的绝对值：</p>
+<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>(* 接在前面 x、y、z、w 的绑定之后。 *)</span></span>
+<span data-line=""><span>val abs_of_z = if z &#x3C; 0 then 0 - z else z;</span></span>
+<span data-line=""><span>val abs_of_z_simpler = abs z;</span></span></code></pre></figure>
+<p>第一行先计算 <code>z &#x3C; 0</code>。因为 <code>z</code> 是 <code>70</code>，结果为 <code>false</code>，所以只求值 <code>else</code> 后的 <code>z</code>，最终得到 <code>70</code>。<code>then</code> 后的 <code>0 - z</code> 在这次运行中不会被求值。第二行使用已有函数 <code>abs</code>；一个实参的简单调用可以写成 <code>abs z</code>，也可以写成 <code>abs(z)</code>。</p>
+<p>条件表达式的一般形式是 <code>if e1 then e2 else e3</code>。类型检查要求 <code>e1</code> 是 <code>bool</code>；<code>e2</code>、<code>e3</code> 可以是整数，也可以是别的类型，但必须相同。整个条件表达式的类型，就是这两个分支共同的类型。</p>
+<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>(* 预期：类型错误。故意的错误示例。 *)</span></span>
+<span data-line=""><span>val mixed = if true then 12 else false;</span></span></code></pre></figure>
+<p>虽然运行时一定会选择 <code>then</code>，类型规则仍然要检查两个分支。<code>12</code> 是 <code>int</code>，<code>false</code> 是 <code>bool</code>，不能给整个表达式一个符合规则的共同类型。<strong>“这条分支不会运行”不能成为违反类型规则的理由。</strong></p>
+<p>通过类型检查也不意味着程序一定正常结束。后面的课程会看到异常、不终止，以及算出了合法但不符合意图的答案。这一节先把类型与求值分开追踪；下一篇再实际观察这些错误怎样出现。</p>
+<h2 id="对应原课与回看线索">对应原课与回看线索</h2>
+<p>本篇对应 Part A、Section 1 的 <strong>V1：ML Variable Bindings and Expressions</strong> 与 <strong>V2：Rules for Expressions</strong>。回看时重点观察原例中静态环境、动态环境怎样逐项增长，以及老师怎样把条件表达式拆成三个问题。</p>
+<ul class="rin-list rin-list-unordered">
+<li><a href="https://courses.cs.washington.edu/courses/cse341/19sp/videos/unit1/uncaptioned/003-expressions-and-variables.mp4">官方 V1 视频</a></li>
+<li><a href="https://courses.cs.washington.edu/courses/cse341/19sp/videos/unit1/uncaptioned/004-rules-for-expressions.mp4">官方 V2 视频</a></li>
+<li><a href="https://courses.cs.washington.edu/courses/cse341/19sp/unit1notes.pdf">官方 Unit 1 阅读笔记，第2–3页</a></li>
+<li><a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec1slides.pdf">官方 Lecture 1 课件</a>与<a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec1.sml">示例代码</a></li>
+</ul>
+<p>视频中的最后一个名字是 <code>w</code>，UW 2019 课堂代码使用 <code>q</code>；这里只是命名不同，对求值过程没有影响。本篇叙述经过重新组织，并非字幕逐句翻译。</p></article><nav class="chapter-switcher" aria-label="章节导航"><span></span><a class="course-home" href="../index.html">全部 13 篇</a><a rel="next" href="../02-repl-errors/index.html">02 REPL 与错误 →</a></nav><footer class="lesson-footer">本系列依据 Dan Grossman 的 Programming Languages, Part A · Section 1 制作原创中文学习讲解，使用自己的解释与示例组织概念；不是逐字翻译、官方译本或课程视频字幕。<br><a href="../index.html#sources">来源、范围与 17 段视频映射</a> · 资料核对：2026-10-16</footer></main></body></html>

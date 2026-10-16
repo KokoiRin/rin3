@@ -65,3 +65,12 @@ KaTeX 的 `public/reading/_shared/katex/` 是第三方数学排版资源，不�
 新增 `public/reading/android-data-state/`：十篇中文阅读版、十篇英文对照、十篇第一轮直译，以及目录和许可说明，共 32 个 HTML 页面；站内入口为 `content/computer-science/android-data-state.md`。
 
 正文复用 `public/reading/reader.css`；系列 `source.css` 处理官方正文、代码变体、表格与独立校注。原文包含 1,130 个正文单元、162 个代码块、91 处图片引用（89 个独立原图）与 5 张表。`coverage.json` 保存原始单元序列、标题、代码哈希和行内代码；`tests/android-data-reader-completeness.test.mjs` 检查三版完整正文及全部图像哈希，课程导航接入 `check:course-readers`。两轮译稿、原文快照、表达修改记录与全文校验器留在文稿目录。
+
+
+## 2026-10-16：Programming Languages, Part A · Section 1 中文讲解
+
+新增 `public/reading/programming-languages-a-section-1/`：13 篇原创中文讲解和系列目录，共 14 个 HTML 页面；站内入口为 `content/computer-science/programming-languages-a-section-1.md`。按四个学习阶段组织，目录逐一列出 17 个视频主题与 13 篇讲解的对应关系。
+
+复用 `public/reading/reader.css` 与共享 KaTeX 资源；系列 `lesson.css` 只处理本系列的阅读卡片、目录、代码、来源说明和手机排版。每篇使用顶部与底部前后篇导航，并保留对应视频、来源和非官方原创讲解的范围说明；不镜像整份视频、字幕或讲义。`series.json` 保存章节、视频映射及中文源文稿的 SHA-256。课程已接入 `check:course-readers`。
+
+正文 Markdown、原始参考资料和可重复生成脚本保留在 `~/Documents/RIN III 草稿/Dan Grossman Section 1/`；生成器通过 `@rin/document` 公共入口复用 Markdown、KaTeX 与代码渲染，不向站点添加依赖，不把草稿或临时产物纳入仓库。

@@ -4,8 +4,9 @@ import { pathToFileURL } from "node:url";
 
 const repositoryRoot = path.resolve(import.meta.dirname, "..");
 const readingRoot = path.join(repositoryRoot, "public/reading");
-const learningCourseSlugs = ["kotlin-tour", "android-native-bridge", "android-foundations", "network-requests", "android-data-state"];
+const learningCourseSlugs = ["kotlin-tour", "android-native-bridge", "android-foundations", "network-requests", "android-data-state", "programming-languages-a-section-1"];
 const readerCssByCourse = new Map([
+  ["programming-languages-a-section-1", path.join(readingRoot, "reader.css")],
   ["android-data-state", path.join(readingRoot, "reader.css")],
   ["network-requests", path.join(readingRoot, "reader.css")],
   ["android-foundations", path.join(readingRoot, "reader.css")],
