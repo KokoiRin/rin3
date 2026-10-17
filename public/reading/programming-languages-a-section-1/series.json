@@ -1,6 +1,7 @@
 {
   "title": "Programming Languages, Part A · Section 1 中文讲解",
   "date": "2026-10-16",
+  "revised": "2026-10-17",
   "attribution": "本系列依据 Dan Grossman 的 Programming Languages, Part A · Section 1 制作原创中文学习讲解，使用自己的解释与示例组织概念；不是逐字翻译、官方译本或课程视频字幕。",
   "videos": [
     {
@@ -155,127 +156,127 @@
     },
     {
       "slug": "02-repl-errors",
-      "title": "REPL 与错误",
+      "title": "把代码交给 ML：输入、文件与结果",
       "number": 2,
       "videoNumbers": [
         3
       ],
       "phase": 0,
-      "sha256": "5d6fa5af86ffd5a6c40416e828cb424bede2ca79947acf1022b8c43a23bdc7fd",
-      "headingCount": 8
+      "sha256": "0bbbc9bca2a369d7ee39a97645d8768ddcf6bc526d46c42efa3d45aa5a10051c",
+      "headingCount": 13
     },
     {
       "slug": "03-shadowing",
-      "title": "同名绑定：新名字怎样遮住旧名字",
+      "title": "补录页数之后：旧合计为什么不变",
       "number": 3,
       "videoNumbers": [
         4
       ],
       "phase": 0,
-      "sha256": "f41ac277a052bdbe1909f3bd0308dd4ba99969f88ca33ec37cc5b8595b4eb0d6",
-      "headingCount": 7
+      "sha256": "6f7a4cfeb0ef6f2cfa29416f8e658d092b7e0244975c7ac628d6de1868e0195b",
+      "headingCount": 10
     },
     {
       "slug": "04-functions",
-      "title": "函数：从调用过程到正式规则",
+      "title": "函数：同一种计算怎样反复使用",
       "number": 4,
       "videoNumbers": [
         5,
         6
       ],
       "phase": 1,
-      "sha256": "25a9ed1da52e87d2802c3a3a2c48279bda5625e3fe4d2b4489496edc8ba13746",
-      "headingCount": 7
+      "sha256": "a132774eaa7b04bd9a13ca24b7330b88e52f39fd1f4c546c131317fb66cf64a5",
+      "headingCount": 11
     },
     {
       "slug": "05-tuples",
-      "title": "元组：把不同数据装在一起",
+      "title": "元组：把相关结果放在一起",
       "number": 5,
       "videoNumbers": [
         7
       ],
       "phase": 1,
-      "sha256": "595defc6c546bfe41f0bbe0dc128de34314023ead717023dd8b331a052cccfd2",
-      "headingCount": 8
+      "sha256": "0d786a3d1c91ff5a1b308a31bf6cdee66858fd6608e6a6de9836e972d0c33fb4",
+      "headingCount": 11
     },
     {
       "slug": "06-lists",
-      "title": "列表：任意长度，同一种元素类型",
+      "title": "列表：从两天页数到一周记录",
       "number": 6,
       "videoNumbers": [
         8
       ],
       "phase": 1,
-      "sha256": "bd0c5d55afe4c99ace11ffbec84dc497ee37761b6fb059e830f79bfc998850ca",
-      "headingCount": 8
+      "sha256": "db27a05e82f75b1b179a46d2e06b84774ad58790781589b66b3e507795270c3b",
+      "headingCount": 9
     },
     {
       "slug": "07-list-recursion",
-      "title": "列表递归：空列表与剩下的部分",
+      "title": "列表递归：一周页数怎样加起来",
       "number": 7,
       "videoNumbers": [
         9
       ],
       "phase": 1,
-      "sha256": "bfba228ffb485a202b0831be1b382bb42d43ce4bd3cff11ffac982162e051135",
-      "headingCount": 8
+      "sha256": "02587d74a0b8e386c494ef895cc2c71ae23e49f5990ea0213ba1c525ddae4923",
+      "headingCount": 10
     },
     {
       "slug": "08-local-functions",
-      "title": "let 与局部函数：让名字有自己的范围",
+      "title": "let 与局部函数：理清内部的步骤",
       "number": 8,
       "videoNumbers": [
         10,
         11
       ],
       "phase": 2,
-      "sha256": "497cdcc9d3b5e33d7ce3d53b6fc6aab44bcf8b1a5326cfd5ff4c7188364a61ac",
-      "headingCount": 9
+      "sha256": "bfea0e01c2d2eb4843347fd4b0a71fd77bd56f9953ef90c04a183693179d2b1c",
+      "headingCount": 10
     },
     {
       "slug": "09-efficiency",
-      "title": "let 与效率：避免重复计算",
+      "title": "求最高页数：怎样避免反复计算",
       "number": 9,
       "videoNumbers": [
         12
       ],
       "phase": 2,
-      "sha256": "e3e71b2323430b71bc6824bfae9dbc6c10289d25fa223badee72421cc1557a85",
-      "headingCount": 6
+      "sha256": "b4cb38dd58fe8cb84e9d78936b4f22f0011a53c2960544b8da839d7f9026ba04",
+      "headingCount": 10
     },
     {
       "slug": "10-options",
-      "title": "Option：明确表达可能没有结果",
+      "title": "Option：没有记录时，怎样回答",
       "number": 10,
       "videoNumbers": [
         13
       ],
       "phase": 2,
-      "sha256": "ec4b622e2c1b6d42825c7c0f908d957321c30f08114ed04289ba8d66bba4961f",
-      "headingCount": 8
+      "sha256": "4d0a0ff836d419f0c923c860dcbe4512fe504f093296eb5156075373064498b2",
+      "headingCount": 9
     },
     {
       "slug": "11-booleans-comparison",
-      "title": "布尔与比较：读清条件和类型",
+      "title": "布尔与比较：先检查，再安全读取",
       "number": 11,
       "videoNumbers": [
         14
       ],
       "phase": 2,
-      "sha256": "b069e333ac2ec9376ef59b745c393a7b5fb93aae8d251e86bef83a466b9a614a",
-      "headingCount": 7
+      "sha256": "ff18f5788dd12d3dc07ef3a1882b15cbadea475fea8fc717c72ba51869e9edec",
+      "headingCount": 9
     },
     {
       "slug": "12-immutability",
-      "title": "不可变：旧值不变，推理怎样变简单",
+      "title": "不可变：一份数据被多处使用时",
       "number": 12,
       "videoNumbers": [
         15,
         16
       ],
       "phase": 3,
-      "sha256": "7333cf13d99f032ec05b34459455d2d8bfe588e8e83adc235687b0a63ea1a022",
-      "headingCount": 8
+      "sha256": "a4795dd8b3a63731c7f4c817f76540cb87b2b66b578446268362b469554db99c",
+      "headingCount": 9
     },
     {
       "slug": "13-language-map",
@@ -285,8 +286,8 @@
         17
       ],
       "phase": 3,
-      "sha256": "25e782495d391a6015158eb2a1a97cb545e2543cb7d71b0a99ecd6c827b9e2e2",
-      "headingCount": 7
+      "sha256": "371ffd56c11e843a4da548ec541edef5da27e62713a6f56ac556c5ad365e73e6",
+      "headingCount": 9
     }
   ],
   "partial": false

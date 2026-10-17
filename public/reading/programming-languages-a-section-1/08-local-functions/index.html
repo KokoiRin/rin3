@@ -1,94 +1,128 @@
 <!doctype html>
-<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="let 与局部函数：让名字有自己的范围 · Dan Grossman 编程语言课程 Section 1 原创中文讲解"><title>let 与局部函数：让名字有自己的范围 · 编程语言 Part A / Section 1 · RIN III</title><link rel="stylesheet" href="../../reader.css"><link rel="stylesheet" href="../lesson.css"><link rel="manifest" href="../../../manifest.webmanifest"></head><body class="pl-course"><nav class="site-nav"><a href="../index.html">← 编程语言 · Section 1</a><a href="https://www.coursera.org/learn/programming-languages">原课程 ↗</a></nav><main class="reader"><header class="chapter-header"><span class="chapter-kicker">08 / 13 · 原创中文讲解</span><h1>let 与局部函数：让名字有自己的范围</h1><p class="lead">用局部绑定与辅助函数，把实现细节放在需要它的地方。</p><p class="byline">原课程：Dan Grossman · Programming Languages, Part A</p><p class="lesson-context">名字的范围、计算次数、缺失结果与条件判断。建议按顺序阅读；遇到新符号，先跟随代码的执行过程，再回看规则。</p><details class="source-details"><summary>对应视频与本篇范围</summary><ul><li><a href="https://www.coursera.org/learn/programming-languages/lecture/hQOtW/let-expressions">V10 · Let Expressions</a></li><li><a href="https://www.coursera.org/learn/programming-languages/lecture/3RjQQ/nested-functions">V11 · Nested Functions</a></li></ul><p>本系列依据 Dan Grossman 的 Programming Languages, Part A · Section 1 制作原创中文学习讲解，使用自己的解释与示例组织概念；不是逐字翻译、官方译本或课程视频字幕。</p><p>主要参考：对应视频的官方英文字幕、<a href="https://courses.cs.washington.edu/courses/cse341/19sp/unit1notes.pdf">UW Unit 1 讲义</a>、<a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec1slides.pdf">Lecture 1</a> / <a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec2slides.pdf">Lecture 2</a> / <a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec3slides.pdf">Lecture 3 幻灯片</a>及讲师示例。<a href="../index.html#sources">完整来源与映射说明</a>。</p></details><details class="lesson-toc"><summary>本篇目录</summary><ol><li class="toc-h2"><a href="#把一段计算需要的名字留在它自己的范围里">把一段计算需要的名字，留在它自己的范围里</a></li><li class="toc-h2"><a href="#顺序建立环境再求主体的值">顺序建立环境，再求主体的值</a></li><li class="toc-h2"><a href="#同名绑定的右边先使用原来可见的环境">同名绑定的右边，先使用原来可见的环境</a></li><li class="toc-h2"><a href="#let-放在哪里都要按表达式来理解">let 放在哪里，都要按表达式来理解</a></li><li class="toc-h2"><a href="#局部绑定也可以是一整个函数">局部绑定也可以是一整个函数</a></li><li class="toc-h2"><a href="#不变化的终点可以从定义环境直接取得">不变化的终点，可以从定义环境直接取得</a></li><li class="toc-h2"><a href="#私有与复用需要一起考虑">私有与复用，需要一起考虑</a></li><li class="toc-h3"><a href="#补充边界原例子要求-x-至少是-1">补充边界：原例子要求 x 至少是 1</a></li><li class="toc-h2"><a href="#对应原课与回看线索">对应原课与回看线索</a></li></ol></details><nav class="chapter-switcher" aria-label="章节导航"><a rel="prev" href="../07-list-recursion/index.html">← 07 列表递归：空列表与剩下的部分</a><a class="course-home" href="../index.html">全部 13 篇</a><a rel="next" href="../09-efficiency/index.html">09 let 与效率：避免重复计算 →</a></nav></header><article class="lesson-article translated-article"><h2 id="把一段计算需要的名字留在它自己的范围里">把一段计算需要的名字，留在它自己的范围里</h2>
-<p>到目前为止，我们主要在文件顶层写 <code>val</code>、<code>fun</code> 绑定。但一个函数经常需要只服务于自己的中间结果和辅助函数。把这些名字全部放到顶层，会让外部代码看到许多并不应该使用的细节。</p>
-<p><code>let</code> 给出的解决方式很统一：在一个表达式内部建立局部绑定，再用这些绑定算出这个表达式的结果。它的基本结构是：</p>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="let 与局部函数：理清内部的步骤 · Dan Grossman 编程语言课程 Section 1 原创中文讲解"><title>let 与局部函数：理清内部的步骤 · 编程语言 Part A / Section 1 · RIN III</title><link rel="stylesheet" href="../../reader.css"><link rel="stylesheet" href="../lesson.css"><link rel="manifest" href="../../../manifest.webmanifest"></head><body class="pl-course"><nav class="site-nav"><a href="../index.html">← 编程语言 · Section 1</a><a href="https://www.coursera.org/learn/programming-languages">原课程 ↗</a></nav><main class="reader"><header class="chapter-header"><span class="chapter-kicker">08 / 13 · 原创中文讲解</span><h1>let 与局部函数：理清内部的步骤</h1><p class="lead">先用中间结果完成一次计算，再把只服务当前任务的辅助函数留在内部。</p><p class="byline">原课程：Dan Grossman · Programming Languages, Part A</p><details class="source-details"><summary>对应视频与本篇范围</summary><ul><li><a href="https://www.coursera.org/learn/programming-languages/lecture/hQOtW/let-expressions">V10 · Let Expressions</a></li><li><a href="https://www.coursera.org/learn/programming-languages/lecture/3RjQQ/nested-functions">V11 · Nested Functions</a></li></ul><p>本系列依据 Dan Grossman 的 Programming Languages, Part A · Section 1 制作原创中文学习讲解，使用自己的解释与示例组织概念；不是逐字翻译、官方译本或课程视频字幕。</p><p>主要参考：对应视频的官方英文字幕、<a href="https://courses.cs.washington.edu/courses/cse341/19sp/unit1notes.pdf">UW Unit 1 讲义</a>、<a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec1slides.pdf">Lecture 1</a> / <a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec2slides.pdf">Lecture 2</a> / <a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec3slides.pdf">Lecture 3 幻灯片</a>及讲师示例。<a href="../index.html#sources">完整来源与映射说明</a>。</p></details><details class="lesson-toc"><summary>本篇目录</summary><ol><li class="toc-h2"><a href="#一周读完多少页还差多少页">一周读完多少页，还差多少页</a></li><li class="toc-h2"><a href="#再看懂-let-的写法">再看懂 let 的写法</a></li><li class="toc-h2"><a href="#用原课的短例子逐行确认顺序">用原课的短例子，逐行确认顺序</a></li><li class="toc-h2"><a href="#局部同名定义不会改掉外面的值">局部同名定义，不会改掉外面的值</a></li><li class="toc-h3"><a href="#一个-let-结束后它的局部名字就不再影响旁边">一个 let 结束后，它的局部名字就不再影响旁边</a></li><li class="toc-h2"><a href="#还可以把一整个辅助函数放进去">还可以把一整个辅助函数放进去</a></li><li class="toc-h2"><a href="#不变的终点为什么还要每次传入">不变的终点，为什么还要每次传入</a></li><li class="toc-h2"><a href="#把名字放在真正需要它的范围">把名字放在真正需要它的范围</a></li><li class="toc-h3"><a href="#补充为什么视频重新启动解释器">补充：为什么视频重新启动解释器</a></li><li class="toc-h2"><a href="#对应原课与回看线索">对应原课与回看线索</a></li></ol></details><nav class="chapter-switcher" aria-label="章节导航"><a rel="prev" href="../07-list-recursion/index.html">← 07 列表递归：一周页数怎样加起来</a><a class="course-home" href="../index.html">全部 13 篇</a><a rel="next" href="../09-efficiency/index.html">09 求最高页数：怎样避免反复计算 →</a></nav></header><article class="lesson-article translated-article"><h2 id="一周读完多少页还差多少页">一周读完多少页，还差多少页</h2>
+<p>上一篇，我们已经能用 <code>sum_list</code> 把每天的阅读页数加起来。现在想再往前走一步：给定一周记录和本周目标，同时返回“已经读完的页数”和“还差的页数”。例如记录是 <code>[12,18,10,15,0,20,25]</code>，目标是 120 页，总共读了 100 页，还差 20 页，答案应该是元组 <code>(100,20)</code>。如果已经达到目标，“还差的页数”就记作 0。</p>
+<p>先在纸上安排计算：算出总页数，给它起名叫 <code>total</code>；再利用 <code>total</code> 算出差额，叫作 <code>remaining</code>；最后把这两个数放进元组。我们不希望每增加一份阅读记录，就在文件外面另起一组名字。这两个中间名字只需要在生成这份进度的计算中使用。</p>
+<p>SML 可以用 <code>let</code> 把中间名字写在需要它们的计算里面。下面沿用上一篇的 <code>sum_list</code>，并把它一并列出，便于从这一篇开始运行。<code>reading_progress</code> 接收“页数列表、目标”这一对输入，返回“总页数、剩余页数”这一对结果。</p>
+<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>fun sum_list (xs : int list) =</span></span>
+<span data-line=""><span>    if null xs</span></span>
+<span data-line=""><span>    then 0</span></span>
+<span data-line=""><span>    else hd xs + sum_list (tl xs);</span></span>
+<span data-line=""> </span>
+<span data-line=""><span>fun reading_progress (pages : int list, target : int) =</span></span>
+<span data-line=""><span>    let</span></span>
+<span data-line=""><span>        val total = sum_list pages</span></span>
+<span data-line=""><span>        val remaining = if total &#x3C; target then target - total else 0</span></span>
+<span data-line=""><span>    in</span></span>
+<span data-line=""><span>        (total, remaining)</span></span>
+<span data-line=""><span>    end;</span></span>
+<span data-line=""> </span>
+<span data-line=""><span>val week_progress = reading_progress ([12,18,10,15,0,20,25], 120);</span></span>
+<span data-line=""><span>(* week_progress = (100,20) *)</span></span></code></pre></figure>
+<p>这次调用先让参数 <code>pages</code> 表示这一周的列表，<code>target</code> 表示 120。进入 <code>let</code> 后，第一行计算并记住 <code>total=100</code>；第二行已经可以使用 <code>total</code>，于是得到 <code>remaining=20</code>。到 <code>in</code> 后面，<code>(total,remaining)</code> 得到 <code>(100,20)</code>，这就是整个 <code>let</code> 的值，也是这次函数调用的结果。</p>
+<p><code>total</code> 和 <code>remaining</code> 是<strong>局部名字</strong>：它们只在这一段计算中可见，外面的代码通过 <code>week_progress</code> 取得最终答案。下一次调用 <code>reading_progress ([30,40],60)</code>，会为那次调用重新算出 70 和 0，得到 <code>(70,0)</code>，不会把上一次调用的中间名字改掉。</p>
+<h2 id="再看懂-let-的写法">再看懂 let 的写法</h2>
+<p>有了具体例子，再把它简写成一般结构。下面是结构示意，中文部分需要换成真正的 SML 代码，不能直接输入解释器：</p>
 <figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="text" data-theme="github-light"><code data-language="text" data-theme="github-light" style="display: grid;"><span data-line=""><span>let</span></span>
-<span data-line=""><span>    绑定1</span></span>
-<span data-line=""><span>    绑定2</span></span>
+<span data-line=""><span>    给中间结果或辅助函数起名字</span></span>
+<span data-line=""><span>    后面的定义可以使用前面的名字</span></span>
 <span data-line=""><span>in</span></span>
-<span data-line=""><span>    结果表达式</span></span>
+<span data-line=""><span>    用这些名字算出最终结果的表达式</span></span>
 <span data-line=""><span>end</span></span></code></pre></figure>
-<p><code>let</code> 与 <code>in</code> 之间是绑定，可以写 <code>val</code>，也可以写 <code>fun</code>；<code>in</code> 与 <code>end</code> 之间是表达式。整个 <code>let</code> 仍然是一个表达式，类型和结果都由最后这个主体表达式决定。它不是必须配合 <code>return</code> 才有结果的语句块。</p>
-<h2 id="顺序建立环境再求主体的值">顺序建立环境，再求主体的值</h2>
-<p>原课用没有实际业务意义的 <code>silly1</code>，专门展示求值规则。下面采用视频及幻灯片里的版本：</p>
+<p><code>let</code> 与 <code>in</code> 之间放 <code>val</code>、<code>fun</code> 这样的定义；<code>in</code> 与 <code>end</code> 之间放要得到结果的表达式。这里的“绑定”就是把一个名字与一个值或函数关联起来，和我们前面使用的 <code>val</code>、<code>fun</code> 是同一件事，只是现在名字的可见范围缩小了。</p>
+<p><strong>整个 <code>let</code> 是表达式，它会产生一个值。</strong> 在阅读进度例子中，主体是元组，所以 <code>let</code> 的类型是 <code>int * int</code>；若主体只写 <code>total</code>，它的值就只是 100，类型也变成 <code>int</code>。不需要额外写 <code>return</code>，也不是把最后定义的那个名字自动交出去。</p>
+<h2 id="用原课的短例子逐行确认顺序">用原课的短例子，逐行确认顺序</h2>
+<p>阅读进度的例子说明了用途。原课接着用一个叫 <code>silly1</code> 的小函数，把注意力集中在求值顺序上；名字意为“故意简单、没什么实际用途”。下面采用视频及幻灯片中的版本，它接收整数 <code>z</code>，经过两个中间数算出一个整数。</p>
 <figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>fun silly1 (z : int) =</span></span>
 <span data-line=""><span>    let val x = if z > 0 then z else 34</span></span>
 <span data-line=""><span>        val y = x + z + 9</span></span>
 <span data-line=""><span>    in</span></span>
 <span data-line=""><span>        if x > y then x*2 else y*y</span></span>
-<span data-line=""><span>    end</span></span></code></pre></figure>
-<p>调用 <code>silly1 2</code> 时，先进入一个已经知道 <code>z=2</code> 的环境。第一条绑定算出 <code>x=2</code>；第二条绑定可以使用已经有的 <code>x</code> 和 <code>z</code>，于是 <code>y=13</code>；最后主体得到 <code>13*13=169</code>，这也就是整个函数调用的结果。</p>
-<p>类型检查也沿相同顺序进行，只是环境里记录的是类型。先有 <code>z:int</code>，再确定 <code>x:int</code>、<code>y:int</code>；主体的条件是 <code>bool</code>，两条分支都是 <code>int</code>，因此主体、整个 <code>let</code>、这次函数调用的结果类型都是 <code>int</code>。定义一个函数时，检查函数体，不等于立即执行函数体；这些中间值是在实际调用时计算的。</p>
-<p>这里的作用域是有方向的：后面的绑定可以用前面的名字，前面的绑定不能反过来用尚未出现的名字。局部名字还可以用于 <code>let</code> 的主体，但不能直接在这个 <code>let</code> 外部使用。</p>
-<h2 id="同名绑定的右边先使用原来可见的环境">同名绑定的右边，先使用原来可见的环境</h2>
-<p>还有一个值得具体推演的情况：</p>
-<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>val x = 10</span></span>
+<span data-line=""><span>    end;</span></span>
+<span data-line=""> </span>
+<span data-line=""><span>val silly_answer = silly1 2;</span></span>
+<span data-line=""><span>(* silly_answer = 169 *)</span></span></code></pre></figure>
+<p>调用时已有 <code>z=2</code>。第一条定义发现 <code>2>0</code>，得到 <code>x=2</code>；第二条可以使用刚得到的 <code>x</code> 和原有的 <code>z</code>，得到 <code>y=2+2+9=13</code>。最后判断 <code>2>13</code> 为假，选择 <code>y*y</code>，得到 169。</p>
+<p>后面的定义可以使用前面的名字，前面的定义却不能使用尚未出现的局部名字。类型检查也按这条顺序了解名字：参数 <code>z</code> 是 <code>int</code>，继而知道 <code>x</code>、<code>y</code> 都是 <code>int</code>；主体的两条分支都是 <code>int</code>，所以整个 <code>let</code> 返回 <code>int</code>。定义 <code>silly1</code> 时会检查函数体是否合理，但这些具体整数要等实际调用时才计算。</p>
+<h2 id="局部同名定义不会改掉外面的值">局部同名定义，不会改掉外面的值</h2>
+<p>第三篇已经讲过：后出现的同名定义，会让我们在它的可见范围里使用新的值。这件事也可以发生在 <code>let</code> 里面。下面的目的只是看清内外两个 <code>x</code>：外层已有 <code>x=10</code>，最终得到 <code>doubled=22</code>，而外面的 <code>x</code> 仍然是 10。</p>
+<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>val x = 10;</span></span>
 <span data-line=""><span>val doubled =</span></span>
 <span data-line=""><span>    let val x = x + 1</span></span>
 <span data-line=""><span>        val y = x * 2</span></span>
 <span data-line=""><span>    in</span></span>
 <span data-line=""><span>        y</span></span>
-<span data-line=""><span>    end</span></span>
-<span data-line=""><span>(* doubled = 22；顶层的 x 仍是 10 *)</span></span></code></pre></figure>
-<p>第一条局部绑定的右边还没有建立新的 <code>x</code>，所以 <code>x+1</code> 先使用外面的 10，得到 11。此后局部环境才出现 <code>x=11</code>，下一条绑定据此得到 <code>y=22</code>。普通 <code>val</code> 不是递归定义；函数能够在自己的函数体中递归使用名字，则来自 <code>fun</code> 的规则，不要把二者混为一谈。</p>
-<p>作用域也不是运行期间沿着调用栈临时猜测名字的含义。稍后看到局部函数读取外层参数时，仍然是它定义位置能够看到的绑定。再次调用外层函数，会建立另一份对应那次实参的环境，不会偷偷修改上一次调用使用的参数。</p>
-<h2 id="let-放在哪里都要按表达式来理解">let 放在哪里，都要按表达式来理解</h2>
-<p>既然 <code>let</code> 本身产生值，就能放在函数实参里、条件分支里，或者另一个表达式的内部。原课用下面这段故意写得曲折的代码，说明局部作用域与遮蔽：</p>
+<span data-line=""><span>    end;</span></span>
+<span data-line=""><span>(* doubled = 22；外面的 x 仍为 10 *)</span></span></code></pre></figure>
+<p>计算局部 <code>val x = x+1</code> 的右边时，新 <code>x</code> 还没有建立，因此先用外面的 10，得到 11。从这条定义后面开始，局部的 <code>x</code> 才表示 11，下一行得到 <code>y=22</code>。这叫同名名字的“遮蔽”，不是把外面的 10 改成 11。</p>
+<p>普通 <code>val</code> 也没有因此变成递归定义。我们此前能在 <code>sum_list</code> 的函数体中写 <code>sum_list</code>，来自 <code>fun</code> 允许函数递归调用自己的规则，不能把它套到普通的 <code>val</code> 上。</p>
+<h3 id="一个-let-结束后它的局部名字就不再影响旁边">一个 let 结束后，它的局部名字就不再影响旁边</h3>
+<p>既然 <code>let</code> 会产生值，就可以放在加号两侧。原课的 <code>silly2</code> 没有实际业务目的，是用来确认“一个局部定义影响到哪里”的例子。它接收 <code>()</code> 这个不携带信息的值，调用写成 <code>silly2 ()</code>。</p>
 <figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>fun silly2 () =</span></span>
 <span data-line=""><span>    let val x = 1</span></span>
 <span data-line=""><span>    in</span></span>
 <span data-line=""><span>        (let val x = 2 in x+1 end)</span></span>
 <span data-line=""><span>        + (let val y = x+2 in y+1 end)</span></span>
-<span data-line=""><span>    end</span></span></code></pre></figure>
-<p>先看加号左边：内层绑定 <code>x=2</code> 遮蔽外层的 <code>x=1</code>，因此左边得到 3。但这份内层绑定只影响它自己的 <code>let</code>，没有把外层的 <code>x</code> 改成 2。</p>
-<p>加号右边没有重新绑定 <code>x</code>，所以 <code>x+2</code> 使用外层的 1，得到 <code>y=3</code>；主体 <code>y+1</code> 得到 4。整个结果就是 <code>3+4=7</code>。如果把右边也算成使用 <code>x=2</code>，就把局部遮蔽错误地理解成了跨范围的赋值。</p>
-<p>调用写作 <code>silly2 ()</code>。这里的 <code>()</code> 是 <code>unit</code> 值，不是让 <code>silly2</code> 的主体在定义时自动执行。这个例子用于理解规则，不是建议日常代码刻意嵌套得这么难读。</p>
-<h2 id="局部绑定也可以是一整个函数">局部绑定也可以是一整个函数</h2>
-<p>现在要实现 <code>countup_from1 x</code>，产生 <code>[1,2,...,x]</code>。可以先写一个能从任意起点数到终点的辅助函数：</p>
+<span data-line=""><span>    end;</span></span>
+<span data-line=""> </span>
+<span data-line=""><span>val nested_answer = silly2 ();</span></span>
+<span data-line=""><span>(* nested_answer = 7 *)</span></span></code></pre></figure>
+<p>先看左边的内层 <code>let</code>：自己的 <code>x=2</code>，所以 <code>x+1=3</code>。这个 <code>let</code> 到 <code>end</code> 就结束了，它没有把外面的 <code>x=1</code> 改掉。右边没有定义另一个 <code>x</code>，所以 <code>y=x+2=3</code>，再算 <code>y+1=4</code>；两边相加得到 7。</p>
+<p>这里的 <code>()</code> 叫作 <code>unit</code> 值，用在不需要提供有意义输入的调用中。它不是要求函数在定义时立即执行。这个例子也不是建议把日常代码刻意写成多层嵌套，而是展示：<code>let</code> 能放在任何需要表达式的地方，例如算术表达式、函数实参或 <code>if</code> 分支中。</p>
+<h2 id="还可以把一整个辅助函数放进去">还可以把一整个辅助函数放进去</h2>
+<p>回到阅读记录。假如我们想显示“第 1 天、第 2 天、……、第 7 天”，先需要产生天数列表 <code>[1,2,3,4,5,6,7]</code>。我们把这个任务叫作 <code>countup_from1 x</code>：输入最后一天的编号，输出从 1 到该编号的列表。这里先约定 <code>x</code> 至少是 1。</p>
+<p>沿用上一篇递归构造列表的方法，可以先写一个从 <code>from</code> 数到 <code>to</code> 的函数，再让 <code>countup_from1_global</code> 从 1 开始调用它。下面 <code>count (3,6)</code> 的答案是 <code>[3,4,5,6]</code>，前提是起点不超过终点。</p>
 <figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>fun count (from : int, to : int) =</span></span>
 <span data-line=""><span>    if from = to</span></span>
 <span data-line=""><span>    then [to]</span></span>
-<span data-line=""><span>    else from :: count (from+1,to)</span></span>
+<span data-line=""><span>    else from :: count (from+1, to);</span></span>
 <span data-line=""> </span>
 <span data-line=""><span>fun countup_from1_global (x : int) =</span></span>
-<span data-line=""><span>    count (1,x)</span></span></code></pre></figure>
-<p>对于起点不超过终点的输入，<code>count (3,6)</code> 得到 <code>[3,4,5,6]</code>。如果它确实是一个供许多地方使用的通用工具，放在外面合理。但如果它只负责实现 <code>countup_from1</code>，我们可以把同样的绑定放进 <code>let</code>：</p>
+<span data-line=""><span>    count (1, x);</span></span>
+<span data-line=""> </span>
+<span data-line=""><span>val day_numbers = countup_from1_global 3;</span></span>
+<span data-line=""><span>(* day_numbers = [1,2,3] *)</span></span></code></pre></figure>
+<p><code>count (1,3)</code> 先等着取得 <code>count (2,3)</code>；后者又等着取得 <code>count (3,3)</code>，这次到达终点，返回 <code>[3]</code>。向外依次在开头放入 2 和 1，得到 <code>[2,3]</code>、<code>[1,2,3]</code>。</p>
+<p>如果很多地方都需要任意起点的计数器，把 <code>count</code> 放在外面很合适。但现在它只是生成天数列表的一步，别处不需要直接用它。<code>let</code> 允许定义 <code>fun</code>，所以可以把这同一段函数搬进 <code>countup_from1</code>：</p>
 <figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>fun countup_from1 (x : int) =</span></span>
-<span data-line=""><span>    let fun count (from : int, to : int) =</span></span>
+<span data-line=""><span>    let</span></span>
+<span data-line=""><span>        fun count (from : int, to : int) =</span></span>
 <span data-line=""><span>            if from = to</span></span>
 <span data-line=""><span>            then [to]</span></span>
-<span data-line=""><span>            else from :: count (from+1,to)</span></span>
+<span data-line=""><span>            else from :: count (from+1, to)</span></span>
 <span data-line=""><span>    in</span></span>
-<span data-line=""><span>        count (1,x)</span></span>
-<span data-line=""><span>    end</span></span></code></pre></figure>
-<p>这里没有新增“局部函数专用语法”。<code>fun</code> 本来就是绑定，而 <code>let</code> 本来就允许局部绑定。局部的 <code>count</code> 能在自己的函数体内递归调用自己，也能在后续局部绑定和 <code>let</code> 主体中使用。</p>
-<p>要验证局部化，最好重新启动 REPL，再只加载局部版本。若之前已经定义过顶层 <code>count</code>，那个旧绑定不会因为后来定义了一个局部同名函数就自动消失。原视频重启 REPL，正是为了排除旧环境的干扰。</p>
-<h2 id="不变化的终点可以从定义环境直接取得">不变化的终点，可以从定义环境直接取得</h2>
-<p>再仔细看刚才的递归：调用 <code>countup_from1 3</code> 时，<code>count</code> 的 <code>to</code> 一直是 3。递归只改变 <code>from</code>，却每次都重复传入相同终点。而 <code>count</code> 定义的位置本来就能看到外层参数 <code>x</code>。</p>
-<p>因此原课进一步改成：</p>
+<span data-line=""><span>        count (1, x)</span></span>
+<span data-line=""><span>    end;</span></span></code></pre></figure>
+<p>结果仍是从 1 到 <code>x</code> 的列表。变化在于 <code>count</code> 只在这段局部范围中可见，外面直接使用的是 <code>countup_from1</code>。这里没有另一套“局部函数语法”：<code>fun</code> 负责定义函数，<code>let</code> 负责限制名字的范围，二者可以直接组合；局部函数仍然可以递归调用自己。</p>
+<h2 id="不变的终点为什么还要每次传入">不变的终点，为什么还要每次传入</h2>
+<p>调用 <code>countup_from1 3</code> 时，刚才的辅助函数依次收到 <code>(1,3)</code>、<code>(2,3)</code>、<code>(3,3)</code>。变化的是起点，终点始终是 3。而 <code>count</code> 定义的位置本来就能看见外层参数 <code>x=3</code>，所以可以直接用 <code>x</code>，不必再传一份 <code>to</code>。</p>
+<p>下面仍然接收最后一天的编号并返回编号列表，只让辅助函数接收会变化的 <code>from</code>。注意：参数定义、第一次调用和递归调用，这三个位置都一起去掉了 <code>to</code>。</p>
 <figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>fun countup_from1_better (x : int) =</span></span>
-<span data-line=""><span>    let fun count (from : int) =</span></span>
+<span data-line=""><span>    let</span></span>
+<span data-line=""><span>        fun count (from : int) =</span></span>
 <span data-line=""><span>            if from = x</span></span>
 <span data-line=""><span>            then [x]</span></span>
 <span data-line=""><span>            else from :: count (from+1)</span></span>
 <span data-line=""><span>    in</span></span>
 <span data-line=""><span>        count 1</span></span>
-<span data-line=""><span>    end</span></span></code></pre></figure>
-<p>这次调用里的辅助函数使用 <code>x=3</code>。<code>count 1</code> 发现 1 不等于 3，递归求 <code>count 2</code>；后者再求 <code>count 3</code>，取得 <code>[3]</code>；向外依次组成 <code>[2,3]</code>、<code>[1,2,3]</code>。<code>from</code> 是每次递归调用自己的参数，而 <code>x</code> 来自定义这个辅助函数时已经存在的外层环境。</p>
-<p>删掉 <code>to</code> 时，定义、初次调用、递归调用都要一起修改。否则容易出现形参数量与调用结构不一致。这个改进主要是让接口不再携带冗余信息，不应简单宣传成“嵌套函数总比全局函数快”。</p>
-<p>这也接上了函数求值的关键规则：实参在调用处求值；函数体里其他名字的含义，由函数定义处的环境决定。后续“闭包”单元会正式深入它，现在可以先理解为：局部函数没有忘记定义时可见的外层绑定。</p>
-<h2 id="私有与复用需要一起考虑">私有与复用，需要一起考虑</h2>
-<p>如果辅助函数不太可能独立使用、容易被外部错误调用，或以后很可能修改，限制它的作用域通常会让维护更简单：你能直接看到有哪些使用者。反过来，若许多地方确实需要同一个功能，就要把它放在足够大的范围里，才能复用。</p>
-<p>因此，“放得越里面越好”不是这节课的结论。更准确的做法是：让名字只出现在需要它的范围，同时保留有价值的复用机会。离开作用域意味着外部代码不能直接使用这个名字，也不能据此断言所有相关值都会立刻被销毁；函数保留外层环境的具体机制会在后续课程展开。</p>
-<h3 id="补充边界原例子要求-x-至少是-1">补充边界：原例子要求 x 至少是 1</h3>
-<p>原课版本从 1 开始，只在等于 <code>x</code> 时停止。所以 <code>x=1</code> 得到 <code>[1]</code>，但 <code>x=0</code> 不会自然得到 <code>[]</code>，而是让 <code>from</code> 继续增加、远离目标。若希望所有不大于 0 的输入返回空列表，需要另外加入 <code>if x &#x3C; 1 then [] else ...</code>，这是扩展后的输入约定，不是原代码已经具有的行为。</p>
+<span data-line=""><span>    end;</span></span>
+<span data-line=""> </span>
+<span data-line=""><span>val three_days = countup_from1_better 3;</span></span>
+<span data-line=""><span>(* three_days = [1,2,3] *)</span></span></code></pre></figure>
+<p>这次依次计算 <code>count 1</code>、<code>count 2</code>、<code>count 3</code>，每一步都与外层的 <code>x=3</code> 比较。结果仍从 <code>[3]</code> 向外组成 <code>[2,3]</code>、<code>[1,2,3]</code>。再调用 <code>countup_from1_better 5</code>，那次调用中的局部函数就会使用那次的 <code>x=5</code>。</p>
+<p>这个局部函数使用的 <code>x</code>，来自<strong>它定义的位置能看见的名字</strong>。它不会跑到其他调用者那里临时寻找一个同名 <code>x</code>。后续课程会用“闭包”解释函数如何保留这些信息；眼下先抓住具体关系：外层提供终点，内层每次只推进起点。</p>
+<h2 id="把名字放在真正需要它的范围">把名字放在真正需要它的范围</h2>
+<p>局部函数的好处，在这个例子里很具体：外面只需要知道“给最后一天编号，得到整段编号”，不需要同时了解内部的 <code>from</code> 怎样推进。以后调整这段辅助过程，也能直接看出它只在这里使用。如果另一个任务确实要共用 <code>count</code>，再把它放到双方都能看到的地方。</p>
+<p>原例子还有一个必须保留的条件：从 1 开始，只在等于 <code>x</code> 时停，因此 <code>x=1</code> 得到 <code>[1]</code>，<code>x=0</code> 却不会得到 <code>[]</code>，而会继续递增，远离目标。如果希望所有 <code>x&#x3C;1</code> 都返回 <code>[]</code>，需要明确增加这样的判断；这是扩展后的约定，不是原函数已有的行为。</p>
+<h3 id="补充为什么视频重新启动解释器">补充：为什么视频重新启动解释器</h3>
+<p>若先运行过顶层 <code>count</code> 的版本，后来再定义局部版本，原来那个顶层 <code>count</code> 仍然存在。局部同名定义不会删除解释器以前保存的定义。因此原视频重新启动 REPL，再只加载局部版本，才能清楚地看到外面不再有可直接调用的 <code>count</code>。这与第二篇“解释器记着已经执行的定义”是同一件事。</p>
+<p>这一篇主要把名字放在了合适的位置。下一篇还会看到一个更直接的收益：用 <code>let</code> 记住已经算出的答案，避免同一段递归反复重算。</p>
 <h2 id="对应原课与回看线索">对应原课与回看线索</h2>
-<p>本篇对应 <strong>V10：Let Expressions</strong> 与 <strong>V11：Nested Functions</strong>。V10 重点看环境逐条扩展，以及 <code>silly2</code> 为什么是 7；V11 重点看 <code>count</code> 从全局搬进局部，再删除 <code>to</code> 参数的完整过程。</p>
-<p>2019 年 <code>lec3.sml</code> 中的 <code>silly1</code> 把 <code>y</code> 写为 <code>x+9</code>，而视频、幻灯片使用 <code>x+z+9</code>。这是具体演示版本的差别；本篇的 169 按上面展示的代码计算，不要混用两份表达式。</p>
+<p>本篇对应 <strong>V10：Let Expressions</strong> 与 <strong>V11：Nested Functions</strong>。V10 重点回看 <code>silly1</code> 的逐行求值、<code>silly2</code> 为什么得到 7，以及 <code>let</code> 也能放在其他表达式里面；V11 回看 <code>count</code> 从外部移到内部，再删除重复传递的终点参数的过程。阅读进度和天数编号的用途，是本系列为了串起前后知识增加的情境。</p>
+<p>2019 年 <code>lec3.sml</code> 中 <code>silly1</code> 的 <code>y</code> 写为 <code>x+9</code>，视频、幻灯片则使用 <code>x+z+9</code>。本篇的 169 按上面展示的代码计算，不要混用两份表达式。</p>
 <ul class="rin-list rin-list-unordered">
 <li><a href="https://courses.cs.washington.edu/courses/cse341/19sp/videos/unit1/uncaptioned/012-let-expressions.mp4">V10 官方视频</a></li>
 <li><a href="https://courses.cs.washington.edu/courses/cse341/19sp/videos/unit1/uncaptioned/013-nested-functions.mp4">V11 官方视频</a></li>
 <li><a href="https://courses.cs.washington.edu/courses/cse341/19sp/unit1notes.pdf">官方 Unit 1 阅读笔记：Let Expressions，印刷第 8–9 页</a></li>
 <li><a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec3slides.pdf">Lecture 3 幻灯片，第 4–11 页</a></li>
 <li><a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec3.sml">Lecture 3 原始 SML 代码</a></li>
-</ul></article><nav class="chapter-switcher" aria-label="章节导航"><a rel="prev" href="../07-list-recursion/index.html">← 07 列表递归：空列表与剩下的部分</a><a class="course-home" href="../index.html">全部 13 篇</a><a rel="next" href="../09-efficiency/index.html">09 let 与效率：避免重复计算 →</a></nav><footer class="lesson-footer">本系列依据 Dan Grossman 的 Programming Languages, Part A · Section 1 制作原创中文学习讲解，使用自己的解释与示例组织概念；不是逐字翻译、官方译本或课程视频字幕。<br><a href="../index.html#sources">来源、范围与 17 段视频映射</a> · 资料核对：2026-10-16</footer></main></body></html>
+</ul></article><nav class="chapter-switcher" aria-label="章节导航"><a rel="prev" href="../07-list-recursion/index.html">← 07 列表递归：一周页数怎样加起来</a><a class="course-home" href="../index.html">全部 13 篇</a><a rel="next" href="../09-efficiency/index.html">09 求最高页数：怎样避免反复计算 →</a></nav><footer class="lesson-footer">本系列依据 Dan Grossman 的 Programming Languages, Part A · Section 1 制作原创中文学习讲解，使用自己的解释与示例组织概念；不是逐字翻译、官方译本或课程视频字幕。<br><a href="../index.html#sources">来源、范围与 17 段视频映射</a> · 资料核对：2026-10-16 · 讲解重组：2026-10-17</footer></main></body></html>

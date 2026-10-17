@@ -19,29 +19,29 @@ order: 50
 
 阅读不要求先安装编程环境，也不把写完练习当成继续阅读的门槛。篇号表示顺序，不是固定日程。
 
-## 先学会读程序
+## 先让一段计算跑起来
 
 - [01 表达式与变量绑定](../../reading/programming-languages-a-section-1/01-expressions/index.html)
-- [02 REPL 与错误](../../reading/programming-languages-a-section-1/02-repl-errors/index.html)
-- [03 同名绑定：新名字怎样遮住旧名字](../../reading/programming-languages-a-section-1/03-shadowing/index.html)
+- [02 把代码交给 ML：输入、文件与结果](../../reading/programming-languages-a-section-1/02-repl-errors/index.html)
+- [03 补录页数之后：旧合计为什么不变](../../reading/programming-languages-a-section-1/03-shadowing/index.html)
 
-## 用函数处理结构化数据
+## 让同一条规则处理更多记录
 
-- [04 函数：从调用过程到正式规则](../../reading/programming-languages-a-section-1/04-functions/index.html)
-- [05 元组：把不同数据装在一起](../../reading/programming-languages-a-section-1/05-tuples/index.html)
-- [06 列表：任意长度，同一种元素类型](../../reading/programming-languages-a-section-1/06-lists/index.html)
-- [07 列表递归：空列表与剩下的部分](../../reading/programming-languages-a-section-1/07-list-recursion/index.html)
+- [04 函数：同一种计算怎样反复使用](../../reading/programming-languages-a-section-1/04-functions/index.html)
+- [05 元组：把相关结果放在一起](../../reading/programming-languages-a-section-1/05-tuples/index.html)
+- [06 列表：从两天页数到一周记录](../../reading/programming-languages-a-section-1/06-lists/index.html)
+- [07 列表递归：一周页数怎样加起来](../../reading/programming-languages-a-section-1/07-list-recursion/index.html)
 
-## 把局部问题处理清楚
+## 把计算内部的步骤安排好
 
-- [08 let 与局部函数：让名字有自己的范围](../../reading/programming-languages-a-section-1/08-local-functions/index.html)
-- [09 let 与效率：避免重复计算](../../reading/programming-languages-a-section-1/09-efficiency/index.html)
-- [10 Option：明确表达可能没有结果](../../reading/programming-languages-a-section-1/10-options/index.html)
-- [11 布尔与比较：读清条件和类型](../../reading/programming-languages-a-section-1/11-booleans-comparison/index.html)
+- [08 let 与局部函数：理清内部的步骤](../../reading/programming-languages-a-section-1/08-local-functions/index.html)
+- [09 求最高页数：怎样避免反复计算](../../reading/programming-languages-a-section-1/09-efficiency/index.html)
+- [10 Option：没有记录时，怎样回答](../../reading/programming-languages-a-section-1/10-options/index.html)
+- [11 布尔与比较：先检查，再安全读取](../../reading/programming-languages-a-section-1/11-booleans-comparison/index.html)
 
-## 回到语言的整体
+## 回头理解这些规则为什么有用
 
-- [12 不可变：旧值不变，推理怎样变简单](../../reading/programming-languages-a-section-1/12-immutability/index.html)
+- [12 不可变：一份数据被多处使用时](../../reading/programming-languages-a-section-1/12-immutability/index.html)
 - [13 学一门语言的五个方面](../../reading/programming-languages-a-section-1/13-language-map/index.html)
 
 ## 原课程与讲解范围

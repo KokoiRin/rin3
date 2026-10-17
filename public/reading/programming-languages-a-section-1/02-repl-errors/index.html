@@ -1,96 +1,149 @@
 <!doctype html>
-<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="REPL 与错误 · Dan Grossman 编程语言课程 Section 1 原创中文讲解"><title>REPL 与错误 · 编程语言 Part A / Section 1 · RIN III</title><link rel="stylesheet" href="../../reader.css"><link rel="stylesheet" href="../lesson.css"><link rel="manifest" href="../../../manifest.webmanifest"></head><body class="pl-course"><nav class="site-nav"><a href="../index.html">← 编程语言 · Section 1</a><a href="https://www.coursera.org/learn/programming-languages">原课程 ↗</a></nav><main class="reader"><header class="chapter-header"><span class="chapter-kicker">02 / 13 · 原创中文讲解</span><h1>REPL 与错误</h1><p class="lead">读懂交互环境，区分语法错误、类型错误与运行时问题。</p><p class="byline">原课程：Dan Grossman · Programming Languages, Part A</p><p class="lesson-context">表达式得到什么值，名字怎样影响后面的计算。建议按顺序阅读；遇到新符号，先跟随代码的执行过程，再回看规则。</p><details class="source-details"><summary>对应视频与本篇范围</summary><ul><li><a href="https://www.coursera.org/learn/programming-languages/lecture/8b8EV/the-repl-and-errors">V03 · The REPL and Errors</a></li></ul><p>本系列依据 Dan Grossman 的 Programming Languages, Part A · Section 1 制作原创中文学习讲解，使用自己的解释与示例组织概念；不是逐字翻译、官方译本或课程视频字幕。</p><p>主要参考：对应视频的官方英文字幕、<a href="https://courses.cs.washington.edu/courses/cse341/19sp/unit1notes.pdf">UW Unit 1 讲义</a>、<a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec1slides.pdf">Lecture 1</a> / <a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec2slides.pdf">Lecture 2</a> / <a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec3slides.pdf">Lecture 3 幻灯片</a>及讲师示例。<a href="../index.html#sources">完整来源与映射说明</a>。</p></details><details class="lesson-toc"><summary>本篇目录</summary><ol><li class="toc-h2"><a href="#repl-是一个会保留上下文的工作台">REPL 是一个会保留上下文的工作台</a></li><li class="toc-h2"><a href="#use-是装入文件不是清空重来">use 是装入文件，不是清空重来</a></li><li class="toc-h2"><a href="#测试写进文件但重新验证时换一个干净会话">测试写进文件，但重新验证时换一个干净会话</a></li><li class="toc-h2"><a href="#报错先分层写法类型求值意图">报错先分层：写法、类型、求值、意图</a></li><li class="toc-h2"><a href="#两个写法错误为什么报错位置可能让人困惑">两个写法错误，为什么报错位置可能让人困惑</a></li><li class="toc-h2"><a href="#类型错误要沿着子表达式找">类型错误，要沿着子表达式找</a></li><li class="toc-h2"><a href="#检查通过以后仍然要看运行结果">检查通过以后，仍然要看运行结果</a></li><li class="toc-h2"><a href="#对应原课与回看线索">对应原课与回看线索</a></li></ol></details><nav class="chapter-switcher" aria-label="章节导航"><a rel="prev" href="../01-expressions/index.html">← 01 表达式与变量绑定</a><a class="course-home" href="../index.html">全部 13 篇</a><a rel="next" href="../03-shadowing/index.html">03 同名绑定：新名字怎样遮住旧名字 →</a></nav></header><article class="lesson-article translated-article"><h2 id="repl-是一个会保留上下文的工作台">REPL 是一个会保留上下文的工作台</h2>
-<p>上一节解释了绑定怎样增加名字。现在把这个过程放到工具中观察：ML 常用的交互环境叫作 REPL，即 Read、Eval、Print、Loop。它读入一段输入，检查并求值，打印结果，然后给你下一个提示符。</p>
-<p>假设在一个全新的会话中输入：</p>
-<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>val x = 34;</span></span>
-<span data-line=""><span>x + 7;</span></span></code></pre></figure>
-<p>你会看到类似下面的结果。不同实现的标点和排版可能稍有区别：</p>
-<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="text" data-theme="github-light"><code data-language="text" data-theme="github-light" style="display: grid;"><span data-line=""><span>val x = 34 : int</span></span>
-<span data-line=""><span>val it = 41 : int</span></span></code></pre></figure>
-<p>第一行表示 <code>x</code> 绑定到整数 <code>34</code>。第二行里的 <code>it</code> 是 REPL 给这次表达式结果使用的名字，不是你必须写进程序的变量。它告诉我们：<code>x + 7</code> 得到了 <code>41</code>，类型为 <code>int</code>。</p>
-<p>REPL 之所以有用，正是因为它保留前面的环境。下一条输入还能使用 <code>x</code>，不用每次重新把整个程序写一遍。但这个方便，也带来了“我到底在什么环境里运行”的问题。</p>
-<h2 id="use-是装入文件不是清空重来">use 是装入文件，不是清空重来</h2>
-<p>把程序保存在 <code>first.sml</code> 后，可以在交互环境里输入：</p>
-<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="text" data-theme="github-light"><code data-language="text" data-theme="github-light" style="display: grid;"><span data-line=""><span>use "first.sml";</span></span></code></pre></figure>
-<p>这条命令需要当前目录下确实有相应文件。理解它时，可以想象把文件中的绑定按顺序交给 REPL 处理；它不是先擦掉旧环境，再从空白开始运行。</p>
-<p>课程笔记还指出，<code>use</code> 自己的结果是 <code>()</code>，类型是 <code>unit</code>。你可能在加载消息最后看到 <code>val it = () : unit</code>。这不是说文件“没算出结果”，更不是哪个业务变量变成了空值；这是这次 <code>use</code> 操作自身的返回结果。</p>
-<p>在 REPL 中，分号用来表示“我这一段输入结束了”。忘记它时，工具可能只是继续等待，并不表示程序正在计算。在 <code>.sml</code> 文件里，顶层绑定末尾通常可以不写分号；但每个变量绑定开头的 <code>val</code> 不能因此省略。</p>
-<h2 id="测试写进文件但重新验证时换一个干净会话">测试写进文件，但重新验证时换一个干净会话</h2>
-<p>临时试试 <code>x + 7</code> 很合适。如果你已经在提示符里重复输入一整组测试，最好把它们保存成另一个文件：先加载实现，再加载测试。这样测试能复用，也知道自己究竟检查过什么。</p>
-<p>修改实现后，老师建议退出并重新启动 REPL，再加载文件。视频中的 Emacs 环境用 <code>C-d</code> 结束会话，用 <code>C-c C-s</code> 启动，再按回车；这些是工具操作，其他编辑器可能不同。历史输入也可以通过 Emacs 的 <code>M-p</code> 调回。</p>
-<p>为什么不直接再次 <code>use</code>？因为你上次加载的名字还在。假设第一次文件里有 <code>val pages = 12</code>，后来把这一行删了，却保留 <code>val total = pages + 3</code>；在旧会话中，残留的 <code>pages</code> 可能让代码看起来还能工作。全新会话才会暴露它依赖了一个已经不存在的定义。下一篇会从“遮蔽”的角度讲清这个机制。</p>
-<h2 id="报错先分层写法类型求值意图">报错先分层：写法、类型、求值、意图</h2>
-<p>原视频故意写了一份满是错误的程序，然后逐个修。这个过程比记住某条报错原文更重要：编译器只看到你实际写下的内容，不知道你原本想写什么。</p>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="把代码交给 ML：输入、文件与结果 · Dan Grossman 编程语言课程 Section 1 原创中文讲解"><title>把代码交给 ML：输入、文件与结果 · 编程语言 Part A / Section 1 · RIN III</title><link rel="stylesheet" href="../../reader.css"><link rel="stylesheet" href="../lesson.css"><link rel="manifest" href="../../../manifest.webmanifest"></head><body class="pl-course"><nav class="site-nav"><a href="../index.html">← 编程语言 · Section 1</a><a href="https://www.coursera.org/learn/programming-languages">原课程 ↗</a></nav><main class="reader"><header class="chapter-header"><span class="chapter-kicker">02 / 13 · 原创中文讲解</span><h1>把代码交给 ML：输入、文件与结果</h1><p class="lead">跟着两天阅读页数的例子，走完输入代码、执行文件、核对结果和排查错误的过程。</p><p class="byline">原课程：Dan Grossman · Programming Languages, Part A</p><details class="source-details"><summary>对应视频与本篇范围</summary><ul><li><a href="https://www.coursera.org/learn/programming-languages/lecture/8b8EV/the-repl-and-errors">V03 · The REPL and Errors</a></li></ul><p>本系列依据 Dan Grossman 的 Programming Languages, Part A · Section 1 制作原创中文学习讲解，使用自己的解释与示例组织概念；不是逐字翻译、官方译本或课程视频字幕。</p><p>主要参考：对应视频的官方英文字幕、<a href="https://courses.cs.washington.edu/courses/cse341/19sp/unit1notes.pdf">UW Unit 1 讲义</a>、<a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec1slides.pdf">Lecture 1</a> / <a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec2slides.pdf">Lecture 2</a> / <a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec3slides.pdf">Lecture 3 幻灯片</a>及讲师示例。<a href="../index.html#sources">完整来源与映射说明</a>。</p></details><details class="lesson-toc"><summary>本篇目录</summary><ol><li class="toc-h2"><a href="#先把目的说清楚让-ml-算出我们已经会手算的结果">先把目的说清楚：让 ML 算出我们已经会手算的结果</a></li><li class="toc-h2"><a href="#先不管文件直接输入一段代码">先不管文件，直接输入一段代码</a></li><li class="toc-h2"><a href="#下一条输入为什么还能使用前面的名字">下一条输入，为什么还能使用前面的名字</a></li><li class="toc-h2"><a href="#为什么又需要一个-sml-文件">为什么又需要一个 .sml 文件</a></li><li class="toc-h2"><a href="#use-的意思请-ml-读取并执行这个文件里的代码">use 的意思：请 ML 读取并执行这个文件里的代码</a></li><li class="toc-h2"><a href="#测试先理解成拿实际结果与预期对照">“测试”先理解成：拿实际结果与预期对照</a></li><li class="toc-h2"><a href="#为什么修改以后要在一个新窗口里再试一次">为什么修改以后，要在一个新窗口里再试一次</a></li><li class="toc-h2"><a href="#代码没得到预期结果先看卡在哪一步">代码没得到预期结果，先看卡在哪一步</a></li><li class="toc-h2"><a href="#写法错误缺少一部分或者把专用词当名字">写法错误：缺少一部分，或者把专用词当名字</a></li><li class="toc-h2"><a href="#类型错误写完整了但各部分配不上">类型错误：写完整了，但各部分配不上</a></li><li class="toc-h2"><a href="#执行失败与算错答案是后面的两层问题">执行失败与算错答案，是后面的两层问题</a></li><li class="toc-h2"><a href="#原视频中还会看到的工具细节">原视频中还会看到的工具细节</a></li><li class="toc-h2"><a href="#对应原课与回看线索">对应原课与回看线索</a></li></ol></details><nav class="chapter-switcher" aria-label="章节导航"><a rel="prev" href="../01-expressions/index.html">← 01 表达式与变量绑定</a><a class="course-home" href="../index.html">全部 13 篇</a><a rel="next" href="../03-shadowing/index.html">03 补录页数之后：旧合计为什么不变 →</a></nav></header><article class="lesson-article translated-article"><h2 id="先把目的说清楚让-ml-算出我们已经会手算的结果">先把目的说清楚：让 ML 算出我们已经会手算的结果</h2>
+<p>第一篇里，我们在纸面上读懂了三行代码：周一读 12 页，周二读 18 页，合计 30 页。这一篇要做的事很具体：<strong>把这三行文字交给 ML 执行，看看它是否真的得到 30；如果没有，怎样判断哪里出了问题。</strong></p>
+<p>为此，要认识两个地方：一个是我们保存代码的文件，另一个是接收代码、显示结果的 ML 交互窗口。先跟着下面的过程读即可，不要求你现在安装软件。这里讲的是一次运行从哪里开始、结果从哪里出现。</p>
+<h2 id="先不管文件直接输入一段代码">先不管文件，直接输入一段代码</h2>
+<p>Standard ML 是一门语言。要让电脑执行它，需要一个实现这门语言的软件，例如原课使用的 SML/NJ。启动它的交互模式后，会出现可以输入 ML 代码、查看结果的地方，下面简称 <strong>ML 交互窗口</strong>。</p>
+<p>假设我们刚启动它，还没有输入任何代码。在窗口里输入：</p>
+<p><strong>我们输入的代码：</strong></p>
+<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>val monday = 12;</span></span>
+<span data-line=""><span>val tuesday = 18;</span></span>
+<span data-line=""><span>val total = monday + tuesday;</span></span></code></pre></figure>
+<p><strong>ML 显示的结果，大致是：</strong></p>
+<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="text" data-theme="github-light"><code data-language="text" data-theme="github-light" style="display: grid;"><span data-line=""><span>val monday = 12 : int</span></span>
+<span data-line=""><span>val tuesday = 18 : int</span></span>
+<span data-line=""><span>val total = 30 : int</span></span></code></pre></figure>
+<p>这里的三行结果不用再输入一遍。它们是 ML 告诉我们的：已经建立了哪些绑定，分别得到了什么值、什么类型。最后一行的 <code>30</code> 就是我们要的合计，<code>int</code> 表示它是整数。</p>
+<p>ML 并不是等你写好一个完整应用才开始工作。它可以读入一段输入，检查并执行，显示结果，再等你输入下一段。这个反复进行的过程叫 <strong>REPL</strong>，是 Read、Eval、Print、Loop 的缩写。先记住它的作用就够了：一个可以随时试运行 ML 代码的工作台。</p>
+<h2 id="下一条输入为什么还能使用前面的名字">下一条输入，为什么还能使用前面的名字</h2>
+<p>现在继续在同一个窗口输入：</p>
+<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>total + 7;</span></span></code></pre></figure>
+<p>ML 已经知道 <code>total</code> 对应 30，所以结果是：</p>
+<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="text" data-theme="github-light"><code data-language="text" data-theme="github-light" style="display: grid;"><span data-line=""><span>val it = 37 : int</span></span></code></pre></figure>
+<p>这次没有写 <code>val 某个名字 = ...</code>，只是要求计算一个表达式。REPL 用临时名字 <code>it</code> 展示这次的结果。它不是另一段待执行代码，也不要求我们事先定义一个叫 <code>it</code> 的变量。</p>
+<p>这个窗口会记住之前输入后形成的环境。第一篇说的“名字与值的对应关系”，在这里就是：刚才建立的 <code>monday</code>、<code>tuesday</code>、<code>total</code>，下一条输入仍然可以使用。我们把从启动到退出之间的这一次交互叫作一个<strong>会话</strong>。</p>
+<p>输入末尾的分号 <code>;</code> 在 REPL 中表示“这一段写完了，可以处理了”。如果忘记分号，窗口可能只是在等你继续写，并不是计算很慢。</p>
+<h2 id="为什么又需要一个-sml-文件">为什么又需要一个 .sml 文件</h2>
+<p>只试一两行时，直接输入很方便。但如果明天还想运行刚才的三行，或者要改一处再运行，反复在窗口里重打就不方便了。我们可以把代码保存下来。</p>
+<p>所谓 <strong><code>.sml</code> 文件</strong>，在这里就是一个保存 ML 代码的普通文本文件。用文本编辑器写好代码，再把文件命名为 <code>pages.sml</code>；<code>.sml</code> 这个后缀帮助我们认出里面是 Standard ML 代码。文件里保存的是下面这些文字，不是 ML 显示出来的运行结果。</p>
+<p><strong>保存在 <code>pages.sml</code> 里的内容：</strong></p>
+<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>val monday = 12;</span></span>
+<span data-line=""><span>val tuesday = 18;</span></span>
+<span data-line=""><span>val total = monday + tuesday;</span></span></code></pre></figure>
+<p>此时文件只是保存在电脑上。<strong>保存文件与执行代码是两步。</strong> 仅仅按下保存，不会让 ML 自动读到它，也不会自动算出合计。</p>
+<h2 id="use-的意思请-ml-读取并执行这个文件里的代码">use 的意思：请 ML 读取并执行这个文件里的代码</h2>
+<p>现在回到 ML 交互窗口，输入：</p>
+<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="text" data-theme="github-light"><code data-language="text" data-theme="github-light" style="display: grid;"><span data-line=""><span>use "pages.sml";</span></span></code></pre></figure>
+<p>这里 <code>use</code> 是 ML 提供的操作，<code>"pages.sml"</code> 告诉它要读哪个文件。这一整句的意思就是：<strong>读取 <code>pages.sml</code>，处理里面的 ML 代码，像刚才逐行输入那样建立绑定并得到结果。</strong> 这就是原课所说的“加载文件”。</p>
+<p>于是，ML 会显示打开文件的消息，以及 <code>monday = 12</code>、<code>tuesday = 18</code>、<code>total = 30</code> 等结果。现在我们有了两条把代码交给 ML 的路线：</p>
+<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="text" data-theme="github-light"><code data-language="text" data-theme="github-light" style="display: grid;"><span data-line=""><span>直接试算：在 ML 窗口输入代码 → ML 执行 → 显示结果</span></span>
+<span data-line=""><span>重复使用：先把代码存进 pages.sml → 在 ML 窗口输入 use → ML 读取并执行 → 显示结果</span></span></code></pre></figure>
+<p>例子假定 ML 能在它当前查找文件的文件夹中找到 <code>pages.sml</code>。如果文件保存在别的地方，就需要在引号内写对应的路径，也就是文件在电脑上的位置写法。找不到文件时，要先核对文件位置；那还没有进入“这三行 ML 代码能不能正确计算”的阶段。</p>
+<p>文件里的顶层绑定通常可以省略末尾分号，原课代码常这样写；本篇先保留，便于看清每一条输入的边界。可以省略的是这个位置的分号，不是每条变量绑定开头的 <code>val</code>。</p>
+<h2 id="测试先理解成拿实际结果与预期对照">“测试”先理解成：拿实际结果与预期对照</h2>
+<p>现在代码确实跑起来了，但“显示了一个数字”还不等于“计算正确”。我们原本希望两天合计 30 页，就应该核对 ML 是否真的显示 30。这样的核对就是测试最基本的意思。</p>
+<p>为了让过程明确，可以写下两个问题：合计是不是 30？周二比周一多多少，是不是 6？把想观察的表达式放到另一个文件中，之后就可以反复执行，不必每次在窗口里重打。</p>
+<p><strong>保存在 <code>pages-tests.sml</code> 里的内容：</strong></p>
+<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>val observed_total = total;                 (* 预期是 30 *)</span></span>
+<span data-line=""><span>val observed_difference = tuesday - monday; (* 预期是 6 *)</span></span></code></pre></figure>
+<p>第一个文件负责定义页数并计算合计；第二个文件使用这些名字，把我们想核对的结果显示出来。<code>observed_total</code> 只是我们给观察结果取的普通名字，不是测试专用语法；注释里的 30 也不会被工具自动检查。这里先人工看实际结果与预期是否一致，不需要复杂的测试工具。</p>
+<p><strong>在一个刚启动的 ML 窗口中，按顺序输入：</strong></p>
+<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="text" data-theme="github-light"><code data-language="text" data-theme="github-light" style="display: grid;"><span data-line=""><span>use "pages.sml";</span></span>
+<span data-line=""><span>use "pages-tests.sml";</span></span></code></pre></figure>
+<p>第一句让 ML 得到页数和合计，第二句才能使用这些名字。第二个文件执行后，会看到类似：</p>
+<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="text" data-theme="github-light"><code data-language="text" data-theme="github-light" style="display: grid;"><span data-line=""><span>val observed_total = 30 : int</span></span>
+<span data-line=""><span>val observed_difference = 6 : int</span></span></code></pre></figure>
+<p>假如计算文件中把周二的 18 误写成了 8，检查文件就会显示合计 20、差值 <code>~4</code>，与预期的 30、6 不符。我们因此知道要回头查页数或计算代码，而不是只看到程序正常运行就认定它正确。</p>
+<p>上面展示的正确版本中，两个结果符合预期。这就把“测试写进文件”补成了一个完整过程：<strong>先明确想检查什么，把检查用的表达式保存下来，运行计算代码，再运行检查代码，最后对照结果。</strong> 分成两个文件是为了方便组织，并不是 ML 规定每个程序必须有两个文件。</p>
+<h2 id="为什么修改以后要在一个新窗口里再试一次">为什么修改以后，要在一个新窗口里再试一次</h2>
+<p>假设我们不小心把 <code>pages.sml</code> 的第一行删掉，文件变成：</p>
+<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="text" data-theme="github-light"><code data-language="text" data-theme="github-light" style="display: grid;"><span data-line=""><span>(* 修改后的 pages.sml：这里故意缺了 monday 的定义。 *)</span></span>
+<span data-line=""><span>val tuesday = 18;</span></span>
+<span data-line=""><span>val total = monday + tuesday;</span></span></code></pre></figure>
+<p>如果还用刚才那个窗口，再次执行 <code>use "pages.sml";</code>，程序可能看起来仍然正常。原因是旧会话已经记住 <code>monday = 12</code>，新文件虽然没定义它，却借用了旧环境里的名字。</p>
+<p>换一个刚启动、还不知道 <code>monday</code> 的 ML 会话，问题就暴露了：计算 <code>total</code> 时找不到 <code>monday</code>。也就是说，我们想检查的是“这份文件有没有写完整”，旧环境却替它补上了缺失的内容。</p>
+<p>所以，原课建议修改程序后重新启动 REPL，再依次加载程序文件和测试文件。<code>use</code> 会读入文件，<strong>不会先清空会话</strong>。下一篇会继续解释：反复出现同名绑定时，旧名字与新名字之间到底是什么关系。</p>
+<h2 id="代码没得到预期结果先看卡在哪一步">代码没得到预期结果，先看卡在哪一步</h2>
+<p>刚才的例子缺了一个名字。原视频还故意写了几类错误，教我们区分“代码不能被接受”和“代码能运行，但算错了”。理解这些区别，报错就不只是一串陌生文字。</p>
+<p>可以沿着 ML 处理代码的过程想：先看写法能不能组成合法代码，再看各部分类型能不能配合，然后执行计算，最后由我们判断答案是否符合原意。</p>
 <table>
 <thead>
 <tr>
-<th>层次</th>
-<th>典型问题</th>
-<th>先看什么</th>
+<th>卡住的位置</th>
+<th>具体情况</th>
+<th>我们先检查什么</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>语法</td>
-<td>缺了 <code>else</code>，用了关键字作名字</td>
-<td>当前行以及之前几行是否写完整</td>
+<td>写法</td>
+<td>条件表达式缺了一部分</td>
+<td><code>if</code>、<code>then</code>、<code>else</code> 是否完整</td>
 </tr>
 <tr>
 <td>类型</td>
-<td>条件不是 <code>bool</code>，分支类型不同</td>
-<td>每个子表达式各是什么类型</td>
+<td>把整数当作真假条件</td>
+<td>每一部分需要什么类型</td>
 </tr>
 <tr>
-<td>求值</td>
-<td>整数除以零，或计算没有结束</td>
-<td>实际传入了什么值、递归如何推进</td>
+<td>执行</td>
+<td>做到整数除以零</td>
+<td>实际参与计算的值是什么</td>
 </tr>
 <tr>
-<td>意图</td>
-<td>程序正常得到 <code>0</code>，其实想要 <code>14</code></td>
-<td>测试期望与实际结果是否一致</td>
+<td>预期</td>
+<td>正常得到 0，原本想算 14</td>
+<td>代码是否表达了正确的计算</td>
 </tr>
 </tbody>
 </table>
-<p>报错行号常常表示“工具读到这里终于没法继续”，不一定是错误真正开始的地方。出现一串报错时，先处理最前面的相关错误，再重新检查，通常比同时修改十处更稳。</p>
-<h2 id="两个写法错误为什么报错位置可能让人困惑">两个写法错误，为什么报错位置可能让人困惑</h2>
-<p>条件表达式必须有两个分支。下面是故意不完整的程序：</p>
+<p>下面几段是分别观察的故意错误示例，不是要拼成一个连续运行的程序。报错的具体文字会随 ML 实现变化，我们主要读懂原因。</p>
+<h2 id="写法错误缺少一部分或者把专用词当名字">写法错误：缺少一部分，或者把专用词当名字</h2>
+<p>第一篇的条件表达式写成 <code>if 条件 then 一个表达式 else 另一个表达式</code>。如果只写前半段：</p>
 <figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>(* 预期：语法错误，缺少 else 分支。 *)</span></span>
 <span data-line=""><span>val result = if true then 34;</span></span></code></pre></figure>
-<p>如果文件里后面还有绑定，工具可能在下一条绑定附近才报告它想插入 <code>else</code>。不要因为行号指向后面，就认定前面的条件表达式已经正确。</p>
-<p>另一个原例使用了 <code>fun</code> 作变量名：</p>
+<p>ML 还在等待另一个分支，表达式并没有写完整。有时工具读到后面一行才发现无法继续，所以报错行号不一定正好指着最初写错的地方。</p>
+<p>原视频还有下面这个例子：</p>
 <figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>(* 预期：语法错误，fun 是关键字。 *)</span></span>
 <span data-line=""><span>val fun = 34;</span></span></code></pre></figure>
-<p><code>fun</code> 是定义函数的关键字。改成 <code>funny</code> 等合法名字即可。这不是“ML 不喜欢这个变量”，而是这些字符已经有固定的语法职责。</p>
-<p>遗漏 <code>val</code> 则更微妙。下面第二行不会自动成为新绑定：</p>
+<p><code>fun</code> 是 ML 留给“定义函数”的专用词，第四篇会使用它。它不能在这里充当普通变量名；改成 <code>funny</code> 等合法名字就可以。</p>
+<p>还有一种容易看漏的写法：第二条变量绑定忘了写 <code>val</code>。</p>
 <figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>(* 预期：错误，第二个绑定遗漏 val；具体诊断依实现而异。 *)</span></span>
 <span data-line=""><span>val x = 7</span></span>
 <span data-line=""><span>y = x + 1;</span></span></code></pre></figure>
-<p>解析器可能把多行拼成另一个表达式，最后报告未绑定名字或类型不匹配。于是，一个看起来像类型错误的消息，根源也可能是你少写了绑定开头。</p>
-<h2 id="类型错误要沿着子表达式找">类型错误，要沿着子表达式找</h2>
-<p>下面两个例子都不能通过类型检查，但原因不同：</p>
+<p>ML 不会自动替第二行补出 <code>val y</code>，还可能尝试把几行读成一个更大的表达式。最后出现的消息可能是类型不匹配或名字未绑定，但源头仍是缺少了绑定开头。遇到一串报错时，先修最前面的相关问题，再重试，比一次猜着改很多处更稳。</p>
+<h2 id="类型错误写完整了但各部分配不上">类型错误：写完整了，但各部分配不上</h2>
+<p>条件位置需要一个真假值，不能直接放整数：</p>
 <figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>(* 预期：类型错误，条件位置需要 bool。 *)</span></span>
 <span data-line=""><span>val result = if 3 then 34 else 42;</span></span></code></pre></figure>
+<p><code>3</code> 的类型是 <code>int</code>，而这里要求 <code>bool</code>。ML 不会把“非零整数”自动解释为真。</p>
+<p>两个分支也需要同一种类型：</p>
 <figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>(* 预期：类型错误，then 与 else 的类型不同。 *)</span></span>
 <span data-line=""><span>val result = if true then 34 else (3 &#x3C; 4);</span></span></code></pre></figure>
-<p>第一个例子把整数放到了判断条件的位置。ML 不把非零整数自动当成真。第二个例子的条件没有问题，但两个分支分别给出 <code>int</code> 与 <code>bool</code>，整体无法通过这条类型规则。</p>
-<p>算术符号也有自己的规则。ML 用 <code>~5</code> 表示负五；<code>-</code> 是减法运算符，可以写 <code>0 - 5</code>，却不能照搬很多语言的一元负号写成 <code>-5</code>。整数除法写 <code>div</code>；<code>/</code> 用于 <code>real</code> 除法，不能直接拿两个整数去用。</p>
+<p>这次条件 <code>true</code> 没问题，但 <code>34</code> 是整数，<code>3 &#x3C; 4</code> 得到布尔值。即使本次运行一定选中 <code>then</code>，ML 仍会检查另一个分支，这正是第一篇讲的类型规则。</p>
+<p>算术符号也有需要适应的地方。负五写 <code>~5</code>，不是 <code>-5</code>；<code>-</code> 在这里表示两项相减。整数除法用 <code>div</code>，而 <code>/</code> 用于实数（如 <code>3.0</code>），不能直接把两个整数交给它。</p>
 <figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>val negative = ~5;</span></span>
 <span data-line=""><span>val same_negative = 0 - 5;</span></span>
 <span data-line=""><span>val quotient = 10 div 3;</span></span></code></pre></figure>
-<p>三者依次得到 <code>~5</code>、<code>~5</code>、<code>3</code>，类型都是 <code>int</code>。符号看着熟悉，不代表新语言沿用了你熟悉的全部规则。</p>
-<h2 id="检查通过以后仍然要看运行结果">检查通过以后，仍然要看运行结果</h2>
+<p>这三个结果依次为 <code>~5</code>、<code>~5</code>、<code>3</code>，类型都是 <code>int</code>。知道符号在这门语言里负责什么，才能判断是计算过程出了错，还是连合法写法都还没写对。</p>
+<h2 id="执行失败与算错答案是后面的两层问题">执行失败与算错答案，是后面的两层问题</h2>
+<p>下面这段符合整数除法的类型要求，却无法完成计算：</p>
 <figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>(* 预期：类型检查通过，求值时抛出 Div 异常。 *)</span></span>
 <span data-line=""><span>val bad_division = 10 div 0;</span></span></code></pre></figure>
-<p>这里两个操作数都是整数，完全符合整数除法的类型要求。问题是运行时的除数为零；类型检查不会把这一类问题全部替你排除。</p>
-<p>再看一个能正常完成的例子：</p>
+<p>参与运算的确实是两个整数，但除数为零。ML 会在执行时报告 <code>Div</code> 异常；“异常”在这里先理解为：计算进行到这一步，无法按正常路径得到结果。通过类型检查，并不能排除所有这类情况。</p>
+<p>最后看原课中一个会正常结束的例子：</p>
 <figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>val fourteen = 7 - 7;</span></span></code></pre></figure>
-<p>结果为 <code>0 : int</code>。名字叫 <code>fourteen</code>，不会让编译器知道你想得到十四。若真正意图是相加，就必须修成 <code>7 + 7</code>，并用测试确认答案。<strong>通过类型检查、正常结束、符合意图，是三个分别需要确认的事实。</strong></p>
+<p>结果为 <code>0</code>。名字叫 <code>fourteen</code>，不会让 ML 知道我们本来想得到十四。如果原意是相加，就得把代码改为 <code>7 + 7</code>，再核对实际结果。</p>
+<p>回到开头，测试页数合计的意义就在这里：电脑执行我们写下的计算，我们负责说明原本希望得到什么，再把两者对上。<strong>写法合法、类型正确、正常结束、答案符合意图，是逐层需要确认的事情。</strong></p>
+<h2 id="原视频中还会看到的工具细节">原视频中还会看到的工具细节</h2>
+<p>执行 <code>use</code> 后，有时会在页数结果之后看到 <code>val it = () : unit</code>。这是 <code>use</code> 这个操作自身的返回值：<code>()</code> 是 <code>unit</code> 类型的唯一值。它没有把 <code>total</code> 改为空，也不表示文件没有执行；我们需要的合计仍然看 <code>total = 30</code> 那一行。</p>
+<p>原课用 Emacs 编辑器操作 REPL：<code>C-d</code> 表示按 Ctrl+D 结束会话，<code>C-c C-s</code> 是依次按 Ctrl+C、Ctrl+S 启动交互环境，<code>M-p</code> 用于调回历史输入。这些是当时工具中的操作，不是 ML 语法；换一种编辑器，操作方式可以不同。</p>
+<p>到这里，我们做完了一次完整的小流程：写下页数计算，交给 ML，保存成文件以便重用，执行检查，再分辨出错发生在哪一层。接下来继续追问这个过程中已经出现的问题：窗口记住了旧名字，又读到同名的新定义时，到底会发生什么？</p>
 <h2 id="对应原课与回看线索">对应原课与回看线索</h2>
-<p>本篇对应 <strong>V3：The REPL and Errors</strong>。回看时沿着老师修复错误的顺序观察：缺 <code>else</code>、关键字、漏 <code>val</code>、条件类型、分支类型、负号、除法、零除，以及最后的错误答案。</p>
+<p>本篇对应 <strong>V3：The REPL and Errors</strong>。保留 <code>use</code>、REPL 环境、测试文件、干净会话、分号、工具按键，以及原视频逐个修复的错误类别；以阅读页数的完整运行过程重新串联。</p>
 <ul class="rin-list rin-list-unordered">
 <li><a href="https://courses.cs.washington.edu/courses/cse341/19sp/videos/unit1/uncaptioned/005-REPL-and-errors.mp4">官方 V3 视频</a></li>
 <li><a href="https://courses.cs.washington.edu/courses/cse341/19sp/videos/unit1.html">官方 Unit 1 视频索引</a></li>
-<li><a href="https://courses.cs.washington.edu/courses/cse341/19sp/unit1notes.pdf">官方阅读笔记：Using use，第3页</a></li>
+<li><a href="https://courses.cs.washington.edu/courses/cse341/19sp/unit1notes.pdf">官方阅读笔记：Using use，第 3 页</a></li>
 </ul>
-<p>原视频的具体报错文字属于当时使用的 ML 实现。本篇保留错误原因与排查过程，输出排版和诊断原文不要求与你安装的版本完全一致。</p></article><nav class="chapter-switcher" aria-label="章节导航"><a rel="prev" href="../01-expressions/index.html">← 01 表达式与变量绑定</a><a class="course-home" href="../index.html">全部 13 篇</a><a rel="next" href="../03-shadowing/index.html">03 同名绑定：新名字怎样遮住旧名字 →</a></nav><footer class="lesson-footer">本系列依据 Dan Grossman 的 Programming Languages, Part A · Section 1 制作原创中文学习讲解，使用自己的解释与示例组织概念；不是逐字翻译、官方译本或课程视频字幕。<br><a href="../index.html#sources">来源、范围与 17 段视频映射</a> · 资料核对：2026-10-16</footer></main></body></html>
+<p><code>pages.sml</code> 和 <code>pages-tests.sml</code> 是本系列自编例子，帮助看清文件、执行、测试之间的关系。本文不是软件安装教程；不同实现的结果排版、报错文字和按键可以不同，代码含义以文中解释为准。</p></article><nav class="chapter-switcher" aria-label="章节导航"><a rel="prev" href="../01-expressions/index.html">← 01 表达式与变量绑定</a><a class="course-home" href="../index.html">全部 13 篇</a><a rel="next" href="../03-shadowing/index.html">03 补录页数之后：旧合计为什么不变 →</a></nav><footer class="lesson-footer">本系列依据 Dan Grossman 的 Programming Languages, Part A · Section 1 制作原创中文学习讲解，使用自己的解释与示例组织概念；不是逐字翻译、官方译本或课程视频字幕。<br><a href="../index.html#sources">来源、范围与 17 段视频映射</a> · 资料核对：2026-10-16 · 讲解重组：2026-10-17</footer></main></body></html>

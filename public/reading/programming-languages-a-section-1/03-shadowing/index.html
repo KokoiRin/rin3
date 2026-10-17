@@ -1,10 +1,71 @@
 <!doctype html>
-<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="同名绑定：新名字怎样遮住旧名字 · Dan Grossman 编程语言课程 Section 1 原创中文讲解"><title>同名绑定：新名字怎样遮住旧名字 · 编程语言 Part A / Section 1 · RIN III</title><link rel="stylesheet" href="../../reader.css"><link rel="stylesheet" href="../lesson.css"><link rel="manifest" href="../../../manifest.webmanifest"></head><body class="pl-course"><nav class="site-nav"><a href="../index.html">← 编程语言 · Section 1</a><a href="https://www.coursera.org/learn/programming-languages">原课程 ↗</a></nav><main class="reader"><header class="chapter-header"><span class="chapter-kicker">03 / 13 · 原创中文讲解</span><h1>同名绑定：新名字怎样遮住旧名字</h1><p class="lead">沿着环境的变化，分清重新绑定与修改旧值。</p><p class="byline">原课程：Dan Grossman · Programming Languages, Part A</p><p class="lesson-context">表达式得到什么值，名字怎样影响后面的计算。建议按顺序阅读；遇到新符号，先跟随代码的执行过程，再回看规则。</p><details class="source-details"><summary>对应视频与本篇范围</summary><ul><li><a href="https://www.coursera.org/learn/programming-languages/lecture/qOEA2/shadowing">V04 · Shadowing</a></li></ul><p>本系列依据 Dan Grossman 的 Programming Languages, Part A · Section 1 制作原创中文学习讲解，使用自己的解释与示例组织概念；不是逐字翻译、官方译本或课程视频字幕。</p><p>主要参考：对应视频的官方英文字幕、<a href="https://courses.cs.washington.edu/courses/cse341/19sp/unit1notes.pdf">UW Unit 1 讲义</a>、<a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec1slides.pdf">Lecture 1</a> / <a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec2slides.pdf">Lecture 2</a> / <a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec3slides.pdf">Lecture 3 幻灯片</a>及讲师示例。<a href="../index.html#sources">完整来源与映射说明</a>。</p></details><details class="lesson-toc"><summary>本篇目录</summary><ol><li class="toc-h2"><a href="#同一个名字再次出现究竟发生了什么">同一个名字再次出现，究竟发生了什么</a></li><li class="toc-h2"><a href="#把原课的例子拆成一条一条">把原课的例子拆成一条一条</a></li><li class="toc-h2"><a href="#val-a--a--1先用哪个-a">val a = a + 1，先用哪个 a</a></li><li class="toc-h2"><a href="#为什么-b-不变要分清两个理由">为什么 b 不变，要分清两个理由</a></li><li class="toc-h2"><a href="#为什么仍然不能先引用后定义">为什么仍然不能先引用后定义</a></li><li class="toc-h2"><a href="#repl-的-hidden-value不是原来的值被改坏了">REPL 的 hidden value，不是原来的值被改坏了</a></li><li class="toc-h2"><a href="#对应原课与回看线索">对应原课与回看线索</a></li></ol></details><nav class="chapter-switcher" aria-label="章节导航"><a rel="prev" href="../02-repl-errors/index.html">← 02 REPL 与错误</a><a class="course-home" href="../index.html">全部 13 篇</a><a rel="next" href="../04-functions/index.html">04 函数：从调用过程到正式规则 →</a></nav></header><article class="lesson-article translated-article"><h2 id="同一个名字再次出现究竟发生了什么">同一个名字再次出现，究竟发生了什么</h2>
-<p>前面我们说，ML 的绑定不是“把某个旧变量的内容改掉”。但如果程序里连续写了两个同名的 <code>val</code>，后面读到的数字确实可能不同，这该怎样解释？</p>
-<p>课程给这个现象起了一个名字：<strong>遮蔽，shadowing</strong>。后来的绑定让同一个名字在后续环境中对应一个新结果。关键是“后续环境”：它没有回头修改以前的环境，也没有重新计算已经完成的绑定。</p>
-<p>这一节没有新增语法。我们只是继续使用 <code>val</code>、表达式和环境，看看原来的规则能不能准确解释这种情况。老师还提醒，同一个文件里反复使用同名顶层绑定通常不是好风格；这里故意这样做，是为了把规则看清。</p>
-<h2 id="把原课的例子拆成一条一条">把原课的例子拆成一条一条</h2>
-<p>从一个没有这些名字的新环境开始：</p>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="补录页数之后：旧合计为什么不变 · Dan Grossman 编程语言课程 Section 1 原创中文讲解"><title>补录页数之后：旧合计为什么不变 · 编程语言 Part A / Section 1 · RIN III</title><link rel="stylesheet" href="../../reader.css"><link rel="stylesheet" href="../lesson.css"><link rel="manifest" href="../../../manifest.webmanifest"></head><body class="pl-course"><nav class="site-nav"><a href="../index.html">← 编程语言 · Section 1</a><a href="https://www.coursera.org/learn/programming-languages">原课程 ↗</a></nav><main class="reader"><header class="chapter-header"><span class="chapter-kicker">03 / 13 · 原创中文讲解</span><h1>补录页数之后：旧合计为什么不变</h1><p class="lead">观察同名绑定前后的具体结果，分清新记录、已经算好的合计与窗口留下的旧环境。</p><p class="byline">原课程：Dan Grossman · Programming Languages, Part A</p><details class="source-details"><summary>对应视频与本篇范围</summary><ul><li><a href="https://www.coursera.org/learn/programming-languages/lecture/qOEA2/shadowing">V04 · Shadowing</a></li></ul><p>本系列依据 Dan Grossman 的 Programming Languages, Part A · Section 1 制作原创中文学习讲解，使用自己的解释与示例组织概念；不是逐字翻译、官方译本或课程视频字幕。</p><p>主要参考：对应视频的官方英文字幕、<a href="https://courses.cs.washington.edu/courses/cse341/19sp/unit1notes.pdf">UW Unit 1 讲义</a>、<a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec1slides.pdf">Lecture 1</a> / <a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec2slides.pdf">Lecture 2</a> / <a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec3slides.pdf">Lecture 3 幻灯片</a>及讲师示例。<a href="../index.html#sources">完整来源与映射说明</a>。</p></details><details class="lesson-toc"><summary>本篇目录</summary><ol><li class="toc-h2"><a href="#补录了周一的页数原来的合计会自动更新吗">补录了周一的页数，原来的合计会自动更新吗</a></li><li class="toc-h2"><a href="#先把整段程序按顺序读一遍">先把整段程序按顺序读一遍</a></li><li class="toc-h2"><a href="#同名的第二个-val到底做了什么">同名的第二个 val，到底做了什么</a></li><li class="toc-h2"><a href="#等号两边都是-monday先用哪个">等号两边都是 monday，先用哪个</a></li><li class="toc-h2"><a href="#原视频的字母例子也是在追踪同一个过程">原视频的字母例子，也是在追踪同一个过程</a></li><li class="toc-h2"><a href="#新绑定可以有新类型但不等于旧变量在变类型">新绑定可以有新类型，但不等于旧变量在变类型</a></li><li class="toc-h2"><a href="#后面才出现的名字为什么帮不了前面的代码">后面才出现的名字，为什么帮不了前面的代码</a></li><li class="toc-h2"><a href="#回到第二篇为什么重新加载文件可能掩盖缺失">回到第二篇：为什么重新加载文件可能掩盖缺失</a></li><li class="toc-h2"><a href="#这一篇的关系怎样带到下一篇">这一篇的关系，怎样带到下一篇</a></li><li class="toc-h2"><a href="#对应原课与回看线索">对应原课与回看线索</a></li></ol></details><nav class="chapter-switcher" aria-label="章节导航"><a rel="prev" href="../02-repl-errors/index.html">← 02 把代码交给 ML：输入、文件与结果</a><a class="course-home" href="../index.html">全部 13 篇</a><a rel="next" href="../04-functions/index.html">04 函数：同一种计算怎样反复使用 →</a></nav></header><article class="lesson-article translated-article"><h2 id="补录了周一的页数原来的合计会自动更新吗">补录了周一的页数，原来的合计会自动更新吗</h2>
+<p>第二篇已经让 ML 执行过这个小程序：周一 12 页，周二 18 页，合计 30 页。现在发现周一漏记了 8 页，想把记录补成 20 页。</p>
+<p>这时有两个不同问题：后面再使用 <code>monday</code>，读到的是多少？之前已经得到的 <code>total</code>，会不会自动从 30 变成 38？这一篇就沿着这个变化，解释<strong>同名绑定、已经计算好的值，以及后续代码能看到的环境</strong>之间的关系。</p>
+<h2 id="先把整段程序按顺序读一遍">先把整段程序按顺序读一遍</h2>
+<p>下面是一段独立的 ML 程序。最后两行分别保留旧合计，再重新计算一次合计，方便对照。</p>
+<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>val monday = 12;</span></span>
+<span data-line=""><span>val tuesday = 18;</span></span>
+<span data-line=""><span>val total = monday + tuesday;</span></span>
+<span data-line=""> </span>
+<span data-line=""><span>val monday = 20;</span></span>
+<span data-line=""><span>val old_total = total;</span></span>
+<span data-line=""><span>val new_total = monday + tuesday;</span></span></code></pre></figure>
+<p>前三行我们已经熟悉：先建立两天的页数，再把 <code>12 + 18</code> 的结果 <code>30</code> 绑定给 <code>total</code>。第四行又出现了名字 <code>monday</code>，但这次右边是 20。</p>
+<p>之后，<code>old_total</code> 得到的是 <code>30</code>，<code>new_total</code> 得到的是 <code>38</code>。为了看清原因，可以在每个位置暂停，观察后面代码查名字时会找到什么：</p>
+<table>
+<thead>
+<tr>
+<th>已经执行到哪里</th>
+<th align="right">后面使用 monday 时找到</th>
+<th align="right">total 对应的值</th>
+<th>刚得到的其他结果</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>前三条绑定之后</td>
+<td align="right">12</td>
+<td align="right">30</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>val monday = 20</code> 之后</td>
+<td align="right">20</td>
+<td align="right">30</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>val old_total = total</code> 之后</td>
+<td align="right">20</td>
+<td align="right">30</td>
+<td><code>old_total = 30</code></td>
+</tr>
+<tr>
+<td><code>val new_total = monday + tuesday</code> 之后</td>
+<td align="right">20</td>
+<td align="right">30</td>
+<td><code>new_total = 38</code></td>
+</tr>
+</tbody>
+</table>
+<p>关键是：<strong><code>total</code> 保存的是已经算出来的 30，不是一条会自动追踪 monday 的公式。</strong> 第三行执行时，加法就完成了。后来想按新的页数算合计，需要像最后一行那样再执行一次相应的计算。</p>
+<h2 id="同名的第二个-val到底做了什么">同名的第二个 val，到底做了什么</h2>
+<p>再看 <code>val monday = 20</code>。按照第一篇的绑定规则，ML 先计算右边，得到 20，再为后续环境加入一个新的 <code>monday</code> 绑定。</p>
+<p>此时后面的代码使用 <code>monday</code>，会找到这个较新的绑定。较早的同名绑定被遮住了，这叫<strong>遮蔽（shadowing）</strong>。它描述的是“在这个位置上，用同一个名字会找到哪一个绑定”。</p>
+<p>不要把前面的表理解成：ML 回头把所有旧环境中的 12 都涂改成了 20。前面执行过的代码仍然是在当时的环境中解释的，过去得到的结果也不会因此重新计算。第四篇讲函数时，还会看到：函数可以保留它在定义时能看到的绑定。</p>
+<p>这也解释了为什么本节把绑定称为“不可变”：后面的 <code>val</code> 可以建立一个同名的新绑定，却没有修改那个已经建立的旧绑定。暂时先用“不同位置上看到哪个绑定”来读代码，比把名字想成一个能随时改内容的盒子准确。</p>
+<h2 id="等号两边都是-monday先用哪个">等号两边都是 monday，先用哪个</h2>
+<p>假设在刚才程序之后，又写了一条：</p>
+<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>val monday = monday + 1;</span></span>
+<span data-line=""><span>val after_increment = monday;</span></span></code></pre></figure>
+<p>读它时仍然只有两个步骤。先在这一行之前的环境中计算右边：当时 <code>monday</code> 对应 20，所以 <code>monday + 1</code> 得到 21。然后才建立新的 <code>monday → 21</code>，后面的 <code>after_increment</code> 因而得到 21。</p>
+<p>左边正在建立的新名字，不会提前参与自己的右边计算。因此，在一个刚启动、还从未定义过 <code>monday</code> 的会话里，只输入 <code>val monday = monday + 1</code> 会失败：右边查不到一个已经存在的 <code>monday</code>。</p>
+<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>(* 预期：类型错误，全新环境中 unread_pages 尚未绑定。 *)</span></span>
+<span data-line=""><span>val unread_pages = unread_pages + 1;</span></span></code></pre></figure>
+<p>这里换成一个尚未用过的名字，只是为了让缺少旧绑定这件事更明显。能否处理这行代码，取决于当时的环境，不取决于文件里“以后是不是还会写这个名字”。</p>
+<h2 id="原视频的字母例子也是在追踪同一个过程">原视频的字母例子，也是在追踪同一个过程</h2>
+<p>理解阅读页数之后，再看原课的完整例子，就不需要把它当成另一套新规则了。老师把名字缩短为 <code>a</code>、<code>b</code> 等，专门观察同名绑定出现前后的结果。</p>
 <figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>val a = 10;</span></span>
 <span data-line=""><span>val b = a * 2;</span></span>
 <span data-line=""><span>val a = 5;</span></span>
@@ -12,93 +73,71 @@
 <span data-line=""><span>val d = a;</span></span>
 <span data-line=""><span>val a = a + 1;</span></span>
 <span data-line=""><span>val f = a * 2;</span></span></code></pre></figure>
-<p>前两行容易理解：<code>a</code> 对应 <code>10</code>，计算 <code>a * 2</code> 得到 <code>20</code>，所以 <code>b</code> 对应 <code>20</code>。第三行建立新的 <code>a</code> 绑定后，在后续代码能看到的环境里，<code>a</code> 对应 <code>5</code>。</p>
-<p>这时 <code>b</code> 并不会变成 <code>10</code>。处理第二行时，<code>a * 2</code> 已经求值完成，<code>b</code> 保存的是结果 <code>20</code>，不是一条随时会重新计算的公式。所以第四行 <code>val c = b</code> 查到的仍是 <code>20</code>；第五行 <code>val d = a</code> 则查到新的 <code>5</code>。</p>
+<p>先由 <code>a = 10</code> 算出 <code>b = 20</code>。后来较新的 <code>a</code> 为 5，后续查 <code>a</code> 会找到 5，但 <code>b</code> 已经是计算好的 20，不再执行一次 <code>a * 2</code>。</p>
+<p>因此 <code>c</code> 查到 <code>b</code>，得到 20；<code>d</code> 查到较新的 <code>a</code>，得到 5。再处理 <code>val a = a + 1</code>，右边先用 5 算出 6，建立更新的绑定；最后 <code>f</code> 用这个 6 算出 12。</p>
 <table>
 <thead>
 <tr>
-<th>已处理到哪一行</th>
-<th>此时名字 a 对应</th>
-<th>其他新增结果</th>
+<th>名字</th>
+<th align="right">这段程序最终得到的值</th>
+<th>原因</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>val a = 10</code></td>
-<td><code>10</code></td>
-<td>—</td>
+<td><code>b</code></td>
+<td align="right">20</td>
+<td>使用最早的 <code>a = 10</code> 时已经算好</td>
 </tr>
 <tr>
-<td><code>val b = a * 2</code></td>
-<td><code>10</code></td>
-<td><code>b → 20</code></td>
+<td><code>c</code></td>
+<td align="right">20</td>
+<td>读取已经算好的 <code>b</code></td>
 </tr>
 <tr>
-<td><code>val a = 5</code></td>
-<td><code>5</code></td>
-<td><code>b</code> 仍为 <code>20</code></td>
+<td><code>d</code></td>
+<td align="right">5</td>
+<td>在当时的位置读取 <code>a = 5</code></td>
 </tr>
 <tr>
-<td><code>val c = b</code></td>
-<td><code>5</code></td>
-<td><code>c → 20</code></td>
+<td>最后可见的 <code>a</code></td>
+<td align="right">6</td>
+<td>用前一个 <code>a</code> 的值 5 加一，再建立新绑定</td>
 </tr>
 <tr>
-<td><code>val d = a</code></td>
-<td><code>5</code></td>
-<td><code>d → 5</code></td>
-</tr>
-<tr>
-<td><code>val a = a + 1</code></td>
-<td><code>6</code></td>
-<td><code>b</code>、<code>c</code>、<code>d</code> 不变</td>
-</tr>
-<tr>
-<td><code>val f = a * 2</code></td>
-<td><code>6</code></td>
-<td><code>f → 12</code></td>
+<td><code>f</code></td>
+<td align="right">12</td>
+<td>读取最后的 <code>a = 6</code> 再乘二</td>
 </tr>
 </tbody>
 </table>
-<p>表里每一行描述的是那个位置上的环境，不是同一张表被追溯改写。这样读，前后两个不同的 <code>a</code> 就不会被混成“一个可以改内容的盒子”。</p>
-<h2 id="val-a--a--1先用哪个-a">val a = a + 1，先用哪个 a</h2>
-<p>第六行最容易触发旧经验：它看起来很像“自增”。但按照绑定的规则，应该先在<strong>当前环境</strong>中求右边，再建立新绑定。</p>
-<p>到这一行前，当前 <code>a</code> 为 <code>5</code>。因此先计算 <code>a + 1</code> 得到 <code>6</code>，然后让后面的环境拥有新绑定 <code>a → 6</code>。右边的 <code>a</code> 使用的是之前已经存在的绑定，不是一个正在被自己定义的新名字。</p>
-<p>如果在全新会话里只写这一行，情况就不同：</p>
-<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>(* 预期：类型错误，全新环境中 a 尚未绑定。 *)</span></span>
-<span data-line=""><span>val a = a + 1;</span></span></code></pre></figure>
-<p>这里没有可以查到的旧 <code>a</code>。所谓“在全新会话里”是重要条件：如果你在旧 REPL 中已经输入过 <code>a</code>，同样的文本可能合法，这正是重复加载文件会让人困惑的原因。</p>
-<p>遮蔽也不是只能重复同一种类型。下面是为了观察静态环境而补充的例子：</p>
-<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>(* 自编扩展：新绑定可以遮蔽同名的旧绑定。 *)</span></span>
-<span data-line=""><span>val pages = 12;</span></span>
+<p>这里有两个相互配合的事实。第一，变量绑定的右边会当场求值，<code>b</code> 得到的是数字，不是一条延迟执行的公式。第二，同名的后续绑定是在扩展后续环境，没有追溯修改先前绑定。原课把这两点分开强调，是因为后面理解函数时，两点都用得上。</p>
+<h2 id="新绑定可以有新类型但不等于旧变量在变类型">新绑定可以有新类型，但不等于旧变量在变类型</h2>
+<p>到这里的同名绑定都是整数。补充看一个不同类型的例子，帮助把“新绑定”理解到底：</p>
+<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>val pages = 12;</span></span>
 <span data-line=""><span>val pages = true;</span></span>
 <span data-line=""><span>val ready = pages;</span></span></code></pre></figure>
-<p>最后 <code>pages</code> 与 <code>ready</code> 都是 <code>bool</code>，值为 <code>true</code>。第一行创建的整数绑定没有“变成布尔变量”；后来的环境只是让同名的新绑定变得可见。这与“没有写类型注解，所以可以任意动态改变同一个变量的类型”也不同。</p>
-<h2 id="为什么-b-不变要分清两个理由">为什么 b 不变，要分清两个理由</h2>
-<p>原课特别把两个理由分开讲。第一个是<strong>立即求值</strong>：<code>val b = a</code> 被处理时，就把当时的 <code>a</code> 查出来并绑定给 <code>b</code>。之后不再保留“每次读 b 都重新读取 a”的规则。</p>
-<p>第二个是<strong>绑定不可变</strong>：后来 <code>val a = 2</code> 建立另一个绑定，而不是去修改先前 <code>a → 1</code> 这一事实。两个理由叠在一起，就得到最小例子：</p>
-<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>val a = 1;</span></span>
-<span data-line=""><span>val b = a;</span></span>
-<span data-line=""><span>val a = 2;</span></span>
-<span data-line=""><span>val result = b;</span></span></code></pre></figure>
-<p>最后 <code>result</code> 为 <code>1 : int</code>，后面直接求 <code>a</code> 则得到 <code>2</code>。不要只背“遮蔽以后 b 不变”这个答案；要能说清：<code>b</code> 已经得到值，而新 <code>a</code> 也没有改写旧绑定。</p>
-<p>如果把我们的一周阅读页数例子放进来，就像“周一录入了十二页，先算好并保存周一与周二的合计；后来又建立了一个同名的新记录”，先前已经算出的合计不会自动更新。若想算新的合计，需要再写一次对应的计算。</p>
-<h2 id="为什么仍然不能先引用后定义">为什么仍然不能先引用后定义</h2>
-<p>遮蔽允许“之前有一个同名绑定”，不允许“反正下面会出现这个名字”。在全新环境中，下面的顺序仍然错误：</p>
+<p>后面可见的 <code>pages</code> 是布尔值 <code>true</code>，所以 <code>ready</code> 也是 <code>true</code>，类型为 <code>bool</code>。第一条建立的整数绑定没有被改造成布尔绑定，只是被后面的同名绑定遮住了。</p>
+<p>这与“同一个可修改的位置，运行中想装什么就装什么”不同。每条绑定仍然要通过它所在位置的类型检查，后面的表达式也只能按当前可见绑定的类型使用它。</p>
+<h2 id="后面才出现的名字为什么帮不了前面的代码">后面才出现的名字，为什么帮不了前面的代码</h2>
+<p>遮蔽有一个前提：先前确实已经存在一个可用绑定。它不会允许我们引用一个尚未定义的普通名字。</p>
 <figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>(* 预期：类型错误，future 尚未绑定。 *)</span></span>
-<span data-line=""><span>val before = future - 3;</span></span>
+<span data-line=""><span>val before_future = future - 3;</span></span>
 <span data-line=""><span>val future = 12;</span></span></code></pre></figure>
-<p>检查第一条绑定时，<code>future</code> 不在当前静态环境中。文件后面的那一条还没有为这里建立任何可用绑定。如果把第二行移到前面，第一行才可以合法使用它。</p>
-<p>这也让我们理解“声明顺序”不是排版偏好。它决定每条表达式能看见哪些名字。后面定义普通函数时，函数同样可以使用更早的绑定，以及自己的递归名字；不能随意使用之后才出现的普通定义。</p>
-<h2 id="repl-的-hidden-value不是原来的值被改坏了">REPL 的 hidden value，不是原来的值被改坏了</h2>
-<p>有些 SML/NJ 的加载结果会把前面已经被遮蔽的同名绑定打印成 <code>&#x3C;hidden-value></code>，而不是把它的旧数字完整列出来。这是工具输出方式：它在提醒你，当前环境里直接用这个名字时，看到的是后面的绑定。</p>
-<p>它不表示绑定还没求值，也不表示 ML 把数字删掉了。我们理解程序的依据始终是绑定所在位置的环境，而不是 REPL 选择怎样压缩打印历史。</p>
-<p>同理，再次 <code>use</code> 同一个文件会增加更多绑定、形成更多遮蔽。旧名字可能残留，或者碰巧被新名字盖住，使一个错误依赖看起来没问题。修改文件后用干净会话重试，检查的是“这个文件本身能否建立它需要的环境”，而不是“它能否借用我刚才留下的状态”。</p>
+<p>检查第一行时，ML 的静态环境里还没有 <code>future</code>。把第二行写在文件下面，不能为第一行补出一个已经可用的名字；需要先建立 <code>future</code>，再写使用它的计算。</p>
+<p>这不是排版限制，而是在规定每一行能够看见什么。函数自己递归调用自己属于后面会学习的专门规则，不能用来推断普通绑定也都可以任意前后引用。</p>
+<h2 id="回到第二篇为什么重新加载文件可能掩盖缺失">回到第二篇：为什么重新加载文件可能掩盖缺失</h2>
+<p>第二篇删掉了文件中 <code>monday</code> 的定义，却发现旧 ML 会话有时仍能运行。现在就能解释：旧会话中先前建立的 <code>monday</code> 还在，<code>use</code> 新文件时并没有先抹掉它。</p>
+<p>反过来，同一个文件反复加载，也可能建立更多同名绑定，让后面代码查到较新的版本。如果只看当前窗口最后能算出一个答案，就很容易忘记这个答案依赖了哪些历史输入。修改后在新会话中测试，是为了确认文件自己已经写全。</p>
+<p>有些 SML/NJ 输出会把被遮蔽的旧值显示成 <code>&#x3C;hidden-value></code>。这只是工具在压缩展示加载结果，告诉你直接用这个名字时看到的是后面的绑定。它不表示旧表达式还没计算，也不表示先前的值被“改坏”了。</p>
+<h2 id="这一篇的关系怎样带到下一篇">这一篇的关系，怎样带到下一篇</h2>
+<p>我们已经知道：普通 <code>val</code> 会在当时计算一次，把结果绑定到名字；后来的同名绑定不会让它自动重算。那么，如果希望“同一个计算规则能反复使用，每次换一组输入再算”，就需要下一篇的函数。</p>
+<p>函数不是另一个会自动更新的合计。它让我们明确决定什么时候调用、这次交进去哪些值，并为这次调用计算一个结果。带着这个具体需求进入下一篇，就不会把函数定义与普通变量绑定混成一回事。</p>
 <h2 id="对应原课与回看线索">对应原课与回看线索</h2>
-<p>本篇对应 <strong>V4：Shadowing</strong>。回看时重点追踪 <code>a → 10</code>、<code>a → 5</code>、<code>a → 6</code> 三个不同位置的环境，以及 <code>b</code> 为何始终保留 <code>20</code>。</p>
+<p>本篇对应 <strong>V4：Shadowing</strong>。保留原课 <code>a</code>、<code>b</code>、<code>c</code>、<code>d</code>、<code>f</code> 的完整例子、立即求值与不可变的两个理由、<code>&#x3C;hidden-value></code> 输出以及旧 REPL 环境的影响；阅读页数和不同类型遮蔽是教学补充。</p>
 <ul class="rin-list rin-list-unordered">
 <li><a href="https://courses.cs.washington.edu/courses/cse341/19sp/videos/unit1/uncaptioned/006-shadowing.mp4">官方 V4 视频</a></li>
-<li><a href="https://courses.cs.washington.edu/courses/cse341/19sp/unit1notes.pdf">官方 Unit 1 阅读笔记：Variables are Immutable，第4页</a></li>
+<li><a href="https://courses.cs.washington.edu/courses/cse341/19sp/unit1notes.pdf">官方 Unit 1 阅读笔记：Variables are Immutable，第 4 页</a></li>
 <li><a href="https://courses.cs.washington.edu/courses/cse341/19sp/videos/unit1.html">官方 Unit 1 视频索引</a></li>
 </ul>
-<p>原视频说明的规则是绑定、立即求值与环境；本篇的阅读页数例子和“遮蔽为不同类型”是帮助观察同一规则的自编扩展，没有引入新的可变操作。</p></article><nav class="chapter-switcher" aria-label="章节导航"><a rel="prev" href="../02-repl-errors/index.html">← 02 REPL 与错误</a><a class="course-home" href="../index.html">全部 13 篇</a><a rel="next" href="../04-functions/index.html">04 函数：从调用过程到正式规则 →</a></nav><footer class="lesson-footer">本系列依据 Dan Grossman 的 Programming Languages, Part A · Section 1 制作原创中文学习讲解，使用自己的解释与示例组织概念；不是逐字翻译、官方译本或课程视频字幕。<br><a href="../index.html#sources">来源、范围与 17 段视频映射</a> · 资料核对：2026-10-16</footer></main></body></html>
+<p>原课提醒，在一个文件里反复使用同名的顶层绑定通常不是好风格。这里故意这样写，是为了观察规则；实际程序应选清楚的名字，让读者容易分辨不同结果。</p></article><nav class="chapter-switcher" aria-label="章节导航"><a rel="prev" href="../02-repl-errors/index.html">← 02 把代码交给 ML：输入、文件与结果</a><a class="course-home" href="../index.html">全部 13 篇</a><a rel="next" href="../04-functions/index.html">04 函数：同一种计算怎样反复使用 →</a></nav><footer class="lesson-footer">本系列依据 Dan Grossman 的 Programming Languages, Part A · Section 1 制作原创中文学习讲解，使用自己的解释与示例组织概念；不是逐字翻译、官方译本或课程视频字幕。<br><a href="../index.html#sources">来源、范围与 17 段视频映射</a> · 资料核对：2026-10-16 · 讲解重组：2026-10-17</footer></main></body></html>
