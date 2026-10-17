@@ -1,0 +1,9 @@
+/* Advanced sections reuse the established course and figure styles. */
+.pl-advanced .quick-route{margin:14px 0 20px;padding-left:24px}
+.pl-advanced .quick-route li{margin:10px 0;line-height:1.8}
+.pl-advanced .quick-route a{text-decoration-thickness:1px;text-underline-offset:4px}
+.pl-advanced .continue-course{padding:20px;border:1px solid #b6cfc3;border-radius:10px;background:#eef5ed;line-height:1.8}
+.pl-advanced .lesson-visual{scroll-margin-top:20px}
+.pl-advanced .course-original figcaption{text-align:left}
+.pl-advanced .site-nav{flex-wrap:wrap}
+@media(max-width:600px){.pl-advanced .site-nav{gap:12px}.pl-advanced .continue-course{padding:15px}}

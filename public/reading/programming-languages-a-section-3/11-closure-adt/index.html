@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="不用类，也能把数据和操作封在一起 · Dan Grossman 编程语言 第三节中文讲解"><title>不用类，也能把数据和操作封在一起 · 编程语言第三节 · RIN III</title><link rel="stylesheet" href="../../reader.css"><link rel="stylesheet" href="../../programming-languages-a-section-1/lesson.css"><link rel="stylesheet" href="../lesson.css"><link rel="manifest" href="../../../manifest.webmanifest"></head><body class="pl-course pl-advanced"><nav class="site-nav"><a href="../index.html">← 编程语言 · 第三节</a><a href="../../programming-languages-a-section-1/index.html">第一节</a><a href="../../programming-languages-a-section-2/index.html">第二节</a><a href="../../programming-languages-a-section-4/index.html">第四节</a><a href="https://www.coursera.org/learn/programming-languages">原课程 ↗</a></nav><main class="reader"><header class="chapter-header"><span class="chapter-kicker">Part A · 第三节 · 11 / 13</span><h1>不用类，也能把数据和操作封在一起</h1><p class="lead">用原课整数集合的三个闭包理解抽象数据类型，区分不可变插入、新版本与共享私有表示。</p><p class="byline">原课程：Dan Grossman · Programming Languages, Part A · Section 3</p><details class="source-details"><summary>对应视频与来源</summary><ul><li><a href="https://www.coursera.org/learn/programming-languages/lecture/BfQu5/optional-abstract-data-types-with-closures">V20 · Optional: Abstract Data Types With Closures</a></li></ul><p>本系列依据 Dan Grossman 的 Programming Languages, Part A · Section 3 制作原创中文讲解，按问题组织解释、推演与示例；不是逐字翻译或官方译本。</p><p>依据对应官方英文字幕、<a href="https://courses.cs.washington.edu/courses/cse341/19sp/unit3notes.pdf">Unit 3 讲义</a>；<a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec7slides.pdf">Lecture 7 幻灯片</a> / <a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec7.sml">示例代码</a>；<a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec8slides.pdf">Lecture 8 幻灯片</a> / <a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec8.sml">示例代码</a>；<a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec9slides.pdf">Lecture 9 幻灯片</a> / <a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec9.sml">示例代码</a>；<a href="https://courses.cs.washington.edu/courses/cse341/19sp/course_motivation.pdf">课程动机幻灯片</a>核对。视频编号采用 Coursera 的顺序；<a href="../index.html#sources">完整范围与来源</a>。</p></details><details class="lesson-toc"><summary>本篇目录</summary><ol><li class="toc-h2"><a href="#不直接交出列表只交出能操作它的函数">不直接交出列表，只交出能操作它的函数</a></li><li class="toc-h2"><a href="#每次建立集合都让操作记住那份数据">每次建立集合，都让操作记住那份数据</a></li><li class="toc-h2"><a href="#用它的人只需知道操作约定">用它的人只需知道操作约定</a></li><li class="toc-h2"><a href="#这段实现展示的是表达能力不是最快的集合">这段实现展示的是表达能力，不是最快的集合</a></li><li class="toc-h2"><a href="#对应原课与回看线索">对应原课与回看线索</a></li></ol></details><nav class="chapter-switcher" aria-label="章节导航"><a rel="prev" href="../10-callbacks-and-docs/index.html">← 10 登记一个回调后，配置和状态会留在哪里</a><a class="course-home" href="../index.html">全部 13 篇</a><a rel="next" href="../12-closures-in-java-c/index.html">12 没有现成闭包时，环境要怎样一起传过去 →</a></nav></header><article class="lesson-article translated-article"><h2 id="不直接交出列表只交出能操作它的函数">不直接交出列表，只交出能操作它的函数</h2>
+<p>这一篇是选学。我们想表示整数集合：插入数字、检查是否存在、询问元素个数；使用者不必知道里面是不是列表。你熟悉对象把私有数据与方法放在一起，这里看看仅靠闭包，能否做出相似的使用方式。</p>
+<p>先约定公开形状。集合提供三个操作；<code>insert</code> 返回一个新集合，<code>member</code> 返回布尔值，<code>size</code> 接收 <code>()</code> 后返回整数。</p>
+<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>datatype set = S of {</span></span>
+<span data-line=""><span>    insert : int -> set,</span></span>
+<span data-line=""><span>    member : int -> bool,</span></span>
+<span data-line=""><span>    size : unit -> int</span></span>
+<span data-line=""><span>};</span></span></code></pre></figure>
+<p>这里不是用三个构造器表示三种集合，而是用单个 <code>S</code> 包住一份函数记录。不能直接写递归的 <code>type set = {insert:int -> set,...}</code>：SML 类型别名不能这样引用自身，所以原课用单构造器 <code>datatype</code> 表达递归类型。</p>
+<h2 id="每次建立集合都让操作记住那份数据">每次建立集合，都让操作记住那份数据</h2>
+<p>下面的 <code>make_set xs</code> 接收表示集合内容的私有列表，返回三个保存它的操作。<code>contains</code> 负责检查数字是否已在列表中，外面无需反复写同一段查找。</p>
+<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>val empty_set =</span></span>
+<span data-line=""><span>    let fun make_set xs =</span></span>
+<span data-line=""><span>            let fun contains i = List.exists (fn j => i = j) xs</span></span>
+<span data-line=""><span>            in S {</span></span>
+<span data-line=""><span>                insert = fn i => if contains i</span></span>
+<span data-line=""><span>                                  then make_set xs</span></span>
+<span data-line=""><span>                                  else make_set (i :: xs),</span></span>
+<span data-line=""><span>                member = contains,</span></span>
+<span data-line=""><span>                size = fn () => length xs</span></span>
+<span data-line=""><span>            } end</span></span>
+<span data-line=""><span>    in make_set [] end;</span></span></code></pre></figure>
+<p>初次调用 <code>make_set []</code>，三个操作围绕空列表建立。插入 <code>34</code> 时，旧列表不含它，于是用 <code>[34]</code> 再建立一份操作；以后询问新集合大小，保存 <code>[34]</code> 的 <code>size</code> 返回 <code>1</code>。旧空集合仍围绕原来的 <code>[]</code> 工作。</p>
+<p>若再次插入 <code>34</code>，代码进入 <code>make_set xs</code>，保留相同内容，并不会变成 <code>[34,34]</code>。这段实现仍建立新的包装与闭包，不能据此宣称返回了物理上完全相同的对象；保证的是集合内容与大小不变。</p>
+<h2 id="用它的人只需知道操作约定">用它的人只需知道操作约定</h2>
+<p>原课客户端如下。<code>val S s1 = empty_set</code> 拆开外层构造器，得到那份函数记录，再通过 <code>#insert</code> 等字段使用操作。</p>
+<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>fun use_sets () =</span></span>
+<span data-line=""><span>    let val S s1 = empty_set</span></span>
+<span data-line=""><span>        val S s2 = (#insert s1) 34</span></span>
+<span data-line=""><span>        val S s3 = (#insert s2) 34</span></span>
+<span data-line=""><span>        val S s4 = (#insert s3) 19</span></span>
+<span data-line=""><span>    in if (#member s4) 42 then 99</span></span>
+<span data-line=""><span>       else if (#member s4) 19 then 17 + (#size s3) ()</span></span>
+<span data-line=""><span>       else 0</span></span>
+<span data-line=""><span>    end;</span></span>
+<span data-line=""><span>val answer = use_sets ();</span></span></code></pre></figure>
+<p><code>s1</code> 内容为空，<code>s2</code> 是 <code>{34}</code>，<code>s3</code> 还是 <code>{34}</code>，<code>s4</code> 才是 <code>{19,34}</code>。最后既不是取 <code>s4</code> 的大小，也不是得到 <code>19</code>；<code>42</code> 不在 <code>s4</code> 中，<code>19</code> 在，于是计算 <code>17 + size(s3) = 18</code>。</p>
+<p>使用者能拆出函数记录，却没有一个公开字段能直接取到私有 <code>xs</code>。闭包内部通过保存的绑定继续使用它；数据不必为了活过创建函数的返回而变成顶层全局变量。这正是“代码带着环境走”可以实现的另一种封装。</p>
+<h2 id="这段实现展示的是表达能力不是最快的集合">这段实现展示的是表达能力，不是最快的集合</h2>
+<p>把具体数据表示藏在操作背后、只通过约定操作使用它，是抽象数据类型的核心想法。这里还没用下一节正式的模块系统，只展示闭包足以承载这种组织方式。</p>
+<p>当前 <code>member</code> 需要沿列表查找，<code>size</code> 每次也用 <code>length</code> 遍历，插入还得先检查重复。大集合有更合适的树或哈希结构；同一份操作接口也可以换实现。重要的是分清这里的接口是不可变的：插入返回新集合，不会修改先前建立的集合。若改用引用，也能设计成可变版本，但那将是另一套行为约定。</p>
+<h2 id="对应原课与回看线索">对应原课与回看线索</h2>
+<p>对应选学 V20 <a href="https://www.coursera.org/learn/programming-languages/lecture/BfQu5/optional-abstract-data-types-with-closures">Abstract Data Types With Closures</a>。保留完整 <code>set</code>、<code>empty_set</code> 与 <code>use_sets</code>，最终值核对为 <code>18</code>。原代码见 <a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec9.sml">Lecture 9 后半</a>，原理见 <a href="https://courses.cs.washington.edu/courses/cse341/19sp/unit3notes.pdf">Unit 3 阅读笔记</a>。</p></article><nav class="chapter-switcher" aria-label="章节导航"><a rel="prev" href="../10-callbacks-and-docs/index.html">← 10 登记一个回调后，配置和状态会留在哪里</a><a class="course-home" href="../index.html">全部 13 篇</a><a rel="next" href="../12-closures-in-java-c/index.html">12 没有现成闭包时，环境要怎样一起传过去 →</a></nav><footer class="lesson-footer">本系列依据 Dan Grossman 的 Programming Languages, Part A · Section 3 制作原创中文讲解，按问题组织解释、推演与示例；不是逐字翻译或官方译本。<br><a href="../index.html#video-map">全部 28 段视频映射</a> · <a href="../index.html">第三节目录</a> · 资料核对与制作：2026-10-17</footer></main><script type="module" src="../../programming-languages-a-section-1/visuals.mjs"></script></body></html>

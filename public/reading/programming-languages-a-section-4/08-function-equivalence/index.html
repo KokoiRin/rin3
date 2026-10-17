@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="函数结果相同，还不一定能够互换 · Dan Grossman 编程语言 第四节中文讲解"><title>函数结果相同，还不一定能够互换 · 编程语言第四节 · RIN III</title><link rel="stylesheet" href="../../reader.css"><link rel="stylesheet" href="../../programming-languages-a-section-1/lesson.css"><link rel="stylesheet" href="../lesson.css"><link rel="manifest" href="../../../manifest.webmanifest"></head><body class="pl-course pl-advanced"><nav class="site-nav"><a href="../index.html">← 编程语言 · 第四节</a><a href="../../programming-languages-a-section-1/index.html">第一节</a><a href="../../programming-languages-a-section-2/index.html">第二节</a><a href="../../programming-languages-a-section-3/index.html">第三节</a><a href="https://www.coursera.org/learn/programming-languages">原课程 ↗</a></nav><main class="reader"><header class="chapter-header"><span class="chapter-kicker">Part A · 第四节 · 08 / 9</span><h1>函数结果相同，还不一定能够互换</h1><p class="lead">用重复调用、调整顺序和标准改写检查状态、输出、异常与终止；说明变量捕获和闭包环境为何重要。</p><p class="byline">原课程：Dan Grossman · Programming Languages, Part A · Section 4</p><details class="source-details"><summary>对应视频与来源</summary><ul><li><a href="https://www.coursera.org/learn/programming-languages/lecture/GE7d6/equivalent-functions">V16 · Equivalent Functions</a></li><li><a href="https://www.coursera.org/learn/programming-languages/lecture/m9YHe/standard-equivalences">V17 · Standard Equivalences</a></li></ul><p>本系列依据 Dan Grossman 的 Programming Languages, Part A · Section 4 制作原创中文讲解，按问题组织解释、推演与示例；不是逐字翻译或官方译本。</p><p>依据对应官方英文字幕、<a href="https://courses.cs.washington.edu/courses/cse341/19sp/unit4notes.pdf">Unit 4 讲义</a>；<a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec10slides.pdf">Lecture 10 幻灯片</a> / <a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec10.sml">示例代码</a>；<a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec11slides.pdf">Lecture 11 幻灯片</a> / <a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec11.sml">示例代码</a>；<a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec12slides.pdf">Lecture 12 幻灯片</a>核对。视频编号采用 Coursera 的顺序；<a href="../index.html#sources">完整范围与来源</a>。</p></details><details class="lesson-toc"><summary>本篇目录</summary><ol><li class="toc-h2"><a href="#少调用一次看起来相同的表达式还相同吗">少调用一次，看起来相同的表达式还相同吗</a></li><li class="toc-h2"><a href="#本课把哪些行为算作可观察">本课把哪些行为算作可观察</a></li><li class="toc-h2"><a href="#调用顺序同样可能是行为的一部分">调用顺序同样可能是行为的一部分</a></li><li class="toc-h2"><a href="#标准改写一一致改名避免变量被捕获">标准改写一：一致改名，避免变量被捕获</a></li><li class="toc-h2"><a href="#标准改写二提取辅助函数要保留环境">标准改写二：提取辅助函数，要保留环境</a></li><li class="toc-h2"><a href="#标准改写三省略包装要看被包装的是什么">标准改写三：省略包装，要看被包装的是什么</a></li><li class="toc-h2"><a href="#语法糖还必须保留短路顺序与类型条件">语法糖还必须保留短路顺序与类型条件</a></li><li class="toc-h2"><a href="#对应原课程与来源">对应原课程与来源</a></li></ol></details><nav class="chapter-switcher" aria-label="章节导航"><a rel="prev" href="../07-representation-independence/index.html">← 07 三种有理数实现，客户端为什么可以分不出来</a><a class="course-home" href="../index.html">全部 9 篇</a><a rel="next" href="../09-equivalence-and-cost/index.html">09 行为等价以后，怎样单独比较计算成本 →</a></nav></header><article class="lesson-article translated-article"><h2 id="少调用一次看起来相同的表达式还相同吗">少调用一次，看起来相同的表达式还相同吗</h2>
+<p>Rational 的抽象接口让客户端看不见一部分内部变化。现在把问题推广到普通函数：维护代码时减少一次重复调用、换一下计算顺序，究竟需要什么条件，才能说任何允许的客户端都看不出差别？</p>
+<p>先看一个完整反例。两个版本分别计算 <code>f x + f x</code> 与 <code>2 * f x</code>；传入的 <code>next</code> 每次会更新计数，并把新计数加到输入上。</p>
+<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>val calls = ref 0</span></span>
+<span data-line=""><span>fun next x = (calls := !calls + 1; x + !calls)</span></span>
+<span data-line=""><span>fun twice (f,x) = f x + f x</span></span>
+<span data-line=""><span>fun once (f,x) = 2 * f x</span></span>
+<span data-line=""> </span>
+<span data-line=""><span>val first = twice (next,7)</span></span>
+<span data-line=""><span>val firstCalls = !calls</span></span>
+<span data-line=""><span>val _ = calls := 0</span></span>
+<span data-line=""><span>val second = once (next,7)</span></span>
+<span data-line=""><span>val secondCalls = !calls</span></span></code></pre></figure>
+<p>得到的是 <code>(first,firstCalls)=(17,2)</code>，<code>(second,secondCalls)=(16,1)</code>。同一个输入也不保证多次调用同一个函数就能拿到同一个值。若 <code>f</code> 只是打印 <code>hi</code> 后返回输入，数值结果虽然相同，打印次数仍会从两次变一次。</p>
+<h2 id="本课把哪些行为算作可观察">本课把哪些行为算作可观察</h2>
+<p>等价不只是几个测试样例相同。给定等价实参，在任何允许使用它们的程序里，两份实现都要保持相同的可观察行为。</p>
+<table>
+<thead>
+<tr>
+<th>需要保持的项目</th>
+<th>为什么只比较返回值不够</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>正常结果</td>
+<td>可能给出不同答案</td>
+</tr>
+<tr>
+<td>终止或不终止</td>
+<td>一个有答案，另一个永远等不到</td>
+</tr>
+<tr>
+<td>客户端可见的内存修改</td>
+<td>调用结束后，其他代码还能读到差别</td>
+</tr>
+<tr>
+<td>输入输出</td>
+<td>打印内容、次数或顺序可能不同</td>
+</tr>
+<tr>
+<td>抛出的异常</td>
+<td>客户端可能匹配并处理不同失败</td>
+</tr>
+</tbody>
+</table>
+<p>这里暂不把时间、空间开销当作等价的判据，下一篇会单独讨论。抽象类型能减少允许的输入与观察方式，无副作用的计算又减少需要追踪的行为，因此都能使等价论证更简单。它们提供的是明确条件，而不是“函数式代码大概比较安全”的印象。</p>
+<h2 id="调用顺序同样可能是行为的一部分">调用顺序同样可能是行为的一部分</h2>
+<p>先算 <code>g x</code> 再算 <code>h x</code>，与反过来计算，即使最后都返回 <code>(g的结果,h的结果)</code>，也可能不同。若 <code>g</code> 写入一个引用、<code>h</code> 读取它，读到的值就会变化；若它们分别打印，输出顺序也会变化。</p>
+<p>异常与终止条件不能漏掉。若 <code>g</code> 抛出异常A，<code>h</code> 抛出异常B，先执行哪个决定外层先看到哪个异常；若一个永不返回，另一个会抛出异常，交换后也可能从“永不返回”变成“立即失败”。对调两个计算，需要的条件强于“都没有打印”。</p>
+<p>原课用 <code>map f (map g xs)</code> 与 <code>map (f o g) xs</code> 再次强调这点。前者先对所有元素做 <code>g</code>，再逐项做 <code>f</code>；后者每个元素先 <code>g</code> 后 <code>f</code>，交错前进。纯粹、正常结束的回调可以允许这种融合；有状态、输出、异常或不终止的回调则需要单独论证顺序变化是否可观察。</p>
+<h2 id="标准改写一一致改名避免变量被捕获">标准改写一：一致改名，避免变量被捕获</h2>
+<p>下面保留原课的核心例子。输入3，原函数与安全改名版都返回20；把参数改成已被使用的 <code>y</code>，却得到9。</p>
+<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>val y = 14</span></span>
+<span data-line=""><span>fun original x = x+y+x</span></span>
+<span data-line=""><span>fun renamed z = z+y+z</span></span>
+<span data-line=""><span>fun captured y = y+y+y</span></span>
+<span data-line=""> </span>
+<span data-line=""><span>val renamedResults = (original 3,renamed 3,captured 3)</span></span></code></pre></figure>
+<p>一致替换局部绑定及其引用，本来不会改变含义。但新名字不能捕获原来指向外层的引用，也不能被内部已有绑定遮住。例如把 <code>fun f x = let val y=3 in x+y end</code> 的参数直接改成 <code>y</code>，内部两处 <code>y</code> 就都读到3，函数变成固定返回6。这是绑定关系改变，不是排版上的小调整。</p>
+<h2 id="标准改写二提取辅助函数要保留环境">标准改写二：提取辅助函数，要保留环境</h2>
+<p>辅助函数与直接写表达式通常能互相转换，但自由变量仍要指向原来的绑定。下面的两个版本故意不等价，输入1分别得到17与10。</p>
+<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>val y = 14</span></span>
+<span data-line=""><span>fun helper x = x+y+x</span></span>
+<span data-line=""><span>val y = 7</span></span>
+<span data-line=""><span>fun via_helper z = helper z + z</span></span>
+<span data-line=""><span>fun direct z = (z+y+z)+z</span></span>
+<span data-line=""> </span>
+<span data-line=""><span>val environmentResults = (via_helper 1,direct 1)</span></span></code></pre></figure>
+<p><code>helper</code> 的闭包保留定义时的14，<code>direct</code> 则使用后来建立的7。提取代码并不只是复制相同字符串，还要保证那些名字仍然指向同一份环境。这也是编译器做内联、提取或替换时要保持的语义关系。</p>
+<h2 id="标准改写三省略包装要看被包装的是什么">标准改写三：省略包装，要看被包装的是什么</h2>
+<p>如果 <code>f</code> 已经绑定到函数，<code>fun g y = f y</code> 与 <code>val g=f</code> 可以提供相同的调用行为。但把一般表达式 <code>e</code> 代进来，<code>fun g y = e y</code> 与 <code>val g=e</code> 就可能改变何时、执行几次 <code>e</code>。</p>
+<p>下面让 <code>h()</code> 创建函数前打印一行。定义 <code>stored</code> 时马上打印一次；定义 <code>delayed</code> 时不打印，但每次调用它都会再打印。</p>
+<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>fun h () = (print "hi\n"; fn x => x+x)</span></span>
+<span data-line=""><span>fun delayed y = (h ()) y</span></span>
+<span data-line=""><span>val stored = h ()</span></span>
+<span data-line=""> </span>
+<span data-line=""><span>val storedValue = stored 3</span></span>
+<span data-line=""><span>val delayedValue = delayed 3</span></span></code></pre></figure>
+<p>两个结果都为6，但整个示例打印两行：一行来自建立 <code>stored</code>，另一行来自调用 <code>delayed</code>。若 <code>h()</code> 还可能抛出异常，失败时间也随之变化。第3篇为值限制增加函数包装时，同样需要记住它会把函数体里的计算推迟到调用时。</p>
+<h2 id="语法糖还必须保留短路顺序与类型条件">语法糖还必须保留短路顺序与类型条件</h2>
+<p><code>x andalso g x</code> 可以展开为 <code>if x then g x else false</code>，其中只有 <code>x=true</code> 才调用 <code>g</code>。若改成 <code>if g x then x else false</code>，就无条件先调用了 <code>g</code>；短路、异常与不终止行为都可能改变。真正的语法糖按定义应当保留原来的求值规则。</p>
+<p>最后还有一个 ML 特有的边界：忽略类型时，<code>let val x=e1 in e2 end</code> 与 <code>(fn x => e2) e1</code> 都先算 <code>e1</code>，再在相同扩展环境里算 <code>e2</code>。但 <code>let</code> 绑定可能泛化，普通函数参数不能按相同方式泛化。</p>
+<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>val letResult =</span></span>
+<span data-line=""><span>    let val identity = fn x => x</span></span>
+<span data-line=""><span>    in (identity 0,identity true)</span></span>
+<span data-line=""><span>    end</span></span></code></pre></figure>
+<p><code>letResult</code> 是 <code>(0,true)</code>。对应的匿名函数应用则是单独的预期错误。</p>
+<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>(* 预期：类型错误。普通参数 identity 不能同时以 int 与 bool 实例化。 *)</span></span>
+<span data-line=""><span>val notSugar = (fn identity => (identity 0,identity true)) (fn x => x)</span></span></code></pre></figure>
+<p>如果两种形式都通过类型检查，它们的这套求值过程相同；但不能据此把所有 ML 的 <code>let</code> 都机械改写成匿名函数应用。判断等价时，作用域、求值过程与类型系统是需要一起考虑的三个层次。</p>
+<h2 id="对应原课程与来源">对应原课程与来源</h2>
+<p>对应 V16–V17：函数可观察行为、纯度与顺序，以及标准等价改写。依据官方视频与 <a href="https://courses.cs.washington.edu/courses/cse341/19sp/unit4notes.pdf">Unit 4 讲义第18–21页</a>、<a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec12slides.pdf">Lecture 12 幻灯片</a> 原创重组。</p></article><nav class="chapter-switcher" aria-label="章节导航"><a rel="prev" href="../07-representation-independence/index.html">← 07 三种有理数实现，客户端为什么可以分不出来</a><a class="course-home" href="../index.html">全部 9 篇</a><a rel="next" href="../09-equivalence-and-cost/index.html">09 行为等价以后，怎样单独比较计算成本 →</a></nav><footer class="lesson-footer">本系列依据 Dan Grossman 的 Programming Languages, Part A · Section 4 制作原创中文讲解，按问题组织解释、推演与示例；不是逐字翻译或官方译本。<br><a href="../index.html#video-map">全部 19 段视频映射</a> · <a href="../index.html">第四节目录</a> · 资料核对与制作：2026-10-17</footer></main><script type="module" src="../../programming-languages-a-section-1/visuals.mjs"></script></body></html>

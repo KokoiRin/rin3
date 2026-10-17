@@ -1,0 +1,448 @@
+{
+  "title": "从类型约束到模块抽象，判断程序何时可以替换",
+  "section": 4,
+  "date": "2026-10-17",
+  "scope": "原创中文教学材料，覆盖Coursera Section 4全部19个视频主题，含选学内容；不提供原课作业答案。",
+  "videos": [
+    {
+      "number": 1,
+      "title": "Section Introduction",
+      "key_points": [
+        "本节补全ML的类型推断、互递归、模块与等价四部分，承接前面模式匹配和闭包。",
+        "类型推断要让自动得到类型不再像魔法；模块用来隐藏实现，等价用来判断何时可以替换实现。",
+        "原课本节无编程作业，之后阶段考试综合PartA，再切换Racket继续新概念。"
+      ],
+      "source": "https://www.coursera.org/learn/programming-languages/lecture/Q6XRP/section-introduction",
+      "source_locators": [
+        "Coursera V1 英文字幕",
+        "captions/01-section-introduction.en.txt"
+      ],
+      "chapter": "01-type-constraints",
+      "figures": [
+        "unify-constraints"
+      ]
+    },
+    {
+      "number": 2,
+      "title": "What is Type Inference",
+      "key_points": [
+        "静态检查在程序执行前排除一类错误；类型推断是替程序补足使检查成立的类型。",
+        "隐式类型不等于动态类型：ML无需经常写注解，但每个绑定仍有静态类型。",
+        "找不到一致类型时拒绝；全接受或全拒绝都很容易但无用，目标是有原则的规则。"
+      ],
+      "source": "https://www.coursera.org/learn/programming-languages/lecture/zHyUU/what-is-type-inference",
+      "source_locators": [
+        "unit4notes.pdf p10–11",
+        "lec11slides.pdf p2–4",
+        "captions/02-what-is-type-inference.en.txt"
+      ],
+      "chapter": "01-type-constraints",
+      "figures": [
+        "unify-constraints"
+      ]
+    },
+    {
+      "number": 3,
+      "title": "ML Type Inference",
+      "key_points": [
+        "按绑定次序推断，分析当前定义中的全部类型约束，再把仍不受限的位置一致改为类型参数。",
+        "x=42与f(y,z,w)例里y由if限定bool，z由加法限定int，w不使用而可为任意类型。",
+        "类型推断与参数多态是两件独立事：一种语言可以只提供其中之一。",
+        "分析静态要求，不是模拟某次实参执行。"
+      ],
+      "source": "https://www.coursera.org/learn/programming-languages/lecture/4hJTT/ml-type-inference",
+      "source_locators": [
+        "unit4notes.pdf p11–12",
+        "lec11slides.pdf p5–8",
+        "lec11.sml",
+        "captions/03-ml-type-inference.en.txt"
+      ],
+      "chapter": "01-type-constraints",
+      "figures": [
+        "unify-constraints"
+      ]
+    },
+    {
+      "number": 4,
+      "title": "Type Inference Examples",
+      "key_points": [
+        "f x内val(y,z)=x约束输入为对偶，abs y与加法使两项为int，结果int。",
+        "sum的[]/x::xs形状约束列表类型，返回0和加法把元素及结果限定int，递归调用须符合相同函数类型。",
+        "把递归参数误写x而非xs会令int与int list冲突，不能通过类型检查。",
+        "收集约束的次序可不同，所以报错位置和措辞可能不同；非终止的错误递归也可能仍通过类型检查。"
+      ],
+      "source": "https://www.coursera.org/learn/programming-languages/lecture/HLLg3/type-inference-examples",
+      "source_locators": [
+        "unit4notes.pdf p12–14",
+        "lec11slides.pdf p9",
+        "lec11.sml",
+        "captions/04-type-inference-examples.en.txt"
+      ],
+      "chapter": "01-type-constraints",
+      "figures": [
+        "unify-constraints"
+      ]
+    },
+    {
+      "number": 5,
+      "title": "Polymorphic Examples",
+      "key_points": [
+        "length不使用元素数据，因此元素位置不受限，可泛化为'a list->int。",
+        "if true仍要检查两个分支；(x,y,z)/(y,x,z)迫使x/y同型，z可另型。",
+        "compose把g输出与f输入连接起来，剩余三个独立位置一致命名为类型变量；字母名字本身不重要。"
+      ],
+      "source": "https://www.coursera.org/learn/programming-languages/lecture/sDmok/polymorphic-examples",
+      "source_locators": [
+        "unit4notes.pdf p14–15",
+        "lec11slides.pdf p8–9",
+        "lec11.sml",
+        "captions/05-polymorphic-examples.en.txt"
+      ],
+      "chapter": "02-polymorphic-inference",
+      "figures": [
+        "generalize-instantiate"
+      ]
+    },
+    {
+      "number": 6,
+      "title": "Optional: The Value Restriction and  Other Type-Inference Challenges",
+      "key_points": [
+        "若把ref NONE不受限地泛化，同一单元可先被当string option ref写入，再当int option ref读取，从而破坏健全性。",
+        "实际ML的value restriction阻止这种泛化；不能只对显式ref拼写特殊处理，因为别名和模块可隐藏引用表示。",
+        "无mutation的pairWithOne部分应用也被保守限制；fun包装或固定单态类型为已讲解决法。",
+        "少了多态不易为length选类型，多了子类型又把相等约束变得复杂；不声称任何扩展都不可能推断。"
+      ],
+      "source": "https://www.coursera.org/learn/programming-languages/lecture/lTVbF/optional-the-value-restriction-and-other-type-inference-challenges",
+      "source_locators": [
+        "unit4notes.pdf p15–16",
+        "lec11slides.pdf p10–16",
+        "lec11.sml",
+        "captions/06-optional-the-value-restriction-and-other-type-inference-challenges.en.txt"
+      ],
+      "chapter": "03-value-restriction",
+      "figures": [
+        "mutable-polymorphism"
+      ]
+    },
+    {
+      "number": 7,
+      "title": "Mutual Recursion",
+      "key_points": [
+        "fun...and...把相互调用的函数作为一组定义，datatype...and...同样可建立互相引用的数据类型。",
+        "状态机match识别(1,2)重复零次或多次；need_one遇空表接受，need_two遇空表拒绝，其他数字拒绝。",
+        "t1/t2的Foo/Bar与Baz/Quux例相互检查零整数及空字符串。",
+        "高阶替代法让早定义函数接收later作为参数；本课推荐直接的互递归语言支持，演示不改变词法环境规则。"
+      ],
+      "source": "https://www.coursera.org/learn/programming-languages/lecture/6qDV2/mutual-recursion",
+      "source_locators": [
+        "unit4notes.pdf p16–18",
+        "captions/07-mutual-recursion.en.txt"
+      ],
+      "chapter": "04-mutual-recursion",
+      "figures": []
+    },
+    {
+      "number": 8,
+      "title": "Modules for Namespace Management",
+      "key_points": [
+        "structure Name=struct bindings end形成命名空间，内部可用先前绑定，外部Name.member访问。",
+        "模块可装值、函数、类型、构造器、异常；不等于可放入元组和传给普通函数的一等表达式值。",
+        "open引入可直接使用的名字但有遮蔽风险，测试代码可方便，通常可只给需要的绑定起局部别名。"
+      ],
+      "source": "https://www.coursera.org/learn/programming-languages/lecture/ifxa0/modules-for-namespace-management",
+      "source_locators": [
+        "unit4notes.pdf p1–2",
+        "lec10slides.pdf p2–5",
+        "lec10.sml",
+        "captions/08-modules-for-namespace-management.en.txt"
+      ],
+      "chapter": "05-module-namespaces",
+      "figures": []
+    },
+    {
+      "number": 9,
+      "title": "Signatures and Hiding Things",
+      "key_points": [
+        "signature描述模块有哪些绑定及其类型，:>以本课的不透明方式限制外部可用接口。",
+        "漏在签名之外的doubler等在内部仍可调用，外部不能通过模块名直接访问。",
+        "接口与实现分开，既能共享私有辅助函数，也允许实现改变而不要求客户端变化。"
+      ],
+      "source": "https://www.coursera.org/learn/programming-languages/lecture/1vP4B/signatures-and-hiding-things",
+      "source_locators": [
+        "unit4notes.pdf p2–3",
+        "lec10slides.pdf p6–10",
+        "lec10.sml",
+        "captions/09-signatures-and-hiding-things.en.txt"
+      ],
+      "chapter": "06-signatures-and-hiding",
+      "figures": [
+        "module-visibility"
+      ]
+    },
+    {
+      "number": 10,
+      "title": "A Module Example",
+      "key_points": [
+        "Rational1提供make_frac/add/toString与BadFrac，Whole/Frac表示整数或分数。",
+        "对外保证合法构造、约分打印等性质；内部不变量为分母正、结果约分，这两层不应混为一谈。",
+        "make_frac拒绝零分母、处理负分母、约分，add依赖输入不变量；gcd只接收适合的内部参数。",
+        "不变量只有在客户端不能自行制造坏值时才能支持安全局部推理。"
+      ],
+      "source": "https://www.coursera.org/learn/programming-languages/lecture/baiTn/a-module-example",
+      "source_locators": [
+        "unit4notes.pdf p3–5",
+        "lec10slides.pdf p11–13",
+        "lec10.sml",
+        "captions/10-a-module-example.en.txt"
+      ],
+      "chapter": "06-signatures-and-hiding",
+      "figures": [
+        "module-visibility"
+      ]
+    },
+    {
+      "number": 11,
+      "title": "Signatures for Our Example",
+      "key_points": [
+        "暴露完整datatype会让客户端构造Frac(1,0)、负分母或未约分值，绕过make_frac。",
+        "仅删除datatype声明又会导致签名中的rational未定义；type rational声明存在的抽象类型而隐藏表示。",
+        "RATIONAL_B隐藏构造器及其模式，同时仍允许传递值和调用合法接口。",
+        "RATIONAL_C可把Whole暴露成int->rational普通函数；能安全构造整数但不能把Whole用于客户端模式匹配。"
+      ],
+      "source": "https://www.coursera.org/learn/programming-languages/lecture/r5NQ7/signatures-for-our-example",
+      "source_locators": [
+        "unit4notes.pdf p5–7",
+        "lec10slides.pdf p14–20",
+        "lec10.sml",
+        "captions/11-signatures-for-our-example.en.txt"
+      ],
+      "chapter": "06-signatures-and-hiding",
+      "figures": [
+        "module-visibility"
+      ]
+    },
+    {
+      "number": 12,
+      "title": "Signature Matching",
+      "key_points": [
+        "签名中具体类型/数据类型要按指定形式提供，抽象类型可由内部datatype或type synonym实现。",
+        "签名要求的val可以由更一般的内部类型满足，异常必须提供，额外绑定可以存在但被接口隐藏。",
+        "签名匹配为静态检查；类型变量须一致专门化，不能在一次类型中各自随意替换。"
+      ],
+      "source": "https://www.coursera.org/learn/programming-languages/lecture/xzJNy/signature-matching",
+      "source_locators": [
+        "unit4notes.pdf p7",
+        "lec10slides.pdf p21",
+        "captions/12-signature-matching.en.txt"
+      ],
+      "chapter": "06-signatures-and-hiding",
+      "figures": [
+        "module-visibility"
+      ]
+    },
+    {
+      "number": 13,
+      "title": "An Equivalent Structure",
+      "key_points": [
+        "Rational2不维持每次内部都约分，而在toString时才约分，内部不变量可变、外部性质保持。",
+        "在抽象RATIONAL_B/C下客户端无法分辨适当的两种实现，可以替换模块内部。",
+        "若暴露RATIONAL_A构造器，直接构造Frac(9,6)时打印结果可能分别为9/6与3/2，等价性依赖公开接口。"
+      ],
+      "source": "https://www.coursera.org/learn/programming-languages/lecture/ajOH4/an-equivalent-structure",
+      "source_locators": [
+        "unit4notes.pdf p7–9",
+        "lec10slides.pdf p22–23",
+        "lec10.sml",
+        "captions/13-an-equivalent-structure.en.txt"
+      ],
+      "chapter": "07-representation-independence",
+      "figures": [
+        "rational-representations"
+      ]
+    },
+    {
+      "number": 14,
+      "title": "Another Equivalent Structure",
+      "key_points": [
+        "Rational3把rational实现为int*int而非原来的datatype，内部Whole是普通函数。",
+        "不透明接口把内部int*int与外部抽象rational隔开，客户端不能依赖原始对偶表示。",
+        "Whole内部可更一般，签名只允许int->rational；不能导出'a->rational而让字符串潜入整数表示。",
+        "make_frac的内部输入输出可能是同一具体表示，外部类型仍区分int*int与rational；用户不能借此伪造值。"
+      ],
+      "source": "https://www.coursera.org/learn/programming-languages/lecture/uCvVa/another-equivalent-structure",
+      "source_locators": [
+        "unit4notes.pdf p9–10",
+        "lec10slides.pdf p24–26",
+        "lec10.sml",
+        "captions/14-another-equivalent-structure.en.txt"
+      ],
+      "chapter": "07-representation-independence",
+      "figures": [
+        "rational-representations"
+      ]
+    },
+    {
+      "number": 15,
+      "title": "Different Modules Define Different Types",
+      "key_points": [
+        "同一抽象签名下的不同structure各自定义不同类型，不因同名rational而相同。",
+        "不能将Rational2.make_frac结果交给Rational1.toString，或与Rational3函数混用。",
+        "隔离使不同内部表示和不变量安全共存；即使源代码看起来是相同datatype声明，也不是同一抽象类型。"
+      ],
+      "source": "https://www.coursera.org/learn/programming-languages/lecture/TCBkf/different-modules-define-different-types",
+      "source_locators": [
+        "unit4notes.pdf p10",
+        "lec10slides.pdf p27",
+        "lec10.sml",
+        "captions/15-different-modules-define-different-types.en.txt"
+      ],
+      "chapter": "07-representation-independence",
+      "figures": [
+        "rational-representations"
+      ]
+    },
+    {
+      "number": 16,
+      "title": "Equivalent Functions",
+      "key_points": [
+        "等价要求在所有允许上下文、等价输入下有相同可观察行为，不只看某一次返回值。",
+        "观察包括结果、终止/不终止、异常、输入输出和对非局部状态的更新；类型和接口限制可缩小客户端能观察的范围。",
+        "变量重复读取无副作用，但重复调用函数、交换g/h次序会改变效果或异常；map融合须满足纯函数等条件。",
+        "抽象和少副作用让可安全进行的重写更多，适用于维护、兼容、优化与更换实现。"
+      ],
+      "source": "https://www.coursera.org/learn/programming-languages/lecture/GE7d6/equivalent-functions",
+      "source_locators": [
+        "unit4notes.pdf p18–19",
+        "lec12slides.pdf p2–7",
+        "captions/16-equivalent-functions.en.txt"
+      ],
+      "chapter": "08-function-equivalence",
+      "figures": []
+    },
+    {
+      "number": 17,
+      "title": "Standard Equivalences",
+      "key_points": [
+        "语法糖必须按其求值顺序展开；andalso与if等价，但把g x提前到条件位置会改变含义。",
+        "一致改绑定变量名须避免捕获，提取辅助函数也须保持自由名字查找的词法环境。",
+        "简单fn x=>f x包装可消去，但h()若有副作用，推迟到每次调用与创建绑定时执行不等价。",
+        "let val x=e1 in e2 end与(fn x=>e2)e1有相同核心求值，但ML let可泛化x，匿名参数单态，忽略类型才可无条件看作糖。"
+      ],
+      "source": "https://www.coursera.org/learn/programming-languages/lecture/m9YHe/standard-equivalences",
+      "source_locators": [
+        "unit4notes.pdf p20–21",
+        "lec12slides.pdf p8–12",
+        "captions/17-standard-equivalences.en.txt"
+      ],
+      "chapter": "08-function-equivalence",
+      "figures": []
+    },
+    {
+      "number": 18,
+      "title": "Equivalence Versus Performance",
+      "key_points": [
+        "按本课观察定义，重复求尾最大值的指数版与保存结果的线性版可等价，却有巨大性能差。",
+        "渐近效率忽略常数，系统层面的等价/改进重视常数与资源开销；不同目的选不同定义。",
+        "不把函数返回相同结果误说成性能相同，也不把性能定义强加到所有语义重构中。"
+      ],
+      "source": "https://www.coursera.org/learn/programming-languages/lecture/Urnlf/equivalence-versus-performance",
+      "source_locators": [
+        "unit4notes.pdf p21",
+        "lec12slides.pdf p13–14",
+        "captions/18-equivalence-versus-performance.en.txt"
+      ],
+      "chapter": "09-equivalence-and-cost",
+      "figures": [
+        "recompute-cost"
+      ]
+    },
+    {
+      "number": 19,
+      "title": "Part A Wrap-Up & Parts B&C Preview",
+      "key_points": [
+        "回顾四节：基本构造与规则、datatype/模式/尾递归、函数值与闭包、推断/模块/等价。",
+        "Part B先用Racket对照动态类型与延迟求值，后实现带高阶函数和闭包的小解释器并比较静态/动态类型。",
+        "Part C转Ruby与OOP，再到高级OOP、泛型与子类型；后续是在Part A基础上发展，而非只换语法重讲。",
+        "教学用短程序展示精确概念，不代表这些思想只适用于小程序。"
+      ],
+      "source": "https://www.coursera.org/learn/programming-languages/lecture/aWICL/part-a-wrap-up-parts-b-c-preview",
+      "source_locators": [
+        "Coursera V19 英文字幕",
+        "captions/19-part-a-wrap-up-parts-b-c-preview.en.txt"
+      ],
+      "chapter": "09-equivalence-and-cost",
+      "figures": [
+        "recompute-cost"
+      ]
+    }
+  ],
+  "visuals": [
+    {
+      "id": "unify-constraints",
+      "title": "从局部要求，推到整体函数类型",
+      "chapter": "01-type-constraints",
+      "states": 5
+    },
+    {
+      "id": "generalize-instantiate",
+      "title": "同一份通用定义，分别用于整数和布尔值",
+      "chapter": "02-polymorphic-inference",
+      "states": 4
+    },
+    {
+      "id": "mutable-polymorphism",
+      "title": "为什么一个共享格子不能每次换元素类型",
+      "chapter": "03-value-restriction",
+      "states": 5
+    },
+    {
+      "id": "module-visibility",
+      "title": "隐藏函数名，与隐藏具体类型，是两层边界",
+      "chapter": "06-signatures-and-hiding",
+      "states": 5
+    },
+    {
+      "id": "rational-representations",
+      "title": "同一个有理数，三种内部表示",
+      "chapter": "07-representation-independence",
+      "states": 5
+    },
+    {
+      "id": "recompute-cost",
+      "title": "结果和异常相同，调用数仍可能差很多",
+      "chapter": "09-equivalence-and-cost",
+      "states": 5
+    }
+  ],
+  "originals": [],
+  "source_pdfs": [
+    {
+      "source": "https://courses.cs.washington.edu/courses/cse341/19sp/lec10slides.pdf",
+      "pages": 27,
+      "sha256": "5e80d2076beb97bf68ca740856543949efb0be5e968b735907fb7b52533a9163"
+    },
+    {
+      "source": "https://courses.cs.washington.edu/courses/cse341/19sp/lec11slides.pdf",
+      "pages": 16,
+      "sha256": "bf6a26c7d757b0e0b2d00e98cdfee7d5cf562b666248e38174623541fdadccd9"
+    },
+    {
+      "source": "https://courses.cs.washington.edu/courses/cse341/19sp/lec12slides.pdf",
+      "pages": 14,
+      "sha256": "08487ad75fbcb41c1389314a4c2a636ec47f13ba510d834e7776e5cd0dd80490"
+    },
+    {
+      "source": "https://courses.cs.washington.edu/courses/cse341/19sp/unit4notes.pdf",
+      "pages": 21,
+      "sha256": "e7793d2c68c3c044634f527e80755ff7234e710f062644d30349ef64d7fa2c54"
+    }
+  ],
+  "verification_scope": {
+    "officialEnglishCaptions": 19,
+    "sourceCode": "官方SML代码与正文示例分开核对；具体执行记录保留在制作底稿。",
+    "renderedPdfPages": 78,
+    "visualReview": "全部PDF页面渲染后的contact sheets，以及精选原页；中文过程图另逐状态验证。",
+    "fullVideoPlayback": false
+  },
+  "ordering_note": "采用Coursera顺序。UW补充目录将模块提前，V19为PartA总结与后续预告。"
+}

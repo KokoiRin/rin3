@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="学会这些概念以后，怎样判断语言的取舍 · Dan Grossman 编程语言 第三节中文讲解"><title>学会这些概念以后，怎样判断语言的取舍 · 编程语言第三节 · RIN III</title><link rel="stylesheet" href="../../reader.css"><link rel="stylesheet" href="../../programming-languages-a-section-1/lesson.css"><link rel="stylesheet" href="../lesson.css"><link rel="manifest" href="../../../manifest.webmanifest"></head><body class="pl-course pl-advanced"><nav class="site-nav"><a href="../index.html">← 编程语言 · 第三节</a><a href="../../programming-languages-a-section-1/index.html">第一节</a><a href="../../programming-languages-a-section-2/index.html">第二节</a><a href="../../programming-languages-a-section-4/index.html">第四节</a><a href="https://www.coursera.org/learn/programming-languages">原课程 ↗</a></nav><main class="reader"><header class="chapter-header"><span class="chapter-kicker">Part A · 第三节 · 13 / 13</span><h1>学会这些概念以后，怎样判断语言的取舍</h1><p class="lead">把课程动机、语言定义、优秀语言的标准与取舍放在一起，形成可迁移的比较框架。</p><p class="byline">原课程：Dan Grossman · Programming Languages, Part A · Section 3</p><details class="source-details"><summary>对应视频与来源</summary><ul><li><a href="https://www.coursera.org/learn/programming-languages/lecture/mYYPe/course-motivation-introduction">V24 · Course-Motivation Introduction</a></li><li><a href="https://www.coursera.org/learn/programming-languages/lecture/EpFHD/why-study-general-pl-concepts">V25 · Why Study General PL Concepts?</a></li><li><a href="https://www.coursera.org/learn/programming-languages/lecture/fbcb7/are-all-pls-the-same">V26 · Are All PLs the Same?</a></li><li><a href="https://www.coursera.org/learn/programming-languages/lecture/J37vl/why-functional-languages">V27 · Why Functional Languages?</a></li><li><a href="https://www.coursera.org/learn/programming-languages/lecture/8deMO/why-ml-racket-and-ruby">V28 · Why ML, Racket, and Ruby?</a></li></ul><p>本系列依据 Dan Grossman 的 Programming Languages, Part A · Section 3 制作原创中文讲解，按问题组织解释、推演与示例；不是逐字翻译或官方译本。</p><p>依据对应官方英文字幕、<a href="https://courses.cs.washington.edu/courses/cse341/19sp/unit3notes.pdf">Unit 3 讲义</a>；<a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec7slides.pdf">Lecture 7 幻灯片</a> / <a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec7.sml">示例代码</a>；<a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec8slides.pdf">Lecture 8 幻灯片</a> / <a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec8.sml">示例代码</a>；<a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec9slides.pdf">Lecture 9 幻灯片</a> / <a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec9.sml">示例代码</a>；<a href="https://courses.cs.washington.edu/courses/cse341/19sp/course_motivation.pdf">课程动机幻灯片</a>核对。视频编号采用 Coursera 的顺序；<a href="../index.html#sources">完整范围与来源</a>。</p></details><details class="lesson-toc"><summary>本篇目录</summary><ol><li class="toc-h2"><a href="#现在再问为什么要专门学这些语言概念">现在再问：为什么要专门学这些语言概念</a></li><li class="toc-h2"><a href="#都能算出来不等于写起来一样合适">“都能算出来”，不等于“写起来一样合适”</a></li><li class="toc-h2"><a href="#学的是长期可迁移的判断不只是一套新拼写">学的是长期可迁移的判断，不只是一套新拼写</a></li><li class="toc-h2"><a href="#为什么先集中练习函数式风格">为什么先集中练习函数式风格</a></li><li class="toc-h2"><a href="#三种语言怎样提供互补的对照">三种语言怎样提供互补的对照</a></li><li class="toc-h2"><a href="#对应原课与回看线索">对应原课与回看线索</a></li></ol></details><nav class="chapter-switcher" aria-label="章节导航"><a rel="prev" href="../12-closures-in-java-c/index.html">← 12 没有现成闭包时，环境要怎样一起传过去</a><a class="course-home" href="../index.html">全部 13 篇</a><span></span></nav></header><article class="lesson-article translated-article"><h2 id="现在再问为什么要专门学这些语言概念">现在再问：为什么要专门学这些语言概念</h2>
+<p>原课把五条课程动机放到这一节末尾，是为了先让你真的写过程序，再讨论选择语言的理由。它们属于选学的课程定位：教师给出的是有经验支撑、也带个人判断的解释，不是一份“所有人必须喜欢 SML”的证明。</p>
+<p>到这里，你已经能解释同一个筛选器怎样保存配置、部分应用怎样先固定输入、共享引用为什么会改变后来读到的值。现在可以把问题提升一层：不同语言允许你怎样表达这些过程，又要求你亲自处理多少细节？</p>
+<h2 id="都能算出来不等于写起来一样合适">“都能算出来”，不等于“写起来一样合适”</h2>
+<p>对于有足够表达能力的通用语言，在理想化、不限制资源的可计算性层面，能表示的输入输出计算可以相同。但这没有说明实现一个任务需要多少代码、容易犯什么错误、跑多快，或者工具链是否合适。</p>
+<p>上一章就是一个具体例子。SML 可以直接传带配置的函数；Java 可以用匿名内部类或现代 lambda；C 可以显式传函数指针与环境。最后都能数出两个 <code>3</code>，却不代表配置类型、生命周期和代码结构同样省心。</p>
+<p>原课把“什么都能编码，所以不必再关心语言设计”比作陷进 Turing tarpit：计算能力足够，并不使笨重、容易出错的表达方式自动变好。车和鞋也不是越通用越能满足每种任务；语言有取舍，任务与约束会改变答案。</p>
+<h2 id="学的是长期可迁移的判断不只是一套新拼写">学的是长期可迁移的判断，不只是一套新拼写</h2>
+<p>一个直接收益是读懂精确语义。程序和库结果不一致时，必须知道参数先不先求值、名字按哪份环境查找、哪些位置允许更新，才能判断谁违反了约定。若只知道大概语法，就容易把自己的猜测当成语言规则。</p>
+<p>另一个收益是迁移写法。即使回到 Kotlin、Java 或自己的编译器项目，也可以识别“把变化部分传进来”“先处理固定配置”“让数据通过明确操作访问”等结构。新语言的陌生语法会慢慢淡去，这些组织与推理能力还在。</p>
+<p>原课用文学中的《哈姆雷特》作比喻，强调某些学习价值不会在下一次招聘中立刻以同名工具出现。它不是说实际平台、库和就业需求不重要，而是课程有意选择长期基础，而不只追逐当前最常用的 API。</p>
+<h2 id="为什么先集中练习函数式风格">为什么先集中练习函数式风格</h2>
+<p>本课让你在很多问题里暂时不用修改状态，是为了把递归、模式匹配、函数值和不变数据这些结构看清楚。它们在熟悉的命令式写法里容易被同一套循环与可变变量盖住。</p>
+<p>原课回顾了垃圾回收、泛型、树状语法、类型推断、高阶函数和递归等思想如何进入更广泛的编程实践。应把这当作思想相互吸收的历史，而不是简单归功于某个语言独自发明一切。MapReduce 也提醒我们，<code>map/reduce</code> 的组织思想可以进入远超小列表的场景。</p>
+<p>不可变数据还减少了共享别名与同时更新需要考虑的组合：如果数据不会被另一个参与者改掉，就少了一类竞争。但它不会自动解决所有并发问题，外部事件、资源管理和状态协调仍然需要设计。课程不是预言函数式编程会取代所有其他方式，而是先让你学会一种足够不同的思考习惯。</p>
+<h2 id="三种语言怎样提供互补的对照">三种语言怎样提供互补的对照</h2>
+<p>静态/动态类型与函数式/面向对象，是两条不同维度。不要把“静态”直接当成 OOP，或把“动态”直接当成函数式。</p>
+<table>
+<thead>
+<tr>
+<th>本课语言</th>
+<th>类型检查的主要时机</th>
+<th>本课强调的组织方式</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Standard ML</td>
+<td>运行前的静态检查</td>
+<td>函数、模式匹配、多态与抽象类型</td>
+</tr>
+<tr>
+<td>Racket</td>
+<td>运行时的动态检查</td>
+<td>函数式风格、规整语法、宏与求值</td>
+</tr>
+<tr>
+<td>Ruby</td>
+<td>运行时的动态检查</td>
+<td>对象、类、方法与 mixin</td>
+</tr>
+</tbody>
+</table>
+<p>常见的 Java、C# 提供静态类型与面向对象这一角，更能看出这两条维度并非绑在一起。</p>
+<p>SML 适合先把类型关系、模式与抽象边界讲清楚；Racket 的规整语法与工具便于继续讨论程序作为数据、宏和求值；Ruby 则用更一致的对象视角提供另一种对照。它们是互补载体，不代表课程已经覆盖所有值得学的范式。</p>
+<p>Haskell 的惰性求值、Prolog 的逻辑搜索也值得学习，只是课程篇幅无法容纳。已有教材、练习迁移成本和教学顺序也影响选择。原视频提到的 Java、JavaScript、F# 等当年状态已有变化，不应把“将来加入某特性”等历史措辞当作今天事实。</p>
+<p>现实项目还要评估团队经验、生态库、目标平台、标准与维护成本。学完这节之后，合理的变化是：你能把“这个语言我不熟”与“这个任务用它确实成本较高”分开，并用具体语义和实现机制说明理由。</p>
+<h2 id="对应原课与回看线索">对应原课与回看线索</h2>
+<p>对应 V24 <a href="https://www.coursera.org/learn/programming-languages/lecture/mYYPe/course-motivation-introduction">Course-Motivation Introduction</a>、V25 <a href="https://www.coursera.org/learn/programming-languages/lecture/EpFHD/why-study-general-pl-concepts">Why Study General PL Concepts?</a>、V26 <a href="https://www.coursera.org/learn/programming-languages/lecture/fbcb7/are-all-pls-the-same">Are All PLs the Same?</a>、V27 <a href="https://www.coursera.org/learn/programming-languages/lecture/J37vl/why-functional-languages">Why Functional Languages?</a>、V28 <a href="https://www.coursera.org/learn/programming-languages/lecture/8deMO/why-ml-racket-and-ruby">Why ML, Racket, and Ruby?</a>。本篇保留课程动机的论点与条件，按今天读者的背景重新组织；历史产品状态作了必要限定。</p></article><nav class="chapter-switcher" aria-label="章节导航"><a rel="prev" href="../12-closures-in-java-c/index.html">← 12 没有现成闭包时，环境要怎样一起传过去</a><a class="course-home" href="../index.html">全部 13 篇</a><span></span></nav><p class="continue-course"><a href="../../programming-languages-a-section-4/index.html">继续第四节：类型推导、模块与程序等价性 →</a></p><footer class="lesson-footer">本系列依据 Dan Grossman 的 Programming Languages, Part A · Section 3 制作原创中文讲解，按问题组织解释、推演与示例；不是逐字翻译或官方译本。<br><a href="../index.html#video-map">全部 28 段视频映射</a> · <a href="../index.html">第三节目录</a> · 资料核对与制作：2026-10-17</footer></main><script type="module" src="../../programming-languages-a-section-1/visuals.mjs"></script></body></html>

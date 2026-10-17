@@ -90,3 +90,13 @@ KaTeX 的 `public/reading/_shared/katex/` 是第三方数学排版资源，不�
 阅读页面复用 `public/reading/reader.css`，并直接复用第一周的课程 CSS、`visuals.mjs` 与 `graphs.mjs`，不复制相同的图解运行时代码。第二周 `lesson.css` 仅补充路线提示和小屏细节；10 组分步图解的 54 个状态保存在页面内，关闭脚本仍可展开完整过程。`figures/` 保留三张附出处的原课图，`coverage.json` 记录 22 视频主题细节、83 页 PDF 与英文字幕的核对边界，以及原图哈希；`series.json` 保存章节、视频和源文稿哈希。
 
 源 Markdown、官方参考资料、可重复生成器与验证报告留在 `~/Documents/RIN III 草稿/Dan Grossman Section 2/`。`tests/pl-section-two.test.mjs` 纳入内容检查，防止视频主题、章节、静态图解、原图或跨周入口丢失；课程接入 `check:course-readers`。V8/V9 采用 Coursera 的主题顺序，来源记录明确与 UW 补充目录的差异。
+
+## 2026-10-17：Programming Languages, Part A · 第三、第四节
+
+新增 `public/reading/programming-languages-a-section-3/` 和 `programming-languages-a-section-4/`，分别为13篇、9篇原创中文讲解与各自目录，共24个HTML页面。第三节覆盖28视频，包括独立课程动机的五段；第四节覆盖19视频，按Coursera顺序先讲类型推导，再讲模块，明确记录UW补充目录的不同顺序。
+
+两节复用第一节的课程CSS、`visuals.mjs` 与 `graphs.mjs`，通过结构化图解数据说明环境、计算时机、共享引用、约束统一、类型实例化、模块可见性和表示替换。全部步骤保存在静态HTML中；原课引用别名原图保留完整页面及出处。各节`lesson.css`只补充选读路线与导航排版，目录提供直接进入关键推演的入口。
+
+源正文、47份官方英文字幕、192页PDF的渲染核对记录和验证报告保存在相应`~/Documents/RIN III 草稿/Dan Grossman Section 3/`、`Section 4/`。共同生成器和验证工具位于相邻`Dan Grossman Part A 3-4/`，经`@rin/document`公共入口渲染；公开产物不含字幕镜像、签名下载URL或草稿路径。来源记录明确未逐段播放全部视频，也不把发布与代码检查视为学习掌握证明。
+
+第二节目录、末篇和站内导读接上后续入口；新增两节已接入`check:course-readers`，`tests/pl-sections-three-four.test.mjs`核对全部主题映射、选学范围、静态图解、资源和衔接链接。
