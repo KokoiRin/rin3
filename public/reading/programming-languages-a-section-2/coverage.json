@@ -1,0 +1,538 @@
+{
+  "revision": "2026-10-17",
+  "scope": "Coursera Section 2 的22视频主题，按13篇连续讲解重组；原创中文讲解，不是逐字字幕译文。",
+  "reviewScope": {
+    "officialEnglishCaptionFiles": 22,
+    "pdfPagesRenderedAndInspected": 83,
+    "videoFrames": "本轮未逐帧观看全部视频，视觉审计依据官方PDF整页渲染与对应字幕定位。"
+  },
+  "orderNote": "Coursera V8是Another Expression Example，V9是Type Synonyms；UW Unit2补充目录两主题顺序相反，本文V编号始终用Coursera顺序。",
+  "visuals": [
+    {
+      "id": "compound-shapes",
+      "title": "先看数据要同时装什么，还是选择哪一种",
+      "chapter": "01-data-design",
+      "states": 4
+    },
+    {
+      "id": "case-selection",
+      "title": "TwoInts (7,9) 怎样选中分支并交出16",
+      "chapter": "02-choices-and-case",
+      "states": 5
+    },
+    {
+      "id": "exp-evaluation",
+      "title": "一棵 exp 树怎样交回整数14",
+      "chapter": "03-recursive-datatypes",
+      "states": 6
+    },
+    {
+      "id": "product-destructuring",
+      "title": "val 左边的模式，怎样一次取得各个部分",
+      "chapter": "06-product-patterns",
+      "states": 6
+    },
+    {
+      "id": "inference-constraints",
+      "title": "从代码要求，推到整个函数类型",
+      "chapter": "07-type-inference",
+      "states": 5
+    },
+    {
+      "id": "nested-pattern-route",
+      "title": "列表里面的元组，怎样一层层拆开",
+      "chapter": "08-nested-patterns",
+      "states": 5
+    },
+    {
+      "id": "exception-propagation",
+      "title": "内层没有匹配，异常怎样交到外层",
+      "chapter": "10-exceptions",
+      "states": 5
+    },
+    {
+      "id": "accumulator-work",
+      "title": "等待回来再加，还是先加进下一步参数",
+      "chapter": "12-accumulators",
+      "states": 7
+    },
+    {
+      "id": "polymorphic-tree",
+      "title": "一棵树可以有哪些类型，取决于函数读了哪些数据",
+      "chapter": "05-polymorphic-datatypes",
+      "states": 5
+    },
+    {
+      "id": "one-tuple-argument",
+      "title": "一个元组，怎样变成函数体里的三个名字",
+      "chapter": "06-product-patterns",
+      "states": 6
+    }
+  ],
+  "originals": [
+    {
+      "id": "expression-tree",
+      "file": "figures/expression-tree.png",
+      "source": "https://courses.cs.washington.edu/courses/cse341/19sp/lec5slides.pdf#page=5",
+      "attribution": "Dan Grossman / University of Washington, CSE341 Spring 2019",
+      "locator": "Lecture 5 slides 第 5 页",
+      "sha256": "73fa861bba38ec38a15aa7cd349af0759446a587f3e426188d21d90e4caa06aa",
+      "title": "对照原课图：构造树，与计算树，是两件事",
+      "chapter": "03-recursive-datatypes",
+      "text": "原图构造的是 Add (Constant (10+9), Negate (Constant 4))。构造时，10+9 先得到 19，但 Add、Negate、Constant 仍组成一棵树；这份树形数据并不会自行变成 15。只有后面定义的 eval 沿树求值，才得到 19−4=15。本文的 2+3×4 使用相同的数据规则，具体数字和树形不同。",
+      "alt": "原课表达式树：Add有两个子节点，左边Constant19，右边Negate包含Constant4；构造树后仍保留这些节点"
+    },
+    {
+      "id": "ordinary-recursion-stack",
+      "file": "figures/ordinary-recursion-stack.png",
+      "source": "https://courses.cs.washington.edu/courses/cse341/19sp/lec6slides.pdf#page=11",
+      "attribution": "Dan Grossman / University of Washington, CSE341 Spring 2019",
+      "locator": "Lecture 6 slides 第 11 页",
+      "sha256": "984d2b3a303cae3e1bcd0bb7268e5d8a6be8e04dbd5580c4858acce19cd135dc",
+      "title": "对照原课图：等待的乘法留在调用栈里",
+      "chapter": "11-tail-calls",
+      "text": "原图的 fact 对应本文的 fact1，从 fact 3 出发，答案为 6。请按上排从左到右、再下排从左到右阅读：每一列是不同时间的栈快照。计算 fact 0 以前，外层分别还在等 3×、2×、1×；取得 1 后才能逐层相乘。这些快照不是同一时刻并排存在的多份调用栈。",
+      "alt": "fact3普通递归的栈快照：等待乘3、乘2、乘1的帧随下潜增加，fact0返回1后再逐层完成乘法"
+    },
+    {
+      "id": "tail-call-reuse",
+      "file": "figures/tail-call-reuse.png",
+      "source": "https://courses.cs.washington.edu/courses/cse341/19sp/lec6slides.pdf#page=15",
+      "attribution": "Dan Grossman / University of Washington, CSE341 Spring 2019",
+      "locator": "Lecture 6 slides 第 15 页",
+      "sha256": "66f5097d1f95e28289d90f4d51d1a9a73fd1e773bc8765a596fb031eea4118cb",
+      "title": "对照原课图：下一次调用接走全部剩余工作",
+      "chapter": "12-accumulators",
+      "text": "原图外层的 fact 对应本文的 fact2，aux 是它的内部辅助函数。这里仍计算 fact 3，依次进入 aux(3,1)、aux(2,3)、aux(1,6)、aux(0,6)。每次把已完成的乘积放进 acc，当前调用不再等后续乘法，所以尾调用可以复用当前帧。底部五个框代表随时间变化的状态，不表示同时叠着五个帧；最终结果仍是 6。",
+      "alt": "尾递归阶乘的时间快照：fact3到aux31、aux23、aux16、aux06，累计值进入下一次调用，当前帧可复用"
+    }
+  ],
+  "videos": [
+    {
+      "number": 1,
+      "title": "Building Compound Types",
+      "source": "https://www.coursera.org/learn/programming-languages/lecture/vajWW/building-compound-types",
+      "chapter": "01-data-design",
+      "video": 1,
+      "source_notes_pages": "2",
+      "slide_pages": "L4 p4–6",
+      "key_points": [
+        "base vs compound types",
+        "each-of / one-of / self-reference是本课解释用语，并非所有语言统一术语",
+        "int*bool同时有两项；int option是有一个int或无数据；int list融合三种构造方式",
+        "类型组合可任意嵌套；本节不是仅列语法"
+      ],
+      "figures": [
+        "compound-shapes"
+      ]
+    },
+    {
+      "number": 2,
+      "title": "Records",
+      "source": "https://www.coursera.org/learn/programming-languages/lecture/dsQ9c/records",
+      "chapter": "01-data-design",
+      "video": 2,
+      "source_notes_pages": "3",
+      "slide_pages": "L4 p7–9",
+      "key_points": [
+        "record value字段名/值与record type字段名/类型",
+        "字段顺序无意义，REPL可能按字母打印",
+        "先求各字段表达式；#field按名字取值",
+        "字段名不强迫各个record字段同类型，#id可在不同record中是int或bool",
+        "by-name vs by-position取舍；元组也能作为函数参数",
+        "字段名本身不建立普通同名变量；读取字段需使用 #field record。"
+      ],
+      "figures": [
+        "compound-shapes"
+      ]
+    },
+    {
+      "number": 3,
+      "title": "Tuples as Syntactic Sugar",
+      "source": "https://www.coursera.org/learn/programming-languages/lecture/e2qVG/tuples-as-syntactic-sugar",
+      "chapter": "01-data-design",
+      "video": 3,
+      "source_notes_pages": "3–4",
+      "slide_pages": "L4 p10–11",
+      "key_points": [
+        "(e1,...,en)等价于{1=e1,...,n=en}",
+        "类型t1*...*tn对应数字字段record；#1沿用字段投影",
+        "语法糖可用更基本构造解释，不增加语义能力",
+        "只是让实现/定义/使用更方便，不能据此声称程序必然更快或更慢",
+        "数字字段不按书写次序决定位置",
+        "字段名必须恰为连续的1到n才对应元组；缺少中间字段时仍是普通记录。"
+      ],
+      "figures": [
+        "compound-shapes"
+      ]
+    },
+    {
+      "number": 4,
+      "title": "Datatype Bindings",
+      "source": "https://www.coursera.org/learn/programming-languages/lecture/vysQv/datatype-bindings",
+      "chapter": "02-choices-and-case",
+      "video": 4,
+      "source_notes_pages": "4–5",
+      "slide_pages": "L4 p12–14",
+      "key_points": [
+        "datatype引入新类型mytype及构造器TwoInts/Str/Pizza",
+        "TwoInts:int*int->mytype，Str:string->mytype，Pizza:mytype",
+        "构造结果带variant标签与相应payload；Str本身是函数，Str \"hi\"是mytype值",
+        "构造前先算实参，TwoInts(1+2,3+4)保存3与7",
+        "重新声明相同datatype会建立新类型；别把它当type别名"
+      ],
+      "figures": [
+        "case-selection"
+      ]
+    },
+    {
+      "number": 5,
+      "title": "Case Expressions",
+      "source": "https://www.coursera.org/learn/programming-languages/lecture/cHQ9M/case-expressions",
+      "chapter": "02-choices-and-case",
+      "video": 5,
+      "source_notes_pages": "5–6",
+      "slide_pages": "L4 p15–17",
+      "key_points": [
+        "case把variant识别与payload绑定合在一起",
+        "先求case后/of前表达式，再按顺序选第一成功pattern，只求该分支",
+        "分支pattern绑定只在其分支有效；分支结果类型一致",
+        "Pizza=>3，Str s=>8，TwoInts(i1,i2)=>i1+i2为视频/代码版本",
+        "f \"hi\"不满足mytype输入；case漏分支警告/运行Match，完全冗余分支可能编译错误",
+        "pattern不是表达式，匹配时不会执行构造器函数",
+        "版本或范围：L4 p15用String.size s，但V5视频字幕与lec4.sml用固定8；Str \"hi\"结果不能混用。"
+      ],
+      "figures": [
+        "case-selection"
+      ]
+    },
+    {
+      "number": 6,
+      "title": "Useful Datatypes",
+      "source": "https://www.coursera.org/learn/programming-languages/lecture/GDEgp/useful-datatypes",
+      "chapter": "03-recursive-datatypes",
+      "video": 6,
+      "source_notes_pages": "6–8",
+      "slide_pages": "L5 p2–6",
+      "key_points": [
+        "suit/rank枚举与Num of int；id是StudentNum或Name(姓名组件)",
+        "one-of适合互斥情况；若每个person都有姓名且可选学号，则record更合适",
+        "exp=Constant|Negate|Add|Multiply递归描述算式树",
+        "构造Add(Constant(10+9),Negate(Constant4))后树叶为19和4；eval树才得15",
+        "eval按构造形状递归；number_of_adds的Add多计1，其他节点递归但不增加",
+        "版本或范围：L5slides p2使用card_value，lec5.sml使用rank；只是教材例子名称版本不同。",
+        "Num of int不限制2到10；Num(~7)、Num 142也符合类型，业务范围需另行检查。"
+      ],
+      "figures": [
+        "exp-evaluation"
+      ]
+    },
+    {
+      "number": 7,
+      "title": "Pattern Matching So Far",
+      "source": "https://www.coursera.org/learn/programming-languages/lecture/9rnbI/pattern-matching-so-far",
+      "chapter": "03-recursive-datatypes",
+      "video": 7,
+      "source_notes_pages": "8",
+      "slide_pages": "L5 p8–10",
+      "key_points": [
+        "datatype t=C1 of t1|...新增类型与构造器",
+        "C_i(表达式)求值保存标签和payload",
+        "case可以在任意表达式位置，不必是整个函数体",
+        "case先求被匹配值；首个匹配分支在旧环境上扩展payload名字",
+        "无payload构造器模式只识别该构造器"
+      ],
+      "figures": [
+        "exp-evaluation"
+      ]
+    },
+    {
+      "number": 8,
+      "title": "Another Expression Example",
+      "source": "https://www.coursera.org/learn/programming-languages/lecture/g7UPb/another-expression-example",
+      "chapter": "03-recursive-datatypes",
+      "video": 8,
+      "source_notes_pages": "7–8",
+      "slide_pages": "L5 p7",
+      "key_points": [
+        "max_constant找树中最大的字面整数；Negate不把该常量改成相反数",
+        "先写例子与预期19再实现；先按Constant/Negate/Add/Multiply四种情况构造递归",
+        "第一次if max_constant e1 > max_constant e2 then max_constant e1 else max_constant e2在小测试正确，但重复递归可能很慢",
+        "先在Add/Multiply各自let保存m1/m2，比较与返回只读取结果；再把重复代码抽到局部max_of_two",
+        "用Int.max替代if后，可将两次递归直接作为实参：函数调用前各求值一次，因此不必保留只为防重复而设的m1/m2",
+        "helper缩短后可选择删去，将Int.max(max_constant e1,max_constant e2)分别放Add/Multiply；不是一律反对重复两行或一律保留helper",
+        "正确性、避免重复计算、抽象复用与代码简洁是不同维度；每轮改写仍检查结果",
+        "版本或范围：UW unit2 DOM将本视频放Type Synonyms之后；本系列按Coursera列为V8。"
+      ],
+      "figures": [
+        "exp-evaluation"
+      ]
+    },
+    {
+      "number": 9,
+      "title": "Type Synonyms",
+      "source": "https://www.coursera.org/learn/programming-languages/lecture/iUbrq/type-synonyms",
+      "chapter": "04-type-synonyms",
+      "video": 9,
+      "source_notes_pages": "8–9",
+      "slide_pages": "相关视频补充示例；现有课件无专门页",
+      "key_points": [
+        "type card=suit*rank 是已有类型的另一个名字",
+        "同义名与展开后类型完全可互换，REPL打印哪种都不改变类型",
+        "type对tuple/record/其他既有类型都可命名",
+        "datatype产生fresh类型，type不会；type新别名不生成构造器",
+        "版本或范围：Coursera V9，UW DOM列在Another Expression之前。"
+      ],
+      "figures": []
+    },
+    {
+      "number": 10,
+      "title": "Lists and Options are Datatypes",
+      "source": "https://www.coursera.org/learn/programming-languages/lecture/3rCVl/lists-and-options-are-datatypes",
+      "chapter": "05-polymorphic-datatypes",
+      "video": 10,
+      "source_notes_pages": "9–10",
+      "slide_pages": "L5 p11–14",
+      "key_points": [
+        "my_int_list=Empty|Cons of int*my_int_list与append_mylist",
+        "内置NONE/SOME、[]/::也是构造器；::是中缀形式",
+        "inc_or_zero用NONE/SOME模式；sum_list/append用[]和x::xs模式",
+        "模式变量任意名字，xs撇号只是命名惯例；hd/tl也可作为局部名字遮蔽外层函数",
+        "推荐模式匹配而非null/hd/tl/isSome/valOf；这些库函数仍存在且以后可传作参数"
+      ],
+      "figures": [
+        "polymorphic-tree"
+      ]
+    },
+    {
+      "number": 11,
+      "title": "Polymorphic Datatypes",
+      "source": "https://www.coursera.org/learn/programming-languages/lecture/pwr1d/polymorphic-datatypes",
+      "chapter": "05-polymorphic-datatypes",
+      "video": 11,
+      "source_notes_pages": "10",
+      "slide_pages": "相关视频补充示例；现有课件无专门页",
+      "key_points": [
+        "list/option单独是type constructor，int list/int option才是type",
+        "datatype 'a option=NONE|SOME of 'a；自定义多态链表也需在递归处写类型参数",
+        "datatype ('a,'b) tree=Node of 'a*('a,'b) tree*('a,'b) tree|Leaf of 'b",
+        "内部节点与叶子可不同类型，两个类型参数也可相同",
+        "sum_tree需两个参数都为int；sum_leaves只约束叶子；num_leaves不依赖载荷类型（据V11后半）",
+        "版本或范围：UW lec5slides/lec5.sml没有覆盖视频全部多态datatype示例；notes p10与V11字幕补齐。"
+      ],
+      "figures": [
+        "polymorphic-tree"
+      ]
+    },
+    {
+      "number": 12,
+      "title": "Each of Pattern Matching / Truth About Functions",
+      "source": "https://www.coursera.org/learn/programming-languages/lecture/FCVA9/each-of-pattern-matching-truth-about-functions",
+      "chapter": "06-product-patterns",
+      "video": 12,
+      "source_notes_pages": "10–12",
+      "slide_pages": "L5 p15–23",
+      "key_points": [
+        "each-of也能pattern matching：tuple/record模式；字段顺序不影响绑定",
+        "单分支case可解释但通常差风格；val pattern与函数参数pattern更简洁",
+        "val(f1=x,...)=value不执行比较，而是同时拆开并绑定",
+        "一个one-of pattern放val中可能失败并抛Bind，不能当多分支case",
+        "每个ML函数实际接一个参数；(x,y,z)是在匹配一个tuple",
+        "rotate_left/rotate_right连续传tuple；零参数写法是unit pattern ()匹配unit value ()"
+      ],
+      "figures": [
+        "product-destructuring",
+        "one-tuple-argument"
+      ]
+    },
+    {
+      "number": 13,
+      "title": "A Little Type Inference",
+      "source": "https://www.coursera.org/learn/programming-languages/lecture/9Flb9/a-little-type-inference",
+      "chapter": "07-type-inference",
+      "video": 13,
+      "source_notes_pages": "12–13",
+      "slide_pages": "相关视频补充示例；现有课件无专门页",
+      "key_points": [
+        "不写类型不等于没有类型或动态检查；静态约束来自pattern形状和表达式操作",
+        "sum_triple与full_name可由完整模式和+/^推断",
+        "用#1/#2/#3只知道至少字段，未确定完整record形状，所以需类型注解",
+        "partial_sum只约束x/z，中间y可'a；unused middle同理",
+        "更一般类型足以满足特定需求，但正确性仍需测试而非只看类型"
+      ],
+      "figures": [
+        "inference-constraints"
+      ]
+    },
+    {
+      "number": 14,
+      "title": "Polymorphic and Equality Types",
+      "source": "https://www.coursera.org/learn/programming-languages/lecture/h6vLm/polymorphic-and-equality-types",
+      "chapter": "07-type-inference",
+      "video": 14,
+      "source_notes_pages": "13",
+      "slide_pages": "相关视频补充示例；现有课件无专门页",
+      "key_points": [
+        "更一般类型能通过一致替换同一类型变量得到所需类型",
+        "append一次调用全部'a取同类型，不能分别替换成int/string",
+        "复合例type foo=int*int，{quux:'b,bar:int*'a,baz:'b}可实例化到{quux:string,bar:foo,baz:string}，字段重排仍同型",
+        "''a要求允许=，实数和函数不是equality types，tuple全部组成类型也须支持",
+        "same_thing:''a*''a->string；is_three:int->string；polyEqual warning是实现提示"
+      ],
+      "figures": [
+        "inference-constraints"
+      ]
+    },
+    {
+      "number": 15,
+      "title": "Nested Patterns",
+      "source": "https://www.coursera.org/learn/programming-languages/lecture/LN9El/nested-patterns",
+      "chapter": "08-nested-patterns",
+      "video": 15,
+      "source_notes_pages": "13–15",
+      "slide_pages": "L6 p2–4",
+      "key_points": [
+        "nested patterns可在变量位置换更深pattern，减少层层case",
+        "zip3接受3列表整体，输出按位置组成的tuple列表；3列表自身可不同元素类型",
+        "三个同时空结束，三个同时非空递归；其余长度不一致raise异常，不静默截短",
+        "对比旧if版本与多层浅case是引入动机，不必让读者重走大段代码",
+        "unzip3递归先返回三列表，再val tuple拆开并各cons回头；顺序保留",
+        "版本或范围：notes异常名BadTriple，lec6.sml是ListLengthMismatch；统一其一并说明版本差异。"
+      ],
+      "figures": [
+        "nested-pattern-route"
+      ]
+    },
+    {
+      "number": 16,
+      "title": "More Nested Patterns",
+      "source": "https://www.coursera.org/learn/programming-languages/lecture/hqTYU/more-nested-patterns",
+      "chapter": "08-nested-patterns",
+      "video": 16,
+      "source_notes_pages": "15–16",
+      "slide_pages": "L6 p3–4",
+      "key_points": [
+        "nondecreasing空/单项true；>=2检查head<=neck并递归neck::rest",
+        "递归rest会漏掉相邻边界；andalso使下降后不继续",
+        "multsign先把两整数变sgn再匹配tuple，无需真做乘法",
+        "(Z,_)与(_,Z)覆盖有零情况；剩余同号正、异号负",
+        "catch-all _可能遮住遗漏(N,N)；显式列剩余情况可保留穷尽检查",
+        "len的_::rest只关心元素存在，不用头值；通配符不绑定名字",
+        "版本或范围：cumulative_sum出现在2019lec6.sml，但不在V16字幕主例中，不必当视频必须覆盖内容。"
+      ],
+      "figures": [
+        "nested-pattern-route"
+      ]
+    },
+    {
+      "number": 17,
+      "title": "Nested Patterns Precisely",
+      "source": "https://www.coursera.org/learn/programming-languages/lecture/1Yb1a/nested-patterns-precisely",
+      "chapter": "09-matching-rules",
+      "video": 17,
+      "source_notes_pages": "14–15",
+      "slide_pages": "L6 p5–6",
+      "key_points": [
+        "变量模式总匹配并绑定整个值；_总匹配但不绑定",
+        "tuple要求同项数且每个子pattern成功，合并绑定",
+        "constructor C p要求同C且内部匹配；无数据构造器只认C",
+        "同一pattern不能重复变量(x,x)，不表示相等检查",
+        "a::b::c::d匹配至少3项，d是剩余list；末尾[]要求恰3项",
+        "((a,b),(c,d))::e是非空pair-of-pairs列表，e整份尾部；静态类型兼容是前提"
+      ],
+      "figures": []
+    },
+    {
+      "number": 18,
+      "title": "Optional: Function Patterns",
+      "source": "https://www.coursera.org/learn/programming-languages/lecture/bJBvW/optional-function-patterns",
+      "chapter": "09-matching-rules",
+      "video": 18,
+      "source_notes_pages": "16–17",
+      "slide_pages": "相关视频补充示例；现有课件无专门页",
+      "key_points": [
+        "fun f p1=e1 | f p2=e2为case的语法糖，只第一条有fun，各条重复同一函数名",
+        "eval的四variant与append的tuple嵌套pattern原例",
+        "不必喜欢此风格，选择case语义相同",
+        "改写去掉原实参名后，分支不能仍依赖已删名字；反向改写新名字须避免捕获外层名"
+      ],
+      "figures": []
+    },
+    {
+      "number": 19,
+      "title": "Exceptions",
+      "source": "https://www.coursera.org/learn/programming-languages/lecture/ytpta/exceptions",
+      "chapter": "10-exceptions",
+      "video": 19,
+      "source_notes_pages": "17–18",
+      "slide_pages": "L6 p7–8",
+      "key_points": [
+        "exception声明种类；无payload是exn值，有payload构造器生成exn值",
+        "创建/传递异常值不等于raise；mydiv与maxlist(xs,ex)区分",
+        "raise不正常返回，能放在要求任意结果类型处；正常分支仍有固定类型",
+        "e1 handle p=>e2只在e1抛匹配异常时运行e2，否则保留正常值",
+        "不匹配则继续外传；e2再抛不由同层handler重新接住",
+        "多个handler分支按pattern；正常与恢复路径类型一致；静态/语法错误不能靠handler救"
+      ],
+      "figures": [
+        "exception-propagation"
+      ]
+    },
+    {
+      "number": 20,
+      "title": "Tail Recursion",
+      "source": "https://www.coursera.org/learn/programming-languages/lecture/YZic1/tail-recursion",
+      "chapter": "11-tail-calls",
+      "video": 20,
+      "source_notes_pages": "18–19",
+      "slide_pages": "L6 p9–17",
+      "key_points": [
+        "call stack包含已开始未完成调用的局部值及剩余工作",
+        "fact1调用后还要乘n，fact2 aux(n-1,acc*n)调用结果直接返回",
+        "调用前计算acc*n不妨碍尾调用；看调用后是否有剩余工作",
+        "未优化概念栈与实现尾调用复用需区分，不是递归天然不用栈",
+        "tail call可到别的函数，不限自递归；函数式语言通常保证/支持此重要优化",
+        "factorial例输入n>=0，大int溢出边界独立于栈空间"
+      ],
+      "figures": []
+    },
+    {
+      "number": 21,
+      "title": "Accumulators for Tail Recursion",
+      "source": "https://www.coursera.org/learn/programming-languages/lecture/4f7Tw/accumulators-for-tail-recursion",
+      "chapter": "12-accumulators",
+      "video": 21,
+      "source_notes_pages": "18–20",
+      "slide_pages": "L6 p16–20",
+      "key_points": [
+        "常见方法：旧基例成为acc初值，helper基例返回acc，递归时合并当前部分",
+        "factorial初值1、sum初值0、reverse初值[]；必须说明acc保存的不变量",
+        "sum普通/累加器都线性时间，调用栈空间不同",
+        "rev1递归后用@，反复复制长度1..n-1的前表，二次时间",
+        "rev2用x::acc常量一步，线性时间；改进不只来自尾递归",
+        "处理有限机器数或浮点数时不能任意重排，说明结合性/顺序的边界"
+      ],
+      "figures": [
+        "accumulator-work"
+      ]
+    },
+    {
+      "number": 22,
+      "title": "Perspective on Tail Recursion",
+      "source": "https://www.coursera.org/learn/programming-languages/lecture/NyJkW/perspective-on-tail-recursion",
+      "chapter": "13-tail-recursion-perspective",
+      "video": 22,
+      "source_notes_pages": "20",
+      "slide_pages": "L6 p21–23",
+      "key_points": [
+        "并非所有函数值得尾递归改写；树遍历需记住未访问子树，可能转移到显式数据结构仍占空间",
+        "优先自然易核对代码，再在必要时优化；stack空间与输出数据空间分开",
+        "tail-position递归定义：函数体是尾位置；若整体不是则子表达式也不是",
+        "if/case整体在尾位置则所选分支是，条件/被匹配表达式不是",
+        "let整体在尾位置则in主体是，bindings里的表达式不是",
+        "调用的参数和被调用函数表达式不是尾位置；f(g x)中f可能是尾调用而g不是"
+      ],
+      "figures": []
+    }
+  ]
+}

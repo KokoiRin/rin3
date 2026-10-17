@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="尾递归的取舍：空间、工作量与可读性 · Dan Grossman 编程语言第二周中文讲解"><title>尾递归的取舍：空间、工作量与可读性 · 编程语言第二周 · RIN III</title><link rel="stylesheet" href="../../reader.css"><link rel="stylesheet" href="../../programming-languages-a-section-1/lesson.css"><link rel="stylesheet" href="../lesson.css"><link rel="manifest" href="../../../manifest.webmanifest"></head><body class="pl-course pl-section-two"><nav class="site-nav"><a href="../index.html">← 编程语言 · 第二周</a><a href="../../programming-languages-a-section-1/index.html">第一周</a><a href="https://www.coursera.org/learn/programming-languages">原课程 ↗</a></nav><main class="reader"><header class="chapter-header"><span class="chapter-kicker">第二周 · 13 / 13 · 原创中文讲解</span><h1>尾递归的取舍：空间、工作量与可读性</h1><p class="lead">把调用栈与输出数据分开计算成本，理解尾递归能改善什么、不能改善什么，以及何时值得改写。</p><p class="byline">原课程：Dan Grossman · Programming Languages, Part A · Section 2</p><details class="source-details"><summary>对应视频与来源</summary><ul><li><a href="https://www.coursera.org/learn/programming-languages/lecture/NyJkW/perspective-on-tail-recursion">V22 · Perspective on Tail Recursion</a></li></ul><p>本系列依据 Dan Grossman 的 Programming Languages, Part A · Section 2 制作原创中文学习讲解，按问题重新组织解释与示例；不是逐字翻译或官方译本。</p><p>结合对应视频官方英文字幕、<a href="https://courses.cs.washington.edu/courses/cse341/19sp/unit2notes.pdf">Unit 2 讲义</a>、<a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec4slides.pdf">Lecture 4</a> / <a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec5slides.pdf">Lecture 5</a> / <a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec6slides.pdf">Lecture 6 幻灯片</a>与 <a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec4.sml">lec4.sml</a> / <a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec5.sml">lec5.sml</a> / <a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec6.sml">lec6.sml</a>核对。V 编号按 Coursera Section 2 的顺序，UW 公开视频目录的同主题顺序有少量差异。<a href="../index.html#sources">完整范围与来源</a>。</p></details><details class="lesson-toc"><summary>本篇目录</summary><ol><li class="toc-h2"><a href="#省下调用栈之后还要看它反复做了什么">省下调用栈之后，还要看它反复做了什么</a></li><li class="toc-h2"><a href="#rev1-的慢主要不只是等待返回">rev1 的慢，主要不只是等待返回</a></li><li class="toc-h2"><a href="#次序不能为了省事悄悄改掉">次序不能为了省事悄悄改掉</a></li><li class="toc-h2"><a href="#树还有另一边必须有人记着">树还有另一边，必须有人记着</a></li><li class="toc-h2"><a href="#用需要解决的问题来决定改写">用需要解决的问题来决定改写</a></li><li class="toc-h2"><a href="#对应原课程与来源">对应原课程与来源</a></li></ol></details><nav class="chapter-switcher" aria-label="章节导航"><a rel="prev" href="../12-accumulators/index.html">← 12 累加器：把等待的工作带到下一步</a><a class="course-home" href="../index.html">全部 13 篇</a><span></span></nav></header><article class="lesson-article translated-article"><h2 id="省下调用栈之后还要看它反复做了什么">省下调用栈之后，还要看它反复做了什么</h2>
+<p>上一篇已经能把部分结果放进累加器。这一篇回答最后一个实际问题：看见递归时，什么时候值得改成尾递归，什么时候保留直接的写法更清楚？先比较两段都能正确反转列表的程序，再回到本周的表达式计算器。</p>
+<p>下面是原课的两个版本。输入 <code>[12,18,10]</code>，它们都会得到 <code>[10,18,12]</code>；差别藏在每一步怎样接出结果。</p>
+<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>fun rev1 xs =</span></span>
+<span data-line=""><span>    case xs of</span></span>
+<span data-line=""><span>        [] => []</span></span>
+<span data-line=""><span>      | x::rest => (rev1 rest) @ [x]</span></span>
+<span data-line=""> </span>
+<span data-line=""><span>fun rev2 xs =</span></span>
+<span data-line=""><span>    let fun aux (xs,acc) =</span></span>
+<span data-line=""><span>            case xs of</span></span>
+<span data-line=""><span>                [] => acc</span></span>
+<span data-line=""><span>              | x::rest => aux (rest,x::acc)</span></span>
+<span data-line=""><span>    in</span></span>
+<span data-line=""><span>        aux (xs,[])</span></span>
+<span data-line=""><span>    end</span></span>
+<span data-line=""> </span>
+<span data-line=""><span>val firstWay = rev1 [12,18,10]</span></span>
+<span data-line=""><span>val secondWay = rev2 [12,18,10]</span></span></code></pre></figure>
+<p><code>rev1</code> 先把尾部反过来，再把头部放到结果末尾。<code>@</code> 是列表拼接，两边都需要是列表，所以这里写 <code>[x]</code>，而不是裸元素 <code>x</code>。<code>::</code> 的含义不同，它在一个已有列表前面接一个元素，不能直接拿来表示“在末尾补一个元素”。</p>
+<h2 id="rev1-的慢主要不只是等待返回">rev1 的慢，主要不只是等待返回</h2>
+<p>最内层先得到 <code>[10]</code>。上一层做 <code>[10] @ [18]</code>，再上一层做 <code>[10,18] @ [12]</code>。按上周 <code>append</code> 的结构，拼接要沿着左边列表走一遍，并重建它的前缀，才能接上右边列表。</p>
+<table>
+<thead>
+<tr>
+<th>在长度为3的输入上</th>
+<th><code>@</code> 左侧长度</th>
+<th>需要沿左侧走多少项</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>[] @ [10]</code></td>
+<td>0</td>
+<td>0</td>
+</tr>
+<tr>
+<td><code>[10] @ [18]</code></td>
+<td>1</td>
+<td>1</td>
+</tr>
+<tr>
+<td><code>[10,18] @ [12]</code></td>
+<td>2</td>
+<td>2</td>
+</tr>
+</tbody>
+</table>
+<p>若输入长度为 <code>n</code>，这些左侧长度累计是 <code>0+1+...+(n-1)</code>，等于 <code>n*(n-1)/2</code>。因此总工作量按 <code>n</code> 的平方增长，是二次时间；除了返回时等待拼接的栈，它还反复走过已经构建出的列表。</p>
+<p><code>rev2</code> 每一步只有 <code>x::acc</code>，接入一个头部即可，不需要遍历已经建好的累加器。它处理 <code>n</code> 项的工作量随 <code>n</code> 成正比，是线性时间，同时递归调用处于尾位置。这是两个不同的改进：<strong>每一步做多少工作，和同时保留多少调用帧，要分别判断。</strong></p>
+<p>“二次”和“线性”是在说明输入变大时的增长趋势，不是在保证某次运行精确花几毫秒。在忽略固定开销的比较中，元素数翻倍，线性工作大约翻倍，二次工作的主要部分则大约变为四倍。小列表上这点差别可能不明显，长列表上反复遍历左侧前缀就会越来越突出；这也是原课程强调不要只盯着是否尾递归的原因。</p>
+<table>
+<thead>
+<tr>
+<th>比较项目</th>
+<th><code>rev1</code></th>
+<th><code>rev2</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>总时间随输入长度增长</td>
+<td>二次</td>
+<td>线性</td>
+</tr>
+<tr>
+<td>递归调用链所需栈空间</td>
+<td>线性</td>
+<td>常量级</td>
+</tr>
+<tr>
+<td>返回的新列表</td>
+<td>长度为 <code>n</code></td>
+<td>长度为 <code>n</code></td>
+</tr>
+</tbody>
+</table>
+<p>最后一行提醒我们，“常量级栈”不等于“整个程序常量空间”。两种版本都要产生一份有 <code>n</code> 个元素的结果；尾调用优化没有把输出列表消掉。阶乘和求和的两种版本则原本就都只需线性次数的算术操作，改成尾递归主要解决的是调用链增长，并不是同样的二次变线性。</p>
+<h2 id="次序不能为了省事悄悄改掉">次序不能为了省事悄悄改掉</h2>
+<p>上一篇的 <code>x::acc</code> 会把已处理前缀反过来。这适合反转任务；如果任务本来要保留原顺序，就必须安排最后的次序恢复，而不是返回反过来的答案。</p>
+<p>例如下面只是展示“先反着收集，再反回去”的两阶段安排，继续使用本篇已定义的 <code>rev2</code>。输入 <code>[12,18,10]</code>，输出仍是 <code>[12,18,10]</code>。</p>
+<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>fun keep_order xs =</span></span>
+<span data-line=""><span>    let fun collect (remaining,acc) =</span></span>
+<span data-line=""><span>            case remaining of</span></span>
+<span data-line=""><span>                [] => rev2 acc</span></span>
+<span data-line=""><span>              | x::rest => collect (rest,x::acc)</span></span>
+<span data-line=""><span>    in</span></span>
+<span data-line=""><span>        collect (xs,[])</span></span>
+<span data-line=""><span>    end</span></span>
+<span data-line=""> </span>
+<span data-line=""><span>val sameOrder = keep_order [12,18,10]</span></span></code></pre></figure>
+<p>两遍线性遍历合起来仍然是线性时间，但多做的一遍和额外构建的列表也有真实成本。这个例子不是建议把原样列表都复制两遍，而是帮助识别累加器改写中的顺序问题：计算结果的要求，应当先于对某种代码形状的偏好。</p>
+<h2 id="树还有另一边必须有人记着">树还有另一边，必须有人记着</h2>
+<p>回到本周计算器。下面给出完整定义，输入 <code>Add (Constant 12,Multiply (Constant 3,Constant 4))</code>，应当输出24。</p>
+<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>datatype exp = Constant of int</span></span>
+<span data-line=""><span>             | Negate of exp</span></span>
+<span data-line=""><span>             | Add of exp * exp</span></span>
+<span data-line=""><span>             | Multiply of exp * exp</span></span>
+<span data-line=""> </span>
+<span data-line=""><span>fun eval e =</span></span>
+<span data-line=""><span>    case e of</span></span>
+<span data-line=""><span>        Constant i => i</span></span>
+<span data-line=""><span>      | Negate child => ~ (eval child)</span></span>
+<span data-line=""><span>      | Add (left,right) => eval left + eval right</span></span>
+<span data-line=""><span>      | Multiply (left,right) => eval left * eval right</span></span>
+<span data-line=""> </span>
+<span data-line=""><span>val answer = eval (Add (Constant 12,</span></span>
+<span data-line=""><span>                       Multiply (Constant 3,Constant 4)))</span></span></code></pre></figure>
+<p>在加法节点，既要得到左子树结果，也要得到右子树结果，然后才能相加。无论先算哪一边，都必须有人保存“另一边还没处理，以及最后要做加法”这份工作。源代码中的两个 <code>eval</code> 调用都嵌在加法操作里，因此都不是当前 <code>eval</code> 的尾调用。</p>
+<p>直接的递归调用栈恰好能保存这些信息。树越深，尚未完成的祖先节点就可能越多；常见的深度优先处理，其调用栈会随树的高度增长。它不一定随整棵树的节点数同样增长，但对一条很偏的树，高度本身也可能很大。</p>
+<p>例如一个表达式可以在根节点下面展开很多较浅的加法、乘法分支，也可以写成一长串 <code>Negate (Negate (...))</code>。两种输入都可能有很多节点，但从根到最深叶子的路径不同，等待链的长度也不同。说“递归处理树需要保存进度”，指的是这条尚未完成的访问路径，不是要求同时把所有节点都放成调用帧。</p>
+<p>技术上可以换一种程序表示，把待处理节点与操作放进显式列表或其他数据结构，再用尾调用处理它们。那是把工作记录搬到了别处，不是把所有等待都消灭了。这一阶段无需为了让每个调用都“尾递归”，先引入一套更难读的控制结构。</p>
+<h2 id="用需要解决的问题来决定改写">用需要解决的问题来决定改写</h2>
+<p>原课程提醒，不要刚学尾递归，就把所有自然的递归都改得复杂。小输入上的阶乘，直接版本很容易验证；树的结构递归也常常最贴近数据。可读、正确、便于检查，本身就是值得保留的性质。</p>
+<p>真正评估时，先看答案和数据顺序是否正确，再看每层有没有重复遍历、重复调用，最后看调用栈增长是否会成为实际限制。长列表求和可以考虑累加器；反转中的逐层 <code>@</code> 应优先看时间成本；表达式树则要接受它确实有未完成的分支需要保存。</p>
+<p>尾位置规则已经在第11篇列出：沿函数体、分支结果和 <code>let</code> 主体向里找，参数计算与绑定右边仍有后续工作。把这个规则与本篇的成本分析连起来，才能判断一次改写到底省下了什么，而不只是看程序有没有一个名叫 <code>acc</code> 的参数。</p>
+<h2 id="对应原课程与来源">对应原课程与来源</h2>
+<p>本文对应 <a href="https://www.coursera.org/learn/programming-languages/lecture/NyJkW/perspective-on-tail-recursion">V22 Perspective on Tail Recursion</a>，并回看 V21 的反转成本分析。依据官方视频、<a href="https://courses.cs.washington.edu/courses/cse341/19sp/unit2notes.pdf">UW Unit 2 讲义第19–20页</a> 与 <a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec6.sml">Lecture 6 示例代码</a> 原创重组；保留树遍历、尾位置与可读性取舍，并用本周计算器作具体对照。</p></article><nav class="chapter-switcher" aria-label="章节导航"><a rel="prev" href="../12-accumulators/index.html">← 12 累加器：把等待的工作带到下一步</a><a class="course-home" href="../index.html">全部 13 篇</a><span></span></nav><footer class="lesson-footer">本系列依据 Dan Grossman 的 Programming Languages, Part A · Section 2 制作原创中文学习讲解，按问题重新组织解释与示例；不是逐字翻译或官方译本。<br><a href="../index.html#sources">来源与 22 段视频映射</a> · <a href="../../programming-languages-a-section-1/index.html">返回第一周</a> · 资料核对与制作：2026-10-17</footer></main><script type="module" src="../../programming-languages-a-section-1/visuals.mjs"></script></body></html>

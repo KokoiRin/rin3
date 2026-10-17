@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="type：给已有类型起一个名字 · Dan Grossman 编程语言第二周中文讲解"><title>type：给已有类型起一个名字 · 编程语言第二周 · RIN III</title><link rel="stylesheet" href="../../reader.css"><link rel="stylesheet" href="../../programming-languages-a-section-1/lesson.css"><link rel="stylesheet" href="../lesson.css"><link rel="manifest" href="../../../manifest.webmanifest"></head><body class="pl-course pl-section-two"><nav class="site-nav"><a href="../index.html">← 编程语言 · 第二周</a><a href="../../programming-languages-a-section-1/index.html">第一周</a><a href="https://www.coursera.org/learn/programming-languages">原课程 ↗</a></nav><main class="reader"><header class="chapter-header"><span class="chapter-kicker">第二周 · 04 / 13 · 原创中文讲解</span><h1>type：给已有类型起一个名字</h1><p class="lead">用清楚的类型名表达用途，并与 datatype 真正建立的新类型区分开，避免同名定义带来的混淆。</p><p class="byline">原课程：Dan Grossman · Programming Languages, Part A · Section 2</p><details class="source-details"><summary>对应视频与来源</summary><ul><li><a href="https://www.coursera.org/learn/programming-languages/lecture/iUbrq/type-synonyms">V09 · Type Synonyms</a></li></ul><p>本系列依据 Dan Grossman 的 Programming Languages, Part A · Section 2 制作原创中文学习讲解，按问题重新组织解释与示例；不是逐字翻译或官方译本。</p><p>结合对应视频官方英文字幕、<a href="https://courses.cs.washington.edu/courses/cse341/19sp/unit2notes.pdf">Unit 2 讲义</a>、<a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec4slides.pdf">Lecture 4</a> / <a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec5slides.pdf">Lecture 5</a> / <a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec6slides.pdf">Lecture 6 幻灯片</a>与 <a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec4.sml">lec4.sml</a> / <a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec5.sml">lec5.sml</a> / <a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec6.sml">lec6.sml</a>核对。V 编号按 Coursera Section 2 的顺序，UW 公开视频目录的同主题顺序有少量差异。<a href="../index.html#sources">完整范围与来源</a>。</p></details><details class="lesson-toc"><summary>本篇目录</summary><ol><li class="toc-h2"><a href="#一段记录类型太长能不能给它取个名字">一段记录类型太长，能不能给它取个名字</a></li><li class="toc-h2"><a href="#别名没有建立另一种不相容的数据">别名没有建立另一种不相容的数据</a></li><li class="toc-h2"><a href="#回到原课一张牌就是花色与牌面的组合">回到原课：一张牌就是花色与牌面的组合</a></li><li class="toc-h2"><a href="#datatype-与-type差别要看有没有新的数据边界">datatype 与 type，差别要看有没有新的数据边界</a></li><li class="toc-h2"><a href="#什么时候值得取别名">什么时候值得取别名</a></li><li class="toc-h2"><a href="#对应原课与回看线索">对应原课与回看线索</a></li></ol></details><nav class="chapter-switcher" aria-label="章节导航"><a rel="prev" href="../03-recursive-datatypes/index.html">← 03 把算式存成一棵树，再沿树计算</a><a class="course-home" href="../index.html">全部 13 篇</a><a rel="next" href="../05-polymorphic-datatypes/index.html">05 list、option 和类型参数，原来是一套规则 →</a></nav></header><article class="lesson-article translated-article"><h2 id="一段记录类型太长能不能给它取个名字">一段记录类型太长，能不能给它取个名字</h2>
+<p>前面用记录保存书名、页数与完成状态。如果几个函数都要接收这种记录，每次写 <code>{book:string,pages:int,finished:bool}</code> 很繁琐。现在想给这套现成结构取一个简短名字 <code>reading_record</code>，让函数说明更容易读。</p>
+<p>ML 使用 <code>type 名字 = 已有类型</code> 建立这种名称。它叫作<strong>类型别名</strong>，负责给同一种类型增加另一种写法。下面的函数读取记录中的页数；输入一条读了 12 页的记录，仍返回整数 12。</p>
+<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>type reading_record = {book:string, pages:int, finished:bool};</span></span>
+<span data-line=""> </span>
+<span data-line=""><span>fun pages_read (record : reading_record) = #pages record;</span></span>
+<span data-line=""><span>val day = {book="SML", pages=12, finished=false};</span></span>
+<span data-line=""><span>val answer = pages_read day;</span></span>
+<span data-line=""><span>(* answer = 12 *)</span></span></code></pre></figure>
+<p><code>day</code> 没有经过名叫 <code>reading_record</code> 的构造器，也不需要额外包一层。它原本就是具有这三个字段的记录，所以可以直接传给函数。<code>reading_record</code> 与大括号写出的完整类型，在这里可以互相替换。</p>
+<h2 id="别名没有建立另一种不相容的数据">别名没有建立另一种不相容的数据</h2>
+<p>下面故意对同一个值写两种类型说明，再把它们都交给刚才的函数。<code>: 类型</code> 是已有的类型标注，让检查器确认值确实具有该类型。</p>
+<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>val named_record : reading_record = day;</span></span>
+<span data-line=""><span>val expanded_record : {book:string,pages:int,finished:bool} = day;</span></span>
+<span data-line=""><span>val answer1 = pages_read named_record;</span></span>
+<span data-line=""><span>val answer2 = pages_read expanded_record;</span></span>
+<span data-line=""><span>(* answer1 = 12；answer2 = 12 *)</span></span></code></pre></figure>
+<p>两条定义都能通过，两个结果也相同。解释器有时显示 <code>reading_record</code>，有时显示完整记录类型，只是选了不同写法，不能据此判断我们定义了不同类型。它也不会因为多了这个名字，就自动增加字段或改变记录的求值。</p>
+<p>原阅读笔记用更小的例子强调这一点：<code>type foo = int</code> 后，<code>foo</code> 与 <code>int</code> 完全可以互换。下面函数的输入输出写成 <code>foo</code>，仍可接收普通整数，结果也能继续与整数相加。</p>
+<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>type foo = int;</span></span>
+<span data-line=""><span>fun next_number (x : foo) : foo = x+1;</span></span>
+<span data-line=""><span>val ordinary_arithmetic = next_number 3 + 4;</span></span>
+<span data-line=""><span>(* ordinary_arithmetic = 8 *)</span></span></code></pre></figure>
+<p>对整数另取名字的收益不大，但记录和复杂元组越长，别名就越能帮助表达用途。它主要改善表达，不会替我们施加“页数必须非负”一类新约束。</p>
+<h2 id="回到原课一张牌就是花色与牌面的组合">回到原课：一张牌就是花色与牌面的组合</h2>
+<p>上一篇的纸牌例子很适合取名：每张牌同时有一个 <code>suit</code> 和一个 <code>rank</code>。为让本段可单独运行，下面重新列出它需要的两个数据类型，再把 <code>suit * rank</code> 命名为 <code>card</code>。</p>
+<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>datatype suit = Club | Diamond | Heart | Spade;</span></span>
+<span data-line=""><span>datatype rank = Jack | Queen | King | Ace | Num of int;</span></span>
+<span data-line=""><span>type card = suit * rank;</span></span>
+<span data-line=""> </span>
+<span data-line=""><span>fun is_Queen_of_Spades (c : card) =</span></span>
+<span data-line=""><span>    #1 c = Spade andalso #2 c = Queen;</span></span>
+<span data-line=""> </span>
+<span data-line=""><span>val c1 : card = (Spade,Ace);</span></span>
+<span data-line=""><span>val c2 : suit * rank = (Spade,Ace);</span></span>
+<span data-line=""><span>val c3 = (Spade,Ace);</span></span>
+<span data-line=""><span>val queen_check = is_Queen_of_Spades (Spade,Queen);</span></span>
+<span data-line=""><span>val ace_check = is_Queen_of_Spades c1;</span></span>
+<span data-line=""><span>(* queen_check = true；ace_check = false *)</span></span></code></pre></figure>
+<p><code>c1</code>、<code>c2</code>、<code>c3</code> 都是同一种类型的值，恰好都是黑桃 A。函数要求 <code>card</code>，并不会拒绝用 <code>suit * rank</code> 说明的值；它先用 <code>#1</code> 读取花色，再用 <code>#2</code> 读取牌面，判断二者是否分别为 <code>Spade</code>、<code>Queen</code>。</p>
+<p>因此，当练习要求一个 <code>card -> bool</code> 的函数，而解释器显示 <code>suit * rank -> bool</code> 时，类型要求没有被违反。后面改用模式匹配而省略参数标注后，工具更可能自行选择展开写法；只要两种类型确实由这个别名相连，就可以按相同类型理解。</p>
+<p>V9 还给前篇“始终有姓名，可能有学号”的记录取名。下面是完整的类型写法，不是建立学生数据的表达式；字段后面放的是类型。</p>
+<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>type name_record = {student_num:int option,</span></span>
+<span data-line=""><span>                    first:string,</span></span>
+<span data-line=""><span>                    middle:string option,</span></span>
+<span data-line=""><span>                    last:string};</span></span>
+<span data-line=""><span>val student : name_record = {student_num=NONE,</span></span>
+<span data-line=""><span>                             first="Ada", middle=NONE, last="Lovelace"};</span></span></code></pre></figure>
+<p><code>name_record</code> 让后面的函数不用反复抄这四个字段。<code>NONE</code> 仍然正常表示学号或中间名缺失；这里没有增加新的“姓名记录标记”。</p>
+<h2 id="datatype-与-type差别要看有没有新的数据边界">datatype 与 type，差别要看有没有新的数据边界</h2>
+<p>容易混淆的是：二者都可以引入一个类型名，但 <code>datatype</code> 会建立新的类型，而 <code>type</code> 只是同一类型的别名。假设想把页数明确包装成一种数据，可以定义下面这个只有一种形状的新类型；它与原来的 <code>int</code> 不再是同一类型。</p>
+<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>datatype page_count = PageCount of int;</span></span>
+<span data-line=""><span>fun unwrap_pages p =</span></span>
+<span data-line=""><span>    case p of PageCount n => n;</span></span>
+<span data-line=""><span>val wrapped = PageCount 12;</span></span>
+<span data-line=""><span>val unwrapped = unwrap_pages wrapped;</span></span>
+<span data-line=""><span>(* unwrapped = 12 *)</span></span></code></pre></figure>
+<p><code>PageCount 12</code> 中有构造器标记，<code>unwrap_pages</code> 要用模式取得里面的 12；别名的 <code>foo</code> 不需要也没有这种包装。下面是单独观察的<strong>预期类型错误</strong>，沿用上面的 <code>unwrap_pages</code>。</p>
+<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>(* 预期：类型错误，普通 int 不是 page_count。 *)</span></span>
+<span data-line=""><span>val wrong_pages = unwrap_pages 12;</span></span></code></pre></figure>
+<p>新类型可以帮助阻止把不同含义的数据直接混用，但这条声明本身也没有禁止 <code>PageCount (~3)</code>。类型边界与具体数值范围仍是两回事，不能因为起了一个符合业务含义的名字，就认定所有业务条件已经受检查。</p>
+<h2 id="什么时候值得取别名">什么时候值得取别名</h2>
+<p>当同一段结构多次出现，或者类型名能直接说明它的用途时，别名很有用。它让人看到“这是牌”“这是阅读记录”，同时保留与原结构完全互通的便利。</p>
+<p>但别名不是隐藏实现或禁止混用的机制。原课后续讲模块时会在这项能力上继续构建更强的规则；本节只需要把当前结论把握准确：<strong>换一个类型名称，不等于换一种数据类型。</strong></p>
+<h2 id="对应原课与回看线索">对应原课与回看线索</h2>
+<p>本篇对应 Coursera <strong>V9 Type Synonyms</strong>。保留 <code>card</code>、<code>name_record</code>、<code>is_Queen_of_Spades</code>、<code>c1/c2/c3</code> 的互换，以及解释器显示别名或展开类型都正确的关系。阅读记录与 <code>page_count</code> 是补充对比例子。</p>
+<ul class="rin-list rin-list-unordered">
+<li><a href="https://www.coursera.org/learn/programming-languages/lecture/iUbrq/type-synonyms">V9 官方视频</a></li>
+<li><a href="https://courses.cs.washington.edu/courses/cse341/19sp/unit2notes.pdf">官方 Unit 2 阅读笔记，第 8–9 页</a></li>
+<li><a href="https://courses.cs.washington.edu/courses/cse341/19sp/videos/unit2/uncaptioned/027-type-synonyms.mp4">UW 同主题视频</a></li>
+</ul>
+<p>V 编号按 Coursera 顺序；UW 目录中的 Type Synonyms 与 Another Expression Example 排序不同。</p></article><nav class="chapter-switcher" aria-label="章节导航"><a rel="prev" href="../03-recursive-datatypes/index.html">← 03 把算式存成一棵树，再沿树计算</a><a class="course-home" href="../index.html">全部 13 篇</a><a rel="next" href="../05-polymorphic-datatypes/index.html">05 list、option 和类型参数，原来是一套规则 →</a></nav><footer class="lesson-footer">本系列依据 Dan Grossman 的 Programming Languages, Part A · Section 2 制作原创中文学习讲解，按问题重新组织解释与示例；不是逐字翻译或官方译本。<br><a href="../index.html#sources">来源与 22 段视频映射</a> · <a href="../../programming-languages-a-section-1/index.html">返回第一周</a> · 资料核对与制作：2026-10-17</footer></main><script type="module" src="../../programming-languages-a-section-1/visuals.mjs"></script></body></html>
