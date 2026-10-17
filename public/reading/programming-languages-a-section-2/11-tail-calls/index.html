@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="递归之后还有没有事情要做 · Dan Grossman 编程语言第二周中文讲解"><title>递归之后还有没有事情要做 · 编程语言第二周 · RIN III</title><link rel="stylesheet" href="../../reader.css"><link rel="stylesheet" href="../../programming-languages-a-section-1/lesson.css"><link rel="stylesheet" href="../lesson.css"><link rel="manifest" href="../../../manifest.webmanifest"></head><body class="pl-course pl-section-two"><nav class="site-nav"><a href="../index.html">← 编程语言 · 第二周</a><a href="../../programming-languages-a-section-1/index.html">第一周</a><a href="https://www.coursera.org/learn/programming-languages">原课程 ↗</a></nav><main class="reader"><header class="chapter-header"><span class="chapter-kicker">第二周 · 11 / 13 · 原创中文讲解</span><h1>递归之后还有没有事情要做</h1><p class="lead">对照两种阶乘的调用过程，找出等待的乘法，再用尾位置规则判断一次调用能否直接交回结果。</p><p class="byline">原课程：Dan Grossman · Programming Languages, Part A · Section 2</p><details class="source-details"><summary>对应视频与来源</summary><ul><li><a href="https://www.coursera.org/learn/programming-languages/lecture/YZic1/tail-recursion">V20 · Tail Recursion</a></li></ul><p>本系列依据 Dan Grossman 的 Programming Languages, Part A · Section 2 制作原创中文学习讲解，按问题重新组织解释与示例；不是逐字翻译或官方译本。</p><p>结合对应视频官方英文字幕、<a href="https://courses.cs.washington.edu/courses/cse341/19sp/unit2notes.pdf">Unit 2 讲义</a>、<a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec4slides.pdf">Lecture 4</a> / <a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec5slides.pdf">Lecture 5</a> / <a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec6slides.pdf">Lecture 6 幻灯片</a>与 <a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec4.sml">lec4.sml</a> / <a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec5.sml">lec5.sml</a> / <a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec6.sml">lec6.sml</a>核对。V 编号按 Coursera Section 2 的顺序，UW 公开视频目录的同主题顺序有少量差异。<a href="../index.html#sources">完整范围与来源</a>。</p></details><details class="lesson-toc"><summary>本篇目录</summary><ol><li class="toc-h2"><a href="#递归下去以后原来的调用还在等什么">递归下去以后，原来的调用还在等什么</a></li><li class="toc-h2"><a href="#函数没有完成就还要保留它的工作">函数没有完成，就还要保留它的工作</a></li><li class="toc-h2"><a href="#只把另一个调用的答案直接交出去">只把另一个调用的答案直接交出去</a></li><li class="toc-h2"><a href="#写在最后不等于尾位置">“写在最后”不等于尾位置</a></li><li class="toc-h2"><a href="#尾递归是位置条件不是新语法">尾递归是位置条件，不是新语法</a></li><li class="toc-h2"><a href="#对应原课程与来源">对应原课程与来源</a></li></ol></details><nav class="chapter-switcher" aria-label="章节导航"><a rel="prev" href="../10-exceptions/index.html">← 10 异常：这次计算无法交回答案时</a><a class="course-home" href="../index.html">全部 13 篇</a><a rel="next" href="../12-accumulators/index.html">12 累加器：把等待的工作带到下一步 →</a></nav></header><article class="lesson-article translated-article"><h2 id="递归下去以后原来的调用还在等什么">递归下去以后，原来的调用还在等什么</h2>
+<p>前面用异常看过一种中断计算的路径。现在回到正常返回：一个函数调用另一个函数时，自己有哪些工作必须留到以后？这个问题决定了某些递归为什么需要越来越多的调用栈空间，而另一些可以一直复用同一小块空间。</p>
+<p>先看原课的阶乘函数。输入非负整数 <code>n</code>，输出从 <code>n</code> 乘到1的结果；<code>0</code> 的阶乘按定义是 <code>1</code>。</p>
+<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>fun fact1 n =</span></span>
+<span data-line=""><span>    if n=0 then 1</span></span>
+<span data-line=""><span>    else n * fact1 (n-1)</span></span>
+<span data-line=""> </span>
+<span data-line=""><span>val six = fact1 3</span></span>
+<span data-line=""><span>val one = fact1 0</span></span></code></pre></figure>
+<p><code>six</code> 是 <code>6</code>，<code>one</code> 是 <code>1</code>。这里先限定非负整数：负数会不断减一，不能走到这条终止分支。结果能否由实现的整数范围表示，也是运行时的另一个条件；我们先用这些小输入看清控制过程。</p>
+<h2 id="函数没有完成就还要保留它的工作">函数没有完成，就还要保留它的工作</h2>
+<p>调用 <code>fact1 3</code> 时，函数不能立刻完成乘法，因为右边的 <code>fact1 2</code> 还没有答案。它需要记住：“等尾部结果回来，再乘以3。”下一次调用也一样，要记住回来后乘以2。</p>
+<table>
+<thead>
+<tr>
+<th>当前进入的调用</th>
+<th>已经知道的值</th>
+<th>还没完成的工作</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>fact1 3</code></td>
+<td><code>n=3</code></td>
+<td><code>3 * 后续结果</code></td>
+</tr>
+<tr>
+<td><code>fact1 2</code></td>
+<td><code>n=2</code></td>
+<td><code>2 * 后续结果</code></td>
+</tr>
+<tr>
+<td><code>fact1 1</code></td>
+<td><code>n=1</code></td>
+<td><code>1 * 后续结果</code></td>
+</tr>
+<tr>
+<td><code>fact1 0</code></td>
+<td><code>n=0</code></td>
+<td>直接返回 <code>1</code></td>
+</tr>
+</tbody>
+</table>
+<p>运行时用<strong>调用栈</strong>管理这种“已开始但还没结束”的调用。每次调用对应一份记录，保存局部值和回来后要继续的位置，这份记录叫栈帧。相同函数可以同时有多个栈帧，因为 <code>fact1 3</code> 与 <code>fact1 2</code> 是两次调用，参数和等待的乘法都不同。</p>
+<figure class="course-original" id="original-ordinary-recursion-stack"><a href="../figures/ordinary-recursion-stack.png" aria-label="对照原课图：等待的乘法留在调用栈里：打开大图"><img src="../figures/ordinary-recursion-stack.png" alt="fact3普通递归的栈快照：等待乘3、乘2、乘1的帧随下潜增加，fact0返回1后再逐层完成乘法" loading="lazy"></a><figcaption><strong>对照原课图：等待的乘法留在调用栈里</strong><br>原图的 fact 对应本文的 fact1，从 fact 3 出发，答案为 6。请按上排从左到右、再下排从左到右阅读：每一列是不同时间的栈快照。计算 fact 0 以前，外层分别还在等 3×、2×、1×；取得 1 后才能逐层相乘。这些快照不是同一时刻并排存在的多份调用栈。<br><a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec6slides.pdf#page=11">Dan Grossman / University of Washington, CSE341 Spring 2019 · Lecture 6 slides 第 11 页</a> · 点击图片看大图</figcaption></figure>
+<p>原课图横向的每一列是不同时间的快照，不能把几列再叠成一个更大的栈。最深处同时存在 <code>3、2、1、0</code> 四次阶乘调用；<code>0</code> 返回1后，<code>1</code> 那层算出1，<code>2</code> 那层算出2，最外层才算出6。算完的调用逐层退出。</p>
+<p>调用 <code>fact1 n</code> 时，这样等待的层数随 <code>n</code> 增长。不是所有递归都必然如此；关键在于回来以后是否真的还有工作。下一篇会改变计算安排，把这些乘法提前做掉，但我们先把判定标准说清楚。</p>
+<p>也可以用未完成的表达式来读同一过程：<code>3 * fact1 2</code> 变成 <code>3 * (2 * fact1 1)</code>，再变成 <code>3 * (2 * (1 * fact1 0))</code>。这些括号并不是已经算好的乘积，而是每一层在等的工作。只有最里面得到1以后，外层才能依次完成；调用栈记录的正是这种继续位置。</p>
+<h2 id="只把另一个调用的答案直接交出去">只把另一个调用的答案直接交出去</h2>
+<p>假设一个函数在某条分支中，接下来只调用另一个函数，并直接把它的结果作为自己的结果。它既不再加一、不再乘某个数，也不需要拿这个结果去做第二件事，这次调用就处在<strong>尾位置</strong>，是一次尾调用。</p>
+<p>在已经定义 <code>fact1</code> 的前提下，下面的 <code>finish</code> 提供了一个简单例子。输入负数时返回0，其他输入直接把阶乘函数的结果交出去。</p>
+<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>fun finish n =</span></span>
+<span data-line=""><span>    if n &#x3C; 0 then 0</span></span>
+<span data-line=""><span>    else fact1 n</span></span>
+<span data-line=""> </span>
+<span data-line=""><span>val finished = finish 3</span></span></code></pre></figure>
+<p><code>finished</code> 是 <code>6</code>。<code>finish</code> 对 <code>fact1</code> 的调用是尾调用，即使被调用的不是它自己。<code>fact1</code> 内部对自身的调用仍然不是尾调用，因为返回后还要做乘法。所以尾调用描述的是某个具体调用所在的位置，不是给一个函数盖上“所有地方都很省空间”的印章。</p>
+<p>实现支持尾调用优化时，不必一直保留那个只准备转交答案的调用者；可以让被调用者复用它的调用栈空间。函数式语言如 ML 把这种能力作为重要的效率基础，使合适的递归能像循环一样，不随着迭代次数增加调用栈深度。这里节省的是调用栈，并不是说输入数据、结果数据也从此不占空间。</p>
+<p>因此 <code>finish</code> 这一个尾调用最多省掉自己那份等待记录，不能顺便消除 <code>fact1</code> 内部一层层等待的乘法。判断整个计算会用多少栈空间，仍要继续看被调用函数的行为。只发现最外层有一次尾调用，不足以推断深处的递归也能保持固定栈深度。</p>
+<h2 id="写在最后不等于尾位置">“写在最后”不等于尾位置</h2>
+<p><code>fact1</code> 的递归调用已经写在函数最后一行，但它仍然嵌在乘法里。真正最后完成的是乘法，不是那个调用。相反，先算好调用的参数，再进行最后一次调用，是允许的：需要检查的是调用回来以后还有没有工作，而不是调用之前有没有做运算。</p>
+<p>尾位置还可以按表达式结构从外向里判断。下面的规则摘自原课程后面的精确定义，放在这里帮助阅读接下来的代码。</p>
+<table>
+<thead>
+<tr>
+<th>外层表达式</th>
+<th>哪些内部位置可以继续是尾位置</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>fun f p = e</code></td>
+<td>函数体 <code>e</code> 本身是尾位置</td>
+</tr>
+<tr>
+<td>尾位置中的 <code>if e1 then e2 else e3</code></td>
+<td><code>e2</code>、<code>e3</code> 是；测试 <code>e1</code> 不是</td>
+</tr>
+<tr>
+<td>尾位置中的 <code>case e of ...</code></td>
+<td>各分支结果表达式是；被检查的 <code>e</code> 不是</td>
+</tr>
+<tr>
+<td>尾位置中的 <code>let ... in e end</code></td>
+<td><code>in</code> 后的主体 <code>e</code> 是；绑定右边的表达式不是</td>
+</tr>
+<tr>
+<td>一个函数调用</td>
+<td>整体可能是；用于算函数和参数的子表达式不是</td>
+</tr>
+</tbody>
+</table>
+<p>如果一个表达式已经不在尾位置，它内部的子表达式也不会突然变成当前函数的尾位置，因为外面那件未完成的事仍在等着。比如 <code>f (g x)</code> 整体可能是尾调用，但 <code>g x</code> 必须先返回，再执行 <code>f</code>，所以 <code>g x</code> 不是。</p>
+<p>如果 <code>let</code> 里面定义了另一个函数，判断那个函数自身的递归时，要从它自己的函数体重新开始。它与外层函数属于不同的判断范围；这也是下一篇能在局部辅助函数中安排尾调用的原因。</p>
+<p>同理，<code>let val answer = fact1 n in answer end</code> 中的调用位于绑定右边，按这些规则不是尾位置：正常的表达式求值仍要完成绑定并求值主体。一个实现可能另做简化优化，但那是另一回事；判断源代码的尾位置时不需要猜测这些优化。</p>
+<h2 id="尾递归是位置条件不是新语法">尾递归是位置条件，不是新语法</h2>
+<p>当一个递归函数的所有递归调用都是尾调用时，就称它为尾递归函数。我们没有添加新的 ML 关键字，仍然使用前面学过的函数、模式、分支和局部绑定，只是重新安排了工作。</p>
+<p>现在看求和也能判断：<code>i + sum1 rest</code> 在调用回来后还有加法，因此不是尾调用；如果某个辅助函数已经把新的总和算进参数，最后直接调用下一步，就有机会成为尾调用。下一篇会用阶乘、求和、反转三个完整例子，把“提前算进参数”变成可跟踪的步骤。</p>
+<h2 id="对应原课程与来源">对应原课程与来源</h2>
+<p>本文主要对应 <a href="https://www.coursera.org/learn/programming-languages/lecture/YZic1/tail-recursion">V20 Tail Recursion</a>；尾位置的结构规则提前取自 <a href="https://www.coursera.org/learn/programming-languages/lecture/NyJkW/perspective-on-tail-recursion">V22 Perspective on Tail Recursion</a>，后文将用它讨论实际取舍。依据官方视频、<a href="https://courses.cs.washington.edu/courses/cse341/19sp/unit2notes.pdf">UW Unit 2 讲义第18–20页</a> 与 <a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec6slides.pdf">Lecture 6 幻灯片</a> 原创重组。</p></article><nav class="chapter-switcher" aria-label="章节导航"><a rel="prev" href="../10-exceptions/index.html">← 10 异常：这次计算无法交回答案时</a><a class="course-home" href="../index.html">全部 13 篇</a><a rel="next" href="../12-accumulators/index.html">12 累加器：把等待的工作带到下一步 →</a></nav><footer class="lesson-footer">本系列依据 Dan Grossman 的 Programming Languages, Part A · Section 2 制作原创中文学习讲解，按问题重新组织解释与示例；不是逐字翻译或官方译本。<br><a href="../index.html#sources">来源与 22 段视频映射</a> · <a href="../../programming-languages-a-section-1/index.html">返回第一周</a> · 资料核对与制作：2026-10-17</footer></main><script type="module" src="../../programming-languages-a-section-1/visuals.mjs"></script></body></html>

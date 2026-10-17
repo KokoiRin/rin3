@@ -47,3 +47,7 @@ order: 50
 ## 原课程与讲解范围
 
 对应 17 段视频的全部主题，合并为 13 篇连续讲解。来源、课程主题与各篇的对应关系见[系列目录](../../reading/programming-languages-a-section-1/index.html#video-map)；原课程作者是 Dan Grossman，讲义与示例参考 UW 的公开课程资料。
+
+## 接着读第二周
+
+[第二周：从数据的形状，理解程序的写法](../../reading/programming-languages-a-section-2/index.html)接续这组材料，覆盖组合类型、模式匹配、类型推导、异常与尾递归。

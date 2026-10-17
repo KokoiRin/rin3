@@ -1,0 +1,343 @@
+{
+  "title": "Dan Grossman · Programming Languages, Part A · Section 2",
+  "date": "2026-10-17",
+  "attribution": "本系列依据 Dan Grossman 的 Programming Languages, Part A · Section 2 制作原创中文学习讲解，按问题重新组织解释与示例；不是逐字翻译或官方译本。",
+  "videos": [
+    {
+      "number": 1,
+      "title": "Building Compound Types",
+      "href": "https://www.coursera.org/learn/programming-languages/lecture/vajWW/building-compound-types",
+      "duration": "PT5M34S"
+    },
+    {
+      "number": 2,
+      "title": "Records",
+      "href": "https://www.coursera.org/learn/programming-languages/lecture/dsQ9c/records",
+      "duration": "PT8M25S"
+    },
+    {
+      "number": 3,
+      "title": "Tuples as Syntactic Sugar",
+      "href": "https://www.coursera.org/learn/programming-languages/lecture/e2qVG/tuples-as-syntactic-sugar",
+      "duration": "PT6M6S"
+    },
+    {
+      "number": 4,
+      "title": "Datatype Bindings",
+      "href": "https://www.coursera.org/learn/programming-languages/lecture/vysQv/datatype-bindings",
+      "duration": "PT8M39S"
+    },
+    {
+      "number": 5,
+      "title": "Case Expressions",
+      "href": "https://www.coursera.org/learn/programming-languages/lecture/cHQ9M/case-expressions",
+      "duration": "PT10M50S"
+    },
+    {
+      "number": 6,
+      "title": "Useful Datatypes",
+      "href": "https://www.coursera.org/learn/programming-languages/lecture/GDEgp/useful-datatypes",
+      "duration": "PT11M22S"
+    },
+    {
+      "number": 7,
+      "title": "Pattern Matching So Far",
+      "href": "https://www.coursera.org/learn/programming-languages/lecture/9rnbI/pattern-matching-so-far",
+      "duration": "PT4M37S"
+    },
+    {
+      "number": 8,
+      "title": "Another Expression Example",
+      "href": "https://www.coursera.org/learn/programming-languages/lecture/g7UPb/another-expression-example",
+      "duration": "PT8M1S"
+    },
+    {
+      "number": 9,
+      "title": "Type Synonyms",
+      "href": "https://www.coursera.org/learn/programming-languages/lecture/iUbrq/type-synonyms",
+      "duration": "PT6M19S"
+    },
+    {
+      "number": 10,
+      "title": "Lists and Options are Datatypes",
+      "href": "https://www.coursera.org/learn/programming-languages/lecture/3rCVl/lists-and-options-are-datatypes",
+      "duration": "PT9M10S"
+    },
+    {
+      "number": 11,
+      "title": "Polymorphic Datatypes",
+      "href": "https://www.coursera.org/learn/programming-languages/lecture/pwr1d/polymorphic-datatypes",
+      "duration": "PT8M11S"
+    },
+    {
+      "number": 12,
+      "title": "Each of Pattern Matching / Truth About Functions",
+      "href": "https://www.coursera.org/learn/programming-languages/lecture/FCVA9/each-of-pattern-matching-truth-about-functions",
+      "duration": "PT14M30S"
+    },
+    {
+      "number": 13,
+      "title": "A Little Type Inference",
+      "href": "https://www.coursera.org/learn/programming-languages/lecture/9Flb9/a-little-type-inference",
+      "duration": "PT6M28S"
+    },
+    {
+      "number": 14,
+      "title": "Polymorphic and Equality Types",
+      "href": "https://www.coursera.org/learn/programming-languages/lecture/h6vLm/polymorphic-and-equality-types",
+      "duration": "PT8M"
+    },
+    {
+      "number": 15,
+      "title": "Nested Patterns",
+      "href": "https://www.coursera.org/learn/programming-languages/lecture/LN9El/nested-patterns",
+      "duration": "PT10M32S"
+    },
+    {
+      "number": 16,
+      "title": "More Nested Patterns",
+      "href": "https://www.coursera.org/learn/programming-languages/lecture/hqTYU/more-nested-patterns",
+      "duration": "PT10M43S"
+    },
+    {
+      "number": 17,
+      "title": "Nested Patterns Precisely",
+      "href": "https://www.coursera.org/learn/programming-languages/lecture/1Yb1a/nested-patterns-precisely",
+      "duration": "PT6M35S"
+    },
+    {
+      "number": 18,
+      "title": "Optional: Function Patterns",
+      "href": "https://www.coursera.org/learn/programming-languages/lecture/bJBvW/optional-function-patterns",
+      "duration": "PT3M40S"
+    },
+    {
+      "number": 19,
+      "title": "Exceptions",
+      "href": "https://www.coursera.org/learn/programming-languages/lecture/ytpta/exceptions",
+      "duration": "PT7M47S"
+    },
+    {
+      "number": 20,
+      "title": "Tail Recursion",
+      "href": "https://www.coursera.org/learn/programming-languages/lecture/YZic1/tail-recursion",
+      "duration": "PT9M44S"
+    },
+    {
+      "number": 21,
+      "title": "Accumulators for Tail Recursion",
+      "href": "https://www.coursera.org/learn/programming-languages/lecture/4f7Tw/accumulators-for-tail-recursion",
+      "duration": "PT7M40S"
+    },
+    {
+      "number": 22,
+      "title": "Perspective on Tail Recursion",
+      "href": "https://www.coursera.org/learn/programming-languages/lecture/NyJkW/perspective-on-tail-recursion",
+      "duration": "PT5M33S"
+    }
+  ],
+  "chapters": [
+    {
+      "slug": "01-data-design",
+      "title": "先设计数据的形状：记录与元组",
+      "number": 1,
+      "videoNumbers": [
+        1,
+        2,
+        3
+      ],
+      "sha256": "9ecb697230bc85dfeb349c70dd85c7daca2f8d2e6911a033e38649588829a1ae",
+      "headingCount": 8
+    },
+    {
+      "slug": "02-choices-and-case",
+      "title": "列清几种可能，再用 case 逐一处理",
+      "number": 2,
+      "videoNumbers": [
+        4,
+        5
+      ],
+      "sha256": "809f93cc4d4ae0511bde2e761857ff7f1facb8867f94eb3c04e06d5b1aee5523",
+      "headingCount": 7
+    },
+    {
+      "slug": "03-recursive-datatypes",
+      "title": "把算式存成一棵树，再沿树计算",
+      "number": 3,
+      "videoNumbers": [
+        6,
+        7,
+        8
+      ],
+      "sha256": "0f95b83ded5e4a238633c836fd6a3da30d22eaf135520f53e15fac730477d015",
+      "headingCount": 8
+    },
+    {
+      "slug": "04-type-synonyms",
+      "title": "type：给已有类型起一个名字",
+      "number": 4,
+      "videoNumbers": [
+        9
+      ],
+      "sha256": "b8a84e83731a8d736c534a9eff302fee72e5c46a30f648f5480dd883aa9ee675",
+      "headingCount": 6
+    },
+    {
+      "slug": "05-polymorphic-datatypes",
+      "title": "list、option 和类型参数，原来是一套规则",
+      "number": 5,
+      "videoNumbers": [
+        10,
+        11
+      ],
+      "sha256": "50bacdbfc02910f621b4b45d0b25dbcb71a2fe38ec9630b32ef074e6644d2fc3",
+      "headingCount": 7
+    },
+    {
+      "slug": "06-product-patterns",
+      "title": "用模式拆开记录、元组和函数输入",
+      "number": 6,
+      "videoNumbers": [
+        12
+      ],
+      "sha256": "d0de719f6b1ddcb76bbf28f9e67b9c444c1fafc596e6d3b3f77b2cba09c3cfae",
+      "headingCount": 8
+    },
+    {
+      "slug": "07-type-inference",
+      "title": "类型推导：从代码约束里找出答案",
+      "number": 7,
+      "videoNumbers": [
+        13,
+        14
+      ],
+      "sha256": "72810b00395731c6c0e7d000d9f4e46a4e94197cd5d296777dfc6d78a2d27c16",
+      "headingCount": 6
+    },
+    {
+      "slug": "08-nested-patterns",
+      "title": "嵌套模式：把几层结构一起写清楚",
+      "number": 8,
+      "videoNumbers": [
+        15,
+        16
+      ],
+      "sha256": "0f7185ebb01bad039821fdefa4ad20263763b315205214294e300cd40e07c25b",
+      "headingCount": 7
+    },
+    {
+      "slug": "09-matching-rules",
+      "title": "模式究竟怎样匹配，多分支函数怎样读",
+      "number": 9,
+      "videoNumbers": [
+        17,
+        18
+      ],
+      "sha256": "b65f3995eb4c72cf2f21a50df2bb1b268159f0c331496f836384540132feb3c2",
+      "headingCount": 6
+    },
+    {
+      "slug": "10-exceptions",
+      "title": "异常：这次计算无法交回答案时",
+      "number": 10,
+      "videoNumbers": [
+        19
+      ],
+      "sha256": "bcea6179ad1d80a1223dd7df350cee1adf2d7bb0202502c5737ac64c778cb609",
+      "headingCount": 5
+    },
+    {
+      "slug": "11-tail-calls",
+      "title": "递归之后还有没有事情要做",
+      "number": 11,
+      "videoNumbers": [
+        20
+      ],
+      "sha256": "f6052dd193a1ae8aa7c9d8b28b5378eb155f23ecf4e05caeb84cbb4d324631a1",
+      "headingCount": 6
+    },
+    {
+      "slug": "12-accumulators",
+      "title": "累加器：把等待的工作带到下一步",
+      "number": 12,
+      "videoNumbers": [
+        21
+      ],
+      "sha256": "95e99bbe3a8d816931ee0a812bc18f93dfaa7ae9c93f01cb334e8817849ff165",
+      "headingCount": 6
+    },
+    {
+      "slug": "13-tail-recursion-perspective",
+      "title": "尾递归的取舍：空间、工作量与可读性",
+      "number": 13,
+      "videoNumbers": [
+        22
+      ],
+      "sha256": "219422d955e724818499f0a272492636e3b5e140701bcf2f4caf7171de4d772a",
+      "headingCount": 6
+    }
+  ],
+  "visuals": [
+    {
+      "id": "compound-shapes",
+      "title": "先看数据要同时装什么，还是选择哪一种",
+      "chapter": "01-data-design",
+      "steps": 4
+    },
+    {
+      "id": "case-selection",
+      "title": "TwoInts (7,9) 怎样选中分支并交出16",
+      "chapter": "02-choices-and-case",
+      "steps": 5
+    },
+    {
+      "id": "exp-evaluation",
+      "title": "一棵 exp 树怎样交回整数14",
+      "chapter": "03-recursive-datatypes",
+      "steps": 6
+    },
+    {
+      "id": "product-destructuring",
+      "title": "val 左边的模式，怎样一次取得各个部分",
+      "chapter": "06-product-patterns",
+      "steps": 6
+    },
+    {
+      "id": "inference-constraints",
+      "title": "从代码要求，推到整个函数类型",
+      "chapter": "07-type-inference",
+      "steps": 5
+    },
+    {
+      "id": "nested-pattern-route",
+      "title": "列表里面的元组，怎样一层层拆开",
+      "chapter": "08-nested-patterns",
+      "steps": 5
+    },
+    {
+      "id": "exception-propagation",
+      "title": "内层没有匹配，异常怎样交到外层",
+      "chapter": "10-exceptions",
+      "steps": 5
+    },
+    {
+      "id": "accumulator-work",
+      "title": "等待回来再加，还是先加进下一步参数",
+      "chapter": "12-accumulators",
+      "steps": 7
+    },
+    {
+      "id": "polymorphic-tree",
+      "title": "一棵树可以有哪些类型，取决于函数读了哪些数据",
+      "chapter": "05-polymorphic-datatypes",
+      "steps": 5
+    },
+    {
+      "id": "one-tuple-argument",
+      "title": "一个元组，怎样变成函数体里的三个名字",
+      "chapter": "06-product-patterns",
+      "steps": 6
+    }
+  ],
+  "partial": false
+}

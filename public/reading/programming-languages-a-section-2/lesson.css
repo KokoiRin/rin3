@@ -1,0 +1,7 @@
+/* Reuses the shared reader and Section 1 course/visual styles. */
+.pl-section-two .course-route {display:flex;flex-wrap:wrap;gap:9px;margin:24px 0 10px;font-size:14px;line-height:1.6;color:#315f54}
+.pl-section-two .course-route span {padding:7px 12px;border:1px solid #b6cfc3;border-radius:8px;background:#eef5ed}
+.pl-section-two .course-route span:not(:last-child)::after {content:' →';color:#75998c;margin-left:8px}
+.pl-section-two .lesson-visual {scroll-margin-top:20px}
+.pl-section-two .lesson-article .course-original figcaption {text-align:left}
+@media(max-width:600px){.pl-section-two .course-route{font-size:13px;gap:7px}.pl-section-two .course-route span{padding:6px 9px}}

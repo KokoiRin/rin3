@@ -81,3 +81,12 @@ KaTeX 的 `public/reading/_shared/katex/` 是第三方数学排版资源，不�
 在上述 14 页内补充 16 组可逐步切换的图解，覆盖环境、遮蔽、REPL 会话、函数调用与定义环境、递归返回、元组与列表、Option、短路求值、结构共享及 Java 数组别名。图解的所有步骤同时保存在静态 HTML 中，关闭脚本仍可展开阅读。系列 `visuals.mjs` 负责步骤切换，`graphs.mjs` 以纯函数绘制 SVG；小屏支持全图与放大阅读切换。没有修改共享 Markdown 解析规则。
 
 `figures/` 保存 4 张带出处的原课截图；`visual-coverage.json` 记录 17 段视频的资料定位、对应图解、截图页码与实际复核范围。已渲染检查 92 页 PDF，并抽查 4 处视频画面，未声明逐帧复核全部视频。`tests/pl-visuals.test.mjs` 纳入内容检查，验证右值先求值、遮蔽不改变旧结果、定义环境与局部参数边界，以及静态图解和 SVG 输出。
+
+
+## 2026-10-17：Programming Languages, Part A · 第二周
+
+新增 `public/reading/programming-languages-a-section-2/`：13 篇原创中文讲解与系列目录，覆盖 Coursera Section 2 的 22 段视频，包括可选的 Function Patterns。三部分分别连接数据建模、模式与类型、异常与递归执行；第一周目录、最后一篇和站点导读均提供继续入口。
+
+阅读页面复用 `public/reading/reader.css`，并直接复用第一周的课程 CSS、`visuals.mjs` 与 `graphs.mjs`，不复制相同的图解运行时代码。第二周 `lesson.css` 仅补充路线提示和小屏细节；10 组分步图解的 54 个状态保存在页面内，关闭脚本仍可展开完整过程。`figures/` 保留三张附出处的原课图，`coverage.json` 记录 22 视频主题细节、83 页 PDF 与英文字幕的核对边界，以及原图哈希；`series.json` 保存章节、视频和源文稿哈希。
+
+源 Markdown、官方参考资料、可重复生成器与验证报告留在 `~/Documents/RIN III 草稿/Dan Grossman Section 2/`。`tests/pl-section-two.test.mjs` 纳入内容检查，防止视频主题、章节、静态图解、原图或跨周入口丢失；课程接入 `check:course-readers`。V8/V9 采用 Coursera 的主题顺序，来源记录明确与 UW 补充目录的差异。
