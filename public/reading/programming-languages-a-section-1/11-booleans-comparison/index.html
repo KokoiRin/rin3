@@ -1,87 +1,168 @@
 <!doctype html>
-<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="布尔与比较：读清条件和类型 · Dan Grossman 编程语言课程 Section 1 原创中文讲解"><title>布尔与比较：读清条件和类型 · 编程语言 Part A / Section 1 · RIN III</title><link rel="stylesheet" href="../../reader.css"><link rel="stylesheet" href="../lesson.css"><link rel="manifest" href="../../../manifest.webmanifest"></head><body class="pl-course"><nav class="site-nav"><a href="../index.html">← 编程语言 · Section 1</a><a href="https://www.coursera.org/learn/programming-languages">原课程 ↗</a></nav><main class="reader"><header class="chapter-header"><span class="chapter-kicker">11 / 13 · 原创中文讲解</span><h1>布尔与比较：读清条件和类型</h1><p class="lead">认识短路求值、相等性与顺序比较的适用条件。</p><p class="byline">原课程：Dan Grossman · Programming Languages, Part A</p><p class="lesson-context">名字的范围、计算次数、缺失结果与条件判断。建议按顺序阅读；遇到新符号，先跟随代码的执行过程，再回看规则。</p><details class="source-details"><summary>对应视频与本篇范围</summary><ul><li><a href="https://www.coursera.org/learn/programming-languages/lecture/YvAVp/booleans-and-comparison-operations">V14 · Booleans and Comparison Operations</a></li></ul><p>本系列依据 Dan Grossman 的 Programming Languages, Part A · Section 1 制作原创中文学习讲解，使用自己的解释与示例组织概念；不是逐字翻译、官方译本或课程视频字幕。</p><p>主要参考：对应视频的官方英文字幕、<a href="https://courses.cs.washington.edu/courses/cse341/19sp/unit1notes.pdf">UW Unit 1 讲义</a>、<a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec1slides.pdf">Lecture 1</a> / <a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec2slides.pdf">Lecture 2</a> / <a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec3slides.pdf">Lecture 3 幻灯片</a>及讲师示例。<a href="../index.html#sources">完整来源与映射说明</a>。</p></details><details class="lesson-toc"><summary>本篇目录</summary><ol><li class="toc-h2"><a href="#小运算符也有完整的语言规则">小运算符也有完整的语言规则</a></li><li class="toc-h2"><a href="#andalso前面的条件成立才继续检查">andalso：前面的条件成立，才继续检查</a></li><li class="toc-h2"><a href="#orelse第一个条件足够就不再往下算">orelse：第一个条件足够，就不再往下算</a></li><li class="toc-h2"><a href="#not-是普通函数短路运算需要特殊规则">not 是普通函数，短路运算需要特殊规则</a></li><li class="toc-h2"><a href="#相等不等与大小比较">相等、不等与大小比较</a></li><li class="toc-h2"><a href="#减法与取负是两种写法">减法与取负是两种写法</a></li><li class="toc-h2"><a href="#对应原课与回看线索">对应原课与回看线索</a></li></ol></details><nav class="chapter-switcher" aria-label="章节导航"><a rel="prev" href="../10-options/index.html">← 10 Option：明确表达可能没有结果</a><a class="course-home" href="../index.html">全部 13 篇</a><a rel="next" href="../12-immutability/index.html">12 不可变：旧值不变，推理怎样变简单 →</a></nav></header><article class="lesson-article translated-article"><h2 id="小运算符也有完整的语言规则">小运算符也有完整的语言规则</h2>
-<p>前一篇中，<code>isSome answer andalso valOf answer > 0</code> 能安全运行，靠的是 <code>andalso</code> 的求值规则。布尔运算不只是记住一个符号；它还决定右边会不会执行。</p>
-<p>这一篇把第一节用到的布尔运算、比较和取负补齐。继续沿用相同的方法：它怎样写、需要什么类型、最后怎样得到值。</p>
-<h2 id="andalso前面的条件成立才继续检查">andalso：前面的条件成立，才继续检查</h2>
-<p><code>e1 andalso e2</code> 要求两边的类型都是 <code>bool</code>，整个表达式也为 <code>bool</code>。执行时先计算 <code>e1</code>：若为 <code>false</code>，结果立即为 <code>false</code>；若为 <code>true</code>，才求值 <code>e2</code>。</p>
-<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>val safe = isSome (NONE : int option)</span></span>
-<span data-line=""><span>           andalso valOf (NONE : int option) > 0</span></span>
-<span data-line=""><span>(* false；右侧未求值 *)</span></span></code></pre></figure>
-<p>从求值含义看，<code>e1 andalso e2</code> 对应：</p>
-<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>if e1 then e2 else false</span></span></code></pre></figure>
-<p>直接写 <code>andalso</code> 更简洁，也更清楚地表达“两个条件都要满足”。这与许多语言中的 <code>&#x26;&#x26;</code> 扮演类似角色，但 SML 写的是 <code>andalso</code>，不是 <code>&#x26;&#x26;</code>，也不是 <code>and</code>。<code>and</code> 是语言里的另一个关键字，后面会遇到。</p>
-<p>短路不会免除类型检查。<code>false andalso 3</code> 仍然不合法：即使运行时用不到右边，它也必须有 <code>bool</code> 类型。与 <code>if</code> 一样，要把静态检查和动态求值分开理解。</p>
-<h2 id="orelse第一个条件足够就不再往下算">orelse：第一个条件足够，就不再往下算</h2>
-<p><code>e1 orelse e2</code> 同样要求两边都是 <code>bool</code>。先计算 <code>e1</code>，如果已经是 <code>true</code>，整个结果就是 <code>true</code>；只有它为 <code>false</code> 时，才求值右边。</p>
-<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>fun empty_or_positive_first (xs : int list) =</span></span>
-<span data-line=""><span>    null xs orelse hd xs > 0</span></span>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="布尔与比较：先检查，再安全读取 · Dan Grossman 编程语言课程 Section 1 原创中文讲解"><title>布尔与比较：先检查，再安全读取 · 编程语言 Part A / Section 1 · RIN III</title><link rel="stylesheet" href="../../reader.css"><link rel="stylesheet" href="../lesson.css"><link rel="manifest" href="../../../manifest.webmanifest"></head><body class="pl-course"><nav class="site-nav"><a href="../index.html">← 编程语言 · Section 1</a><a href="https://www.coursera.org/learn/programming-languages">原课程 ↗</a></nav><main class="reader"><header class="chapter-header"><span class="chapter-kicker">11 / 13 · 原创中文讲解</span><h1>布尔与比较：先检查，再安全读取</h1><p class="lead">沿最大值函数解释有条件的读取，再补齐真假运算、大小比较和数值类型的规则。</p><p class="byline">原课程：Dan Grossman · Programming Languages, Part A</p><details class="source-details"><summary>对应视频与本篇范围</summary><ul><li><a href="https://www.coursera.org/learn/programming-languages/lecture/YvAVp/booleans-and-comparison-operations">V14 · Booleans and Comparison Operations</a></li></ul><p>本系列依据 Dan Grossman 的 Programming Languages, Part A · Section 1 制作原创中文学习讲解，使用自己的解释与示例组织概念；不是逐字翻译、官方译本或课程视频字幕。</p><p>主要参考：对应视频的官方英文字幕、<a href="https://courses.cs.washington.edu/courses/cse341/19sp/unit1notes.pdf">UW Unit 1 讲义</a>、<a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec1slides.pdf">Lecture 1</a> / <a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec2slides.pdf">Lecture 2</a> / <a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec3slides.pdf">Lecture 3 幻灯片</a>及讲师示例。<a href="../index.html#sources">完整来源与映射说明</a>。</p></details><details class="lesson-toc"><summary>本篇目录</summary><ol><li class="toc-h2"><a href="#尾部没有答案时为什么没有读出错">尾部没有答案时，为什么没有读出错</a></li><li class="toc-h2"><a href="#andalso先满足左边才需要右边">andalso：先满足左边，才需要右边</a></li><li class="toc-h2"><a href="#orelse左边已经足够就不用再检查">orelse：左边已经足够，就不用再检查</a></li><li class="toc-h2"><a href="#写对名字也要知道它是不是普通函数">写对名字，也要知道它是不是普通函数</a></li><li class="toc-h2"><a href="#条件已经给出了真假就直接使用它">条件已经给出了真假，就直接使用它</a></li><li class="toc-h2"><a href="#读到的数怎样继续比较">读到的数，怎样继续比较</a></li><li class="toc-h3"><a href="#相等比较还要看里面的数据类型">相等比较还要看里面的数据类型</a></li><li class="toc-h2"><a href="#最后分清减法和取负">最后分清减法和取负</a></li><li class="toc-h2"><a href="#对应原课与回看线索">对应原课与回看线索</a></li></ol></details><nav class="chapter-switcher" aria-label="章节导航"><a rel="prev" href="../10-options/index.html">← 10 Option：没有记录时，怎样回答</a><a class="course-home" href="../index.html">全部 13 篇</a><a rel="next" href="../12-immutability/index.html">12 不可变：一份数据被多处使用时 →</a></nav></header><article class="lesson-article translated-article"><h2 id="尾部没有答案时为什么没有读出错">尾部没有答案时，为什么没有读出错</h2>
+<p>上一篇已经让 <code>max_option</code> 明确返回两种结果：空列表得到 <code>NONE</code>，非空列表得到 <code>SOME 最大值</code>。现在继续看它处理一条阅读记录 <code>[12]</code> 的过程：当前头部是 12，剩下的尾部却是空列表。</p>
+<p>函数先向尾部询问最大值，因此 <code>tailAnswer</code> 得到 <code>NONE</code>。接下来要判断“尾部有答案，而且尾部答案比当前的 12 更大”，才能决定是否沿用它。这里真正的问题是：<strong>还没有答案时，怎样避免去读取那个不存在的整数？</strong></p>
+<p>下面摘出上一篇函数中这一步判断。<code>pages</code> 是正在处理的非空记录，<code>max_option</code> 仍是上一篇已经定义好的函数；这几行只是把同一次递归中的中间结果单独摆出来：</p>
+<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>val pages = [12]</span></span>
+<span data-line=""><span>val tailAnswer = max_option (tl pages)  (* NONE *)</span></span>
 <span data-line=""> </span>
-<span data-line=""><span>val a = empty_or_positive_first []      (* true，不读取 hd [] *)</span></span>
-<span data-line=""><span>val b = empty_or_positive_first [3,~2]  (* true *)</span></span>
-<span data-line=""><span>val c = empty_or_positive_first [~1,4]  (* false *)</span></span></code></pre></figure>
-<p>它对应 <code>if e1 then true else e2</code>。SML 用的是 <code>orelse</code>，不是 <code>||</code> 或 <code>or</code>。</p>
-<p>注意先后顺序也是算法的一部分。把表达式交换成 <code>hd xs > 0 orelse null xs</code>，对空列表就会先读头部并抛异常。虽然逻辑学中的“或”可交换，但可能失败或有副作用的程序表达式，还必须考虑执行顺序。</p>
-<h2 id="not-是普通函数短路运算需要特殊规则">not 是普通函数，短路运算需要特殊规则</h2>
-<p><code>not</code> 的类型是 <code>bool -> bool</code>，可以理解成这样定义的函数：</p>
-<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>fun my_not (b : bool) =</span></span>
-<span data-line=""><span>    if b then false else true</span></span>
-<span data-line=""> </span>
-<span data-line=""><span>val result = not (3 &#x3C; 2)  (* true *)</span></span></code></pre></figure>
-<p>函数调用会先求出实参的值，再进入函数体。因此，不能把 <code>andalso</code> 随意换成一个接收两个布尔参数的普通函数来保留短路。</p>
-<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>fun both (a : bool, b : bool) =</span></span>
-<span data-line=""><span>    if a then b else false</span></span></code></pre></figure>
-<p>调用 <code>both (false, 1 div 0 = 0)</code> 时，第二个实参仍然需要先被求值，因而会除零失败；<code>false andalso (1 div 0 = 0)</code> 则直接得到 <code>false</code>。这个差别来自函数调用和条件表达式各自的求值规则。</p>
-<p>在其他语言里取反常写 <code>!</code>；在 SML 里写 <code>not</code>。<code>!</code> 有另外的用途，涉及后面才学习的可变引用。</p>
-<p>还有一个常见的冗余写法：<code>if e then true else false</code>。它只是把 <code>e</code> 的布尔结果原样返回，直接写 <code>e</code> 即可。这里的前提是 <code>e</code> 本身为布尔表达式；相反的 <code>if e then false else true</code> 则可以写成 <code>not e</code>。这些改写说明：有 <code>if</code> 就足以表达这些逻辑，但专门的布尔写法更容易让读者认出意图。</p>
-<h2 id="相等不等与大小比较">相等、不等与大小比较</h2>
+<span data-line=""><span>val useTail =</span></span>
+<span data-line=""><span>    isSome tailAnswer andalso valOf tailAnswer > hd pages</span></span>
+<span data-line=""><span>(* false *)</span></span></code></pre></figure>
+<p><code>isSome tailAnswer</code> 先得到 <code>false</code>。到了这里，<code>andalso</code> 已经知道两个条件不可能同时成立，于是直接得到 <code>false</code>，不再执行右边的 <code>valOf tailAnswer</code>。<code>max_option</code> 因而走到另一个分支，把当前的 12 包成 <code>SOME 12</code>。</p>
+<p>如果真的执行 <code>valOf NONE</code>，它会抛出 <code>Option</code> 异常。保护它的不是变量名，也不是 <code>NONE</code> 会自动变成 0，而是这条明确的执行顺序。</p>
+<h2 id="andalso先满足左边才需要右边">andalso：先满足左边，才需要右边</h2>
+<p>这里的 <code>andalso</code> 表示“并且”。左边必须成立，右边才有继续检查的必要；这种可以提前结束、不计算剩余部分的行为，叫作<strong>短路求值</strong>。</p>
+<p>继续沿用 <code>max_option</code> 的判断，三种情况就都接上了：</p>
 <table>
 <thead>
 <tr>
-<th>目的</th>
-<th>SML 写法</th>
-<th>例子</th>
+<th>当前头部</th>
+<th>尾部答案</th>
+<th>判断怎样进行</th>
+<th>是否沿用尾部答案</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>相等</td>
-<td><code>=</code></td>
-<td><code>3 = 3</code> 得到 <code>true</code></td>
+<td><code>12</code></td>
+<td><code>NONE</code></td>
+<td>左边为 <code>false</code>，跳过读取</td>
+<td>否</td>
 </tr>
 <tr>
-<td>不等</td>
-<td><code>&#x3C;></code></td>
-<td><code>3 &#x3C;> 4</code> 得到 <code>true</code></td>
+<td><code>12</code></td>
+<td><code>SOME 18</code></td>
+<td>左边为 <code>true</code>，继续比较 <code>18 > 12</code></td>
+<td>是</td>
 </tr>
 <tr>
-<td>小于或大于</td>
-<td><code>&#x3C;</code>、<code>></code></td>
-<td><code>3 &#x3C; 4</code> 得到 <code>true</code></td>
-</tr>
-<tr>
-<td>不大于或不小于</td>
-<td><code>&#x3C;=</code>、<code>>=</code></td>
-<td><code>4 >= 4</code> 得到 <code>true</code></td>
+<td><code>12</code></td>
+<td><code>SOME 8</code></td>
+<td>左边为 <code>true</code>，继续比较 <code>8 > 12</code></td>
+<td>否</td>
 </tr>
 </tbody>
 </table>
-<p>这里的 <code>=</code> 是相等判断，不是赋值。<code>&#x3C;></code> 表达“不等”比 <code>not (e1 = e2)</code> 更直接；不要照搬 <code>==</code> 或 <code>!=</code>。</p>
-<p>大小比较不仅能用于整数，也能用于 SML 支持的实数、字符串和字符等类型，但<strong>两边必须在相应运算支持的同一种类型上匹配</strong>。语言不会自动把一个整数和一个实数混合起来比较。例如 <code>3 &#x3C; 4.0</code> 不能直接通过类型检查，需要先明确转换。字符串的顺序是字符序列的词典序，不是中文语义上的排序。</p>
-<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>val converted = Real.fromInt 3  (* 3.0 *)</span></span>
-<span data-line=""><span>val comparable = Real.fromInt 3 &#x3C; 4.0  (* true *)</span></span></code></pre></figure>
-<p>相等运算的适用范围也有限制。整数、布尔值、字符串，以及元素允许相等比较的列表和元组，都可以进行相等比较。函数不能拿来直接判等；SML 的 <code>real</code> 也不属于允许使用通用 <code>=</code> 的相等类型，因此 <code>3.0 = 3.0</code> 不是一个合法例子。这些限制会在后续讲多态和 equality types 时进一步展开。</p>
-<p>原课借此提醒：浮点计算可能有舍入误差，很多数值问题真正关心的是两个结果的差是否在允许范围内，而不是直接判等。补充一个示意写法：<code>Real.abs (x-y) &#x3C; 0.000001</code>；实际容差应由问题的尺度、误差要求等决定，这个常数不是通用标准。</p>
-<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>val sameList = [1,2] = [1,2]       (* true，比较内容 *)</span></span>
-<span data-line=""><span>val samePair = (1,true) = (1,true) (* true *)</span></span>
-<span data-line=""><span>val different = "ML" &#x3C;> "Java"    (* true *)</span></span></code></pre></figure>
-<p>此时只需记住：一个运算符能用于某种类型，是这门语言的规则决定的；不能因为符号看起来熟悉，就默认所有语言的规则完全一样。</p>
-<h2 id="减法与取负是两种写法">减法与取负是两种写法</h2>
-<p>SML 用 <code>-</code> 表示两个数相减，用 <code>~</code> 表示取负：</p>
-<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>val difference = 8 - 11  (* ~3 *)</span></span>
-<span data-line=""><span>val negative = ~7       (* ~7 *)</span></span>
-<span data-line=""><span>val opposite = ~negative (* 7 *)</span></span></code></pre></figure>
-<p>所以负七写作 <code>~7</code>，不写 <code>-7</code>。对整数来说，<code>~e</code> 与 <code>0 - e</code> 表达同样的数值运算，前者更直接。取负也可以用于实数，譬如 <code>~2.5</code>。</p>
-<p>补齐这些小规则之后，最大值函数已经完全可以解释清楚：<code>null</code> 决定是否有元素，<code>andalso</code> 保护有条件的读取，<code>></code> 选择更大的数，<code>SOME</code> 把合法答案与缺失情况区分开来。</p>
+<p>把具体名字换成任意表达式，就是 <code>e1 andalso e2</code>：先计算 <code>e1</code>；它为 <code>false</code>，整体就是 <code>false</code>；它为 <code>true</code>，才计算 <code>e2</code>，并把右边的布尔结果作为最终结果。这与下面的 <code>if</code> 具有相同的求值含义：</p>
+<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>if e1 then e2 else false</span></span></code></pre></figure>
+<p>这里的 <code>e1</code>、<code>e2</code> 是说明规则用的占位名字，不是另外定义的函数。两边都必须有 <code>bool</code> 类型，整体也才有 <code>bool</code> 类型；所以 <code>false andalso 3</code> 仍然是类型错误。运行时会跳过一个表达式，不代表类型检查时可以不看它。</p>
+<p>这也解释了为什么不能随便交换左右两边。若先写 <code>valOf tailAnswer > hd pages</code>，程序会先尝试读取 <code>NONE</code>，还来不及执行后面的检查就已经失败。“先确认存在，再读取”既是我们读代码的顺序，也是代码必须遵守的执行顺序。</p>
+<h2 id="orelse左边已经足够就不用再检查">orelse：左边已经足够，就不用再检查</h2>
+<p>另一个方向也很常见。假如我们想判断一份记录“要么没有数据，要么第一天读了正数页”，空列表本身已经足以让判断成立，就不该再对它使用 <code>hd</code>。</p>
+<p>下面的函数输入一份整数列表，输出这个判断的真假。<code>orelse</code> 表示“或者”：</p>
+<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>fun empty_or_positive_first (xs : int list) =</span></span>
+<span data-line=""><span>    null xs orelse hd xs > 0</span></span>
+<span data-line=""> </span>
+<span data-line=""><span>val a = empty_or_positive_first []       (* true *)</span></span>
+<span data-line=""><span>val b = empty_or_positive_first [12,0]   (* true *)</span></span>
+<span data-line=""><span>val c = empty_or_positive_first [0,12]   (* false *)</span></span></code></pre></figure>
+<p>对 <code>[]</code>，<code>null xs</code> 已经是 <code>true</code>，右边的 <code>hd xs</code> 不会执行。对 <code>[12,0]</code>，左边是 <code>false</code>，程序再看 <code>12 > 0</code>；对 <code>[0,12]</code>，它再看 <code>0 > 0</code>，得到 <code>false</code>。这个函数检查的是第一项，后面有没有读过更多页，并不影响它的结果。</p>
+<p>一般的 <code>e1 orelse e2</code> 先计算左边；若为 <code>true</code>，立即返回 <code>true</code>；只有左边为 <code>false</code>，才计算右边。它对应 <code>if e1 then true else e2</code>，同样要求两边都是 <code>bool</code>。</p>
+<p>所以，把函数体改成 <code>hd xs > 0 orelse null xs</code> 就改变了安全性：遇到空列表，首先执行的会是 <code>hd []</code>。逻辑学中的“或”可以交换，但这里写的是有执行顺序、并且可能失败的程序。</p>
+<h2 id="写对名字也要知道它是不是普通函数">写对名字，也要知道它是不是普通函数</h2>
+<p>到这里，两个运算都已经有了具体用途：<code>andalso</code> 让必要条件逐个成立，<code>orelse</code> 在已有条件足够时提前结束。若熟悉其他语言，可以把它们分别联系到常见的 <code>&#x26;&#x26;</code>、<code>||</code>；SML 使用的是这两个完整单词，不是 <code>&#x26;&#x26;</code>、<code>||</code>，也不是 <code>and</code>、<code>or</code>。</p>
+<p>还有一个操作是取反：把 <code>true</code> 变成 <code>false</code>，把 <code>false</code> 变成 <code>true</code>。SML 把它写作普通函数 <code>not</code>，输入和输出的类型都是 <code>bool</code>：</p>
+<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>val hasReading = isSome (max_option [12,18])  (* true *)</span></span>
+<span data-line=""><span>val noReading = not hasReading              (* false *)</span></span>
+<span data-line=""> </span>
+<span data-line=""><span>val a = not true   (* false *)</span></span>
+<span data-line=""><span>val b = not false  (* true *)</span></span></code></pre></figure>
+<p>在 REPL 里单独输入 <code>not;</code>，可以看到它是一个已有函数，类型为 <code>bool -> bool</code>。单独输入 <code>andalso</code> 却不能得到这样的函数：它需要左、右两个表达式，REPL 可能继续等待输入，或者在不完整输入结束时报告语法错误。</p>
+<p>这个差别与求值有关。普通函数调用会先计算实参，再进入函数体；但 <code>andalso</code>、<code>orelse</code> 有时必须跳过一个部分，因此它们需要专门的语言规则，不能直接换成普通函数。</p>
+<p>例如，下面尝试用函数写“并且”。它的两个参数是布尔值，结果也为布尔值，函数体看起来没有问题：</p>
+<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>fun both (a : bool, b : bool) =</span></span>
+<span data-line=""><span>    if a then b else false</span></span></code></pre></figure>
+<p>可一旦调用 <code>both (isSome tailAnswer, valOf tailAnswer > 0)</code>，两个实参就都要先被计算。当 <code>tailAnswer = NONE</code> 时，第二个实参仍会读取不存在的值，根本进不到 <code>both</code> 的函数体。前面的 <code>andalso</code> 能跳过读取，恰好是普通函数调用不能代替的部分。</p>
+<p>取反没有这个要求：它总要先知道输入的真假，再反过来，因此 <code>not</code> 完全可以是普通函数。在其他语言里常见的 <code>!</code>，在 SML 中另有用途，涉及后面的可变引用；这里使用 <code>not</code> 即可。</p>
+<h2 id="条件已经给出了真假就直接使用它">条件已经给出了真假，就直接使用它</h2>
+<p>有了 <code>if</code>，其实可以表达这三种操作：</p>
+<table>
+<thead>
+<tr>
+<th>想表达的意思</th>
+<th>等价的条件写法</th>
+<th>更直接的写法</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>两个条件都成立</td>
+<td><code>if e1 then e2 else false</code></td>
+<td><code>e1 andalso e2</code></td>
+</tr>
+<tr>
+<td>至少一个条件成立</td>
+<td><code>if e1 then true else e2</code></td>
+<td><code>e1 orelse e2</code></td>
+</tr>
+<tr>
+<td>把真假反过来</td>
+<td><code>if e then false else true</code></td>
+<td><code>not e</code></td>
+</tr>
+</tbody>
+</table>
+<p>专门的写法并没有增加这些计算的表达能力，却让读代码的人更容易认出意图。原课也特别提醒：<code>if e then true else false</code> 只是把 <code>e</code> 的结果原样交回来，直接写 <code>e</code> 就够了。</p>
+<p>例如，判断是否有阅读记录，写 <code>isSome answer</code> 就已经得到 <code>bool</code>；不必再包成 <code>if isSome answer then true else false</code>。只有要根据真假选择不同结果时，才需要那一层选择。</p>
+<h2 id="读到的数怎样继续比较">读到的数，怎样继续比较</h2>
+<p>现在可以安全取得一个整数了，接下来才轮到“它是否达到目标”“两个结果是否相同”等判断。第一节中的比较写法可以放到阅读数据里一起看：</p>
+<table>
+<thead>
+<tr>
+<th>问题</th>
+<th>示例</th>
+<th>结果</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>页数是不是零</td>
+<td><code>0 = 0</code></td>
+<td><code>true</code></td>
+</tr>
+<tr>
+<td>两天页数是否不同</td>
+<td><code>12 &#x3C;> 18</code></td>
+<td><code>true</code></td>
+</tr>
+<tr>
+<td>是否少于或多于目标</td>
+<td><code>12 &#x3C; 20</code>、<code>24 > 20</code></td>
+<td>都是 <code>true</code></td>
+</tr>
+<tr>
+<td>是否至多或至少达到目标</td>
+<td><code>20 &#x3C;= 20</code>、<code>24 >= 20</code></td>
+<td>都是 <code>true</code></td>
+</tr>
+</tbody>
+</table>
+<p>这里的 <code>=</code> 是相等判断，不是给某个变量重新赋值；不等写作 <code>&#x3C;></code>，不写 <code>!=</code>。也不要把其他语言的 <code>==</code> 搬过来。</p>
+<p><code>&#x3C;</code>、<code>></code>、<code>&#x3C;=</code>、<code>>=</code> 还可以用于 SML 支持的实数、字符串和字符等类型，但两边要在相应运算支持的同一种类型上匹配。字符串按字符序列的词典序比较，不是按中文含义排序。</p>
+<p>例如，整数 <code>3</code> 与实数 <code>3.0</code> 是不同类型。<code>3 > 2</code> 和 <code>3.0 > 2.0</code> 都合法，混写 <code>3 &#x3C; 4.0</code> 却不能直接通过类型检查。确实需要跨这两个类型比较时，先明确转换：</p>
+<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>val converted = Real.fromInt 3        (* 3.0 *)</span></span>
+<span data-line=""><span>val comparable = converted &#x3C; 4.0      (* true *)</span></span></code></pre></figure>
+<p><code>Real.fromInt</code> 是把整数转成实数的库函数。某些 REPL 在第一次使用它时会显示装载库的提示，那是工具在准备这项功能，不是计算又产生了一个错误。</p>
+<h3 id="相等比较还要看里面的数据类型">相等比较还要看里面的数据类型</h3>
+<p>相等比较不限于整数。布尔值、字符串，以及元素本身允许相等比较的列表和元组，也可以比较内容：</p>
+<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>val sameList = [12,18] = [12,18]       (* true *)</span></span>
+<span data-line=""><span>val samePair = (12,true) = (12,true)   (* true *)</span></span>
+<span data-line=""><span>val different = "ML" &#x3C;> "Java"       (* true *)</span></span></code></pre></figure>
+<p>但函数不能直接用 <code>=</code> 判等，SML 的 <code>real</code> 也不允许使用这里的通用 <code>=</code> 和 <code>&#x3C;></code>。因此 <code>3.0 = 3.0</code> 不是一个合法例子；这类限制后续会用“相等类型”进一步说明。</p>
+<p>原课借实数提醒我们：浮点计算可能有舍入误差，很多问题应当比较两个结果是否足够接近，而不是要求它们直接相等。一个示意判断是 <code>Real.abs (x-y) &#x3C; 0.000001</code>；其中 <code>x</code>、<code>y</code> 是要比较的实数，容差要由实际问题的尺度与误差要求决定，不是所有计算都用这个常数。</p>
+<h2 id="最后分清减法和取负">最后分清减法和取负</h2>
+<p>阅读页数本身通常非负，但比较两个数的差，仍可能得到负数。SML 用 <code>-</code> 表示两个数相减，用 <code>~</code> 表示把一个数取负：</p>
+<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>val difference = 8 - 11    (* ~3 *)</span></span>
+<span data-line=""><span>val negative = ~7          (* ~7 *)</span></span>
+<span data-line=""><span>val opposite = ~negative  (* 7 *)</span></span></code></pre></figure>
+<p>所以负七写成 <code>~7</code>，不写 <code>-7</code>。对整数来说，<code>~e</code> 与 <code>0 - e</code> 表达同样的数值运算；取负也可以用于实数，例如 <code>~2.5</code>。</p>
+<p>回到开头，<code>max_option</code> 中那一行判断现在可以顺着读完了：先用 <code>isSome</code> 确认尾部有答案，<code>andalso</code> 决定是否继续读取，再用 <code>></code> 比较两个整数。每一部分既在表达一个判断，也有明确的类型与执行顺序。</p>
 <h2 id="对应原课与回看线索">对应原课与回看线索</h2>
-<p>对应 <strong>V14 · Booleans and Comparison Operations</strong>。核对短路、<code>not</code> 是函数、<code>=</code> 与 <code>&#x3C;></code>、其他比较运算、实数与相等类型的限制，以及 <code>~</code> 与二元减法的区别。</p>
-<p>来源：<a href="https://courses.cs.washington.edu/courses/cse341/19sp/videos/unit1.html">官方 Unit 1 视频目录</a>、<a href="https://courses.cs.washington.edu/courses/cse341/19sp/unit1notes.pdf">Unit 1 阅读讲义，Some Other Expressions and Operators</a>、<a href="https://smlfamily.github.io/Basis/top-level-chapter.html">SML Basis：通用运算</a>。<code>both</code> 的执行比较与连续案例是本系列补充。</p></article><nav class="chapter-switcher" aria-label="章节导航"><a rel="prev" href="../10-options/index.html">← 10 Option：明确表达可能没有结果</a><a class="course-home" href="../index.html">全部 13 篇</a><a rel="next" href="../12-immutability/index.html">12 不可变：旧值不变，推理怎样变简单 →</a></nav><footer class="lesson-footer">本系列依据 Dan Grossman 的 Programming Languages, Part A · Section 1 制作原创中文学习讲解，使用自己的解释与示例组织概念；不是逐字翻译、官方译本或课程视频字幕。<br><a href="../index.html#sources">来源、范围与 17 段视频映射</a> · 资料核对：2026-10-16</footer></main></body></html>
+<p>本篇对应 <strong>V14 · Booleans and Comparison Operations</strong>。保留短路的类型与求值规则、与 <code>if</code> 的对应关系、<code>not</code> 是函数而两个短路运算是关键字、其他语言符号不能照搬、相等与大小比较的类型边界、整数到实数的转换，以及实数直接判等的问题；取负与减法的区别也在这里补齐。</p>
+<ul class="rin-list rin-list-unordered">
+<li><a href="https://www.coursera.org/learn/programming-languages/lecture/YvAVp/booleans-and-comparison-operations">V14 原课程视频</a></li>
+<li><a href="https://courses.cs.washington.edu/courses/cse341/19sp/unit1notes.pdf">Unit 1 讲义：Some Other Expressions and Operators</a></li>
+<li><a href="https://smlfamily.github.io/Basis/top-level-chapter.html">SML Basis：通用运算</a></li>
+</ul>
+<p>阅读记录、<code>both</code> 的调用比较和具体推演为本系列补充。</p></article><nav class="chapter-switcher" aria-label="章节导航"><a rel="prev" href="../10-options/index.html">← 10 Option：没有记录时，怎样回答</a><a class="course-home" href="../index.html">全部 13 篇</a><a rel="next" href="../12-immutability/index.html">12 不可变：一份数据被多处使用时 →</a></nav><footer class="lesson-footer">本系列依据 Dan Grossman 的 Programming Languages, Part A · Section 1 制作原创中文学习讲解，使用自己的解释与示例组织概念；不是逐字翻译、官方译本或课程视频字幕。<br><a href="../index.html#sources">来源、范围与 17 段视频映射</a> · 资料核对：2026-10-16 · 讲解重组：2026-10-17</footer></main></body></html>

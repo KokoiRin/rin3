@@ -1,75 +1,118 @@
 <!doctype html>
-<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="不可变：旧值不变，推理怎样变简单 · Dan Grossman 编程语言课程 Section 1 原创中文讲解"><title>不可变：旧值不变，推理怎样变简单 · 编程语言 Part A / Section 1 · RIN III</title><link rel="stylesheet" href="../../reader.css"><link rel="stylesheet" href="../lesson.css"><link rel="manifest" href="../../../manifest.webmanifest"></head><body class="pl-course"><nav class="site-nav"><a href="../index.html">← 编程语言 · Section 1</a><a href="https://www.coursera.org/learn/programming-languages">原课程 ↗</a></nav><main class="reader"><header class="chapter-header"><span class="chapter-kicker">12 / 13 · 原创中文讲解</span><h1>不可变：旧值不变，推理怎样变简单</h1><p class="lead">对照 ML 与 Java 的例子，理解共享数据、别名和修改的关系。</p><p class="byline">原课程：Dan Grossman · Programming Languages, Part A</p><p class="lesson-context">理解不可变的价值，再连接语法、语义、惯用法、库与工具。建议按顺序阅读；遇到新符号，先跟随代码的执行过程，再回看规则。</p><details class="source-details"><summary>对应视频与本篇范围</summary><ul><li><a href="https://www.coursera.org/learn/programming-languages/lecture/5br3F/benefits-of-no-mutation">V15 · Benefits of No Mutation</a></li><li><a href="https://www.coursera.org/learn/programming-languages/lecture/aOQ26/optional-java-mutation">V16 · Optional: Java Mutation</a></li></ul><p>本系列依据 Dan Grossman 的 Programming Languages, Part A · Section 1 制作原创中文学习讲解，使用自己的解释与示例组织概念；不是逐字翻译、官方译本或课程视频字幕。</p><p>主要参考：对应视频的官方英文字幕、<a href="https://courses.cs.washington.edu/courses/cse341/19sp/unit1notes.pdf">UW Unit 1 讲义</a>、<a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec1slides.pdf">Lecture 1</a> / <a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec2slides.pdf">Lecture 2</a> / <a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec3slides.pdf">Lecture 3 幻灯片</a>及讲师示例。<a href="../index.html#sources">完整来源与映射说明</a>。</p></details><details class="lesson-toc"><summary>本篇目录</summary><ol><li class="toc-h2"><a href="#为什么不能修改反而能让代码更好写">为什么“不能修改”反而能让代码更好写</a></li><li class="toc-h2"><a href="#先认识别名两个名字可能指向同一份数据">先认识别名：两个名字可能指向同一份数据</a></li><li class="toc-h2"><a href="#排序一个二元组返回原值还是重新构造">排序一个二元组：返回原值还是重新构造</a></li><li class="toc-h2"><a href="#append-不需要把两边全部复制一遍">append 不需要把两边全部复制一遍</a></li><li class="toc-h2"><a href="#java-反例private-字段也可能从返回值泄露出去">Java 反例：private 字段也可能从返回值泄露出去</a></li><li class="toc-h2"><a href="#修复发生在数据离开对象的边界">修复发生在数据离开对象的边界</a></li><li class="toc-h2"><a href="#让不可能发生的事退出推理">让“不可能发生的事”退出推理</a></li><li class="toc-h2"><a href="#对应原课与回看线索">对应原课与回看线索</a></li></ol></details><nav class="chapter-switcher" aria-label="章节导航"><a rel="prev" href="../11-booleans-comparison/index.html">← 11 布尔与比较：读清条件和类型</a><a class="course-home" href="../index.html">全部 13 篇</a><a rel="next" href="../13-language-map/index.html">13 学一门语言的五个方面 →</a></nav></header><article class="lesson-article translated-article"><h2 id="为什么不能修改反而能让代码更好写">为什么“不能修改”反而能让代码更好写</h2>
-<p>到这里，我们已经知道怎样构造列表和元组、怎样取出它们的部分、怎样写函数计算新结果。现在停下来关注一件没有出现的事：修改已经构造好的列表或元组。</p>
-<p>第一节使用的 SML 值绑定、列表和元组都是不可变的。一个名字绑定到某个值后，这个绑定不会被赋值改变；重新使用同名 <code>val</code> 是建立新绑定并遮蔽旧绑定。列表也没有“把第三个元素原地改掉”的操作。需要不同内容时，就构造一个新的值。</p>
-<p>这不意味着完整的 SML 没有任何可变设施；后续课程还会学习引用等机制。此处的结论限定在我们正在使用的不可变数据上。</p>
-<h2 id="先认识别名两个名字可能指向同一份数据">先认识别名：两个名字可能指向同一份数据</h2>
-<p>假设 <code>x</code> 和 <code>y</code> 都能访问同一个复合对象，我们称它们形成别名（aliasing）。如果对象可修改，通过 <code>x</code> 改它，随后从 <code>y</code> 读取也会看到变化。这时“内容相同”与“其实是同一个对象”会直接影响程序行为。</p>
-<p>若它不可修改，情况就轻松很多：两个名字指向同一份 <code>(3,4)</code>，或者各自指向一份内容相同的 <code>(3,4)</code>，都只会让程序读到 3 和 4。我们无需为了防止另一方改动它，先做一份副本。</p>
-<p><strong>不可变数据让安全共享成为可能。</strong> 这既减少需要追踪的变化来源，也为实现节省空间留下余地。</p>
-<h2 id="排序一个二元组返回原值还是重新构造">排序一个二元组：返回原值还是重新构造</h2>
-<p>看原课的两个版本。输入是两个整数，输出让较小的数排在前面：</p>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="不可变：一份数据被多处使用时 · Dan Grossman 编程语言课程 Section 1 原创中文讲解"><title>不可变：一份数据被多处使用时 · 编程语言 Part A / Section 1 · RIN III</title><link rel="stylesheet" href="../../reader.css"><link rel="stylesheet" href="../lesson.css"><link rel="manifest" href="../../../manifest.webmanifest"></head><body class="pl-course"><nav class="site-nav"><a href="../index.html">← 编程语言 · Section 1</a><a href="https://www.coursera.org/learn/programming-languages">原课程 ↗</a></nav><main class="reader"><header class="chapter-header"><span class="chapter-kicker">12 / 13 · 原创中文讲解</span><h1>不可变：一份数据被多处使用时</h1><p class="lead">从排序两天页数和拼接记录出发，观察共享数据的影响，再对照 Java 中的修改问题。</p><p class="byline">原课程：Dan Grossman · Programming Languages, Part A</p><details class="source-details"><summary>对应视频与本篇范围</summary><ul><li><a href="https://www.coursera.org/learn/programming-languages/lecture/5br3F/benefits-of-no-mutation">V15 · Benefits of No Mutation</a></li><li><a href="https://www.coursera.org/learn/programming-languages/lecture/aOQ26/optional-java-mutation">V16 · Optional: Java Mutation</a></li></ul><p>本系列依据 Dan Grossman 的 Programming Languages, Part A · Section 1 制作原创中文学习讲解，使用自己的解释与示例组织概念；不是逐字翻译、官方译本或课程视频字幕。</p><p>主要参考：对应视频的官方英文字幕、<a href="https://courses.cs.washington.edu/courses/cse341/19sp/unit1notes.pdf">UW Unit 1 讲义</a>、<a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec1slides.pdf">Lecture 1</a> / <a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec2slides.pdf">Lecture 2</a> / <a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec3slides.pdf">Lecture 3 幻灯片</a>及讲师示例。<a href="../index.html#sources">完整来源与映射说明</a>。</p></details><details class="lesson-toc"><summary>本篇目录</summary><ol><li class="toc-h2"><a href="#返回已有的阅读记录会不会影响原数据">返回已有的阅读记录，会不会影响原数据</a></li><li class="toc-h2"><a href="#同一个结果为什么有两种写法">同一个结果，为什么有两种写法</a></li><li class="toc-h2"><a href="#出现了两条访问同一份数据的路再认识别名">出现了两条访问同一份数据的路，再认识“别名”</a></li><li class="toc-h2"><a href="#append-连接两段记录后半段可以接着使用">append 连接两段记录，后半段可以接着使用</a></li><li class="toc-h3"><a href="#共享也解释了为什么取尾部很快">共享也解释了为什么取尾部很快</a></li><li class="toc-h2"><a href="#需要改正阅读量时构造一份新结果">需要改正阅读量时，构造一份新结果</a></li><li class="toc-h2"><a href="#换到-java允许查看名单不该同时允许改名单">换到 Java：允许查看名单，不该同时允许改名单</a></li><li class="toc-h2"><a href="#返回副本让外面的修改留在外面">返回副本，让外面的修改留在外面</a></li><li class="toc-h2"><a href="#对应原课与回看线索">对应原课与回看线索</a></li></ol></details><nav class="chapter-switcher" aria-label="章节导航"><a rel="prev" href="../11-booleans-comparison/index.html">← 11 布尔与比较：先检查，再安全读取</a><a class="course-home" href="../index.html">全部 13 篇</a><a rel="next" href="../13-language-map/index.html">13 学一门语言的五个方面 →</a></nav></header><article class="lesson-article translated-article"><h2 id="返回已有的阅读记录会不会影响原数据">返回已有的阅读记录，会不会影响原数据</h2>
+<p>前面已经写过两个处理数据的函数：<code>sort_pair</code> 把一对整数排好顺序，<code>append</code> 把两份列表接成一份。它们都会返回结果，但“返回一个结果”不一定意味着“把输入的所有数据重新做一份”。</p>
+<p>先回到 <code>sort_pair</code>。假如两天的阅读量已经是 <code>(12,18)</code>，顺序本来就正确，函数直接返回输入的 <code>pr</code> 即可。现在的问题是：<strong>让调用者拿到已有的数据，会不会让一方后来的操作影响另一方？</strong></p>
+<p>这篇先把这个问题看清，再给它涉及的共享、别名与不可变性起名字。</p>
+<h2 id="同一个结果为什么有两种写法">同一个结果，为什么有两种写法</h2>
+<p>下面仍是已经学过的函数：输入一对整数，输出把较小整数放在前面的二元组。只有需要交换时，它才重新构造顺序：</p>
 <figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>fun sort_pair (pr : int * int) =</span></span>
 <span data-line=""><span>    if #1 pr &#x3C; #2 pr</span></span>
 <span data-line=""><span>    then pr</span></span>
 <span data-line=""><span>    else (#2 pr, #1 pr)</span></span>
 <span data-line=""> </span>
-<span data-line=""><span>fun sort_pair_copy (pr : int * int) =</span></span>
+<span data-line=""><span>val record = (12,18)</span></span>
+<span data-line=""><span>val sorted = sort_pair record  (* (12,18) *)</span></span></code></pre></figure>
+<p>如果为了“每次都返回新组成的二元组”，也可以把 <code>then pr</code> 改成 <code>then (#1 pr, #2 pr)</code>。下面这个版本专门保留了这种写法，便于对照：</p>
+<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>fun sort_pair_copy (pr : int * int) =</span></span>
 <span data-line=""><span>    if #1 pr &#x3C; #2 pr</span></span>
 <span data-line=""><span>    then (#1 pr, #2 pr)</span></span>
-<span data-line=""><span>    else (#2 pr, #1 pr)</span></span></code></pre></figure>
-<p>若输入 <code>(3,4)</code>，第一个版本直接返回 <code>pr</code>；第二个版本在源码里重新构造一个内容相同的二元组。对本节的整数元组，调用者通过这些普通语言操作观察到的结果完全一致。</p>
-<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>val x = (3,4)</span></span>
-<span data-line=""><span>val y = sort_pair x</span></span>
-<span data-line=""><span>val z = sort_pair_copy x</span></span>
-<span data-line=""><span>val same = y = z  (* true *)</span></span></code></pre></figure>
-<p>第一个版本更直接，也避免了源码中不必要的重新构造。实际编译器是否优化分配属于实现细节，不需要为此改变我们对结果的推理。</p>
-<p>原课用一个假想操作说明差别：如果能把 <code>x</code> 的第一项从 3 改成 5，<code>#1 y</code> 究竟还是 3，还是也变为 5？那就取决于结果与输入是否共享对象。<strong>SML 这里的元组不允许这种修改</strong>，所以这个难题不会发生。</p>
-<p>这种“无法区分”讨论的是本节纯数据的程序结果，不是在说两个实现的时间、内存占用也永远完全相同。后者正是实现可以优化的地方。</p>
-<h2 id="append-不需要把两边全部复制一遍">append 不需要把两边全部复制一遍</h2>
-<p>重新看列表拼接：</p>
+<span data-line=""><span>    else (#2 pr, #1 pr)</span></span>
+<span data-line=""> </span>
+<span data-line=""><span>val copied = sort_pair_copy record  (* (12,18) *)</span></span>
+<span data-line=""><span>val same = sorted = copied          (* true *)</span></span></code></pre></figure>
+<p><code>sorted</code> 与 <code>copied</code> 读出的第一项都是 12，第二项都是 18。原课使用 <code>(3,4)</code> 与 <code>(4,3)</code>：两个函数对这两种输入也都得到 <code>(3,4)</code>。把两项设成相同整数时，两个版本同样返回相同内容。</p>
+<p>真正值得追问的是后续行为。假设有一种操作，能够把 <code>record</code> 已有的第一项从 12 改成 99，那么从 <code>sorted</code> 再读第一项，会看见什么？这是一种假想的修改能力，当前使用的 SML 元组并不提供这样的操作。</p>
+<table>
+<thead>
+<tr>
+<th>数据实际怎样保存</th>
+<th>假想地把 <code>record</code> 第一项改为 99 后</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>record</code> 与 <code>sorted</code> 访问同一份二元组</td>
+<td><code>sorted</code> 也可能读到 99</td>
+</tr>
+<tr>
+<td><code>sorted</code> 访问独立保存的一份数据</td>
+<td><code>sorted</code> 仍读到 12</td>
+</tr>
+</tbody>
+</table>
+<p>如果允许修改，函数实现者就不能随便把“重新构造”改成“直接返回”：某个调用者可能已经依赖两份数据彼此独立。但在这里，已有元组的内容不能被改掉，这两种保存方式不会造成不同的普通读值结果。</p>
+<h2 id="出现了两条访问同一份数据的路再认识别名">出现了两条访问同一份数据的路，再认识“别名”</h2>
+<p>刚才表格里的第一种情况，有一个常用名字：<strong>别名（aliasing）</strong>。它表示两个名字或两条访问路径能够到达同一份数据；“副本”则是在另外保存的一份数据上工作。</p>
+<p>这个区别之所以重要，是因为修改共享的数据可能沿另一条访问路径被观察到。若数据本身不能修改，两个名字读同一份 <code>(12,18)</code>，或者各自读一份内容相同的 <code>(12,18)</code>，就都只能读到 12 和 18。</p>
+<p>这就是不可变数据在这里的作用：已经构造好的元组和列表不被原地改写，需要不同内容时构造新值。实现者可以安全地返回已有数据，调用者也不用额外追踪“另一方会不会悄悄改掉它”。</p>
+<p>这个结论说的是本节这些纯数据的程序结果，不是说两种实现必定占用相同内存、花相同时间。共享恰好给实现节省分配留下了空间；实际编译器怎样优化分配，则是实现层面的事。</p>
+<h2 id="append-连接两段记录后半段可以接着使用">append 连接两段记录，后半段可以接着使用</h2>
+<p>把一周的阅读量分成两段：前两天是 <code>[12,18]</code>，后面是 <code>[0,24,16]</code>。我们想让 <code>append</code> 返回 <code>[12,18,0,24,16]</code>，两段内部的顺序都保持不变：</p>
 <figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>fun append (xs : int list, ys : int list) =</span></span>
 <span data-line=""><span>    if null xs</span></span>
 <span data-line=""><span>    then ys</span></span>
 <span data-line=""><span>    else hd xs :: append (tl xs, ys)</span></span>
 <span data-line=""> </span>
-<span data-line=""><span>val first = [2,4]</span></span>
-<span data-line=""><span>val second = [5,3,0]</span></span>
+<span data-line=""><span>val first = [12,18]</span></span>
+<span data-line=""><span>val second = [0,24,16]</span></span>
 <span data-line=""><span>val combined = append (first, second)</span></span>
-<span data-line=""><span>(* [2,4,5,3,0] *)</span></span></code></pre></figure>
-<p>当递归到 <code>xs = []</code>，函数直接返回 <code>ys</code>。回到外层时，只为第一个列表中的 4 和 2 重新构造前面的列表节点。结果的后半段可以直接共享 <code>second</code>。</p>
-<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="text" data-theme="github-light"><code data-language="text" data-theme="github-light" style="display: grid;"><span data-line=""><span>second   ────────────────→ [5] → [3] → [0] → []</span></span>
-<span data-line=""><span>                            ↑</span></span>
-<span data-line=""><span>combined → [2] → [4] ────────┘</span></span></code></pre></figure>
-<p>这张图表达的是列表节点的共享关系。<code>first</code> 自己没有被接上一段尾巴，也没有被修改；<code>combined</code> 的前缀是新构造的。</p>
-<p>若列表节点允许修改，后来把共享部分的 3 改成 7，就可能同时改变 <code>second</code> 和 <code>combined</code> 的可见内容。因为本节列表的节点不可变，这种共享不会把一方的意外更新传播给另一方。</p>
-<p><code>tl</code> 同样利用共享：取尾部时，只要返回现成的尾部即可，不需要复制余下的全部节点。因此 <code>tl</code> 是常数时间。补充从这段代码推导的代价：拼接要遍历并重建第一个列表的前缀，时间与新节点数量都随第一个列表长度增长，不随第二个列表长度增长。</p>
-<h2 id="java-反例private-字段也可能从返回值泄露出去">Java 反例：private 字段也可能从返回值泄露出去</h2>
-<p>原课的可选视频把问题放到权限检查中。一个对象保存受保护资源和允许使用它的用户名数组。名单可以公开查看，但只有名单上的用户才能使用资源。</p>
-<p>下面是缩小后的示意代码，省略资源操作和当前用户的取得过程。<code>currentUser</code> 在这里表示由可信身份系统取得的已认证身份；真实接口不能让调用者随便指定用户名。我们先固定这个前提，只观察返回数组别名造成的问题：</p>
+<span data-line=""><span>(* [12,18,0,24,16] *)</span></span></code></pre></figure>
+<p>这次只追踪它怎样组成结果。递归先处理 <code>[18]</code>，再到 <code>[]</code>；当第一个列表为空，代码直接返回现成的 <code>second</code>。返回外层时，再依次把 18、12 放到前面：</p>
+<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="text" data-theme="github-light"><code data-language="text" data-theme="github-light" style="display: grid;"><span data-line=""><span>append ([12,18],[0,24,16])</span></span>
+<span data-line=""><span>= 12 :: append ([18],[0,24,16])</span></span>
+<span data-line=""><span>= 12 :: (18 :: append ([],[0,24,16]))</span></span>
+<span data-line=""><span>= 12 :: (18 :: [0,24,16])</span></span></code></pre></figure>
+<p>因此，在通常的链表实现中，结果可以只新建前面的两个列表节点，后半段直接沿用 <code>second</code> 的节点：</p>
+<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="text" data-theme="github-light"><code data-language="text" data-theme="github-light" style="display: grid;"><span data-line=""><span>second   ────────────────→ [0] → [24] → [16] → []</span></span>
+<span data-line=""><span>                           ↑</span></span>
+<span data-line=""><span>combined → [12] → [18] ─────┘</span></span></code></pre></figure>
+<p><code>first</code> 本身没有被接上一条新尾巴；新前缀属于 <code>combined</code>。原课使用的两份列表是 <code>[2,4]</code>、<code>[5,3,0]</code>，得到 <code>[2,4,5,3,0]</code>，共享关系完全相同。</p>
+<p>现在就能把前面的问题再问具体一些：如果共享的 24 能被改成 99，<code>second</code> 和 <code>combined</code> 就可能同时看见变化。因为本节的列表节点不可变，我们可以共享尾部，而不必为另一条路径可能进行的修改做防备。</p>
+<h3 id="共享也解释了为什么取尾部很快">共享也解释了为什么取尾部很快</h3>
+<p><code>tl combined</code> 要返回的是现成的尾部，不需要把除了第一项之外的所有节点再复制一遍。所以，在这里采用的链表模型下，<code>tl</code> 是常数时间操作；若每次递归取尾部都复制剩下的全部内容，前面的许多递归程序就会昂贵得多。</p>
+<p><code>append</code> 则需要遍历并重新构造第一个列表对应的前缀，时间和新增节点数量随第一个列表长度增长，不随第二个列表长度增长。共享与复制的程序结果可以相同，成本却可以不同，这正是两件需要分别观察的事。</p>
+<h2 id="需要改正阅读量时构造一份新结果">需要改正阅读量时，构造一份新结果</h2>
+<p>“不能修改旧数据”不意味着阅读记录永远不能更新。假如第一天的 12 需要改为 30，可以把新的 30 与旧列表的尾部组成另一份结果：</p>
+<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>val revised = 30 :: tl combined</span></span>
+<span data-line=""><span>(* [30,18,0,24,16] *)</span></span>
+<span data-line=""> </span>
+<span data-line=""><span>val oldFirst = hd combined  (* 12 *)</span></span>
+<span data-line=""><span>val newFirst = hd revised   (* 30 *)</span></span></code></pre></figure>
+<p><code>revised</code> 表示修正后的记录，<code>combined</code> 仍表示原记录。两者还可以共享没有改变的尾部，但读取旧记录不会突然得到新的第一页数。程序把变化表达为“产生哪个新结果”，而不是“谁把已有对象改了”。</p>
+<p>同名 <code>val</code> 也遵守前面学过的规则：它建立新绑定、遮蔽旧绑定，不是向旧绑定赋新值。完整的 SML 后面还有引用等可变设施；这一节讨论的是我们已经使用的绑定、整数元组与列表。</p>
+<h2 id="换到-java允许查看名单不该同时允许改名单">换到 Java：允许查看名单，不该同时允许改名单</h2>
+<p>原课接着给出一个 Java 场景，让共享造成的影响真正发生。一个对象保存受保护的内容和允许访问的用户名数组：外部可以知道谁有权限，但不能因此给自己增加权限。</p>
+<p>下面把这个情形缩成一个可以顺着读的类。<code>currentUser</code> 固定为 <code>"mallory"</code>，只是为了代替可信身份系统已经确认的当前身份；真实系统应从认证上下文取得它，不能让调用者任意声称自己是谁。这个用户起初不在 <code>alice</code>、<code>bob</code> 的名单里。这里的数组按顺序保存用户名，并允许按位置修改其中的元素：</p>
 <figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="java" data-theme="github-light"><code data-language="java" data-theme="github-light" style="display: grid;"><span data-line=""><span style="color:#D73A49">class</span><span style="color:#6F42C1"> ProtectedResource</span><span style="color:#24292E"> {</span></span>
+<span data-line=""><span style="color:#D73A49">    private</span><span style="color:#24292E"> String resource </span><span style="color:#D73A49">=</span><span style="color:#032F62"> "受保护的内容"</span><span style="color:#24292E">;</span></span>
 <span data-line=""><span style="color:#D73A49">    private</span><span style="color:#D73A49"> String</span><span style="color:#24292E">[] allowedUsers </span><span style="color:#D73A49">=</span><span style="color:#24292E"> {</span><span style="color:#032F62">"alice"</span><span style="color:#24292E">, </span><span style="color:#032F62">"bob"</span><span style="color:#24292E">};</span></span>
+<span data-line=""><span style="color:#D73A49">    private</span><span style="color:#24292E"> String currentUser </span><span style="color:#D73A49">=</span><span style="color:#032F62"> "mallory"</span><span style="color:#24292E">;</span></span>
 <span data-line=""> </span>
 <span data-line=""><span style="color:#D73A49">    public</span><span style="color:#D73A49"> String</span><span style="color:#24292E">[] </span><span style="color:#6F42C1">getAllowedUsers</span><span style="color:#24292E">() {</span></span>
 <span data-line=""><span style="color:#D73A49">        return</span><span style="color:#24292E"> allowedUsers;</span></span>
 <span data-line=""><span style="color:#24292E">    }</span></span>
 <span data-line=""> </span>
-<span data-line=""><span style="color:#D73A49">    public</span><span style="color:#D73A49"> void</span><span style="color:#6F42C1"> useTheResource</span><span style="color:#24292E">(String </span><span style="color:#E36209">currentUser</span><span style="color:#24292E">) {</span></span>
+<span data-line=""><span style="color:#D73A49">    public</span><span style="color:#24292E"> String </span><span style="color:#6F42C1">useTheResource</span><span style="color:#24292E">() {</span></span>
 <span data-line=""><span style="color:#D73A49">        for</span><span style="color:#24292E"> (String allowed </span><span style="color:#D73A49">:</span><span style="color:#24292E"> allowedUsers) {</span></span>
 <span data-line=""><span style="color:#D73A49">            if</span><span style="color:#24292E"> (currentUser.</span><span style="color:#6F42C1">equals</span><span style="color:#24292E">(allowed)) {</span></span>
-<span data-line=""><span style="color:#D73A49">                return</span><span style="color:#24292E">; </span><span style="color:#6A737D">// 此处执行允许的资源操作</span></span>
+<span data-line=""><span style="color:#D73A49">                return</span><span style="color:#24292E"> resource;</span></span>
 <span data-line=""><span style="color:#24292E">            }</span></span>
 <span data-line=""><span style="color:#24292E">        }</span></span>
 <span data-line=""><span style="color:#D73A49">        throw</span><span style="color:#D73A49"> new</span><span style="color:#6F42C1"> SecurityException</span><span style="color:#24292E">(</span><span style="color:#032F62">"Access denied"</span><span style="color:#24292E">);</span></span>
 <span data-line=""><span style="color:#24292E">    }</span></span>
 <span data-line=""><span style="color:#24292E">}</span></span></code></pre></figure>
-<p>权限判断本身会认真检查用户名，可是 getter 返回了内部数组的引用。调用者可以先得到这个别名，再修改数组元素：</p>
+<p><code>getAllowedUsers()</code> 返回用户名数组；<code>useTheResource()</code> 用可信的当前身份检查数组，找到名字才返回受保护内容。正常情况下，当前用户 <code>mallory</code> 调用后者会被拒绝。</p>
+<p>问题发生在另一个接口。这里把“返回一个字段相关内容的方法”简称为 getter；<code>getAllowedUsers()</code> 就是这个例子。它把内部数组直接返回了出去，外部得到的并不是一个只能看的快照，而是访问同一份可变数组的路径：</p>
 <figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="java" data-theme="github-light"><code data-language="java" data-theme="github-light" style="display: grid;"><span data-line=""><span style="color:#24292E">ProtectedResource p </span><span style="color:#D73A49">=</span><span style="color:#D73A49"> new</span><span style="color:#6F42C1"> ProtectedResource</span><span style="color:#24292E">();</span></span>
-<span data-line=""><span style="color:#24292E">p.</span><span style="color:#6F42C1">getAllowedUsers</span><span style="color:#24292E">()[</span><span style="color:#005CC5">0</span><span style="color:#24292E">] </span><span style="color:#D73A49">=</span><span style="color:#032F62"> "mallory"</span><span style="color:#24292E">;</span></span>
-<span data-line=""><span style="color:#24292E">p.</span><span style="color:#6F42C1">useTheResource</span><span style="color:#24292E">(</span><span style="color:#032F62">"mallory"</span><span style="color:#24292E">); </span><span style="color:#6A737D">// 已被改过的名单会放行</span></span></code></pre></figure>
-<p>这段教学示例的根因不是循环写错，而是“允许读取名单”的接口同时交出了“修改实际名单”的能力。字段虽然是 <code>private</code>，外部仍然能通过被返回的别名改变它的内容。原视频用它说明真实 Java 类库曾出现过的一类问题；这里不把历史问题当作对当前某个库的漏洞判断。</p>
-<h2 id="修复发生在数据离开对象的边界">修复发生在数据离开对象的边界</h2>
-<p>原课的修复是返回副本，让外部修改的数组与内部权限数组分开：</p>
+<span data-line=""><span style="color:#D73A49">String</span><span style="color:#24292E">[] visibleUsers </span><span style="color:#D73A49">=</span><span style="color:#24292E"> p.</span><span style="color:#6F42C1">getAllowedUsers</span><span style="color:#24292E">();</span></span>
+<span data-line=""><span style="color:#24292E">visibleUsers[</span><span style="color:#005CC5">0</span><span style="color:#24292E">] </span><span style="color:#D73A49">=</span><span style="color:#032F62"> "mallory"</span><span style="color:#24292E">;</span></span>
+<span data-line=""> </span>
+<span data-line=""><span style="color:#24292E">String result </span><span style="color:#D73A49">=</span><span style="color:#24292E"> p.</span><span style="color:#6F42C1">useTheResource</span><span style="color:#24292E">();</span></span>
+<span data-line=""><span style="color:#6A737D">// result 是 "受保护的内容"</span></span></code></pre></figure>
+<p>Java 数组的位置从 0 开始，所以 <code>[0]</code> 是第一项。<code>visibleUsers[0]</code> 改的也是对象内部 <code>allowedUsers[0]</code>。检查权限的循环没有跳过任何检查，却会在已经被改过的名单里找到 <code>mallory</code>，于是错误放行。</p>
+<p>现在，“别名”就不再只是两条线的画法了：它让原本想交出去的读取能力，连同修改内部名单的能力一起交了出去。<code>private</code> 只挡住从外部直接访问字段名，没有阻止这个返回值继续指向内部数组。</p>
+<h2 id="返回副本让外面的修改留在外面">返回副本，让外面的修改留在外面</h2>
+<p>要修复这个问题，可以只改 getter 的返回方式。下面先新建同样长度的数组，把用户名逐项复制过去，再把副本返回给外部：</p>
 <figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="java" data-theme="github-light"><code data-language="java" data-theme="github-light" style="display: grid;"><span data-line=""><span style="color:#D73A49">public</span><span style="color:#D73A49"> String</span><span style="color:#24292E">[] </span><span style="color:#6F42C1">getAllowedUsers</span><span style="color:#24292E">() {</span></span>
 <span data-line=""><span style="color:#D73A49">    String</span><span style="color:#24292E">[] copy </span><span style="color:#D73A49">=</span><span style="color:#D73A49"> new</span><span style="color:#D73A49"> String</span><span style="color:#24292E">[allowedUsers.length];</span></span>
 <span data-line=""><span style="color:#D73A49">    for</span><span style="color:#24292E"> (</span><span style="color:#D73A49">int</span><span style="color:#24292E"> i </span><span style="color:#D73A49">=</span><span style="color:#005CC5"> 0</span><span style="color:#24292E">; i </span><span style="color:#D73A49">&#x3C;</span><span style="color:#24292E"> allowedUsers.length; i</span><span style="color:#D73A49">++</span><span style="color:#24292E">) {</span></span>
@@ -77,11 +120,15 @@
 <span data-line=""><span style="color:#24292E">    }</span></span>
 <span data-line=""><span style="color:#D73A49">    return</span><span style="color:#24292E"> copy;</span></span>
 <span data-line=""><span style="color:#24292E">}</span></span></code></pre></figure>
-<p>循环写出来是为了看清复制过程。实际代码可用适当的数组复制方法。调用者得到副本后，即使改动副本的某个槽位，也不会改动内部数组对应的槽位。</p>
-<p>补充一个边界：这里元素是不可变的 <code>String</code>，复制数组槽位已足够隔离这个问题。若元素本身是可变对象，浅复制仍会共享那些对象，还需要继续考虑对象的可变性与所有权。把字段声明为 Java 的 <code>final</code> 也只限制引用不能重新指向另一个数组，并不会让数组元素自动不可变。</p>
-<h2 id="让不可能发生的事退出推理">让“不可能发生的事”退出推理</h2>
-<p>“调用者答应不修改”是一条需要每个人遵守的约定；使用真正不可变的数据，则可以由语言或数据接口直接排除这种修改。少一种行为，意味着实现者、调用者和后续维护者都少追踪一种风险。</p>
-<p>这并不是说所有程序都应禁止所有修改。原课的要点是理解取舍：可变数据需要仔细区分别名和副本，不可变数据则允许我们把更多注意力放在输入、输出和算法本身。前面学的绑定、列表构造、局部函数，正好一起形成了这种思考方式。</p>
+<p>修改后的 <code>visibleUsers[0] = "mallory"</code> 只改变返回的副本。内部名单仍是 <code>alice</code>、<code>bob</code>，当前身份仍是 <code>mallory</code>，所以后续访问仍会被拒绝。实际程序可以使用适合的数组复制方法；这里展开循环，是为了看清哪一份数据变了、哪一份没变。</p>
+<p>这个修复还依赖数据的形状。例子里的元素是不可变 <code>String</code>，复制数组槽位足以隔离这次修改；若槽位里装着可变对象，浅复制仍可能共享那些对象，需要继续考虑它们是否能被外部修改。仅把数组字段声明为 <code>final</code>，也只限制字段不能改指向另一数组，不会让数组元素自动不可变。</p>
+<p>原视频把它作为曾导致 Java 类库安全问题的一类错误来讲解，包括与类加载器相关的历史问题。这里保留的是“getter 泄露可变内部表示”这个因果过程，不是在判断当前某个类库还存在漏洞。</p>
+<p>回到 SML，<code>sort_pair</code> 与 <code>append</code> 能写得直接，正是因为已有数据不能通过另一条路径被改掉。少掉一种可发生的行为，函数的实现、调用和语言的优化都能少追踪一种相互影响；若选择可变数据，就需要把共享与复制的位置管理清楚。</p>
 <h2 id="对应原课与回看线索">对应原课与回看线索</h2>
-<p>对应 <strong>V15 · Benefits of No Mutation</strong> 与 <strong>V16 · Optional: Java Mutation</strong>。包括两个排序元组实现、<code>append</code> 共享尾部、<code>tl</code> 的代价、权限名单 getter 泄露别名及复制修复。</p>
-<p>来源：<a href="https://courses.cs.washington.edu/courses/cse341/19sp/videos/unit1.html">官方 Unit 1 视频目录</a>、<a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec3slides.pdf">Lecture 3 幻灯片，第 20–25 页</a>、<a href="https://courses.cs.washington.edu/courses/cse341/19sp/unit1notes.pdf">Unit 1 阅读讲义，Lack of Mutation and Benefits Thereof</a>。示意 Java 代码经过缩写和命名调整，<code>final</code>、浅复制边界与复杂度分析为教学补充。</p></article><nav class="chapter-switcher" aria-label="章节导航"><a rel="prev" href="../11-booleans-comparison/index.html">← 11 布尔与比较：读清条件和类型</a><a class="course-home" href="../index.html">全部 13 篇</a><a rel="next" href="../13-language-map/index.html">13 学一门语言的五个方面 →</a></nav><footer class="lesson-footer">本系列依据 Dan Grossman 的 Programming Languages, Part A · Section 1 制作原创中文学习讲解，使用自己的解释与示例组织概念；不是逐字翻译、官方译本或课程视频字幕。<br><a href="../index.html#sources">来源、范围与 17 段视频映射</a> · 资料核对：2026-10-16</footer></main></body></html>
+<p>本篇对应 <strong>V15 · Benefits of No Mutation</strong> 与 <strong>V16 · Optional: Java Mutation</strong>。保留两个排序元组实现、共享与复制的可观察差别、<code>append</code> 的共享尾部、<code>tl</code> 的代价，以及 Java 权限名单的泄露路径和复制修复。阅读数据、修正记录的示例和 <code>final</code>／浅复制边界为教学补充。</p>
+<ul class="rin-list rin-list-unordered">
+<li><a href="https://www.coursera.org/learn/programming-languages/lecture/5br3F/benefits-of-no-mutation">V15 原课程视频</a></li>
+<li><a href="https://www.coursera.org/learn/programming-languages/lecture/aOQ26/optional-java-mutation">V16 原课程视频</a></li>
+<li><a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec3slides.pdf">Lecture 3 幻灯片，第 20–25 页</a></li>
+<li><a href="https://courses.cs.washington.edu/courses/cse341/19sp/unit1notes.pdf">Unit 1 讲义：Lack of Mutation and Benefits Thereof</a></li>
+</ul></article><nav class="chapter-switcher" aria-label="章节导航"><a rel="prev" href="../11-booleans-comparison/index.html">← 11 布尔与比较：先检查，再安全读取</a><a class="course-home" href="../index.html">全部 13 篇</a><a rel="next" href="../13-language-map/index.html">13 学一门语言的五个方面 →</a></nav><footer class="lesson-footer">本系列依据 Dan Grossman 的 Programming Languages, Part A · Section 1 制作原创中文学习讲解，使用自己的解释与示例组织概念；不是逐字翻译、官方译本或课程视频字幕。<br><a href="../index.html#sources">来源、范围与 17 段视频映射</a> · 资料核对：2026-10-16 · 讲解重组：2026-10-17</footer></main></body></html>

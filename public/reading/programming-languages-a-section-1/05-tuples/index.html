@@ -1,103 +1,127 @@
 <!doctype html>
-<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="元组：把不同数据装在一起 · Dan Grossman 编程语言课程 Section 1 原创中文讲解"><title>元组：把不同数据装在一起 · 编程语言 Part A / Section 1 · RIN III</title><link rel="stylesheet" href="../../reader.css"><link rel="stylesheet" href="../lesson.css"><link rel="manifest" href="../../../manifest.webmanifest"></head><body class="pl-course"><nav class="site-nav"><a href="../index.html">← 编程语言 · Section 1</a><a href="https://www.coursera.org/learn/programming-languages">原课程 ↗</a></nav><main class="reader"><header class="chapter-header"><span class="chapter-kicker">05 / 13 · 原创中文讲解</span><h1>元组：把不同数据装在一起</h1><p class="lead">用固定位置组合数据，读懂元组类型与取出分量的操作。</p><p class="byline">原课程：Dan Grossman · Programming Languages, Part A</p><p class="lesson-context">从参数与返回值，走到元组、列表与列表递归。建议按顺序阅读；遇到新符号，先跟随代码的执行过程，再回看规则。</p><details class="source-details"><summary>对应视频与本篇范围</summary><ul><li><a href="https://www.coursera.org/learn/programming-languages/lecture/lWE7L/pairs-and-other-tuples">V07 · Pairs and Other Tuples</a></li></ul><p>本系列依据 Dan Grossman 的 Programming Languages, Part A · Section 1 制作原创中文学习讲解，使用自己的解释与示例组织概念；不是逐字翻译、官方译本或课程视频字幕。</p><p>主要参考：对应视频的官方英文字幕、<a href="https://courses.cs.washington.edu/courses/cse341/19sp/unit1notes.pdf">UW Unit 1 讲义</a>、<a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec1slides.pdf">Lecture 1</a> / <a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec2slides.pdf">Lecture 2</a> / <a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec3slides.pdf">Lecture 3 幻灯片</a>及讲师示例。<a href="../index.html#sources">完整来源与映射说明</a>。</p></details><details class="lesson-toc"><summary>本篇目录</summary><ol><li class="toc-h2"><a href="#一个结果不够时先把数据组成一个整体">一个结果不够时，先把数据组成一个整体</a></li><li class="toc-h2"><a href="#构造时算什么读取时又算什么">构造时算什么，读取时又算什么</a></li><li class="toc-h2"><a href="#函数可以把元组当作输入也可以把它当作输出">函数可以把元组当作输入，也可以把它当作输出</a></li><li class="toc-h2"><a href="#嵌套结构不能随意摊平">嵌套结构不能随意摊平</a></li><li class="toc-h2"><a href="#类型说明的不只是里面有几个数">类型说明的不只是“里面有几个数”</a></li><li class="toc-h2"><a href="#调整结果不等于修改原数据">调整结果，不等于修改原数据</a></li><li class="toc-h3"><a href="#补充边界括号不一定构造元组">补充边界：括号不一定构造元组</a></li><li class="toc-h2"><a href="#对应原课与回看线索">对应原课与回看线索</a></li></ol></details><nav class="chapter-switcher" aria-label="章节导航"><a rel="prev" href="../04-functions/index.html">← 04 函数：从调用过程到正式规则</a><a class="course-home" href="../index.html">全部 13 篇</a><a rel="next" href="../06-lists/index.html">06 列表：任意长度，同一种元素类型 →</a></nav></header><article class="lesson-article translated-article"><h2 id="一个结果不够时先把数据组成一个整体">一个结果不够时，先把数据组成一个整体</h2>
-<p>前面函数的例子大多只返回一个整数。但假如我们要计算 20 除以 3 的商和余数，就有两个结果需要一起交给调用者。SML 可以直接把它们组成一个二元组，也叫 pair：</p>
-<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>val answer = (20 div 3, 20 mod 3)</span></span>
-<span data-line=""><span>(* answer = (6,2) : int * int *)</span></span></code></pre></figure>
-<p>这里不是先返回 6，再返回 2。整个 <code>(6,2)</code> 才是一个值，<code>answer</code> 绑定的是这个完整的值。类型 <code>int * int</code> 也描述了整体结构：第一部分是整数，第二部分也是整数。类型里的 <code>*</code> 表示组合，不是乘法。</p>
-<p>元组首先解决的是“几个部分怎样属于同一份数据”。每个部分可以有不同类型，例如 <code>(3,true)</code> 的类型是 <code>int * bool</code>。但是，一旦这个结构确定，部分的数量、顺序和类型也就确定了；这正是它与后面列表的重要区别。</p>
-<h2 id="构造时算什么读取时又算什么">构造时算什么，读取时又算什么</h2>
-<p>学习一个新构造，仍然沿用原课的三个问题：怎样写、怎样检查类型、怎样求值。对于 <code>(e1,e2)</code>，类型检查分别确定两部分的类型，整体类型就是 <code>t1 * t2</code>。求值则先把两部分表达式算成值，再组成二元组。</p>
-<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>val p = (1 + 2, 3 &#x3C; 4)</span></span>
-<span data-line=""><span>(* p = (3,true) : int * bool *)</span></span></code></pre></figure>
-<p><code>(1+2,3&#x3C;4)</code> 是表达式，但还不是计算结束的值。<code>(3,true)</code> 才是一个二元组值：两个组成部分都已经没有计算要做了。因此，元组并不是把两段尚未执行的代码保存起来，等以后读取时再执行。</p>
-<p>读取使用 <code>#1</code> 和 <code>#2</code>，编号从 1 开始：</p>
-<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>val left  = #1 p   (* 3 : int *)</span></span>
-<span data-line=""><span>val right = #2 p   (* true : bool *)</span></span></code></pre></figure>
-<p><code>#1 e</code> 的含义是：先把 <code>e</code> 求成一个元组值，再取第一部分。它不是“只执行构造元组时写在第一个位置的代码”。例如 <code>#1 (1+2, 8 div 0)</code> 不会因为我们只需要第一部分，就跳过第二部分；构造元组本身需要求值两部分，第二部分会引发除零异常。</p>
-<p>类型检查也会检查结构。对一个二元组写 <code>#3 p</code> 是类型错误，不是运行后才报告下标越界。这里的选择器编号也不是一个可以任意变化的列表索引；它与元组的固定结构相配合。</p>
-<h2 id="函数可以把元组当作输入也可以把它当作输出">函数可以把元组当作输入，也可以把它当作输出</h2>
-<p>原课的 <code>swap</code> 把两部分交换位置：</p>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="元组：把相关结果放在一起 · Dan Grossman 编程语言课程 Section 1 原创中文讲解"><title>元组：把相关结果放在一起 · 编程语言 Part A / Section 1 · RIN III</title><link rel="stylesheet" href="../../reader.css"><link rel="stylesheet" href="../lesson.css"><link rel="manifest" href="../../../manifest.webmanifest"></head><body class="pl-course"><nav class="site-nav"><a href="../index.html">← 编程语言 · Section 1</a><a href="https://www.coursera.org/learn/programming-languages">原课程 ↗</a></nav><main class="reader"><header class="chapter-header"><span class="chapter-kicker">05 / 13 · 原创中文讲解</span><h1>元组：把相关结果放在一起</h1><p class="lead">一次交回总页数与达标结果，再分别读取它们，理解固定数量的数据怎样组合。</p><p class="byline">原课程：Dan Grossman · Programming Languages, Part A</p><details class="source-details"><summary>对应视频与本篇范围</summary><ul><li><a href="https://www.coursera.org/learn/programming-languages/lecture/lWE7L/pairs-and-other-tuples">V07 · Pairs and Other Tuples</a></li></ul><p>本系列依据 Dan Grossman 的 Programming Languages, Part A · Section 1 制作原创中文学习讲解，使用自己的解释与示例组织概念；不是逐字翻译、官方译本或课程视频字幕。</p><p>主要参考：对应视频的官方英文字幕、<a href="https://courses.cs.washington.edu/courses/cse341/19sp/unit1notes.pdf">UW Unit 1 讲义</a>、<a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec1slides.pdf">Lecture 1</a> / <a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec2slides.pdf">Lecture 2</a> / <a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec3slides.pdf">Lecture 3 幻灯片</a>及讲师示例。<a href="../index.html#sources">完整来源与映射说明</a>。</p></details><details class="lesson-toc"><summary>本篇目录</summary><ol><li class="toc-h2"><a href="#怎样同时交回总页数和达标结果">怎样同时交回总页数和达标结果？</a></li><li class="toc-h2"><a href="#从完整结果中取出现在需要的部分">从完整结果中，取出现在需要的部分</a></li><li class="toc-h2"><a href="#元组类型把结构写清楚了">元组类型把结构写清楚了</a></li><li class="toc-h2"><a href="#构造时先算出各部分之后才有元组值">构造时先算出各部分，之后才有元组值</a></li><li class="toc-h2"><a href="#原课的-swap改变位置不改变原数据">原课的 swap：改变位置，不改变原数据</a></li><li class="toc-h2"><a href="#一次处理两份记录或者交回一对计算结果">一次处理两份记录，或者交回一对计算结果</a></li><li class="toc-h3"><a href="#把两份两天记录的页数一起相加">把两份两天记录的页数一起相加</a></li><li class="toc-h3"><a href="#把商与余数一起交回">把商与余数一起交回</a></li><li class="toc-h2"><a href="#里面还可以有一份结构">里面还可以有一份结构</a></li><li class="toc-h2"><a href="#给输入写清形状后面的计算才知道怎么取">给输入写清形状，后面的计算才知道怎么取</a></li><li class="toc-h2"><a href="#对应原课与回看线索">对应原课与回看线索</a></li></ol></details><nav class="chapter-switcher" aria-label="章节导航"><a rel="prev" href="../04-functions/index.html">← 04 函数：同一种计算怎样反复使用</a><a class="course-home" href="../index.html">全部 13 篇</a><a rel="next" href="../06-lists/index.html">06 列表：从两天页数到一周记录 →</a></nav></header><article class="lesson-article translated-article"><h2 id="怎样同时交回总页数和达标结果">怎样同时交回总页数和达标结果？</h2>
+<p>上一节我们已经能写函数：给它输入，函数体完成计算，再交回一个结果。现在继续记录阅读情况。假设周一读了 12 页，周二读了 18 页，我们希望一次得到两项信息：两天总共读了多少页，以及是否达到 25 页的目标。</p>
+<p>只交回整数 <code>30</code>，没有直接给出是否达标；只交回 <code>true</code>，又丢掉了具体页数。SML 可以把这两个部分组成一个完整的结果：</p>
+<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>fun reading_report (monday : int, tuesday : int) =</span></span>
+<span data-line=""><span>    (monday + tuesday, monday + tuesday >= 25);</span></span>
+<span data-line=""> </span>
+<span data-line=""><span>val report = reading_report(12,18);</span></span>
+<span data-line=""><span>(* report = (30,true) : int * bool *)</span></span></code></pre></figure>
+<p>调用时，<code>monday</code> 对应 <code>12</code>，<code>tuesday</code> 对应 <code>18</code>。函数体的第一部分算出 <code>30</code>；第二部分先算出 <code>30</code>，再用 <code>>=</code>（大于或等于）比较 <code>30 >= 25</code>，得到 <code>true</code>。最后组成的 <code>(30,true)</code> 才是函数交回的那个值。</p>
+<p>这种把两个部分合成一个值的结构，叫作<strong>二元组</strong>，英文是 pair。更一般地，固定数量的部分可以组成元组，英文是 tuple。这里的两个位置有明确含义：第一项是总页数，第二项是是否达标；程序不会靠变量名自动记住这些业务含义，需要我们约定并保持一致。</p>
+<h2 id="从完整结果中取出现在需要的部分">从完整结果中，取出现在需要的部分</h2>
+<p>假设后面的计算只需要总页数，或者只需要达标结果，就要能分别读取这两个位置。SML 暂时用 <code>#1</code> 读取第一项，用 <code>#2</code> 读取第二项；编号从 1 开始。</p>
+<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>(* 接着上面的 report 继续读。 *)</span></span>
+<span data-line=""><span>val pages = #1 report;</span></span>
+<span data-line=""><span>val reached = #2 report;</span></span>
+<span data-line=""><span>val pages_with_bonus = pages + 5;</span></span>
+<span data-line=""><span>(* pages = 30 : int *)</span></span>
+<span data-line=""><span>(* reached = true : bool *)</span></span>
+<span data-line=""><span>(* pages_with_bonus = 35 : int *)</span></span></code></pre></figure>
+<p><code>#1 report</code> 先找到整个 <code>(30,true)</code>，再取出整数 <code>30</code>。<code>#2 report</code> 取出布尔值 <code>true</code>。取出以后，它们就是前面已经认识的普通整数和布尔值，可以继续参加相应的计算。</p>
+<p>到这里，二元组已经完成了一次完整的“构造与使用”：我们把两个结果放在一起，再从中取回各部分。后面遇到其他数据结构，也要同时弄清楚这两面；只知道怎样写出数据，还不足以用它完成任务。</p>
+<h2 id="元组类型把结构写清楚了">元组类型把结构写清楚了</h2>
+<p><code>report</code> 的类型是 <code>int * bool</code>：第一项是整数，第二项是布尔值。类型里的 <code>*</code> 表示这两部分的组合，不是把两个东西相乘。即使总页数换成 <code>300</code>，这份结果仍然可以有相同类型。</p>
+<p>元组的<strong>位置数量、位置顺序、各部分类型都属于结构</strong>。<code>(30,true)</code> 与 <code>(true,30)</code> 就有不同类型，分别是 <code>int * bool</code> 和 <code>bool * int</code>。而三元组 <code>(30,true,25)</code> 有三个直接组成部分，类型是 <code>int * bool * int</code>。</p>
+<p>这也意味着元组不是运行到一半可以随意多出一个位置的结构。对一个二元组读取 <code>#3</code>，会在类型检查时遇到错误，而不是先成功运行，再报告某个数组下标越界。需要多少项随记录数量改变的数据时，我们会在下一篇换一种结构。</p>
+<h2 id="构造时先算出各部分之后才有元组值">构造时先算出各部分，之后才有元组值</h2>
+<p>把阅读报告的数字缩小，原课还用这样的表达式观察求值：</p>
+<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>val p = (1 + 2, 3 &#x3C; 4);</span></span>
+<span data-line=""><span>val left = #1 p;</span></span>
+<span data-line=""><span>val right = #2 p;</span></span>
+<span data-line=""><span>(* p = (3,true) : int * bool *)</span></span>
+<span data-line=""><span>(* left = 3 : int；right = true : bool *)</span></span></code></pre></figure>
+<p>构造 <code>p</code> 时，需要先计算 <code>1 + 2</code> 和 <code>3 &#x3C; 4</code>，然后得到 <code>(3,true)</code>。它没有保存两段尚未执行的代码，等待以后读取时再算。因此，<code>(1+2,3&#x3C;4)</code> 还是需要计算的表达式，<code>(3,true)</code> 才是各部分都已算好的元组值。</p>
+<p>同样，<code>#1 (1+2, 8 div 0)</code> 会在构造元组时遇到除零异常。即使只打算取第一项，也不能跳过第二项的求值。这里讨论的是构造完整值所需的计算，不需要额外猜测两部分之间的具体求值先后。</p>
+<p>类型检查则分别确定两部分的类型，再组成整体类型。例如，<code>if true then (1,true) else (2,3)</code> 是预期的类型错误：两个分支的第二项分别是 <code>bool</code> 和 <code>int</code>，整体结构不能按条件表达式的规则统一。条件恰好写着 <code>true</code>，也不会免除另一个分支的类型检查。</p>
+<h2 id="原课的-swap改变位置不改变原数据">原课的 swap：改变位置，不改变原数据</h2>
+<p>有时接收结果的代码要求把布尔值放在前面、整数放在后面。原课用 <code>swap</code> 展示这种位置调整。它接收 <code>int * bool</code>，取出两项后反过来组成新二元组：</p>
 <figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>fun swap (pr : int * bool) =</span></span>
-<span data-line=""><span>    (#2 pr, #1 pr)</span></span>
+<span data-line=""><span>    (#2 pr, #1 pr);</span></span>
 <span data-line=""> </span>
-<span data-line=""><span>val swapped = swap (7,true)</span></span>
+<span data-line=""><span>val swapped = swap(7,true);</span></span>
 <span data-line=""><span>(* swapped = (true,7) : bool * int *)</span></span></code></pre></figure>
-<p>形参 <code>pr</code> 的类型先限定了它必须是一份“整数加布尔值”的数据。于是 <code>#2 pr</code> 是布尔值，<code>#1 pr</code> 是整数，新构造的结果类型自然就是 <code>bool * int</code>。因此，整个函数的类型是 <code>int * bool -> bool * int</code>。</p>
-<p>再看同时接收两份二元组的例子：</p>
+<p><code>pr</code> 是输入元组的名字。读取第二项得到 <code>true</code>，把它放到新结果的第一项；读取第一项得到 <code>7</code>，把它放到第二项。因此函数的类型是 <code>int * bool -> bool * int</code>，箭头左边描述输入结构，右边描述结果结构。</p>
+<p>这里没有把输入的两格原地交换。输入 <code>(7,true)</code> 保持原样，函数构造了另一个结果。后面讨论不可变数据时，我们会继续解释，为什么“返回新结果”和“修改原数据”的区别值得关注。</p>
+<h2 id="一次处理两份记录或者交回一对计算结果">一次处理两份记录，或者交回一对计算结果</h2>
+<h3 id="把两份两天记录的页数一起相加">把两份两天记录的页数一起相加</h3>
+<p>如果两份记录分别是 <code>(1,2)</code> 和 <code>(3,4)</code>，我们希望把四个页数都加起来。原课的 <code>sum_two_pairs</code> 正好完成这个任务：</p>
 <figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>fun sum_two_pairs (pr1 : int * int, pr2 : int * int) =</span></span>
-<span data-line=""><span>    (#1 pr1) + (#2 pr1) + (#1 pr2) + (#2 pr2)</span></span>
+<span data-line=""><span>    (#1 pr1) + (#2 pr1) + (#1 pr2) + (#2 pr2);</span></span>
 <span data-line=""> </span>
-<span data-line=""><span>val total = sum_two_pairs ((1,2),(3,4))</span></span>
+<span data-line=""><span>val total = sum_two_pairs((1,2),(3,4));</span></span>
 <span data-line=""><span>(* total = 10 : int *)</span></span></code></pre></figure>
-<p>注意调用里的两层括号：里面的 <code>(1,2)</code> 和 <code>(3,4)</code> 各是一份二元组；外面把它们放进这次调用所需要的整体结构。看函数类型时，也要保留这种分组：<code>(int * int) * (int * int) -> int</code>。它与接收一个四元组的 <code>int * int * int * int -> int</code> 不是同一个类型。</p>
-<p>原课暂时把这里称为“两个参数”，便于和熟悉的函数写法接起来。后续课程会进一步解释，SML 这类写法可以从“一个元组参数”的角度统一理解；现在先把实际结构看准确即可。</p>
-<p>返回元组同样直接：</p>
+<p>这次调用里，<code>pr1</code> 对应 <code>(1,2)</code>，<code>pr2</code> 对应 <code>(3,4)</code>。四次读取分别拿到 <code>1</code>、<code>2</code>、<code>3</code>、<code>4</code>，再相加得到 <code>10</code>。两个内层元组都是“两个整数”，所以这里的输入结构是 <code>(int * int) * (int * int)</code>。</p>
+<p>它与直接传入四元组 <code>(1,2,3,4)</code> 不同。两层括号表达了“有两份记录，每份有两部分”，不能只数出四个整数就把结构摊平。原课此时沿用“两个参数”的说法，后续会再从一个元组参数的角度统一理解这些调用；现在先把实际形状看准确。</p>
+<h3 id="把商与余数一起交回">把商与余数一起交回</h3>
+<p>假设读完 20 页，按每 3 页一组整理。我们既想知道能组成几组，也想知道剩几页。原课的 <code>div_mod</code> 把这两个结果组成一对：</p>
 <figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>fun div_mod (x : int, y : int) =</span></span>
-<span data-line=""><span>    (x div y, x mod y)</span></span>
+<span data-line=""><span>    (x div y, x mod y);</span></span>
 <span data-line=""> </span>
-<span data-line=""><span>val result = div_mod (20,3)</span></span>
-<span data-line=""><span>val quotient = #1 result  (* 6 *)</span></span>
-<span data-line=""><span>val remainder = #2 result (* 2 *)</span></span></code></pre></figure>
-<p><code>div_mod</code> 的类型是 <code>int * int -> int * int</code>。左边的组合是输入，右边的组合是输出，箭头把二者分开。这个函数仍然要求除数不为 0；有了类型，并不意味着所有整数输入都不会出错。</p>
-<h2 id="嵌套结构不能随意摊平">嵌套结构不能随意摊平</h2>
-<p>元组的各部分本身也可以是元组。这不需要新增一套语言规则，只需继续使用已经学过的构造和读取方式：</p>
-<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>val x1 = (7,(true,9))</span></span>
-<span data-line=""><span>(* int * (bool * int) *)</span></span>
-<span data-line=""> </span>
-<span data-line=""><span>val x3 = #2 x1</span></span>
-<span data-line=""><span>(* (true,9) : bool * int *)</span></span>
-<span data-line=""> </span>
-<span data-line=""><span>val x2 = #1 (#2 x1)</span></span>
-<span data-line=""><span>(* true : bool *)</span></span></code></pre></figure>
-<p>理解 <code>#1 (#2 x1)</code> 时，可以先沿结构走：<code>#2 x1</code> 到达里面的二元组，再由 <code>#1</code> 取得里面第一项。不要仅仅把所有叶子从左往右数一遍，因为结构本身也是类型的一部分。</p>
+<span data-line=""><span>val result = div_mod(20,3);</span></span>
+<span data-line=""><span>val quotient = #1 result;</span></span>
+<span data-line=""><span>val remainder = #2 result;</span></span>
+<span data-line=""><span>(* result = (6,2)；quotient = 6；remainder = 2 *)</span></span></code></pre></figure>
+<p>输入的 <code>20</code>、<code>3</code> 分别交给 <code>x</code>、<code>y</code>。<code>div</code> 算出整数商 <code>6</code>，<code>mod</code> 算出余数 <code>2</code>，结果类型为 <code>int * int</code>。整个函数的类型是 <code>int * int -> int * int</code>，除数仍然需要不为零；组合成元组没有消除除法本身的输入条件。</p>
+<h2 id="里面还可以有一份结构">里面还可以有一份结构</h2>
+<p>如果一份记录要同时保存天数、完成标记和页数，可以先把后两项组合，再与天数组成外层二元组。原课用下面这组小值来演示怎样逐层读取：</p>
+<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>val x1 = (7,(true,9));</span></span>
+<span data-line=""><span>val x3 = #2 x1;</span></span>
+<span data-line=""><span>val x2 = #1 (#2 x1);</span></span>
+<span data-line=""><span>(* x1 : int * (bool * int) *)</span></span>
+<span data-line=""><span>(* x3 = (true,9) : bool * int *)</span></span>
+<span data-line=""><span>(* x2 = true : bool *)</span></span></code></pre></figure>
+<p><code>#2 x1</code> 先取出里面的完整二元组 <code>(true,9)</code>。如果要其中的完成标记，再对这个结果取 <code>#1</code>，才会得到 <code>true</code>。这与“从左向右数第三个基本值”是不同的读取方式，因为我们要顺着每一层实际结构走。</p>
 <table>
 <thead>
 <tr>
 <th>值</th>
-<th>整体结构</th>
+<th>外层结构</th>
 <th>类型</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><code>(7,(true,9))</code></td>
-<td>外层两部分，第二部分又是二元组</td>
+<td>第二部分里面还有一对</td>
 <td><code>int * (bool * int)</code></td>
 </tr>
 <tr>
 <td><code>((7,true),9)</code></td>
-<td>外层两部分，第一部分又是二元组</td>
+<td>第一部分里面还有一对</td>
 <td><code>(int * bool) * int</code></td>
 </tr>
 <tr>
 <td><code>(7,true,9)</code></td>
-<td>外层直接有三部分</td>
+<td>直接有三个部分</td>
 <td><code>int * bool * int</code></td>
 </tr>
 </tbody>
 </table>
-<p>三者保存的基本值相似，但不是同一份形状的数据。函数若要求其中一种，就不能直接传入另一种。较长的嵌套例子也按相同方法读，例如原课的 <code>((3,5),((4,8),(0,0)))</code>：先确定外层两部分，再分别确定内部结构。</p>
-<h2 id="类型说明的不只是里面有几个数">类型说明的不只是“里面有几个数”</h2>
-<p>看见 <code>int * bool</code>，我们已经知道能够安全读取两个位置，也知道每个位置取出的类型。这些信息不取决于当前存的是 3 还是 300。反过来，即使实际没有走到某条条件分支，类型检查仍然会检查那条分支。例如 <code>if true then (1,true) else (2,3)</code> 不能因为条件写着 <code>true</code> 就通过检查：两个候选结果的第二项类型不同，整体没有统一的元组类型。</p>
-<p>原课暂时给元组参数明确标注类型，还有一个实际原因：只有 <code>#1</code> 这样的读取操作，通常不足以告诉类型检查器整个元组到底有多少部分。写成下面这样，输入形状就明确了：</p>
-<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>fun first (pr : int * bool) = #1 pr</span></span></code></pre></figure>
-<p>它的类型是 <code>int * bool -> int</code>。不要据此误以为 SML 没有类型推断，也不要把删掉注解后遇到的结构推断错误，当作元组运行失败。后续模式匹配会提供另一种把形状直接写进参数的方式。</p>
-<p>另外，“元组可以任意嵌套”是说我们能够写出任意固定的结构，不是说一个已经确定类型的函数，可以根据运行时的整数参数，忽然返回二元组、三元组或四元组。接收结果的代码仍需事先知道结构。需要长度随输入变化的数据时，下一篇的列表才是合适工具。</p>
-<h2 id="调整结果不等于修改原数据">调整结果，不等于修改原数据</h2>
-<p>原课还有一个把整数二元组排成非降序的函数：</p>
+<p>这三种形状保存了相似的基本值，却不能互相当作同一种输入。原课更深的例子也按同样方法读：</p>
+<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>val x4 = ((3,5),((4,8),(0,0)));</span></span>
+<span data-line=""><span>(* (int * int) * ((int * int) * (int * int)) *)</span></span></code></pre></figure>
+<p>先看到外层两部分，再分别进入左边的一对、右边的两对。没有新增规则，只是继续组合与读取。</p>
+<h2 id="给输入写清形状后面的计算才知道怎么取">给输入写清形状，后面的计算才知道怎么取</h2>
+<p>原课在这些函数的参数上明确写类型，是为了先告诉类型检查器元组的完整形状。例如，一个只取阅读报告总页数的函数可以写成：</p>
+<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>fun first (pr : int * bool) = #1 pr;</span></span></code></pre></figure>
+<p>仅仅看见 <code>#1</code>，通常还不足以推断输入究竟有几个部分。参数注解说明它恰好是一对，第一部分是整数；因此结果类型为 <code>int</code>。后续的模式匹配会提供另一种直接把形状写出来的方法，这不表示 SML 放弃了类型推断。</p>
+<p>原课最后还用 <code>sort_pair</code> 按大小组织两个整数。若我们只想得到“两天中较少和较多的页数”，可以使用这个结果；它不再保留哪个数属于哪一天的顺序。</p>
 <figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>fun sort_pair (pr : int * int) =</span></span>
 <span data-line=""><span>    if (#1 pr) &#x3C; (#2 pr)</span></span>
 <span data-line=""><span>    then pr</span></span>
-<span data-line=""><span>    else (#2 pr, #1 pr)</span></span></code></pre></figure>
-<p>若输入 <code>(3,8)</code>，直接得到原来的 <code>pr</code>；若输入 <code>(8,3)</code>，得到新组成的 <code>(3,8)</code>。两个分支都必须是 <code>int * int</code>，所以整个条件表达式才能通过类型检查。两项相等时会进入 <code>else</code>，但交换后仍是相同的二元组值。</p>
-<p>这个函数没有把 <code>pr</code> 的第一格和第二格原地交换。输入数据保持不变，函数只是决定返回哪个值。直接返回已有值是否会造成共享，后面的“不可变”一篇会继续解释；此时先记住，构造结果与修改输入是两件事。</p>
-<h3 id="补充边界括号不一定构造元组">补充边界：括号不一定构造元组</h3>
-<p><code>(7)</code> 只是给整数表达式加括号，仍然是 <code>int</code>，不是一元组。<code>()</code> 是 <code>unit</code> 类型的唯一值，可以理解为空元组。日常看到的二元组、三元组等，都要通过逗号表达相应的组成结构。</p>
+<span data-line=""><span>    else (#2 pr, #1 pr);</span></span>
+<span data-line=""> </span>
+<span data-line=""><span>val sorted = sort_pair(8,3);</span></span>
+<span data-line=""><span>(* sorted = (3,8) : int * int *)</span></span></code></pre></figure>
+<p>输入 <code>(3,8)</code> 时直接交回已有的 <code>pr</code>；输入 <code>(8,3)</code> 时组成 <code>(3,8)</code>；两项相等时，虽然会进入 <code>else</code>，交换后的值仍相同。两个分支都是 <code>int * int</code>，所以条件表达式有统一类型。</p>
+<p>括号也并非处处表示元组：<code>(7)</code> 只是给整数加括号，<code>()</code> 则是 <code>unit</code> 类型的唯一值。真正把多个部分组织在一起的是相应的逗号结构。到这里，我们能够准确处理固定形状的记录；下一篇再处理“一周已经记了几天，还没有固定”的情况。</p>
 <h2 id="对应原课与回看线索">对应原课与回看线索</h2>
-<p>本篇对应 <strong>V7：Pairs and Other Tuples</strong>。回看时重点观察 <code>swap</code>、<code>sum_two_pairs</code>、<code>div_mod</code>、<code>sort_pair</code> 与 <code>x1</code> 至 <code>x4</code>：每看到一对括号，先判断它是在分组表达式，还是在构造一层数据。</p>
+<p>本篇对应 <strong>V7：Pairs and Other Tuples</strong>。正文从两天阅读报告出发，承接原课的 <code>swap</code>、<code>sum_two_pairs</code>、<code>div_mod</code>、<code>sort_pair</code> 与 <code>x1</code> 至 <code>x4</code>。回看时沿着每个函数的输入形状，追踪取出的各部分怎样组成结果。</p>
 <ul class="rin-list rin-list-unordered">
 <li><a href="https://courses.cs.washington.edu/courses/cse341/19sp/videos/unit1/uncaptioned/009-tuples.mp4">V7 官方视频</a></li>
 <li><a href="https://courses.cs.washington.edu/courses/cse341/19sp/unit1notes.pdf">官方 Unit 1 阅读笔记：Pairs and Other Tuples，印刷第 5–6 页</a></li>
-<li><a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec2slides.pdf">Lecture 2 幻灯片，第 10–15 页</a></li>
+<li><a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec2slides.pdf">Lecture 2 幻灯片</a></li>
 <li><a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec2.sml">Lecture 2 原始 SML 代码</a></li>
-</ul></article><nav class="chapter-switcher" aria-label="章节导航"><a rel="prev" href="../04-functions/index.html">← 04 函数：从调用过程到正式规则</a><a class="course-home" href="../index.html">全部 13 篇</a><a rel="next" href="../06-lists/index.html">06 列表：任意长度，同一种元素类型 →</a></nav><footer class="lesson-footer">本系列依据 Dan Grossman 的 Programming Languages, Part A · Section 1 制作原创中文学习讲解，使用自己的解释与示例组织概念；不是逐字翻译、官方译本或课程视频字幕。<br><a href="../index.html#sources">来源、范围与 17 段视频映射</a> · 资料核对：2026-10-16</footer></main></body></html>
+</ul>
+<p>阅读报告及页数用途是自编情境；原课函数的必要结构保留，方便对照。</p></article><nav class="chapter-switcher" aria-label="章节导航"><a rel="prev" href="../04-functions/index.html">← 04 函数：同一种计算怎样反复使用</a><a class="course-home" href="../index.html">全部 13 篇</a><a rel="next" href="../06-lists/index.html">06 列表：从两天页数到一周记录 →</a></nav><footer class="lesson-footer">本系列依据 Dan Grossman 的 Programming Languages, Part A · Section 1 制作原创中文学习讲解，使用自己的解释与示例组织概念；不是逐字翻译、官方译本或课程视频字幕。<br><a href="../index.html#sources">来源、范围与 17 段视频映射</a> · 资料核对：2026-10-16 · 讲解重组：2026-10-17</footer></main></body></html>

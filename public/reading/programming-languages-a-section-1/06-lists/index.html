@@ -1,98 +1,109 @@
 <!doctype html>
-<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="列表：任意长度，同一种元素类型 · Dan Grossman 编程语言课程 Section 1 原创中文讲解"><title>列表：任意长度，同一种元素类型 · 编程语言 Part A / Section 1 · RIN III</title><link rel="stylesheet" href="../../reader.css"><link rel="stylesheet" href="../lesson.css"><link rel="manifest" href="../../../manifest.webmanifest"></head><body class="pl-course"><nav class="site-nav"><a href="../index.html">← 编程语言 · Section 1</a><a href="https://www.coursera.org/learn/programming-languages">原课程 ↗</a></nav><main class="reader"><header class="chapter-header"><span class="chapter-kicker">06 / 13 · 原创中文讲解</span><h1>列表：任意长度，同一种元素类型</h1><p class="lead">认识空列表、构造列表，以及列表与元组的区别。</p><p class="byline">原课程：Dan Grossman · Programming Languages, Part A</p><p class="lesson-context">从参数与返回值，走到元组、列表与列表递归。建议按顺序阅读；遇到新符号，先跟随代码的执行过程，再回看规则。</p><details class="source-details"><summary>对应视频与本篇范围</summary><ul><li><a href="https://www.coursera.org/learn/programming-languages/lecture/ArsQG/introducing-lists">V08 · Introducing Lists</a></li></ul><p>本系列依据 Dan Grossman 的 Programming Languages, Part A · Section 1 制作原创中文学习讲解，使用自己的解释与示例组织概念；不是逐字翻译、官方译本或课程视频字幕。</p><p>主要参考：对应视频的官方英文字幕、<a href="https://courses.cs.washington.edu/courses/cse341/19sp/unit1notes.pdf">UW Unit 1 讲义</a>、<a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec1slides.pdf">Lecture 1</a> / <a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec2slides.pdf">Lecture 2</a> / <a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec3slides.pdf">Lecture 3 幻灯片</a>及讲师示例。<a href="../index.html#sources">完整来源与映射说明</a>。</p></details><details class="lesson-toc"><summary>本篇目录</summary><ol><li class="toc-h2"><a href="#当数据有多少项要等运行时才知道">当数据有多少项，要等运行时才知道</a></li><li class="toc-h2"><a href="#先看元素类型再看外面的-list">先看元素类型，再看外面的 list</a></li><li class="toc-h2"><a href="#非空列表由一个头部和一个尾部组成">非空列表由一个头部和一个尾部组成</a></li><li class="toc-h2"><a href="#nullhdtl-各自回答什么">null、hd、tl 各自回答什么</a></li><li class="toc-h2"><a href="#类型可以继续组合但每一层都要一致">类型可以继续组合，但每一层都要一致</a></li><li class="toc-h2"><a href="#任意类型不等于一次调用混用类型">“任意类型”不等于“一次调用混用类型”</a></li><li class="toc-h2"><a href="#构造新列表不会改掉旧列表">构造新列表，不会改掉旧列表</a></li><li class="toc-h2"><a href="#对应原课与回看线索">对应原课与回看线索</a></li></ol></details><nav class="chapter-switcher" aria-label="章节导航"><a rel="prev" href="../05-tuples/index.html">← 05 元组：把不同数据装在一起</a><a class="course-home" href="../index.html">全部 13 篇</a><a rel="next" href="../07-list-recursion/index.html">07 列表递归：空列表与剩下的部分 →</a></nav></header><article class="lesson-article translated-article"><h2 id="当数据有多少项要等运行时才知道">当数据有多少项，要等运行时才知道</h2>
-<p>元组能把固定数量的部分组合起来。但假设一个函数接收今天所有订单的金额，订单可能有 0 笔，也可能有 100 笔。不能为每种数量都准备一个不同长度的元组类型；我们需要一种类型，允许数据长度变化。</p>
-<p>这就是 SML 的列表。例如 <code>[3,5,8]</code> 是一个整数列表，类型写作 <code>int list</code>。列表长度不写进这个类型，所以 <code>[]</code>、<code>[3]</code>、<code>[3,5,8]</code> 都可以是整数列表。代价是：<strong>同一个列表的所有元素必须有相同类型。</strong></p>
-<p>元组和列表因此分别适合不同问题。元组的数量固定，各部分可有不同类型；列表的数量可以变化，各项却要有共同类型。这是数据结构的区别，不是两种不同的括号风格。</p>
-<h2 id="先看元素类型再看外面的-list">先看元素类型，再看外面的 list</h2>
-<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>val numbers = [3,5,8]</span></span>
-<span data-line=""><span>(* int list *)</span></span>
-<span data-line=""> </span>
-<span data-line=""><span>val flags = [true,false,true]</span></span>
-<span data-line=""><span>(* bool list *)</span></span>
-<span data-line=""> </span>
-<span data-line=""><span>val pairs = [(1,true),(2,false)]</span></span>
-<span data-line=""><span>(* (int * bool) list *)</span></span></code></pre></figure>
-<p>最后一个列表并没有违反“同一类型”：其中的每一项都是 <code>int * bool</code> 二元组。共同类型可以是复合类型，并不只限于整数或布尔值。相反，<code>[1,true]</code> 把 <code>int</code> 和 <code>bool</code> 直接放在同一层，是类型错误。</p>
-<p>构造列表时，每个元素表达式都要求值。例如 <code>[1+2,2*4]</code> 的结果是 <code>[3,8]</code>。它保存的是两个计算结果，不是两段留待以后执行的代码。只有各个组成部分已经是值，整个非空列表才是一个列表值。</p>
-<p>空列表值得单独看：</p>
-<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>[];</span></span>
-<span data-line=""><span>(* 'a list *)</span></span>
-<span data-line=""> </span>
-<span data-line=""><span>val empty_ints : int list = []</span></span>
-<span data-line=""><span>val empty_flags : bool list = []</span></span></code></pre></figure>
-<p><code>'a</code> 读作“alpha”或“quote a”，这里表示可以统一选择某种元素类型。空列表没有任何元素与这个选择冲突，所以它可以用于整数列表，也可以用于布尔列表。这不是说列表没有类型，更不是说它能在运行中随意混入各种类型；一旦上下文确定了某个列表的元素类型，相关运算都必须遵守。</p>
-<h2 id="非空列表由一个头部和一个尾部组成">非空列表由一个头部和一个尾部组成</h2>
-<p>方括号便于直接列出几个元素，但理解递归时，更重要的是 <code>::</code>，读作 cons。表达式 <code>e1 :: e2</code> 先把左边求成一个元素，把右边求成一个列表，再构造一个以该元素开头的新列表。</p>
-<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>val tail = [5,8]</span></span>
-<span data-line=""><span>val whole = 3 :: tail</span></span>
-<span data-line=""><span>(* whole = [3,5,8] *)</span></span></code></pre></figure>
-<p>类型规则说明了两边的角色：若左边是 <code>t</code>，右边就必须是 <code>t list</code>，结果仍是 <code>t list</code>。所以 <code>3 :: 5</code> 错在右边不是列表；<code>true :: [3,5]</code> 错在布尔值与整数列表的元素类型不一致。</p>
-<p><code>::</code> 向右结合，因此这几种写法表示相同列表：</p>
-<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>[3,5,8];</span></span>
-<span data-line=""><span>3 :: [5,8];</span></span>
-<span data-line=""><span>3 :: (5 :: (8 :: []));</span></span>
-<span data-line=""><span>3 :: 5 :: 8 :: [];</span></span></code></pre></figure>
-<p>最里面是空列表；把 8 放到它前面，得到 <code>[8]</code>；再放 5，得到 <code>[5,8]</code>；最后放 3。每一步只使用“一个元素加一个已有列表”，却已经能组成任意有限长度的列表。这就是列表结构的递归性，并不是说列表里必须真的绕出一个环。</p>
-<p>还要注意，<code>::</code> 不是把两个普通列表接起来的运算。若两个操作数都是 <code>int list</code>，左边的整个列表不能充当右边所要求的一个 <code>int</code>。例如 <code>[1] :: [2,3]</code> 是类型错误。但左边本身是列表也并非一概不行：</p>
-<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>val nested = [1] :: [[2,3]]</span></span>
-<span data-line=""><span>(* [[1],[2,3]] : int list list *)</span></span></code></pre></figure>
-<p>此时外层列表的“一项”就是一份整数列表；左边和右边的类型要求仍然完全一致。把类型代进去检查，比背诵“cons 左边不能是列表”准确得多。</p>
-<h2 id="nullhdtl-各自回答什么">null、hd、tl 各自回答什么</h2>
-<p>目前还没有引入模式匹配，原课先用三个现成函数读取列表。它们都接收列表，但结果的层次不同。</p>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="列表：从两天页数到一周记录 · Dan Grossman 编程语言课程 Section 1 原创中文讲解"><title>列表：从两天页数到一周记录 · 编程语言 Part A / Section 1 · RIN III</title><link rel="stylesheet" href="../../reader.css"><link rel="stylesheet" href="../lesson.css"><link rel="manifest" href="../../../manifest.webmanifest"></head><body class="pl-course"><nav class="site-nav"><a href="../index.html">← 编程语言 · Section 1</a><a href="https://www.coursera.org/learn/programming-languages">原课程 ↗</a></nav><main class="reader"><header class="chapter-header"><span class="chapter-kicker">06 / 13 · 原创中文讲解</span><h1>列表：从两天页数到一周记录</h1><p class="lead">记录的天数不固定时，用同一种列表类型保存数据，并读取一天与剩下的部分。</p><p class="byline">原课程：Dan Grossman · Programming Languages, Part A</p><details class="source-details"><summary>对应视频与本篇范围</summary><ul><li><a href="https://www.coursera.org/learn/programming-languages/lecture/ArsQG/introducing-lists">V08 · Introducing Lists</a></li></ul><p>本系列依据 Dan Grossman 的 Programming Languages, Part A · Section 1 制作原创中文学习讲解，使用自己的解释与示例组织概念；不是逐字翻译、官方译本或课程视频字幕。</p><p>主要参考：对应视频的官方英文字幕、<a href="https://courses.cs.washington.edu/courses/cse341/19sp/unit1notes.pdf">UW Unit 1 讲义</a>、<a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec1slides.pdf">Lecture 1</a> / <a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec2slides.pdf">Lecture 2</a> / <a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec3slides.pdf">Lecture 3 幻灯片</a>及讲师示例。<a href="../index.html#sources">完整来源与映射说明</a>。</p></details><details class="lesson-toc"><summary>本篇目录</summary><ol><li class="toc-h2"><a href="#已经记了三天还能用同一种类型吗">已经记了三天，还能用同一种类型吗？</a></li><li class="toc-h2"><a href="#先分清一个元素是什么">先分清“一个元素”是什么</a></li><li class="toc-h2"><a href="#把三天记录拆成第一天与剩余两天">把三天记录拆成“第一天与剩余两天”</a></li><li class="toc-h2"><a href="#为什么两个列表不能直接拿-cons-拼起来">为什么两个列表不能直接拿 cons 拼起来</a></li><li class="toc-h2"><a href="#为了继续计算先问是否为空再读头部和尾部">为了继续计算，先问是否为空，再读头部和尾部</a></li><li class="toc-h2"><a href="#到了空列表就不能再取头尾">到了空列表，就不能再取头尾</a></li><li class="toc-h2"><a href="#空列表为什么显示成-a-list">空列表为什么显示成 &#39;a list</a></li><li class="toc-h2"><a href="#层层组合时仍然沿实际结构读取">层层组合时，仍然沿实际结构读取</a></li><li class="toc-h2"><a href="#对应原课与回看线索">对应原课与回看线索</a></li></ol></details><nav class="chapter-switcher" aria-label="章节导航"><a rel="prev" href="../05-tuples/index.html">← 05 元组：把相关结果放在一起</a><a class="course-home" href="../index.html">全部 13 篇</a><a rel="next" href="../07-list-recursion/index.html">07 列表递归：一周页数怎样加起来 →</a></nav></header><article class="lesson-article translated-article"><h2 id="已经记了三天还能用同一种类型吗">已经记了三天，还能用同一种类型吗？</h2>
+<p>上一篇用元组组合了两天的页数，也把“总页数加达标标记”组成了一份结果。元组适合这些位置已经确定的记录。现在我们想保存一周每天的阅读页数：周三时只有三项，周日时有七项，还没开始记录时则一项都没有。</p>
+<p>如果为三天写三元组、为七天写七元组，结构和类型都会跟着改变。我们希望后面求总页数的函数不必关心“今天记到了星期几”，同一类输入就能覆盖这些情况。SML 的<strong>列表</strong>正是用来组织这一类数据的：</p>
+<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>val first_three_days = [12,18,10];</span></span>
+<span data-line=""><span>val week_pages = [12,18,10,15,0,20,25];</span></span>
+<span data-line=""><span>val not_started : int list = [];</span></span></code></pre></figure>
+<p>这三份数据都能有 <code>int list</code> 类型，也就是整数列表。<code>[]</code> 表示没有记录，<code>[0]</code> 则表示已经有一项记录、这一天读了零页；它们不能混为一谈。列表类型不写长度，所以同一种类型能够容纳零项、三项或七项。</p>
+<p>这里的“长度可以不同”，是在比较不同的列表值，不是说程序会原地把某个已有列表不断改长。我们马上会看到，构造新列表时旧值仍然保留。</p>
+<h2 id="先分清一个元素是什么">先分清“一个元素”是什么</h2>
+<p>在 <code>week_pages</code> 里面，每一个元素都是一天的整数页数。SML 要求同一个列表的全部元素有共同类型，因此不能把整数和布尔值直接混在这一层，例如 <code>[12,true]</code> 是预期的类型错误。</p>
+<p>不过，共同类型也可以是前面学过的复合类型。假如另一份记录保存的是“每天页数与完成标记”，就可以让每一项都是二元组：</p>
+<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>val daily_reports = [(12,true),(18,false)];</span></span>
+<span data-line=""><span>val daily_flags = [true,false,true];</span></span>
+<span data-line=""><span>(* daily_reports : (int * bool) list *)</span></span>
+<span data-line=""><span>(* daily_flags : bool list *)</span></span></code></pre></figure>
+<p>第一份列表的每个元素都是 <code>int * bool</code>，所以各元素类型一致。第二份只记录布尔标记，每项都是 <code>bool</code>。位置数量可变化，但元素类型保持一致，是列表与元组各自承担的不同职责。</p>
+<p>构造列表也会先计算里面的表达式。原课用小整数演示这个过程，例如 <code>[3,4+3,7]</code> 得到 <code>[3,7,7]</code>。计算完成后保存的是三个整数值，而不是三段等待以后执行的代码。</p>
+<h2 id="把三天记录拆成第一天与剩余两天">把三天记录拆成“第一天与剩余两天”</h2>
+<p>要理解列表怎样被构造，可以先看一份更短的记录。假设剩余两天的页数已经是 <code>[18,10]</code>，我们希望在它前面放上第一天的 <code>12</code>，得到 <code>[12,18,10]</code>：</p>
+<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>val tail = [18,10];</span></span>
+<span data-line=""><span>val whole = 12 :: tail;</span></span>
+<span data-line=""><span>(* whole = [12,18,10] : int list *)</span></span></code></pre></figure>
+<p><code>::</code> 读作 cons，它的作用是<strong>把一个元素放到一个已有列表的前面</strong>。左边的 <code>12</code> 是一个整数，右边的 <code>tail</code> 是整数列表，结果仍然是整数列表。它不是把 <code>12</code> 放到末尾，也没有把 <code>tail</code> 原地改掉；后面再读取 <code>tail</code>，仍然得到 <code>[18,10]</code>。</p>
+<p>我们把新列表的第一个元素叫作<strong>头部</strong>，把其余元素组成的列表叫作<strong>尾部</strong>。对 <code>whole</code> 而言，头部是整数 <code>12</code>，尾部是列表 <code>[18,10]</code>。头部与尾部处在不同层次：一个是元素，另一个仍是列表。</p>
+<p>最短的非空列表也符合这个结构：<code>12 :: []</code> 的头部是 <code>12</code>，尾部是空列表。继续套用，就得到：</p>
+<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>val built = 12 :: (18 :: (10 :: []));</span></span>
+<span data-line=""><span>val same = 12 :: 18 :: 10 :: [];</span></span>
+<span data-line=""><span>(* built 与 same 都是 [12,18,10] *)</span></span></code></pre></figure>
+<p>从最里面开始，<code>10 :: []</code> 先得到 <code>[10]</code>，再把 <code>18</code> 放到前面，最后放入 <code>12</code>。不写括号的版本会向右结合，也就是按上面的分组方式理解。这样，固定的“一个头部加一个尾部”结构，就能组成任意有限长度的列表。</p>
+<h2 id="为什么两个列表不能直接拿-cons-拼起来">为什么两个列表不能直接拿 cons 拼起来</h2>
+<p><code>::</code> 两侧的类型要求是：若左边为 <code>t</code>，右边就需要是 <code>t list</code>，结果也为 <code>t list</code>。这里的 <code>t</code> 只是某种类型的占位记号。</p>
+<p>因此，<code>12 :: 18</code> 是预期的类型错误，因为右边不是列表。<code>[12] :: [18,10]</code> 也不符合要求：右边要求每项为整数，左边却是一份整数列表。把两份页数记录首尾连接起来，需要另一种计算，下一篇会写这个函数。</p>
+<p>但“左边是列表就一定错误”也不准确。假如我们要保存几周的数据，外层列表的一项本身就是一周页数列表：</p>
+<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>val weeks = [12] :: [[18,10]];</span></span>
+<span data-line=""><span>(* weeks = [[12],[18,10]] : int list list *)</span></span></code></pre></figure>
+<p>这一次，左边的一个元素是 <code>[12]</code>，类型为 <code>int list</code>；右边保存同类元素，类型为 <code>int list list</code>，所以符合规则。类型里的两个 <code>list</code> 表示两层列表，不要求各周的记录天数相同。</p>
+<h2 id="为了继续计算先问是否为空再读头部和尾部">为了继续计算，先问是否为空，再读头部和尾部</h2>
+<p>保存列表之后，我们想让函数把所有页数相加。第一步需要知道还有没有记录；如果有，就读取一天的页数，再处理剩下的部分。原课先给出三个现成函数来完成这些动作：<code>null</code>、<code>hd</code>、<code>tl</code>。</p>
+<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>val no_records = null first_three_days;</span></span>
+<span data-line=""><span>val first_day = hd first_three_days;</span></span>
+<span data-line=""><span>val other_days = tl first_three_days;</span></span>
+<span data-line=""><span>(* no_records = false : bool *)</span></span>
+<span data-line=""><span>(* first_day = 12 : int *)</span></span>
+<span data-line=""><span>(* other_days = [18,10] : int list *)</span></span></code></pre></figure>
+<p><code>null</code> 回答“列表是不是空的”，结果是布尔值。它是接收列表的函数，不是 Java 中那个空引用值；ML 的空列表写 <code>[]</code>。<code>hd</code> 取头部，<code>tl</code> 取尾部，所以两者的结果分别是一个元素和一个列表。</p>
+<p>如果要读取第二天，就先取得尾部 <code>[18,10]</code>，再从这个列表中取头部：</p>
+<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>val second_day = hd (tl first_three_days);</span></span>
+<span data-line=""><span>val last_day_list = tl (tl first_three_days);</span></span>
+<span data-line=""><span>val after_three_days = tl (tl (tl first_three_days));</span></span>
+<span data-line=""><span>(* second_day = 18 : int *)</span></span>
+<span data-line=""><span>(* last_day_list = [10] : int list *)</span></span>
+<span data-line=""><span>(* after_three_days = [] : int list *)</span></span></code></pre></figure>
+<p>每次 <code>tl</code> 都去掉一个头部；它不会直接把最后一个元素当作结果交回。所以 <code>[10]</code> 的尾部是 <code>[]</code>，而不是整数 <code>10</code>。原视频用 <code>x=[7,8,9]</code> 做同样演示，逐次得到 <code>[8,9]</code>、<code>[9]</code>、<code>[]</code>，只是数字与我们这份阅读记录不同。</p>
+<h2 id="到了空列表就不能再取头尾">到了空列表，就不能再取头尾</h2>
+<p>下面四次计算揭示了一个重要边界：</p>
+<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>val empty_check = null ([] : int list);</span></span>
+<span data-line=""><span>val one_check = null [7];</span></span>
+<span data-line=""><span>val one_head = hd [7];</span></span>
+<span data-line=""><span>val one_tail = tl [7];</span></span>
+<span data-line=""><span>(* 依次得到 true、false、7、[] *)</span></span></code></pre></figure>
+<p><code>tl [7]</code> 可以执行，因为输入是有一个头部的非空列表，取走它后恰好没有剩余元素。<code>tl []</code> 则一开始就没有可供拆开的非空结构；<code>hd []</code> 同样没有第一个元素可取。两者都会在求值时引发 <code>Empty</code> 异常。</p>
+<p>这不是列表类型本身无法确定。即使写成 <code>hd ([] : int list)</code>，类型检查器也能知道结果类型应该是 <code>int</code>，运行时却仍然没有元素可以交回。因此我们要先判断是否为空，再在已经确认非空的分支里使用 <code>hd</code>、<code>tl</code>。下一篇的列表求和会把这个顺序完整用起来。</p>
+<h2 id="空列表为什么显示成-a-list">空列表为什么显示成 'a list</h2>
+<p>有时工具对 <code>[]</code> 显示的类型是 <code>'a list</code>，其中 <code>'a</code> 通常读作 alpha。这里表示“可以选定某一种元素类型”：空列表没有任何现有元素与这个选择冲突，所以它既可以用于整数列表，也可以用于布尔列表。</p>
+<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>val empty_ints : int list = [];</span></span>
+<span data-line=""><span>val empty_flags : bool list = [];</span></span></code></pre></figure>
+<p>这不等于空列表没有类型，也不等于某份列表能随意混入不同类型。上面第一条明确选定 <code>int list</code> 后，给它前面接整数符合规则，接布尔值就不符合。</p>
+<p>刚才三个函数的类型也可以使用相同的占位记号理解：</p>
 <table>
 <thead>
 <tr>
-<th>操作</th>
-<th>对 <code>[3,5,8]</code> 的结果</th>
-<th>类型关系</th>
+<th>函数类型</th>
+<th>读法</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>null</code></td>
-<td><code>false</code></td>
-<td><code>'a list -> bool</code></td>
+<td><code>null : 'a list -> bool</code></td>
+<td>输入某种元素的列表，回答是否为空</td>
 </tr>
 <tr>
-<td><code>hd</code></td>
-<td><code>3</code></td>
-<td><code>'a list -> 'a</code></td>
+<td><code>hd : 'a list -> 'a</code></td>
+<td>输入某种元素的列表，取出同种类型的一个元素</td>
 </tr>
 <tr>
-<td><code>tl</code></td>
-<td><code>[5,8]</code></td>
-<td><code>'a list -> 'a list</code></td>
+<td><code>tl : 'a list -> 'a list</code></td>
+<td>输入与结果保持同样的元素类型</td>
 </tr>
 </tbody>
 </table>
-<p>这里的 <code>null</code> 是一个接收列表的普通函数，不是 Java 里表示空引用的 <code>null</code> 值；<code>[]</code> 才是 SML 的空列表。<code>null</code> 检查是否为空；<code>hd</code> 返回第一个元素；<code>tl</code> 返回去掉第一个元素后剩下的列表。<code>tl</code> 的结果仍然是列表，这一点非常重要：即使只剩零项，它也返回空列表，而不是返回某个元素。</p>
-<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>null [];      (* true *)</span></span>
-<span data-line=""><span>null [7];     (* false *)</span></span>
-<span data-line=""><span>hd [7];       (* 7 *)</span></span>
-<span data-line=""><span>tl [7];       (* [] *)</span></span></code></pre></figure>
-<p>但空列表没有头部，也没有可供取出的尾部。因此 <code>hd []</code> 与 <code>tl []</code> 都会引发 <code>Empty</code> 异常。特别要区分 <code>tl [7]</code> 和 <code>tl []</code>：前者是在合法的非空列表上取尾部，结果恰好为空；后者一开始就没有可以拆开的非空结构。</p>
-<p>这也说明类型检查与运行时安全不是同一件事。<code>int list</code> 并没有说明“至少有一个元素”，所以仅仅知道参数是列表，不足以保证调用 <code>hd</code>、<code>tl</code> 安全。接下来写列表函数时，要先处理空列表，再在非空分支读取头部和尾部。</p>
-<h2 id="类型可以继续组合但每一层都要一致">类型可以继续组合，但每一层都要一致</h2>
-<p>下面两份数据都合法：</p>
-<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>val a = [(1,2),(3,4)]</span></span>
-<span data-line=""><span>(* (int * int) list：列表中的每项是一对整数 *)</span></span>
-<span data-line=""> </span>
-<span data-line=""><span>val b = ([1,3],[2,4])</span></span>
-<span data-line=""><span>(* int list * int list：二元组中的每部分是一份整数列表 *)</span></span></code></pre></figure>
-<p>它们拥有相似的基本数字，但外层结构不同。因此，对 <code>a</code> 用 <code>hd</code> 取得的是二元组 <code>(1,2)</code>；对 <code>b</code> 用 <code>#1</code> 取得的是列表 <code>[1,3]</code>。这正好延续了上一篇的原则：先确定外层是什么，再逐层读取。</p>
-<p>列表里的列表也可以有不同长度，例如 <code>[[],[1,2],[3]]</code> 是 <code>int list list</code>。外层要求各项都是整数列表，却没有要求它们长度相同。<code>[[1],[true]]</code> 则不成立，因为内层列表的元素类型已经不一致。</p>
-<h2 id="任意类型不等于一次调用混用类型">“任意类型”不等于“一次调用混用类型”</h2>
-<p><code>hd</code> 的 <code>'a list -> 'a</code> 表示它可以用于各种元素类型的列表，但一次调用里，输入与输出必须使用同一个类型。传入整数列表，结果类型是整数；传入二元组列表，结果类型就是相应二元组，而不会突然变成其中某个字段。</p>
-<p>例如 <code>hd [(1,true),(2,false)]</code> 的结果是 <code>(1,true)</code>。若只要里面的整数，还要再用 <code>#1</code> 读取。反过来，对 <code>hd ([] : int list)</code>，类型检查仍然能够确定结果应该是 <code>int</code>；但运行时根本没有那个元素，所以会发生异常。静态地知道结果类型，与保证这次计算一定产生一个值，必须分开理解。</p>
-<p>长度变化本身没有这个困难。条件表达式 <code>if true then [] else [1,2]</code> 的两个分支都能统一成 <code>int list</code>，所以类型没有冲突。列表类型故意不记录长度，正是为了容纳这种变化；它保留的是元素类型的一致性。</p>
-<h2 id="构造新列表不会改掉旧列表">构造新列表，不会改掉旧列表</h2>
-<p>回到 <code>val whole = 3 :: tail</code>：它不会把 <code>tail</code> 的内容从 <code>[5,8]</code> 改成 <code>[3,5,8]</code>。后续再读取 <code>tail</code>，仍然得到 <code>[5,8]</code>。<code>tl whole</code> 则得到 <code>[5,8]</code>，因为新列表的尾部就是原来那段列表结构。</p>
-<p>在通常的链表实现中，这允许新列表与旧列表共享尾部，不必为了前面增加一个元素就复制整个尾部。这里先把“值没有被修改”理解清楚；共享为什么安全，会在后面的不可变数据一篇展开。</p>
+<p>例如 <code>hd daily_reports</code> 得到整个 <code>(12,true)</code>，因为这里的一个元素就是二元组。若只要里面的页数，还要再写 <code>#1 (hd daily_reports)</code>。我们始终先看外层是什么，再进入它的一个组成部分。</p>
+<h2 id="层层组合时仍然沿实际结构读取">层层组合时，仍然沿实际结构读取</h2>
+<p>原课还比较了这两种形状：</p>
+<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>val a = [(1,2),(3,4)];</span></span>
+<span data-line=""><span>val b = ([1,3],[2,4]);</span></span>
+<span data-line=""><span>(* a : (int * int) list *)</span></span>
+<span data-line=""><span>(* b : int list * int list *)</span></span></code></pre></figure>
+<p>前者是两条配对记录组成的列表，<code>hd a</code> 得到一对整数 <code>(1,2)</code>。后者是一对列表，<code>#1 b</code> 得到完整的 <code>[1,3]</code>。里面都有相似的数字，但外层结构决定了第一步该用哪个读取操作。</p>
+<p>同理，<code>[[],[1,2],[3]]</code> 可以统一为 <code>int list list</code>；其中几份整数列表长短不同，并没有破坏类型。<code>[[1],[true]]</code> 则是预期的类型错误，因为内层分别是整数列表和布尔列表，外层各项没有共同的元素类型。</p>
+<p>现在我们已经能够保存一周长短不同的记录，也知道怎样判断空、读取一天、得到剩余天数。下一篇就把这些动作接起来，让同一个函数算出任意有限份阅读记录的总页数。</p>
 <h2 id="对应原课与回看线索">对应原课与回看线索</h2>
-<p>本篇对应 <strong>V8：Introducing Lists</strong>。回看时沿着“怎样构造 → 怎样检查类型 → 怎样取出头尾”走一遍。尤其留意空列表的多态类型、<code>::</code> 两侧不同的角色，以及 <code>tl [7]</code> 与 <code>tl []</code> 的区别。</p>
+<p>本篇对应 <strong>V8：Introducing Lists</strong>。从三天与七天的阅读记录出发，保留原课的空表、cons、头尾读取、复合元素及多态类型这些关键细节。文中的阅读情境是自编组织方式。</p>
 <ul class="rin-list rin-list-unordered">
 <li><a href="https://courses.cs.washington.edu/courses/cse341/19sp/videos/unit1/uncaptioned/010-lists.mp4">V8 官方视频</a></li>
 <li><a href="https://courses.cs.washington.edu/courses/cse341/19sp/unit1notes.pdf">官方 Unit 1 阅读笔记：Lists，印刷第 6–8 页</a></li>
-<li><a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec2slides.pdf">Lecture 2 幻灯片，第 16–22 页</a></li>
+<li><a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec2slides.pdf">Lecture 2 幻灯片</a></li>
 <li><a href="https://smlfamily.github.io/Basis/list.html">Standard ML Basis：List 结构</a></li>
-</ul></article><nav class="chapter-switcher" aria-label="章节导航"><a rel="prev" href="../05-tuples/index.html">← 05 元组：把不同数据装在一起</a><a class="course-home" href="../index.html">全部 13 篇</a><a rel="next" href="../07-list-recursion/index.html">07 列表递归：空列表与剩下的部分 →</a></nav><footer class="lesson-footer">本系列依据 Dan Grossman 的 Programming Languages, Part A · Section 1 制作原创中文学习讲解，使用自己的解释与示例组织概念；不是逐字翻译、官方译本或课程视频字幕。<br><a href="../index.html#sources">来源、范围与 17 段视频映射</a> · 资料核对：2026-10-16</footer></main></body></html>
+</ul></article><nav class="chapter-switcher" aria-label="章节导航"><a rel="prev" href="../05-tuples/index.html">← 05 元组：把相关结果放在一起</a><a class="course-home" href="../index.html">全部 13 篇</a><a rel="next" href="../07-list-recursion/index.html">07 列表递归：一周页数怎样加起来 →</a></nav><footer class="lesson-footer">本系列依据 Dan Grossman 的 Programming Languages, Part A · Section 1 制作原创中文学习讲解，使用自己的解释与示例组织概念；不是逐字翻译、官方译本或课程视频字幕。<br><a href="../index.html#sources">来源、范围与 17 段视频映射</a> · 资料核对：2026-10-16 · 讲解重组：2026-10-17</footer></main></body></html>

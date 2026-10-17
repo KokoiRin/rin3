@@ -1,9 +1,11 @@
 <!doctype html>
-<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="let 与效率：避免重复计算 · Dan Grossman 编程语言课程 Section 1 原创中文讲解"><title>let 与效率：避免重复计算 · 编程语言 Part A / Section 1 · RIN III</title><link rel="stylesheet" href="../../reader.css"><link rel="stylesheet" href="../lesson.css"><link rel="manifest" href="../../../manifest.webmanifest"></head><body class="pl-course"><nav class="site-nav"><a href="../index.html">← 编程语言 · Section 1</a><a href="https://www.coursera.org/learn/programming-languages">原课程 ↗</a></nav><main class="reader"><header class="chapter-header"><span class="chapter-kicker">09 / 13 · 原创中文讲解</span><h1>let 与效率：避免重复计算</h1><p class="lead">数清递归调用发生几次，再决定该把计算结果保存在哪里。</p><p class="byline">原课程：Dan Grossman · Programming Languages, Part A</p><p class="lesson-context">名字的范围、计算次数、缺失结果与条件判断。建议按顺序阅读；遇到新符号，先跟随代码的执行过程，再回看规则。</p><details class="source-details"><summary>对应视频与本篇范围</summary><ul><li><a href="https://www.coursera.org/learn/programming-languages/lecture/r1kqG/let-and-efficiency">V12 · Let and Efficiency</a></li></ul><p>本系列依据 Dan Grossman 的 Programming Languages, Part A · Section 1 制作原创中文学习讲解，使用自己的解释与示例组织概念；不是逐字翻译、官方译本或课程视频字幕。</p><p>主要参考：对应视频的官方英文字幕、<a href="https://courses.cs.washington.edu/courses/cse341/19sp/unit1notes.pdf">UW Unit 1 讲义</a>、<a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec1slides.pdf">Lecture 1</a> / <a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec2slides.pdf">Lecture 2</a> / <a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec3slides.pdf">Lecture 3 幻灯片</a>及讲师示例。<a href="../index.html#sources">完整来源与映射说明</a>。</p></details><details class="lesson-toc"><summary>本篇目录</summary><ol><li class="toc-h2"><a href="#为什么同一段递归会突然慢得无法使用">为什么同一段递归会突然慢得无法使用</a></li><li class="toc-h2"><a href="#先看一个答案正确工作重复的版本">先看一个答案正确、工作重复的版本</a></li><li class="toc-h2"><a href="#输入顺序为什么会掩盖这个问题">输入顺序为什么会掩盖这个问题</a></li><li class="toc-h2"><a href="#用-let-保存已经得到的答案">用 let 保存已经得到的答案</a></li><li class="toc-h2"><a href="#结果相同不代表代价相同">结果相同，不代表代价相同</a></li><li class="toc-h2"><a href="#对应原课与回看线索">对应原课与回看线索</a></li></ol></details><nav class="chapter-switcher" aria-label="章节导航"><a rel="prev" href="../08-local-functions/index.html">← 08 let 与局部函数：让名字有自己的范围</a><a class="course-home" href="../index.html">全部 13 篇</a><a rel="next" href="../10-options/index.html">10 Option：明确表达可能没有结果 →</a></nav></header><article class="lesson-article translated-article"><h2 id="为什么同一段递归会突然慢得无法使用">为什么同一段递归会突然慢得无法使用</h2>
-<p>前面用 <code>let</code> 给中间结果取名字，主要是为了看清代码。现在看它更实际的作用：<strong>保证一项昂贵的计算只做一次</strong>。这一次改动甚至能把指数级的工作量降到线性级，差别远远超过换一台更快的电脑。</p>
-<p>沿用列表例子：一周每天读了多少页，现在想找出单日阅读页数的最大值。对一个非空列表，我们可以先求出尾部的最大值，再与第一个数比较。递归的思路完全正确，但把它写成代码时仍然可能出问题。</p>
-<h2 id="先看一个答案正确工作重复的版本">先看一个答案正确、工作重复的版本</h2>
-<p>下面是原课 <code>bad_max</code> 的结构。空列表暂时返回 <code>0</code>，这个接口问题留到下一篇处理；先只比较非空列表的计算量。</p>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="求最高页数：怎样避免反复计算 · Dan Grossman 编程语言课程 Section 1 原创中文讲解"><title>求最高页数：怎样避免反复计算 · 编程语言 Part A / Section 1 · RIN III</title><link rel="stylesheet" href="../../reader.css"><link rel="stylesheet" href="../lesson.css"><link rel="manifest" href="../../../manifest.webmanifest"></head><body class="pl-course"><nav class="site-nav"><a href="../index.html">← 编程语言 · Section 1</a><a href="https://www.coursera.org/learn/programming-languages">原课程 ↗</a></nav><main class="reader"><header class="chapter-header"><span class="chapter-kicker">09 / 13 · 原创中文讲解</span><h1>求最高页数：怎样避免反复计算</h1><p class="lead">比较当前一天与剩余天数的最大值，看重复求解为何变慢，以及怎样只计算一次。</p><p class="byline">原课程：Dan Grossman · Programming Languages, Part A</p><details class="source-details"><summary>对应视频与本篇范围</summary><ul><li><a href="https://www.coursera.org/learn/programming-languages/lecture/r1kqG/let-and-efficiency">V12 · Let and Efficiency</a></li></ul><p>本系列依据 Dan Grossman 的 Programming Languages, Part A · Section 1 制作原创中文学习讲解，使用自己的解释与示例组织概念；不是逐字翻译、官方译本或课程视频字幕。</p><p>主要参考：对应视频的官方英文字幕、<a href="https://courses.cs.washington.edu/courses/cse341/19sp/unit1notes.pdf">UW Unit 1 讲义</a>、<a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec1slides.pdf">Lecture 1</a> / <a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec2slides.pdf">Lecture 2</a> / <a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec3slides.pdf">Lecture 3 幻灯片</a>及讲师示例。<a href="../index.html#sources">完整来源与映射说明</a>。</p></details><details class="lesson-toc"><summary>本篇目录</summary><ol><li class="toc-h2"><a href="#这一周哪一天读的页数最多">这一周，哪一天读的页数最多</a></li><li class="toc-h2"><a href="#一个能算对非空列表的写法">一个能算对非空列表的写法</a></li><li class="toc-h2"><a href="#只用三天记录把重复工作看清楚">只用三天记录，把重复工作看清楚</a></li><li class="toc-h2"><a href="#用上一篇的-let留住已经算出的数字">用上一篇的 let，留住已经算出的数字</a></li><li class="toc-h2"><a href="#多几个元素差别会扩大到什么程度">多几个元素，差别会扩大到什么程度</a></li><li class="toc-h3"><a href="#并非只有严格递增的列表会慢">并非只有严格递增的列表会慢</a></li><li class="toc-h2"><a href="#同一个答案要看清是怎样算出来的">同一个答案，要看清是怎样算出来的</a></li><li class="toc-h3"><a href="#补充时间改好了仍有等待返回的过程">补充：时间改好了，仍有等待返回的过程</a></li><li class="toc-h2"><a href="#视频里一次卡住发生在准备输入时">视频里一次“卡住”，发生在准备输入时</a></li><li class="toc-h2"><a href="#对应原课与回看线索">对应原课与回看线索</a></li></ol></details><nav class="chapter-switcher" aria-label="章节导航"><a rel="prev" href="../08-local-functions/index.html">← 08 let 与局部函数：理清内部的步骤</a><a class="course-home" href="../index.html">全部 13 篇</a><a rel="next" href="../10-options/index.html">10 Option：没有记录时，怎样回答 →</a></nav></header><article class="lesson-article translated-article"><h2 id="这一周哪一天读的页数最多">这一周，哪一天读的页数最多</h2>
+<p>我们已经能递归遍历阅读列表，也能用 <code>let</code> 给中间结果起名字。现在换一个很具体的问题：这一周每天读了 <code>[12,18,10,15,0,20,25]</code> 页，单日最高读了多少页？答案应该是 25；这里先只求最高页数，不求它是星期几。</p>
+<p>求和时，我们把“第一个数”与“剩下所有数的和”相加。求最大值也可以沿同一条思路：<strong>先找出剩下那些数的最大值，再拿它与第一个数比较。</strong> 例如第一个数是 12，剩下的最大值是 25，整份列表的最大值就是 25。</p>
+<p>这篇要解决的不是“怎样得到正确数字”这一个问题。同样得到 25 的两段代码，可能一段很快结束，另一段在列表稍长时就反复计算、迟迟不返回。我们先看清具体重复了什么，再讨论怎样描述它的工作量。</p>
+<h2 id="一个能算对非空列表的写法">一个能算对非空列表的写法</h2>
+<p>把刚才的办法写成函数，需要先安排停下来的情况。列表只有一个数时，这个数就是最大值；列表有两个或更多数时，再求尾部最大值。空列表没有最大值，原课为了先专注于重复计算，暂时让它返回 0；下一篇会认真处理这个问题。</p>
+<p>下面的 <code>bad_max</code> 输入整数列表，非空时返回其中最大的整数。名字里的 <code>bad</code> 是在提醒我们：这段写法有待修正，先不要拿它处理很长的列表。</p>
 <figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>fun bad_max (xs : int list) =</span></span>
 <span data-line=""><span>    if null xs</span></span>
 <span data-line=""><span>    then 0</span></span>
@@ -11,60 +13,25 @@
 <span data-line=""><span>    then hd xs</span></span>
 <span data-line=""><span>    else if hd xs > bad_max (tl xs)</span></span>
 <span data-line=""><span>    then hd xs</span></span>
-<span data-line=""><span>    else bad_max (tl xs)</span></span></code></pre></figure>
-<p>只有一个元素时，它就是最大值。至少两个元素时，先计算尾部最大值，判断头部是否更大。如果头部更大，就返回头部；否则，在 <code>else</code> 中再次计算尾部最大值。</p>
-<p>问题就在最后一句。“这段代码刚才算过”不等于“语言会自动保存它的结果”。每次执行 <code>bad_max (tl xs)</code> 都是一次新的函数调用，它内部也可能继续重复计算。</p>
-<p>用 <code>[1,2,3]</code> 顺着执行一次：</p>
-<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="text" data-theme="github-light"><code data-language="text" data-theme="github-light" style="display: grid;"><span data-line=""><span>bad_max [1,2,3]</span></span>
-<span data-line=""><span>  为了判断 1 > 尾部最大值，计算 bad_max [2,3]</span></span>
-<span data-line=""><span>    为了判断 2 > 尾部最大值，计算 bad_max [3] → 3</span></span>
-<span data-line=""><span>    判断为 false，再计算 bad_max [3] → 3</span></span>
-<span data-line=""><span>  判断为 false，再计算 bad_max [2,3]</span></span>
-<span data-line=""><span>    又计算两次 bad_max [3]</span></span></code></pre></figure>
-<p>这里不是简单地“多算了一遍”。重复的任务本身又在重复，形成了一棵不断分叉的调用树。</p>
-<h2 id="输入顺序为什么会掩盖这个问题">输入顺序为什么会掩盖这个问题</h2>
-<p>若输入是严格递减的 <code>[3,2,1]</code>，每一层的头部都比尾部最大值大。比较完成后走 <code>then</code>，不会触发第二次递归，整条调用链只有三次调用。</p>
-<p>若输入是严格递增的 <code>[1,2,3]</code>，每一层都走 <code>else</code>，于是每个非末端调用都产生两次递归。全部相等的列表也会走 <code>else</code>，因为代码比较的是 <code>></code>，而不是 <code>>=</code>。因此，只拿一种顺序做小规模测试，很容易误判这段函数的性能。</p>
-<p>这也不限于整段递增：如果唯一的最大值排在很后面，前面的许多层同样会反复计算尾部。随机打乱顺序不能修好这个算法，必须消除重复计算。</p>
-<p>用 <code>C(n)</code> 表示处理长度为 <code>n</code> 的严格递增非空列表时，包含最初调用在内的调用总数：</p>
-<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="text" data-theme="github-light"><code data-language="text" data-theme="github-light" style="display: grid;"><span data-line=""><span>C(1) = 1</span></span>
-<span data-line=""><span>C(n) = 1 + 2 × C(n - 1)</span></span>
-<span data-line=""><span>所以 C(n) = 2^n - 1</span></span></code></pre></figure>
-<table>
-<thead>
-<tr>
-<th>列表长度</th>
-<th align="right">递减输入的调用数</th>
-<th align="right">递增输入的调用数</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>3</td>
-<td align="right">3</td>
-<td align="right">7</td>
-</tr>
-<tr>
-<td>10</td>
-<td align="right">10</td>
-<td align="right">1,023</td>
-</tr>
-<tr>
-<td>30</td>
-<td align="right">30</td>
-<td align="right">1,073,741,823</td>
-</tr>
-<tr>
-<td>50</td>
-<td align="right">50</td>
-<td align="right">1,125,899,906,842,623</td>
-</tr>
-</tbody>
-</table>
-<p>原课用一个假设帮助建立量感：假定每次调用中除递归以外的工作只花 <code>10^-7</code> 秒，长度 50 的递增输入仍需约 3.57 年，长度 55 则超过一世纪。这是基于计算量的示意估算，不是任何一台机器的实测成绩。</p>
-<p><code>null</code>、<code>hd</code> 和 <code>tl</code> 在这里都只做常数级工作。特别是 <code>tl</code> 不会复制整段尾部，所以真正应该关注的是递归结果有没有被重复求出。</p>
-<h2 id="用-let-保存已经得到的答案">用 let 保存已经得到的答案</h2>
-<p>把尾部最大值先绑定到 <code>tailMax</code>：</p>
+<span data-line=""><span>    else bad_max (tl xs);</span></span>
+<span data-line=""> </span>
+<span data-line=""><span>val highest_pages = bad_max [12,18,10,15,0,20,25];</span></span>
+<span data-line=""><span>(* highest_pages = 25 *)</span></span></code></pre></figure>
+<p>第一层先用 <code>null xs</code> 排除空列表，之后才可以安全地读 <code>tl xs</code>。如果尾部为空，说明原列表恰好只有一个元素，直接取 <code>hd xs</code>。否则，条件部分先算出 <code>bad_max (tl xs)</code>，拿它与头部比较：头部大就返回头部，头部不大就返回尾部的最大值。</p>
+<p>最后这句话从数学上没有问题，代码却把 <code>bad_max (tl xs)</code> 写了两次。写在条件里的那一次已经执行过；如果选择了最后的 <code>else</code>，那里又是一次新的调用。解释器不会因为两段文字相同，就自动替我们记住前一次的答案。</p>
+<h2 id="只用三天记录把重复工作看清楚">只用三天记录，把重复工作看清楚</h2>
+<p>为了不被七个数干扰，我们暂时看三天记录 <code>[1,2,3]</code>。答案显然是 3，但要数清调用次数，就要把条件里的计算和 <code>else</code> 里的计算分开看。下面每一行 <code>bad_max ...</code> 都表示实际发生的一次调用。</p>
+<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="text" data-theme="github-light"><code data-language="text" data-theme="github-light" style="display: grid;"><span data-line=""><span>bad_max [1,2,3]                         第 1 次</span></span>
+<span data-line=""><span>  条件需要 bad_max [2,3]                第 2 次</span></span>
+<span data-line=""><span>    条件需要 bad_max [3] → 3            第 3 次</span></span>
+<span data-line=""><span>    2 > 3 为假，else 再求 [3] → 3       第 4 次</span></span>
+<span data-line=""><span>  1 > 3 为假，else 再求 [2,3]           第 5 次</span></span>
+<span data-line=""><span>    条件需要 bad_max [3] → 3            第 6 次</span></span>
+<span data-line=""><span>    2 > 3 为假，else 再求 [3] → 3       第 7 次</span></span></code></pre></figure>
+<p>总共七次，而不是三次。更要紧的是，第二次求 <code>[2,3]</code> 时，不只是把一个已经得到的数字 3 再读一遍，而是把里面的过程也重新执行。重复的计算内部，又包含重复的计算。</p>
+<p>换成 <code>[3,2,1]</code>，情况就不同了：先递归求 <code>[2,1]</code>，再求 <code>[1]</code>；返回时，2 大于 1、3 大于 2，都走 <code>then</code>，不再进入第二个递归调用。这样只有三次调用。答案都正确，输入顺序却把工作量拉开了。</p>
+<h2 id="用上一篇的-let留住已经算出的数字">用上一篇的 let，留住已经算出的数字</h2>
+<p>需要修正的地方现在很明确：尾部最大值求出一次后，把这个整数留下来，之后直接使用它。下面 <code>good_max</code> 的输入、非空结果和 <code>bad_max</code> 一样，只在至少有两个元素时，用局部名字 <code>tailMax</code> 记住尾部答案。</p>
 <figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>fun good_max (xs : int list) =</span></span>
 <span data-line=""><span>    if null xs</span></span>
 <span data-line=""><span>    then 0</span></span>
@@ -77,23 +44,78 @@
 <span data-line=""><span>            if hd xs > tailMax</span></span>
 <span data-line=""><span>            then hd xs</span></span>
 <span data-line=""><span>            else tailMax</span></span>
-<span data-line=""><span>        end</span></span></code></pre></figure>
-<p>执行 <code>val tailMax = ...</code> 时，右侧完成一次计算，绑定的是得到的整数值。之后两次出现 <code>tailMax</code> 都是查询这个值，不会重新执行右侧函数。</p>
+<span data-line=""><span>        end;</span></span>
+<span data-line=""> </span>
+<span data-line=""><span>val same_highest_pages = good_max [12,18,10,15,0,20,25];</span></span>
+<span data-line=""><span>(* same_highest_pages = 25 *)</span></span></code></pre></figure>
+<p>对于 <code>[1,2,3]</code>，最里面的 <code>[3]</code> 返回 3；处理 <code>[2,3]</code> 的那一层把 3 记为自己的 <code>tailMax</code>，比较 <code>2>3</code> 为假，就直接返回这个 3。最外层也得到自己的 <code>tailMax=3</code>，比较 <code>1>3</code> 为假，再返回 3。整个过程只调用了三次 <code>good_max</code>。</p>
 <figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="text" data-theme="github-light"><code data-language="text" data-theme="github-light" style="display: grid;"><span data-line=""><span>good_max [1,2,3]</span></span>
 <span data-line=""><span>  good_max [2,3]</span></span>
 <span data-line=""><span>    good_max [3] → 3</span></span>
 <span data-line=""><span>  tailMax = 3，比较 2 与 3 → 3</span></span>
 <span data-line=""><span>tailMax = 3，比较 1 与 3 → 3</span></span></code></pre></figure>
-<p>现在无论列表递增、递减还是混合排列，每个非空后缀只计算一次。长度为 <code>n</code> 的非空列表产生 <code>n</code> 次调用，时间为 <code>O(n)</code>。这段写法还会保留等待递归结果的调用栈，空间为 <code>O(n)</code>；本节尚未讲尾递归，不需要提前把它改造成另一套算法。</p>
-<p>也可以再把 <code>hd xs</code> 绑定到一个局部名字，让代码更好读。不过，保存一个常数时间操作，与避免整棵递归树的重复，收益量级不同。先识别最昂贵的重复工作，再考虑小的整理。</p>
-<h2 id="结果相同不代表代价相同">结果相同，不代表代价相同</h2>
-<p>在这些输入上，两个版本的结果一致：</p>
-<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>val a = bad_max [3,1,4,2]    (* 4 *)</span></span>
-<span data-line=""><span>val b = good_max [3,1,4,2]   (* 4 *)</span></span>
-<span data-line=""><span>val c = good_max [~8,~3,~5]  (* ~3 *)</span></span></code></pre></figure>
-<p>这个改写不是让 SML “自动记忆”某个函数的所有历史结果。它只是在当前这一次调用里，明确保存一次子问题的结果。跨调用缓存是另外一种技术。</p>
-<p>原视频演示中还有一个值得保留的排查细节：Dan 一次把 <code>countdown</code> 的上下界传反，程序迟迟不返回。原因是生成测试列表的辅助函数一直递减，无法到达终点，<code>good_max</code> 实际还没被调用。函数实参先求值，因此遇到卡住的程序，要分清是准备输入时卡住，还是目标函数内部卡住；在原课 Emacs 交互环境里可用 <code>C-c C-c</code> 中断。不要把所有停顿都归因于递归求最大值。</p>
-<p>下一篇还要修正 <code>good_max [] = 0</code>：空列表没有最大值，而 <code>0</code> 又是一个合法的最大值，调用者不能靠这个数字分辨两种情况。至此我们已经遇到了两个独立问题：算法的代价，以及接口怎样诚实地表达结果。</p>
+<p><code>val tailMax = ...</code> 的右边要先完整计算一次，左边名字随后关联的是<strong>已经算好的整数</strong>。后来出现 <code>tailMax</code> 时，读取这个整数就可以了，不会重新执行那段递归。每一层有自己的局部名字，但每一层都只向更短的列表递归一次。</p>
+<h2 id="多几个元素差别会扩大到什么程度">多几个元素，差别会扩大到什么程度</h2>
+<p>先把刚才的计数继续往下推。递增输入只有一个元素时，<code>bad_max</code> 调用一次；两个元素时，自己一次，再求两次单元素列表，共三次；三个元素是七次；四个元素就变成 <code>1+2×7=15</code> 次。每增加一个元素，原来整套工作大致要做两遍。</p>
+<p>这里把原调用也算在调用总数中。长度为 <code>n</code> 的严格递增非空列表，调用总数是 <code>2^n-1</code>；若写作 <code>C(n)</code>，相邻长度的关系就是 <code>C(1)=1</code>、<code>C(n)=1+2×C(n-1)</code>。这个公式只是把刚才“一次自己、两次尾部”的过程记下来。</p>
+<table>
+<thead>
+<tr>
+<th>列表长度</th>
+<th align="right"><code>bad_max</code>：严格递减输入</th>
+<th align="right"><code>bad_max</code>：严格递增输入</th>
+<th align="right"><code>good_max</code>：任意顺序</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>3</td>
+<td align="right">3</td>
+<td align="right">7</td>
+<td align="right">3</td>
+</tr>
+<tr>
+<td>10</td>
+<td align="right">10</td>
+<td align="right">1,023</td>
+<td align="right">10</td>
+</tr>
+<tr>
+<td>30</td>
+<td align="right">30</td>
+<td align="right">1,073,741,823</td>
+<td align="right">30</td>
+</tr>
+<tr>
+<td>50</td>
+<td align="right">50</td>
+<td align="right">1,125,899,906,842,623</td>
+<td align="right">50</td>
+</tr>
+</tbody>
+</table>
+<p>这种随长度一层层翻倍的增长，叫作<strong>指数增长</strong>。改好后，每个非空的尾部只处理一次，长度增加多少，调用数就相应增加多少，叫作<strong>线性增长</strong>。将来读到“时间复杂度”时，可以把它理解为：输入变大后，工作量按什么规律增长；这里 <code>good_max</code> 的时间记作 <code>O(n)</code>。</p>
+<p>原课还用一个假设建立量感：假定每次调用中除递归以外的工作只花一千万分之一秒，即 <code>10^-7</code> 秒，长度 50 的递增输入仍需约 3.57 年，长度 55 则超过一世纪。这是按次数推算的示意，不是机器实测。算法每多一层就重复整套工作，单靠机器快一些，很难弥补这种差别。</p>
+<h3 id="并非只有严格递增的列表会慢">并非只有严格递增的列表会慢</h3>
+<p>如果所有元素相等，<code>hd xs > ...</code> 也总为假，因此仍会触发 <code>else</code> 里的第二次递归。若唯一的最大值排在列表很后面，前面的许多层也都会重复求尾部。把列表随便打乱，不能消除代码里的重复调用。</p>
+<p>原课特别指出，<code>null</code>、<code>hd</code>、<code>tl</code> 本身都只做很少、不会随列表长度增加的工作，通常叫“常数时间”。<code>tl</code> 取得现有列表的尾部，不是把后面的所有元素重新复制一份。这段程序的主要代价，来自不断重做的 <code>bad_max</code>，而不是这些基本操作。</p>
+<h2 id="同一个答案要看清是怎样算出来的">同一个答案，要看清是怎样算出来的</h2>
+<p>下面用三个小输入检查我们讨论的结果。前两个是相同列表的两种求法，最后一个说明：非空列表即使全是负整数，也应返回真正最大的那个负数。</p>
+<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>val a = bad_max [3,1,4,2];    (* 4 *)</span></span>
+<span data-line=""><span>val b = good_max [3,1,4,2];   (* 4 *)</span></span>
+<span data-line=""><span>val c = good_max [~8,~3,~5];  (* ~3 *)</span></span></code></pre></figure>
+<p>这里的 <code>let</code> 只记住当前这次调用里算出的尾部结果。下一次独立调用 <code>good_max</code>，仍然会从它收到的列表重新计算，没有建立跨调用的历史答案库。也可以给 <code>hd xs</code> 另起一个名字以便阅读，但省下一次取头部，与省掉整棵重复递归的计算，收益很不一样。</p>
+<h3 id="补充时间改好了仍有等待返回的过程">补充：时间改好了，仍有等待返回的过程</h3>
+<p><code>good_max</code> 向尾部递归时，外面各层还在等着比较结果，因此仍然需要保存这些等待中的计算。长度为 <code>n</code> 的列表，这部分额外空间也随 <code>n</code> 增长，通常记作 <code>O(n)</code>。后续讲尾递归时会继续处理它；现在先确认本篇已经消除了重复求尾部的问题。</p>
+<h2 id="视频里一次卡住发生在准备输入时">视频里一次“卡住”，发生在准备输入时</h2>
+<p>原视频用 <code>countup</code> 和 <code>countdown</code> 自动生成较长列表，再交给最大值函数。这里是另外写的测试辅助版本，接收起点与终点，与第七篇只接收一个整数的 <code>countdown</code> 不同。它们分别从小到大、从大到小列出包括两端的整数；例如 <code>countdown (3,1)</code> 应产生 <code>[3,2,1]</code>。视频中有一次把 <code>countdown</code> 的上下界传反了，辅助函数继续向下数，走不到终点。</p>
+<p>因此，当时 <code>good_max</code> 其实还没有开始运行：<strong>函数实参先求值，列表必须先生成，才能交给最大值函数。</strong> 这说明看到程序迟迟不返回时，要先判断它卡在准备输入，还是卡在目标函数内部。在原课的 Emacs 交互环境中，<code>C-c C-c</code> 可以中断这次运行。</p>
+<p>现在，非空列表求最大值的计算已经整理好了。还有一个未解决的具体问题：<code>good_max []</code> 和 <code>good_max [0]</code> 都给出 0，读到结果的人仍然无法判断到底有没有记录。下一篇就来区分这两种情况。</p>
 <h2 id="对应原课与回看线索">对应原课与回看线索</h2>
-<p>对应 <strong>V12 · Let and Efficiency</strong>。回看时关注两种输入形成的调用树，以及局部绑定保存的是计算后的值。</p>
-<p>来源：<a href="https://courses.cs.washington.edu/courses/cse341/19sp/videos/unit1.html">官方 Unit 1 视频目录</a>、<a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec3slides.pdf">Lecture 3 幻灯片，第 12–16 页</a>、<a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec3.sml">Lecture 3 代码</a>。调用次数表和阅读页数情境是本系列补充推导。</p></article><nav class="chapter-switcher" aria-label="章节导航"><a rel="prev" href="../08-local-functions/index.html">← 08 let 与局部函数：让名字有自己的范围</a><a class="course-home" href="../index.html">全部 13 篇</a><a rel="next" href="../10-options/index.html">10 Option：明确表达可能没有结果 →</a></nav><footer class="lesson-footer">本系列依据 Dan Grossman 的 Programming Languages, Part A · Section 1 制作原创中文学习讲解，使用自己的解释与示例组织概念；不是逐字翻译、官方译本或课程视频字幕。<br><a href="../index.html#sources">来源、范围与 17 段视频映射</a> · 资料核对：2026-10-16</footer></main></body></html>
+<p>本篇对应 <strong>V12：Let and Efficiency</strong>。回看时先跟着三元素列表数调用，再看 <code>let</code> 保存尾部答案以后，为什么每层只剩一次递归。阅读记录、精确调用次数表与负数输入，是本系列增加的情境和推导。</p>
+<ul class="rin-list rin-list-unordered">
+<li><a href="https://courses.cs.washington.edu/courses/cse341/19sp/videos/unit1/uncaptioned/014-let-efficiency.mp4">V12 官方视频</a></li>
+<li><a href="https://courses.cs.washington.edu/courses/cse341/19sp/videos/unit1.html">官方 Unit 1 视频目录</a></li>
+<li><a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec3slides.pdf">Lecture 3 幻灯片，第 12–16 页</a></li>
+<li><a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec3.sml">Lecture 3 原始代码</a></li>
+</ul></article><nav class="chapter-switcher" aria-label="章节导航"><a rel="prev" href="../08-local-functions/index.html">← 08 let 与局部函数：理清内部的步骤</a><a class="course-home" href="../index.html">全部 13 篇</a><a rel="next" href="../10-options/index.html">10 Option：没有记录时，怎样回答 →</a></nav><footer class="lesson-footer">本系列依据 Dan Grossman 的 Programming Languages, Part A · Section 1 制作原创中文学习讲解，使用自己的解释与示例组织概念；不是逐字翻译、官方译本或课程视频字幕。<br><a href="../index.html#sources">来源、范围与 17 段视频映射</a> · 资料核对：2026-10-16 · 讲解重组：2026-10-17</footer></main></body></html>

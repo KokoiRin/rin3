@@ -1,49 +1,56 @@
 <!doctype html>
-<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="Option：明确表达可能没有结果 · Dan Grossman 编程语言课程 Section 1 原创中文讲解"><title>Option：明确表达可能没有结果 · 编程语言 Part A / Section 1 · RIN III</title><link rel="stylesheet" href="../../reader.css"><link rel="stylesheet" href="../lesson.css"><link rel="manifest" href="../../../manifest.webmanifest"></head><body class="pl-course"><nav class="site-nav"><a href="../index.html">← 编程语言 · Section 1</a><a href="https://www.coursera.org/learn/programming-languages">原课程 ↗</a></nav><main class="reader"><header class="chapter-header"><span class="chapter-kicker">10 / 13 · 原创中文讲解</span><h1>Option：明确表达可能没有结果</h1><p class="lead">让类型记录“有结果”与“没结果”，避免约定一个特殊值。</p><p class="byline">原课程：Dan Grossman · Programming Languages, Part A</p><p class="lesson-context">名字的范围、计算次数、缺失结果与条件判断。建议按顺序阅读；遇到新符号，先跟随代码的执行过程，再回看规则。</p><details class="source-details"><summary>对应视频与本篇范围</summary><ul><li><a href="https://www.coursera.org/learn/programming-languages/lecture/URpvs/options">V13 · Options</a></li></ul><p>本系列依据 Dan Grossman 的 Programming Languages, Part A · Section 1 制作原创中文学习讲解，使用自己的解释与示例组织概念；不是逐字翻译、官方译本或课程视频字幕。</p><p>主要参考：对应视频的官方英文字幕、<a href="https://courses.cs.washington.edu/courses/cse341/19sp/unit1notes.pdf">UW Unit 1 讲义</a>、<a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec1slides.pdf">Lecture 1</a> / <a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec2slides.pdf">Lecture 2</a> / <a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec3slides.pdf">Lecture 3 幻灯片</a>及讲师示例。<a href="../index.html#sources">完整来源与映射说明</a>。</p></details><details class="lesson-toc"><summary>本篇目录</summary><ol><li class="toc-h2"><a href="#没有答案也是接口需要表达的情况">没有答案，也是接口需要表达的情况</a></li><li class="toc-h2"><a href="#option-是可能有一个值的类型">option 是“可能有一个值”的类型</a></li><li class="toc-h2"><a href="#为什么不用长度为零或一的列表">为什么不用长度为零或一的列表</a></li><li class="toc-h2"><a href="#先检查再取出">先检查，再取出</a></li><li class="toc-h2"><a href="#第一个完整版本每层都返回-option">第一个完整版本：每层都返回 option</a></li><li class="toc-h2"><a href="#第二个版本在入口处理缺失在内部处理数值">第二个版本：在入口处理缺失，在内部处理数值</a></li><li class="toc-h2"><a href="#补充理解类型表达缺失并不代替全部检查">补充理解：类型表达缺失，并不代替全部检查</a></li><li class="toc-h2"><a href="#对应原课与回看线索">对应原课与回看线索</a></li></ol></details><nav class="chapter-switcher" aria-label="章节导航"><a rel="prev" href="../09-efficiency/index.html">← 09 let 与效率：避免重复计算</a><a class="course-home" href="../index.html">全部 13 篇</a><a rel="next" href="../11-booleans-comparison/index.html">11 布尔与比较：读清条件和类型 →</a></nav></header><article class="lesson-article translated-article"><h2 id="没有答案也是接口需要表达的情况">没有答案，也是接口需要表达的情况</h2>
-<p>求最大值的算法已经足够快，但 <code>good_max []</code> 仍然返回 <code>0</code>。这不是算术上的最大值，而是我们随手选的一个替代数字。若列表是 <code>[0]</code>，结果也为 <code>0</code>，调用者无法区分“最大值是零”和“根本没有数”。</p>
-<p>换成 <code>~1</code> 或一个很小的整数也解决不了问题，因为它们都可能是合法输入。我们需要让结果同时表达两件事：<strong>有没有答案，以及有答案时答案是什么</strong>。</p>
-<h2 id="option-是可能有一个值的类型">option 是“可能有一个值”的类型</h2>
-<p>SML 提供 <code>option</code>。若普通答案的类型是 <code>int</code>，可能缺失的答案类型就是 <code>int option</code>。它的值只有两种形状：</p>
-<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>val missing : int option = NONE</span></span>
-<span data-line=""><span>val found = SOME 12           (* int option *)</span></span>
-<span data-line=""><span>val zero = SOME 0             (* int option *)</span></span>
-<span data-line=""><span>val title = SOME "Chapter 1" (* string option *)</span></span></code></pre></figure>
-<p><code>NONE</code> 表示没有携带值，<code>SOME 12</code> 表示有值，而且这个值是 <code>12</code>。<code>SOME 0</code> 和 <code>NONE</code> 明确不同，<code>SOME []</code> 与 <code>NONE</code> 也不同：前者有一个值，这个值恰好是空列表。</p>
-<p>若 <code>e</code> 的类型是 <code>t</code>，则 <code>SOME e</code> 的类型是 <code>t option</code>。求值时，先把 <code>e</code> 求成值 <code>v</code>，再得到 <code>SOME v</code>。所以 <code>SOME (3+4)</code> 得到 <code>SOME 7</code>；包一层 <code>SOME</code> 并不会推迟计算，也不会阻止内部表达式抛出异常。</p>
-<p>单独的 <code>NONE</code> 可以用于不同元素类型，类型常显示为 <code>'a option</code>。这与 <code>[]</code> 的 <code>'a list</code> 类似：里面没有元素，不会强迫元素类型是整数或字符串。可是一旦确定为 <code>int option</code>，就不能再把同一个结果当作 <code>string option</code> 使用。</p>
-<p><code>SOME 12</code> 自己也不是整数，不能直接拿它加一。需要先处理有无答案，再取出内部整数进行算术，不能把包装层当作透明的。</p>
-<h2 id="为什么不用长度为零或一的列表">为什么不用长度为零或一的列表</h2>
-<p>确实可以约定：<code>[]</code> 表示没答案，<code>[12]</code> 表示答案是 12。但 <code>int list</code> 也允许 <code>[12,13]</code> 这样的值，类型没有准确表达我们的意图。</p>
-<p><code>int option</code> 把结果限定在“零个或一个整数”。它不是一种特殊列表，虽然两者都可以描述空的情况，但类型与可用操作不同。让类型更贴近业务含义，读代码的人就少需要记一条额外约定。</p>
-<h2 id="先检查再取出">先检查，再取出</h2>
-<p>本节用两个已有操作读取 option：</p>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="Option：没有记录时，怎样回答 · Dan Grossman 编程语言课程 Section 1 原创中文讲解"><title>Option：没有记录时，怎样回答 · 编程语言 Part A / Section 1 · RIN III</title><link rel="stylesheet" href="../../reader.css"><link rel="stylesheet" href="../lesson.css"><link rel="manifest" href="../../../manifest.webmanifest"></head><body class="pl-course"><nav class="site-nav"><a href="../index.html">← 编程语言 · Section 1</a><a href="https://www.coursera.org/learn/programming-languages">原课程 ↗</a></nav><main class="reader"><header class="chapter-header"><span class="chapter-kicker">10 / 13 · 原创中文讲解</span><h1>Option：没有记录时，怎样回答</h1><p class="lead">从空列表没有最大值这个问题出发，区分“没有答案”与“答案恰好是零”。</p><p class="byline">原课程：Dan Grossman · Programming Languages, Part A</p><details class="source-details"><summary>对应视频与本篇范围</summary><ul><li><a href="https://www.coursera.org/learn/programming-languages/lecture/URpvs/options">V13 · Options</a></li></ul><p>本系列依据 Dan Grossman 的 Programming Languages, Part A · Section 1 制作原创中文学习讲解，使用自己的解释与示例组织概念；不是逐字翻译、官方译本或课程视频字幕。</p><p>主要参考：对应视频的官方英文字幕、<a href="https://courses.cs.washington.edu/courses/cse341/19sp/unit1notes.pdf">UW Unit 1 讲义</a>、<a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec1slides.pdf">Lecture 1</a> / <a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec2slides.pdf">Lecture 2</a> / <a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec3slides.pdf">Lecture 3 幻灯片</a>及讲师示例。<a href="../index.html#sources">完整来源与映射说明</a>。</p></details><details class="lesson-toc"><summary>本篇目录</summary><ol><li class="toc-h2"><a href="#还没有阅读记录最高页数应该是多少">还没有阅读记录，最高页数应该是多少</a></li><li class="toc-h2"><a href="#先区分有和没有再装入数字">先区分“有”和“没有”，再装入数字</a></li><li class="toc-h2"><a href="#有答案后怎样把里面的整数取出来">有答案后，怎样把里面的整数取出来</a></li><li class="toc-h2"><a href="#第一个版本尾部有答案就拿来比较">第一个版本：尾部有答案，就拿来比较</a></li><li class="toc-h2"><a href="#第二个版本先排除空列表内部只求整数">第二个版本：先排除空列表，内部只求整数</a></li><li class="toc-h3"><a href="#为什么这个辅助函数不检查空列表也能安全运行">为什么这个辅助函数不检查空列表，也能安全运行</a></li><li class="toc-h2"><a href="#现在空记录和真实的零终于分开了">现在，空记录和真实的零终于分开了</a></li><li class="toc-h2"><a href="#补充为什么不用空列表表示没答案">补充：为什么不用空列表表示没答案</a></li><li class="toc-h2"><a href="#对应原课与回看线索">对应原课与回看线索</a></li></ol></details><nav class="chapter-switcher" aria-label="章节导航"><a rel="prev" href="../09-efficiency/index.html">← 09 求最高页数：怎样避免反复计算</a><a class="course-home" href="../index.html">全部 13 篇</a><a rel="next" href="../11-booleans-comparison/index.html">11 布尔与比较：先检查，再安全读取 →</a></nav></header><article class="lesson-article translated-article"><h2 id="还没有阅读记录最高页数应该是多少">还没有阅读记录，最高页数应该是多少</h2>
+<p>上一篇，我们已经能用 <code>good_max</code> 高效地求出一周的最高阅读页数。现在把它放进实际记录过程：新的一周刚开始，列表还是 <code>[]</code>；另一个时候，我们已经记下一天，只是那天读了 0 页，列表是 <code>[0]</code>。这两份记录含义不同，旧函数却都返回 0。</p>
+<p>拿到这个 0 的人无法判断：是已经有记录，最大值确实是 0，还是压根没有数可比较？空列表不存在某个整数可以称作它的最大值，因此随便返回一个整数，会把“没有答案”伪装成“答案就是这个数”。</p>
+<p>换成 <code>~1</code> 看似能避开真实的零页记录，但我们的函数接收 <code>int list</code>，这个类型也允许负数；<code>[~1]</code> 的最大值正是 <code>~1</code>。除非另加输入范围的约定，否则换一个数字仍可能冲突。我们这次要让结果本身清楚地区分两种情况。</p>
 <table>
 <thead>
 <tr>
-<th>操作</th>
-<th>类型</th>
-<th>含义</th>
+<th>阅读记录</th>
+<th>结果需要表达什么</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>isSome</code></td>
-<td><code>'a option -> bool</code></td>
-<td>是否是携带值的 <code>SOME</code></td>
+<td><code>[]</code></td>
+<td>没有最大值</td>
 </tr>
 <tr>
-<td><code>valOf</code></td>
-<td><code>'a option -> 'a</code></td>
-<td>取出 <code>SOME</code> 内的值；遇到 <code>NONE</code> 抛异常</td>
+<td><code>[0]</code></td>
+<td>有最大值，这个值是 0</td>
+</tr>
+<tr>
+<td><code>[12,18,10,15,0,20,25]</code></td>
+<td>有最大值，这个值是 25</td>
 </tr>
 </tbody>
 </table>
-<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>val a = isSome NONE       (* false *)</span></span>
-<span data-line=""><span>val b = isSome (SOME 12)  (* true *)</span></span>
-<span data-line=""><span>val c = valOf (SOME 12)   (* 12 *)</span></span></code></pre></figure>
-<p><code>valOf NONE</code> 在类型上可以成立，运行时却没有东西可取，会引发 <code>Option</code> 异常。这与 <code>hd []</code> 的情况相似：类型正确并不自动保证每次运行都成功。</p>
-<p>这里先认识原课的读取方式。下一节会学习更适合同时区分形状和取得内容的模式匹配；现在不需要提前把所有例子换成它。</p>
-<h2 id="第一个完整版本每层都返回-option">第一个完整版本：每层都返回 option</h2>
+<h2 id="先区分有和没有再装入数字">先区分“有”和“没有”，再装入数字</h2>
+<p>SML 已经提供了表达这两种情况的写法。<code>NONE</code> 表示没有携带答案；<code>SOME 25</code> 表示有答案，而且答案是 25。这里 <code>SOME</code> 后面的数字就是我们真正想要的最大值，<code>SOME 0</code> 因而能与 <code>NONE</code> 明确区分。</p>
+<p>这种“可能没有，也可能有一个值”的类型叫作 <strong><code>option</code></strong>。普通的整数类型是 <code>int</code>，可能缺失的整数答案就写作 <code>int option</code>。先不急着改递归函数，可以在解释器里直接建立这几种结果，看看它们的形状和类型：</p>
+<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>val missing : int option = NONE;</span></span>
+<span data-line=""><span>val found = SOME 25;</span></span>
+<span data-line=""><span>val actual_zero = SOME 0;</span></span>
+<span data-line=""><span>(* missing、found、actual_zero 的类型都是 int option *)</span></span></code></pre></figure>
+<p><code>missing</code> 没有装入任何整数，另外两个分别装着 25 和 0。它们不是三个不同的整数，而是同一种结果类型里的两种形状：<code>NONE</code>，或带着一个整数的 <code>SOME</code>。这正好对应我们需要表达的“无答案”和“有答案”。</p>
+<p><code>option</code> 也不限于整数。下面先算出括号里的表达式，再把结果放在 <code>SOME</code> 中；第二行则装入一个字符串：</p>
+<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>val calculated = SOME (3+4);      (* SOME 7，类型 int option *)</span></span>
+<span data-line=""><span>val title = SOME "Chapter 1";   (* 类型 string option *)</span></span></code></pre></figure>
+<p>所以 <code>SOME e</code> 的规则可以从例子看出来：先把 <code>e</code> 算成值，再得到带着这个值的 <code>SOME</code>。如果 <code>e</code> 的类型是 <code>t</code>，整体类型就是 <code>t option</code>。它不会推迟 <code>e</code> 的执行，若 <code>e</code> 在计算时出错，外面这一层 <code>SOME</code> 也不能阻止错误。</p>
+<p><code>NONE</code> 里面没有值，单独看不要求答案必须是整数或字符串，解释器可能把它的类型显示为 <code>'a option</code>。<code>'a</code> 在这里表示尚未确定的元素类型，和空列表显示为 <code>'a list</code> 相似。一旦像 <code>missing</code> 那样明确规定为 <code>int option</code>，就不能把同一个结果再当成 <code>string option</code> 使用。</p>
+<h2 id="有答案后怎样把里面的整数取出来">有答案后，怎样把里面的整数取出来</h2>
+<p>假设已经得到 <code>SOME 25</code>，接下来还想比较它是不是超过 15 页。<code>SOME 25</code> 整体不是整数，不能直接代替 25 去做整数运算；需要先确认有值，再拿出里面的数。</p>
+<p>原课先使用两个现成操作：<code>isSome</code> 回答“是不是 <code>SOME</code> 形状”，<code>valOf</code> 取出其中的值。下面先建立一个有答案的结果，再分别询问形状和内容。</p>
+<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>val answer = SOME 25;</span></span>
+<span data-line=""><span>val has_answer = isSome answer;   (* true *)</span></span>
+<span data-line=""><span>val maximum = valOf answer;       (* 25 *)</span></span>
+<span data-line=""><span>val missing_has_answer = isSome (NONE : int option);  (* false *)</span></span></code></pre></figure>
+<p><code>isSome</code> 总是给出布尔值：有值为 <code>true</code>，没有值为 <code>false</code>。注意它与列表的 <code>null</code> 判断方向相反：<code>null []</code> 为真，<code>isSome NONE</code> 却为假。<code>valOf (SOME 25)</code> 则给出内部的整数 25。它们不只服务于整数，类型分别是 <code>'a option -> bool</code> 和 <code>'a option -> 'a</code>：装入哪种类型，取出时就得到哪种类型。</p>
+<p>但 <code>valOf NONE</code> 没有内容可取，会在运行时引发名为 <code>Option</code> 的异常。它与 <code>hd []</code> 很像：代码可以通过类型检查，执行时仍然可能因为没有元素而失败。因此下面改写最大值函数时，关键不只是返回 <code>option</code>，还要让读取发生在确定有值之后。</p>
+<h2 id="第一个版本尾部有答案就拿来比较">第一个版本：尾部有答案，就拿来比较</h2>
+<p>还是沿用“当前第一个数，与尾部最大值比较”的递归思路，只把每一层的回答改成 <code>option</code>。例如处理 <code>[4]</code> 时，尾部是 <code>[]</code>，尾部只能回答 <code>NONE</code>；这说明没有另一个数需要比较，当前的 4 就是最大值，应返回 <code>SOME 4</code>。</p>
+<p>处理 <code>[2,4]</code> 时，尾部回答 <code>SOME 4</code>，取出 4，与当前的 2 比较，仍保留尾部答案。处理 <code>[6,2,4]</code> 时，尾部也回答 <code>SOME 4</code>，但 4 不大于当前的 6，于是应返回 <code>SOME 6</code>。我们给这个“尾部的回答”起名叫 <code>tailAnswer</code>。</p>
+<p>下面的 <code>max_option</code> 接收整数列表，空列表返回 <code>NONE</code>，非空列表返回 <code>SOME</code> 包着的最大整数。条件里的 <code>andalso</code> 表示“左边成立，而且右边也成立”；它会先看左边，若左边已经为假，就不再执行右边。这样只有 <code>isSome tailAnswer</code> 为真时，才会去用 <code>valOf</code> 取值。</p>
 <figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>fun max_option (xs : int list) =</span></span>
 <span data-line=""><span>    if null xs</span></span>
 <span data-line=""><span>    then NONE</span></span>
@@ -55,15 +62,17 @@
 <span data-line=""><span>               andalso valOf tailAnswer > hd xs</span></span>
 <span data-line=""><span>            then tailAnswer</span></span>
 <span data-line=""><span>            else SOME (hd xs)</span></span>
-<span data-line=""><span>        end</span></span></code></pre></figure>
-<p>函数的类型是 <code>int list -> int option</code>。对空列表，直接返回 <code>NONE</code>；对非空列表，先询问尾部的答案。如果尾部有最大值，而且比当前头部大，就沿用尾部的答案，否则把当前头部包装成 <code>SOME</code>。</p>
-<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="text" data-theme="github-light"><code data-language="text" data-theme="github-light" style="display: grid;"><span data-line=""><span>max_option [] → NONE</span></span>
-<span data-line=""><span>max_option [4]：尾部答案 NONE → SOME 4</span></span>
-<span data-line=""><span>max_option [2,4]：尾部答案 SOME 4，4 > 2 → SOME 4</span></span>
-<span data-line=""><span>max_option [6,2,4]：尾部答案 SOME 4，4 > 6 为 false → SOME 6</span></span></code></pre></figure>
-<p><code>andalso</code> 会短路：左边是 <code>false</code> 时，不求值右边。因此在 <code>tailAnswer = NONE</code> 时，不会执行 <code>valOf tailAnswer</code>。先检查再取值，既是阅读顺序，也是保证安全的执行顺序。下一篇会完整解释布尔运算规则。</p>
-<h2 id="第二个版本在入口处理缺失在内部处理数值">第二个版本：在入口处理缺失，在内部处理数值</h2>
-<p>上一个版本正确，也没有重复求解昂贵的子问题。但每层都要检查尾部的 option，再决定返回已有答案还是包装当前头部，代码有些绕。可以让外层处理空列表，让一个局部辅助函数专门处理非空列表。</p>
+<span data-line=""><span>        end;</span></span></code></pre></figure>
+<p>按刚才的三个输入，值会这样逐层返回。最下方的空列表先给出 <code>NONE</code>，外面的每一层再根据自己的头部决定答案：</p>
+<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="text" data-theme="github-light"><code data-language="text" data-theme="github-light" style="display: grid;"><span data-line=""><span>max_option []          → NONE</span></span>
+<span data-line=""><span>max_option [4]         → 尾部 NONE，返回 SOME 4</span></span>
+<span data-line=""><span>max_option [2,4]       → 尾部 SOME 4，4 > 2 为真，返回 SOME 4</span></span>
+<span data-line=""><span>max_option [6,2,4]     → 尾部 SOME 4，4 > 6 为假，返回 SOME 6</span></span></code></pre></figure>
+<p>特别看 <code>[4]</code> 那一层：<code>isSome NONE</code> 为假，于是跳过 <code>valOf tailAnswer > hd xs</code>，直接进入 <code>else</code>，得到 <code>SOME 4</code>。这种“前面已经足以决定结果，就不执行后面”的求值方式叫作<strong>短路求值</strong>，下一篇会继续展开。此处它保证我们不会从 <code>NONE</code> 中硬取整数。</p>
+<p>函数类型现在是 <code>int list -> int option</code>，箭头右边明确说明答案可能缺失。它仍像上一篇改好的版本一样，每层只递归求一次尾部；进入 <code>then</code> 时还会直接返回已有的 <code>tailAnswer</code>，不需要每一层都新造一个 <code>SOME</code>。</p>
+<h2 id="第二个版本先排除空列表内部只求整数">第二个版本：先排除空列表，内部只求整数</h2>
+<p>第一个版本已经正确。还可以换一种组织方法：最外面先判断是否有记录；没有就回答 <code>NONE</code>，有记录才交给一个只处理非空列表的辅助函数。这个辅助函数每层直接返回整数，全部算完以后，最外面再包一次 <code>SOME</code>。</p>
+<p>这正好用到第八篇的局部函数：辅助函数只在外层检查之后使用，不需要让外面的代码直接调用它。下面的 <code>max_option_local</code> 对同一份输入给出与 <code>max_option</code> 相同的答案；局部的 <code>max_nonempty</code> 则接收非空列表，返回其中最大的普通整数。</p>
 <figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>fun max_option_local (xs : int list) =</span></span>
 <span data-line=""><span>    if null xs</span></span>
 <span data-line=""><span>    then NONE</span></span>
@@ -82,15 +91,33 @@
 <span data-line=""><span>                    end</span></span>
 <span data-line=""><span>        in</span></span>
 <span data-line=""><span>            SOME (max_nonempty xs)</span></span>
-<span data-line=""><span>        end</span></span></code></pre></figure>
-<p>外部调用者仍然只看到 <code>int list -> int option</code>，两个实现对输入给出相同结果。内部的 <code>max_nonempty</code> 则返回普通 <code>int</code>，最后才包装一次。</p>
-<p>安全性的关键不在函数名，而在调用路径：只有外层确认 <code>xs</code> 非空后才第一次调用它；只有当前列表不止一个元素时才继续递归，因此递归得到的尾部也非空。辅助函数被限制在局部，外部无法绕过检查直接调用它。局部作用域在这里帮助我们维持一个明确的使用条件。</p>
-<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>val emptyAnswer = max_option_local []         (* NONE *)</span></span>
-<span data-line=""><span>val negativeAnswer = max_option_local [~8,~3] (* SOME ~3 *)</span></span>
-<span data-line=""><span>val actualZero = max_option_local [~2,0]      (* SOME 0 *)</span></span></code></pre></figure>
-<h2 id="补充理解类型表达缺失并不代替全部检查">补充理解：类型表达缺失，并不代替全部检查</h2>
-<p><code>int option</code> 让“可能没有答案”进入函数接口，提醒使用者处理缺失。但如果调用者不检查就写 <code>valOf answer</code>，仍然可能出错。类型设计让一个条件显式可见，并不意味着本节这些读取操作已经把所有错误用法都禁止了。</p>
-<p>抛异常也是处理空输入的一种选择，原课提到稍后会学习。这里选择 option，是为了让“没有最大值”作为正常结果的一种形状返回，而不用借一个合法整数冒充它。</p>
+<span data-line=""><span>        end;</span></span></code></pre></figure>
+<p>例如输入 <code>[6,2,4]</code>，最外层发现它非空，才调用辅助函数。辅助函数求 <code>[4]</code> 得到 4，返回上一层比较 2 和 4 得到 4，再返回上一层比较 6 和 4 得到 6。最后，外层的 <code>SOME (...)</code> 得到 <code>SOME 6</code>。</p>
+<h3 id="为什么这个辅助函数不检查空列表也能安全运行">为什么这个辅助函数不检查空列表，也能安全运行</h3>
+<p>注意 <code>max_nonempty</code> 一进来就读取 <code>tl ys</code>，如果收到 <code>[]</code> 就会出错。它之所以可用，不是因为函数名字里写着“非空”，而是代码安排了两道具体保障。</p>
+<p>第一，最外层只有在 <code>null xs</code> 为假时才第一次调用它，所以初次输入一定非空。第二，内部若发现尾部为空，就直接返回头部；只有尾部非空时，才把这个尾部传给下一次递归。因此从第一次到后面每一次，它实际收到的列表都至少有一个元素。</p>
+<p>局部范围又让外面不能绕过这次检查，直接拿 <code>[]</code> 调用这个辅助函数。这样，“只处理非空列表”不是一句希望，而是可以顺着每处调用逐一确认的条件。</p>
+<h2 id="现在空记录和真实的零终于分开了">现在，空记录和真实的零终于分开了</h2>
+<p>下面把新函数用于三种输入：还没有记录、一般整数列表，以及包含真实零的列表。阅读页数通常不为负；保留负整数这个例子，是为了确认函数本身仍然按照它接受的 <code>int list</code> 正确比较整数。</p>
+<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>val empty_answer = max_option_local [];          (* NONE *)</span></span>
+<span data-line=""><span>val negative_answer = max_option_local [~8,~3];  (* SOME ~3 *)</span></span>
+<span data-line=""><span>val zero_answer = max_option_local [0];          (* SOME 0 *)</span></span>
+<span data-line=""><span>val week_answer = max_option_local [12,18,10,15,0,20,25];</span></span>
+<span data-line=""><span>(* week_answer = SOME 25 *)</span></span></code></pre></figure>
+<p>原视频还用 <code>[3,7,5]</code> 演示怎样继续使用最大值。下面先得到 <code>SOME 7</code>，取出里面的 7，才把它加一得到 8。</p>
+<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>val original_answer = max_option [3,7,5];  (* SOME 7 *)</span></span>
+<span data-line=""><span>val following_number = valOf original_answer + 1;  (* 8 *)</span></span></code></pre></figure>
+<p>如果直接把 <code>max_option [3,7,5]</code> 与 1 相加，就是在把 <code>int option</code> 当作 <code>int</code> 使用，会在类型检查时被拒绝。这与 <code>valOf NONE</code> 不同：后者的类型可以成立，却在执行取值时失败。</p>
+<p>两种实现的外部结果类型相同，都是 <code>int option</code>。一个在递归中一直携带有无答案的信息；另一个把空的情况放在最外层，内部只比较整数。这里学到的是两种组织同一任务的方法，不需要把其中一种理解成另一个完全错误。</p>
+<h2 id="补充为什么不用空列表表示没答案">补充：为什么不用空列表表示没答案</h2>
+<p>也可以人为约定：<code>[]</code> 表示没答案，<code>[25]</code> 表示答案是 25。问题是 <code>int list</code> 还允许 <code>[25,30]</code> 这样的值；如果只看类型，无法知道这里究竟是许多个整数，还是“最多一个答案”。<code>int option</code> 则直接把形状限制为无值或一个整数。</p>
+<p>这也不代表 <code>NONE</code> 就是空列表。<code>SOME []</code> 表示<strong>有一个值，而这个值刚好是空列表</strong>，与根本没有携带值的 <code>NONE</code> 不同。要先看外层是 <code>SOME</code> 还是 <code>NONE</code>，再看有值时里面放着什么。</p>
+<p>原课还提到，空输入也可以用抛异常的方式处理，后续课程会介绍。这里用 <code>option</code>，是让“没有最大值”成为正常返回结果的一种形状；不过，使用结果的人仍须先检查再取值，直接写 <code>valOf NONE</code> 依然会出错。下一篇就沿着这个例子，继续讲清楚布尔条件怎样控制执行顺序。</p>
 <h2 id="对应原课与回看线索">对应原课与回看线索</h2>
-<p>对应 <strong>V13 · Options</strong>。重点核对 <code>NONE</code>、<code>SOME</code> 的类型，<code>isSome</code> 与 <code>valOf</code>，列表为什么过于宽泛，以及两种最大值实现对外一致、内部策略不同的关系。</p>
-<p>来源：<a href="https://courses.cs.washington.edu/courses/cse341/19sp/videos/unit1.html">官方 Unit 1 视频目录</a>、<a href="https://courses.cs.washington.edu/courses/cse341/19sp/unit1notes.pdf">Unit 1 阅读讲义，Options</a>、<a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec3slides.pdf">Lecture 3 幻灯片，第 17–19 页</a>。命名、执行过程与“类型不代替全部检查”是本系列教学补充。</p></article><nav class="chapter-switcher" aria-label="章节导航"><a rel="prev" href="../09-efficiency/index.html">← 09 let 与效率：避免重复计算</a><a class="course-home" href="../index.html">全部 13 篇</a><a rel="next" href="../11-booleans-comparison/index.html">11 布尔与比较：读清条件和类型 →</a></nav><footer class="lesson-footer">本系列依据 Dan Grossman 的 Programming Languages, Part A · Section 1 制作原创中文学习讲解，使用自己的解释与示例组织概念；不是逐字翻译、官方译本或课程视频字幕。<br><a href="../index.html#sources">来源、范围与 17 段视频映射</a> · 资料核对：2026-10-16</footer></main></body></html>
+<p>本篇对应 <strong>V13：Options</strong>。先回看为什么空列表不能随便用整数代替，再看 <code>SOME</code>、<code>NONE</code>、<code>isSome</code>、<code>valOf</code>，最后比较两种最大值函数的返回过程。阅读记录、逐层返回的具体数字与非空条件的展开，是本系列补充讲解；视频里的函数名与本文为便于衔接而使用的名字有所不同。</p>
+<ul class="rin-list rin-list-unordered">
+<li><a href="https://courses.cs.washington.edu/courses/cse341/19sp/videos/unit1/uncaptioned/015-options.mp4">V13 官方视频</a></li>
+<li><a href="https://courses.cs.washington.edu/courses/cse341/19sp/unit1notes.pdf">官方 Unit 1 阅读讲义：Options</a></li>
+<li><a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec3slides.pdf">Lecture 3 幻灯片，第 17–19 页</a></li>
+<li><a href="https://smlfamily.github.io/Basis/option.html">SML 官方 Basis Library：Option</a></li>
+</ul></article><nav class="chapter-switcher" aria-label="章节导航"><a rel="prev" href="../09-efficiency/index.html">← 09 求最高页数：怎样避免反复计算</a><a class="course-home" href="../index.html">全部 13 篇</a><a rel="next" href="../11-booleans-comparison/index.html">11 布尔与比较：先检查，再安全读取 →</a></nav><footer class="lesson-footer">本系列依据 Dan Grossman 的 Programming Languages, Part A · Section 1 制作原创中文学习讲解，使用自己的解释与示例组织概念；不是逐字翻译、官方译本或课程视频字幕。<br><a href="../index.html#sources">来源、范围与 17 段视频映射</a> · 资料核对：2026-10-16 · 讲解重组：2026-10-17</footer></main></body></html>
