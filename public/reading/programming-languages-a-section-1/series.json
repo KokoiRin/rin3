@@ -141,6 +141,280 @@
       "note": ""
     }
   ],
+  "visuals": [
+    {
+      "id": "env-bindings",
+      "chapter": "01-expressions",
+      "title": "代码往下走，环境里多了什么",
+      "steps": 7,
+      "sources": [
+        {
+          "label": "V1：ML Variable Bindings and Expressions",
+          "url": "https://courses.cs.washington.edu/courses/cse341/19sp/videos/unit1/uncaptioned/003-expressions-and-variables.mp4"
+        },
+        {
+          "label": "V2：Rules for Expressions",
+          "url": "https://courses.cs.washington.edu/courses/cse341/19sp/videos/unit1/uncaptioned/004-rules-for-expressions.mp4"
+        },
+        {
+          "label": "Lecture 1 代码（其中 w 命名为 q）",
+          "url": "https://courses.cs.washington.edu/courses/cse341/19sp/lec1.sml"
+        }
+      ]
+    },
+    {
+      "id": "conditional-branches",
+      "chapter": "01-expressions",
+      "title": "两边都检查，这次只执行 else",
+      "steps": 4,
+      "sources": [
+        {
+          "label": "V1：ML Variable Bindings and Expressions",
+          "url": "https://courses.cs.washington.edu/courses/cse341/19sp/videos/unit1/uncaptioned/003-expressions-and-variables.mp4"
+        },
+        {
+          "label": "V2：Rules for Expressions",
+          "url": "https://courses.cs.washington.edu/courses/cse341/19sp/videos/unit1/uncaptioned/004-rules-for-expressions.mp4"
+        },
+        {
+          "label": "Lecture 1 代码（其中 w 命名为 q）",
+          "url": "https://courses.cs.washington.edu/courses/cse341/19sp/lec1.sml"
+        }
+      ]
+    },
+    {
+      "id": "repl-session",
+      "chapter": "02-repl-errors",
+      "title": "文件改了，旧会话为什么还会帮它算对",
+      "steps": 12,
+      "sources": [
+        {
+          "label": "V3：The REPL and Errors",
+          "url": "https://courses.cs.washington.edu/courses/cse341/19sp/videos/unit1/uncaptioned/005-REPL-and-errors.mp4"
+        },
+        {
+          "label": "Unit 1 阅读笔记：Using use",
+          "url": "https://courses.cs.washington.edu/courses/cse341/19sp/unit1notes.pdf"
+        }
+      ]
+    },
+    {
+      "id": "shadowing",
+      "chapter": "03-shadowing",
+      "title": "三个 a，是三个先后建立的绑定",
+      "steps": 11,
+      "sources": [
+        {
+          "label": "V4：Shadowing",
+          "url": "https://courses.cs.washington.edu/courses/cse341/19sp/videos/unit1/uncaptioned/006-shadowing.mp4"
+        },
+        {
+          "label": "Unit 1 阅读笔记：Variables are Immutable",
+          "url": "https://courses.cs.washington.edu/courses/cse341/19sp/unit1notes.pdf"
+        }
+      ]
+    },
+    {
+      "id": "function-call",
+      "chapter": "04-functions",
+      "title": "一次加法函数调用：输入先算好，函数体再执行",
+      "steps": 7,
+      "sources": [
+        {
+          "label": "V5：Functions Informally",
+          "url": "https://courses.cs.washington.edu/courses/cse341/19sp/videos/unit1/uncaptioned/007-functions-informally.mp4"
+        },
+        {
+          "label": "V6：Functions Formally",
+          "url": "https://courses.cs.washington.edu/courses/cse341/19sp/videos/unit1/uncaptioned/008-functions-formally.mp4"
+        },
+        {
+          "label": "Unit 1 阅读笔记：Function Bindings",
+          "url": "https://courses.cs.washington.edu/courses/cse341/19sp/unit1notes.pdf"
+        }
+      ]
+    },
+    {
+      "id": "pow-stack",
+      "chapter": "04-functions",
+      "title": "pow (2,3)：每一层都在等一个更小的答案",
+      "steps": 10,
+      "sources": [
+        {
+          "label": "V5：Functions Informally",
+          "url": "https://courses.cs.washington.edu/courses/cse341/19sp/videos/unit1/uncaptioned/007-functions-informally.mp4"
+        },
+        {
+          "label": "Lecture 2 SML 代码",
+          "url": "https://courses.cs.washington.edu/courses/cse341/19sp/lec2.sml"
+        }
+      ]
+    },
+    {
+      "id": "definition-environment",
+      "chapter": "04-functions",
+      "title": "顶层现在是 20，函数为什么仍然乘 12",
+      "steps": 7,
+      "sources": [
+        {
+          "label": "V6：Functions Formally（函数定义环境规则）",
+          "url": "https://courses.cs.washington.edu/courses/cse341/19sp/videos/unit1/uncaptioned/008-functions-formally.mp4"
+        },
+        {
+          "label": "Unit 1 阅读笔记：Function Bindings",
+          "url": "https://courses.cs.washington.edu/courses/cse341/19sp/unit1notes.pdf"
+        }
+      ]
+    },
+    {
+      "id": "local-scope",
+      "chapter": "08-local-functions",
+      "title": "silly2：左边的 x = 2，影响不到右边",
+      "steps": 12,
+      "sources": [
+        {
+          "label": "V10：Let Expressions",
+          "url": "https://courses.cs.washington.edu/courses/cse341/19sp/videos/unit1/uncaptioned/012-let-expressions.mp4"
+        },
+        {
+          "label": "Unit 1 阅读笔记：Let Expressions",
+          "url": "https://courses.cs.washington.edu/courses/cse341/19sp/unit1notes.pdf"
+        },
+        {
+          "label": "Lecture 3 幻灯片",
+          "url": "https://courses.cs.washington.edu/courses/cse341/19sp/lec3slides.pdf"
+        }
+      ]
+    },
+    {
+      "id": "tuple-projection",
+      "chapter": "05-tuples",
+      "title": "沿结构读取嵌套元组",
+      "steps": 4,
+      "sources": [
+        {
+          "label": "V7 原课程视频",
+          "url": "https://www.coursera.org/learn/programming-languages/lecture/lWE7L/pairs-and-other-tuples"
+        },
+        {
+          "label": "Lecture 2 幻灯片",
+          "url": "https://courses.cs.washington.edu/courses/cse341/19sp/lec2slides.pdf"
+        }
+      ]
+    },
+    {
+      "id": "list-structure",
+      "chapter": "06-lists",
+      "title": "一个新头部，接上现成的尾部",
+      "steps": 6,
+      "sources": [
+        {
+          "label": "V8 原课程视频",
+          "url": "https://www.coursera.org/learn/programming-languages/lecture/ArsQG/introducing-lists"
+        },
+        {
+          "label": "Lecture 2 幻灯片",
+          "url": "https://courses.cs.washington.edu/courses/cse341/19sp/lec2slides.pdf"
+        }
+      ]
+    },
+    {
+      "id": "list-recursion",
+      "chapter": "07-list-recursion",
+      "title": "递归下潜时，哪些加法还在等",
+      "steps": 8,
+      "sources": [
+        {
+          "label": "V9 原课程视频",
+          "url": "https://www.coursera.org/learn/programming-languages/lecture/FLlzm/list-functions"
+        },
+        {
+          "label": "Lecture 2 幻灯片",
+          "url": "https://courses.cs.washington.edu/courses/cse341/19sp/lec2slides.pdf"
+        }
+      ]
+    },
+    {
+      "id": "recursion-tree",
+      "chapter": "09-efficiency",
+      "title": "同一段尾部，究竟重新算了几遍",
+      "steps": 8,
+      "sources": [
+        {
+          "label": "V12 原课程视频",
+          "url": "https://www.coursera.org/learn/programming-languages/lecture/r1kqG/let-and-efficiency"
+        },
+        {
+          "label": "Lecture 3 幻灯片",
+          "url": "https://courses.cs.washington.edu/courses/cse341/19sp/lec3slides.pdf"
+        }
+      ]
+    },
+    {
+      "id": "option-shapes",
+      "chapter": "10-options",
+      "title": "没答案，与答案恰好为零，长得不同",
+      "steps": 4,
+      "sources": [
+        {
+          "label": "V13 原课程视频",
+          "url": "https://www.coursera.org/learn/programming-languages/lecture/URpvs/options"
+        },
+        {
+          "label": "Lecture 3 幻灯片",
+          "url": "https://courses.cs.washington.edu/courses/cse341/19sp/lec3slides.pdf"
+        }
+      ]
+    },
+    {
+      "id": "short-circuit",
+      "chapter": "11-booleans-comparison",
+      "title": "先确认有答案，才读取那个答案",
+      "steps": 6,
+      "sources": [
+        {
+          "label": "V14 原课程视频",
+          "url": "https://www.coursera.org/learn/programming-languages/lecture/YvAVp/booleans-and-comparison-operations"
+        },
+        {
+          "label": "Lecture 3 幻灯片",
+          "url": "https://courses.cs.washington.edu/courses/cse341/19sp/lec3slides.pdf"
+        }
+      ]
+    },
+    {
+      "id": "shared-tail",
+      "chapter": "12-immutability",
+      "title": "append 新建哪里，又共享哪里",
+      "steps": 6,
+      "sources": [
+        {
+          "label": "V15 原课程视频",
+          "url": "https://www.coursera.org/learn/programming-languages/lecture/5br3F/benefits-of-no-mutation"
+        },
+        {
+          "label": "Lecture 3 幻灯片",
+          "url": "https://courses.cs.washington.edu/courses/cse341/19sp/lec3slides.pdf"
+        }
+      ]
+    },
+    {
+      "id": "java-alias",
+      "chapter": "12-immutability",
+      "title": "getter 返回同一个数组，会发生什么",
+      "steps": 6,
+      "sources": [
+        {
+          "label": "V16 原课程视频",
+          "url": "https://www.coursera.org/learn/programming-languages/lecture/aOQ26/optional-java-mutation"
+        },
+        {
+          "label": "Lecture 3 幻灯片",
+          "url": "https://courses.cs.washington.edu/courses/cse341/19sp/lec3slides.pdf"
+        }
+      ]
+    }
+  ],
   "chapters": [
     {
       "slug": "01-expressions",
@@ -151,7 +425,7 @@
         2
       ],
       "phase": 0,
-      "sha256": "d5ddf684f3dc1b683452f0e65aa57334bb143574e149723f4eadf8f532146eca",
+      "sha256": "a099e88323d50f0786b82f08661323bbdf7f53d18f5d3844610cd265607aa400",
       "headingCount": 7
     },
     {
@@ -162,7 +436,7 @@
         3
       ],
       "phase": 0,
-      "sha256": "0bbbc9bca2a369d7ee39a97645d8768ddcf6bc526d46c42efa3d45aa5a10051c",
+      "sha256": "1b08b2da7c2d0cc13c2fc845413f09067c428b2e4b5a4140e82fb5447ddd4a4c",
       "headingCount": 13
     },
     {
@@ -173,7 +447,7 @@
         4
       ],
       "phase": 0,
-      "sha256": "6f7a4cfeb0ef6f2cfa29416f8e658d092b7e0244975c7ac628d6de1868e0195b",
+      "sha256": "0c270dd327e2fa1d8b1aea760dae2e8fe98af39de85e302330e2e62a4de03c1f",
       "headingCount": 10
     },
     {
@@ -185,7 +459,7 @@
         6
       ],
       "phase": 1,
-      "sha256": "a132774eaa7b04bd9a13ca24b7330b88e52f39fd1f4c546c131317fb66cf64a5",
+      "sha256": "8b9959e547281014ca9ee5c1c4289267fac372331fb771c7e0c11a66f5b276cb",
       "headingCount": 11
     },
     {
@@ -196,7 +470,7 @@
         7
       ],
       "phase": 1,
-      "sha256": "0d786a3d1c91ff5a1b308a31bf6cdee66858fd6608e6a6de9836e972d0c33fb4",
+      "sha256": "e6709d7e03598a2fa11de43071374b9fd32cf0480fa480a6f1853dc29d3dbd48",
       "headingCount": 11
     },
     {
@@ -207,7 +481,7 @@
         8
       ],
       "phase": 1,
-      "sha256": "db27a05e82f75b1b179a46d2e06b84774ad58790781589b66b3e507795270c3b",
+      "sha256": "30135e4abcebca537117431a4c2ca77ff45af8f3b8e328b36e01dfb140049342",
       "headingCount": 9
     },
     {
@@ -218,7 +492,7 @@
         9
       ],
       "phase": 1,
-      "sha256": "02587d74a0b8e386c494ef895cc2c71ae23e49f5990ea0213ba1c525ddae4923",
+      "sha256": "efb32292586e1441248a6a14f2ebdbb7095235ef0cbf255b657e3057fd96ebd3",
       "headingCount": 10
     },
     {
@@ -230,7 +504,7 @@
         11
       ],
       "phase": 2,
-      "sha256": "bfea0e01c2d2eb4843347fd4b0a71fd77bd56f9953ef90c04a183693179d2b1c",
+      "sha256": "aca6017ba1f1f1a28724e6e2f0af9009dd550adefeb62cb68d758276873159df",
       "headingCount": 10
     },
     {
@@ -241,7 +515,7 @@
         12
       ],
       "phase": 2,
-      "sha256": "b4cb38dd58fe8cb84e9d78936b4f22f0011a53c2960544b8da839d7f9026ba04",
+      "sha256": "e328e36a19fc0fe939330d1e8182bd5f8709475b10d4c3022ee811527dfc8bc2",
       "headingCount": 10
     },
     {
@@ -252,7 +526,7 @@
         13
       ],
       "phase": 2,
-      "sha256": "4d0a0ff836d419f0c923c860dcbe4512fe504f093296eb5156075373064498b2",
+      "sha256": "95005672a682fc86dcbde7dfe7eb99bd0dc833d846dc0c90846b5e5ac4cb4751",
       "headingCount": 9
     },
     {
@@ -263,7 +537,7 @@
         14
       ],
       "phase": 2,
-      "sha256": "ff18f5788dd12d3dc07ef3a1882b15cbadea475fea8fc717c72ba51869e9edec",
+      "sha256": "10d37823c8bffd707e96cc1faacb110f150bb660b9cfe3ebf1dc5cb96d65ff39",
       "headingCount": 9
     },
     {
@@ -275,7 +549,7 @@
         16
       ],
       "phase": 3,
-      "sha256": "a4795dd8b3a63731c7f4c817f76540cb87b2b66b578446268362b469554db99c",
+      "sha256": "18d72483ee8210ee3290fecd3763a4517b6cf07ba0a4fc2f1a7ca45a1e46f914",
       "headingCount": 9
     },
     {

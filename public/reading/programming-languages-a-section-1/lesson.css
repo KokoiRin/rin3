@@ -65,3 +65,121 @@
 }
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.pl-course .chapter-card{transition:none}}
 @media print{.pl-course .site-nav,.pl-course .chapter-switcher{display:none}.pl-course .lesson-toc{display:none}.pl-course .lesson-article pre{white-space:pre-wrap}.pl-course .reader{box-shadow:none;border:0}}
+
+/* Step-driven course figures. All states are also available without JavaScript. */
+.pl-course .lesson-visual {margin:2rem 0;border:1px solid #b8cfc6;border-radius:14px;background:#f8fbf8;overflow:hidden;min-width:0}
+.pl-course .lesson-visual figcaption {padding:22px 24px 14px;text-align:left;background:#edf5ef;border-bottom:1px solid #d0e0d6}
+.pl-course .visual-kicker {display:block;color:#28716d;font-size:12px;letter-spacing:.12em;font-weight:700}
+.pl-course .lesson-visual figcaption h3 {font-size:23px;line-height:1.45;margin:.35rem 0 .7rem}
+.pl-course .lesson-visual figcaption p {font-size:15px;line-height:1.8;margin:0;color:#42625b}
+.pl-course .visual-controls {display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:14px 20px;background:#f8fbf8;border-bottom:1px solid #dbe6df}
+.pl-course .visual-controls[hidden] {display:none}
+.pl-course .visual-controls button,.pl-course .visual-controls select {font:inherit;font-size:14px;line-height:1.4;min-height:42px;border:1px solid #9fbcb0;border-radius:7px;background:#fff;color:#24574e;padding:8px 11px;cursor:pointer}
+.pl-course .visual-controls button:hover:not(:disabled) {background:#e3f1e9}
+.pl-course .visual-controls button:disabled {opacity:.4;cursor:default}
+.pl-course .visual-controls label {flex:1;min-width:140px;max-width:100%}
+.pl-course .visual-controls select {width:100%;text-overflow:ellipsis}
+.pl-course .visual-controls .visual-reset {border-color:transparent;background:transparent}
+.pl-course .visual-controls :focus-visible,.pl-course .visual-graph-scroll:focus-visible,.pl-course .visual-code-scroll:focus-visible,.pl-course .visual-table-scroll:focus-visible {outline:3px solid #9cc8e0;outline-offset:2px}
+.pl-course .visual-stage {padding:20px;min-width:0}
+.pl-course .visual-step-title {margin:0 0 14px;font-size:18px;font-weight:700;line-height:1.6}
+.pl-course .visual-step-title>span {display:block;color:#638176;font-size:12px;font-weight:600;letter-spacing:.06em}
+.pl-course .visual-code-scroll {overflow:auto;max-width:100%;border:1px solid #d8e4db;border-radius:8px;background:#f0f5f2;margin:12px 0 18px}
+.pl-course .visual-code {margin:0!important;padding:10px 12px 10px 42px!important;font-size:14px;line-height:1.8;list-style:decimal!important;min-width:max-content}
+.pl-course .visual-code li {padding:2px 10px;margin:0;color:#7a8c84;white-space:pre}
+.pl-course .visual-code li::marker {font-size:11px;color:#7a8c84}
+.pl-course .visual-code code {font:inherit!important;background:none!important;border:0!important;color:#29473e!important;padding:0!important;white-space:pre;word-break:normal;overflow-wrap:normal}
+.pl-course .visual-code .visual-current {background:#d7ecdf;box-shadow:inset 3px 0 #28716d;color:#1d5d4c}
+.pl-course .visual-tables {display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,270px),1fr));gap:16px;align-items:start;margin:16px 0}
+.pl-course .visual-table {min-width:0;border:1px solid #d1dfd6;border-radius:8px;overflow:hidden;background:#fff}
+.pl-course .visual-table h4 {font-size:14px;line-height:1.65;margin:0;padding:10px 12px;background:#e9f1ea;color:#365f50}
+.pl-course .visual-table-scroll {overflow:auto;max-width:100%}
+.pl-course .visual-table table {display:table;overflow:visible;border-collapse:collapse;width:100%;margin:0;font-size:14px;line-height:1.6}
+.pl-course .visual-table th,.pl-course .visual-table td {padding:9px 10px;border:0;border-bottom:1px solid #e0e9e2;text-align:left;background:transparent;font-weight:400;color:#304a3e;word-break:normal}
+.pl-course .visual-table thead th {font-size:12px;color:#688277;background:#f5f8f4}
+.pl-course .visual-table tbody th {font-family:ui-monospace,SFMono-Regular,Consolas,monospace}
+.pl-course .visual-table tbody tr:last-child>* {border-bottom:0}
+.pl-course .visual-table .visual-new>* {background:#def0e2;color:#145d37;font-weight:650}
+.pl-course .visual-table .visual-new>th:first-child::before {content:'＋';font-family:inherit}
+.pl-course .visual-table .visual-active>* {background:#fff2cd;color:#735317}
+.pl-course .visual-table .visual-active>th:first-child::before {content:'→ ';font-family:inherit}
+.pl-course .visual-table .visual-muted>* {background:#f1f2ef;color:#78827c}
+.pl-course .visual-explanation {margin:18px 0 0;padding:14px 16px;border-left:3px solid #6f9e88;background:#edf5ed}
+.pl-course .visual-explanation p {font-size:15px;line-height:1.85;margin:0}
+.pl-course .visual-explanation .visual-result {margin-top:10px;color:#1d5c42;font-weight:650}
+.pl-course .visual-result>span {font-weight:400;color:#668574;font-size:12px;display:block}
+.pl-course .visual-graph-scroll {max-width:100%;overflow:auto;margin:16px 0;-webkit-overflow-scrolling:touch;background:#fff;border:1px solid #d8e4db;border-radius:8px}
+.pl-course .visual-graph-scroll svg {display:block;width:100%;height:auto;min-width:0;max-width:none}
+.pl-course .visual-all-states {margin:0 20px 14px;padding:12px 0;border-top:1px solid #d7e3da;font-size:14px}
+.pl-course .visual-all-states>summary {font-weight:500}
+.pl-course .visual-static-step {padding:18px 0;border-top:1px dashed #c4d6c9;margin-top:16px}
+.pl-course .visual-source {font-size:12px;line-height:1.8;color:#6b8176;padding:12px 20px;margin:0;border-top:1px solid #dbe5dd;background:#f2f6f0}
+.pl-course .visual-source a {color:#517769}
+.pl-course .visual-sr-only {position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.pl-course .course-original {margin:1.8rem 0;border:1px solid #d1ddd3;border-radius:10px;background:#f8faf5;overflow:hidden}
+.pl-course .course-original img {display:block;width:100%;height:auto;margin:0;background:#fff}
+.pl-course .course-original figcaption {padding:14px 18px;font-size:14px;line-height:1.8;color:#4d6857}
+.pl-course .course-original summary {padding:14px 18px;font-size:14px;line-height:1.7}
+.pl-course .course-original>p {padding:0 18px 14px;font-size:14px}
+@media(max-width:600px){
+ .pl-course .lesson-visual {margin:1.6rem -6px;max-width:calc(100% + 12px);border-radius:10px}
+ .pl-course .lesson-visual figcaption {padding:17px 14px 13px}
+ .pl-course .lesson-visual figcaption h3 {font-size:21px}
+ .pl-course .lesson-visual figcaption p {font-size:14px}
+ .pl-course .visual-controls {padding:12px 10px;gap:6px}
+ .pl-course .visual-controls label {flex-basis:100%;order:-1}
+ .pl-course .visual-controls button {flex:1;font-size:13px;padding:8px 7px}
+ .pl-course .visual-controls .visual-reset {flex:0 1 50px}
+ .pl-course .visual-stage {padding:15px 12px}
+ .pl-course .visual-step-title {font-size:17px}
+ .pl-course .visual-code {font-size:12px;padding-left:32px!important}
+ .pl-course .visual-code li {padding-left:7px}
+ .pl-course .visual-tables {grid-template-columns:minmax(0,1fr);gap:12px}
+ .pl-course .visual-explanation {padding:12px}
+ .pl-course .visual-explanation p {font-size:14px}
+ .pl-course .visual-all-states {margin:0 12px 12px}
+ .pl-course .visual-source {padding:10px 13px;font-size:11px}
+}
+@media print{
+ .pl-course .visual-controls,.pl-course .visual-stage {display:none!important}
+ .pl-course .lesson-visual {break-inside:auto;border-color:#aaa}
+ .pl-course .visual-all-states {display:block}
+ .pl-course .visual-all-states::details-content {content-visibility:visible;display:block}
+ .pl-course .visual-all-states>summary {display:none}
+ .pl-course .visual-static-step {break-inside:avoid}
+ .pl-course .visual-graph-scroll {overflow:visible}
+ .pl-course .visual-graph-scroll svg {min-width:0}
+}
+
+.pl-course .visual-graph-tools {display:none;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between;font-size:12px;line-height:1.7;color:#6b8176;margin-top:14px}
+.pl-course .visual-graph-tools button {font:inherit;font-size:12px;color:#28716d;background:#fff;border:1px solid #b8cfc6;border-radius:6px;padding:7px 10px;cursor:pointer;min-height:36px}
+.pl-course .visual-graph-scroll.is-zoomed svg {min-width:850px}
+@media(max-width:600px){.pl-course .visual-graph-scroll.is-zoomed svg{min-width:650px}.pl-course .visual-graph-scroll{margin-top:8px}}
+@media print{.pl-course .visual-graph-tools{display:none}}
+
+.pl-course .lesson-visual[data-ready="true"] .visual-graph-tools {display:flex}
+@media print{.pl-course .lesson-visual[data-ready="true"] .visual-graph-tools{display:none}}
+
+.reading-graph {display:block;max-width:none;flex-shrink:0;background:#fffefa;font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;color:#243d40}
+.reading-graph text {font-size:16px;fill:#294549}
+.reading-graph .rg-node rect {fill:#fff;stroke:#82999b;stroke-width:1.8}
+.reading-graph .rg-node-title {text-anchor:middle;font-size:17px;font-weight:700}
+.reading-graph .rg-node-line {text-anchor:middle;font-size:16px}
+.reading-graph .rg-group rect {fill:#f4f7f5;stroke:#b7c8c5;stroke-width:1.4;stroke-dasharray:5 4}
+.reading-graph .rg-group text {font-weight:650}
+.reading-graph .rg-edge path {fill:none;stroke:#587477;stroke-width:2.2;stroke-linejoin:round}
+.reading-graph .rg-edge-label {text-anchor:middle;paint-order:stroke;stroke:#fffefa;stroke-width:5px;stroke-linejoin:round;font-size:16px}
+.reading-graph .rg-active rect {fill:#e0f1e8;stroke:#187467}
+.reading-graph .rg-active text {fill:#165f54}
+.reading-graph .rg-edge.rg-active path {stroke:#187467;stroke-width:3}
+.reading-graph .rg-new rect {fill:#fff0dd;stroke:#ab5928}
+.reading-graph .rg-new text {fill:#8f471b}
+.reading-graph .rg-edge.rg-new path {stroke:#ab5928;stroke-width:3}
+.reading-graph .rg-shared rect {fill:#efe9f6;stroke:#73568c}
+.reading-graph .rg-shared text {fill:#64487d}
+.reading-graph .rg-edge.rg-shared path {stroke:#73568c;stroke-width:2.8}
+.reading-graph .rg-muted rect {fill:#f1f3f2;stroke:#a9b5b7}
+.reading-graph .rg-muted text {fill:#657579}
+.reading-graph .rg-edge.rg-muted path {stroke:#8a979b;stroke-dasharray:5 5}
+.reading-graph .rg-legend text {font-size:16px}
+.reading-graph .rg-legend rect {stroke-width:1.4}
