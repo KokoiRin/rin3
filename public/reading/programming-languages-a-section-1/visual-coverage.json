@@ -1,0 +1,429 @@
+{
+  "revision": "2026-10-17",
+  "reviewScope": {
+    "pdfPagesRenderedAndInspected": 92,
+    "officialEnglishCaptionFilesChecked": 17,
+    "videoFramesDirectlyInspected": [
+      {
+        "video": 1,
+        "time": "09:35"
+      },
+      {
+        "video": 4,
+        "time": "02:20"
+      },
+      {
+        "video": 12,
+        "time": "05:20"
+      },
+      {
+        "video": 15,
+        "time": "04:50"
+      }
+    ],
+    "limitation": "未连续观看或逐帧核对全部视频。原创分步图是课程语义的教学重绘，未声称是原课已有插图。"
+  },
+  "figures": 16,
+  "states": 118,
+  "originals": [
+    {
+      "id": "static-dynamic-environments",
+      "file": "figures/static-dynamic-environments.png",
+      "source": "https://courses.cs.washington.edu/courses/cse341/19sp/videos/unit1/uncaptioned/003-expressions-and-variables.mp4#t=575",
+      "attribution": "Dan Grossman / University of Washington",
+      "video": 1,
+      "timestamp": "00:09:35",
+      "excerpt": "只取前三条绑定及其完整静态/动态环境注释；删去后续尚未写完的q/w注释和右侧人像。完整帧另存，未声称这是完整视频画面。",
+      "title": "对照原视频：老师怎样记录两种环境",
+      "text": "这张截图节选自 V1 的 09:35。每段代码后的 static environment 列出名字的类型，dynamic environment 列出名字的值。执行完 z 那一行后，动态环境才包含 x → 34、y → 17、z → 70；下面把相同的过程改画成可逐步查看的中文表格。",
+      "alt": "原视频环境注释：x绑定后为x:int与x到34；y绑定后加入y:int与y到17；z绑定后加入z:int与z到70",
+      "sha256": "01c9af686700c8306a6fabd363aee2728c6529f341fe9b2b183ba1e3819227a7"
+    },
+    {
+      "id": "bad-max-recursion-tree",
+      "file": "figures/bad-max-recursion-tree.png",
+      "source": "https://courses.cs.washington.edu/courses/cse341/19sp/lec3slides.pdf#page=13",
+      "attribution": "Dan Grossman / University of Washington, CSE341 Spring 2019",
+      "pdfPage": 13,
+      "excerpt": "仅裁去页边留白，保留整页图意与原页码；补充来源署名",
+      "title": "对照原课图：为什么同一段尾部出现两次",
+      "text": "原图把 bad_max 简写为 bm。上方从 50 递减，每层比较后就返回当前头部；下方从 1 递增，比较时算过的尾部还要在 else 再算一次，所以箭头不断分叉。图中的 2⁵⁰ 是强调增长速度的数量级估算；下面缩小到 [1,2,3]，逐次看清确切的 7 次调用。",
+      "alt": "原课bad_max图：递减列表只有一条调用链，递增列表在比较和else分支重复调用尾部，形成分叉树",
+      "sha256": "d6878cb5cfa03ebef7490332e809250f4c523b585484c4987c521ffbe82c25f1"
+    },
+    {
+      "id": "tuple-alias",
+      "file": "figures/tuple-alias.png",
+      "source": "https://courses.cs.washington.edu/courses/cse341/19sp/lec3slides.pdf#page=21",
+      "attribution": "Dan Grossman / University of Washington, CSE341 Spring 2019",
+      "pdfPage": 21,
+      "excerpt": "仅裁去页边留白，保留整页图意与原页码；补充来源署名",
+      "title": "对照原课图：两个名字可能指向哪一份元组",
+      "text": "原图使用 x = (3,4)，本文的阅读记录使用 (12,18)。右侧两条带问号的箭头表示两种实现可能：y 与 x 使用同一份元组，或者 y 使用内容相同的另一份。红字是假设“能够修改元组第一项”再讨论后果；普通 ML 元组并没有这条修改操作。",
+      "alt": "原课元组别名图：x指向(3,4)，y可能指向同一份元组，也可能指向副本；反事实修改会使读取结果依赖共享方式",
+      "sha256": "51f616f46428f220a9319888e7a97e59945af1a3d58e23b13c8b49056d6336b0"
+    },
+    {
+      "id": "shared-list-tail",
+      "file": "figures/shared-list-tail.png",
+      "source": "https://courses.cs.washington.edu/courses/cse341/19sp/lec3slides.pdf#page=22",
+      "attribution": "Dan Grossman / University of Washington, CSE341 Spring 2019",
+      "pdfPage": 22,
+      "excerpt": "仅裁去页边留白，保留整页图意与原页码；补充来源署名",
+      "title": "对照原课图：新前缀接回原来的尾部",
+      "text": "原图 x = [2,4]、y = [5,3,0]，本文使用工作日与周末的页数。上半图中，z 的前两个节点是新建的，第二个节点的箭头接回 y；下半图则把五个节点都复制。原课指出，这个 append 实际采用上半图的方式；由于列表不可变，普通读值看不出二者的区别。",
+      "alt": "原课append图：一份结果新建x的两个前缀节点后接回y；另一份示意复制全部节点，两者列表数值相同",
+      "sha256": "53325a155408925f7c5a36e44f145adf9668c9f94e618e349384041b2d9ff9a0"
+    }
+  ],
+  "videos": [
+    {
+      "video": 1,
+      "title": "ML Variable Bindings and Expressions",
+      "chapter": "01-expressions",
+      "pdf_locator": "L1 p23–26；Unit1notes p2",
+      "video_locator": "06:32–09:35，09:35全帧已实际查看",
+      "source_visual": "编辑器现场写静态环境name:type、动态环境name→value；PDF只有代码和规则文字，没有独立环境图。",
+      "evidence_level": "direct_frame_verified",
+      "figures": [
+        {
+          "id": "env-bindings",
+          "title": "代码往下走，环境里多了什么",
+          "page": "01-expressions/index.html#visual-env-bindings",
+          "states": 7
+        }
+      ],
+      "originals": [
+        {
+          "id": "static-dynamic-environments",
+          "source": "https://courses.cs.washington.edu/courses/cse341/19sp/videos/unit1/uncaptioned/003-expressions-and-variables.mp4#t=575",
+          "file": "figures/static-dynamic-environments.png"
+        }
+      ]
+    },
+    {
+      "video": 2,
+      "title": "Rules for Expressions",
+      "chapter": "01-expressions",
+      "pdf_locator": "L1 p27–31；Unit1notes p3",
+      "video_locator": "03:35–04:09字幕明确查两种环境；视频未抽帧",
+      "source_visual": "PDF是三套规则文字与表达式代码，没有原画语法树。",
+      "evidence_level": "pdf_and_captions",
+      "figures": [
+        {
+          "id": "env-bindings",
+          "title": "代码往下走，环境里多了什么",
+          "page": "01-expressions/index.html#visual-env-bindings",
+          "states": 7
+        },
+        {
+          "id": "conditional-branches",
+          "title": "两边都检查，这次只执行 else",
+          "page": "01-expressions/index.html#visual-conditional-branches",
+          "states": 4
+        }
+      ],
+      "originals": []
+    },
+    {
+      "video": 3,
+      "title": "The REPL and Errors",
+      "chapter": "02-repl-errors",
+      "pdf_locator": "Unit1notes p3 Using the REPL；L1没有相应完整截图页",
+      "video_locator": "07:14–07:41字幕解释旧会话仍有x；视频未抽帧",
+      "source_visual": "主要是编辑器和REPL操作演示；不是PDF原图。",
+      "evidence_level": "pdf_and_captions",
+      "figures": [
+        {
+          "id": "repl-session",
+          "title": "文件改了，旧会话为什么还会帮它算对",
+          "page": "02-repl-errors/index.html#visual-repl-session",
+          "states": 12
+        }
+      ],
+      "originals": []
+    },
+    {
+      "video": 4,
+      "title": "Shadowing",
+      "chapter": "03-shadowing",
+      "pdf_locator": "Unit1notes p4；L1无该现场完整例图",
+      "video_locator": "00:54–03:40；02:20全帧已实际查看",
+      "source_visual": "编辑器内在每段代码后写a→10/b→20/a→5等环境注释；不是覆盖旧值的内存盒图。",
+      "evidence_level": "direct_frame_verified",
+      "figures": [
+        {
+          "id": "shadowing",
+          "title": "三个 a，是三个先后建立的绑定",
+          "page": "03-shadowing/index.html#visual-shadowing",
+          "states": 11
+        }
+      ],
+      "originals": []
+    },
+    {
+      "video": 5,
+      "title": "Functions Informally",
+      "chapter": "04-functions",
+      "pdf_locator": "L2 p2–5；Unit1notes p4–5",
+      "video_locator": "00:00–04:33代码与回课件字幕；视频未抽帧",
+      "source_visual": "PDF是pow/cube代码及递归文字，无原画调用栈。",
+      "evidence_level": "pdf_and_captions",
+      "figures": [
+        {
+          "id": "function-call",
+          "title": "一次加法函数调用：输入先算好，函数体再执行",
+          "page": "04-functions/index.html#visual-function-call",
+          "states": 7
+        },
+        {
+          "id": "pow-stack",
+          "title": "pow (2,3)：每一层都在等一个更小的答案",
+          "page": "04-functions/index.html#visual-pow-stack",
+          "states": 10
+        }
+      ],
+      "originals": []
+    },
+    {
+      "video": 6,
+      "title": "Functions Formally",
+      "chapter": "04-functions",
+      "pdf_locator": "L2 p6–9；Unit1notes p4–5",
+      "video_locator": "02:21–03:43函数体静态环境；07:58–08:41定义环境加本次参数",
+      "source_visual": "原课文字明确外层环境、参数、自身函数名；没有独立范围/环境盒图。",
+      "evidence_level": "pdf_and_captions",
+      "figures": [
+        {
+          "id": "function-call",
+          "title": "一次加法函数调用：输入先算好，函数体再执行",
+          "page": "04-functions/index.html#visual-function-call",
+          "states": 7
+        },
+        {
+          "id": "definition-environment",
+          "title": "顶层现在是 20，函数为什么仍然乘 12",
+          "page": "04-functions/index.html#visual-definition-environment",
+          "states": 7
+        }
+      ],
+      "originals": []
+    },
+    {
+      "video": 7,
+      "title": "Pairs and Other Tuples",
+      "chapter": "05-tuples",
+      "pdf_locator": "L2 p10–15；Unit1notes p5–6",
+      "video_locator": "07:43–08:41字幕讲x1嵌套取值；视频未抽帧",
+      "source_visual": "PDF给嵌套元组代码和类型；没有嵌套盒图。",
+      "evidence_level": "pdf_and_captions",
+      "figures": [
+        {
+          "id": "tuple-projection",
+          "title": "沿结构读取嵌套元组",
+          "page": "05-tuples/index.html#visual-tuple-projection",
+          "states": 4
+        }
+      ],
+      "originals": []
+    },
+    {
+      "video": 8,
+      "title": "Introducing Lists",
+      "chapter": "06-lists",
+      "pdf_locator": "L2 p16–19；Unit1notes p6–7",
+      "video_locator": "字幕不出现picture/diagram；视频未抽帧",
+      "source_visual": "PDF是[]、::、null/hd/tl规则文字和类型，没有链表节点图。",
+      "evidence_level": "pdf_and_captions",
+      "figures": [
+        {
+          "id": "list-structure",
+          "title": "一个新头部，接上现成的尾部",
+          "page": "06-lists/index.html#visual-list-structure",
+          "states": 6
+        }
+      ],
+      "originals": []
+    },
+    {
+      "video": 9,
+      "title": "List Functions",
+      "chapter": "07-list-recursion",
+      "pdf_locator": "L2 p20–22；Unit1notes p7–8",
+      "video_locator": "00:00–10:17代码演示至回slides；视频未抽帧",
+      "source_visual": "PDF只有七个函数代码和递归文字，没有原画递归展开树。",
+      "evidence_level": "pdf_and_captions",
+      "figures": [
+        {
+          "id": "list-recursion",
+          "title": "递归下潜时，哪些加法还在等",
+          "page": "07-list-recursion/index.html#visual-list-recursion",
+          "states": 8
+        }
+      ],
+      "originals": []
+    },
+    {
+      "video": 10,
+      "title": "Let Expressions",
+      "chapter": "08-local-functions",
+      "pdf_locator": "L3 p4–7；Unit1notes p8",
+      "video_locator": "05:19–05:30字幕明确内层环境遮蔽外层x；视频未抽帧",
+      "source_visual": "PDF的silly1/silly2为代码和作用域文字，没有环境边框图。",
+      "evidence_level": "pdf_and_captions",
+      "figures": [
+        {
+          "id": "local-scope",
+          "title": "silly2：左边的 x = 2，影响不到右边",
+          "page": "08-local-functions/index.html#visual-local-scope",
+          "states": 12
+        }
+      ],
+      "originals": []
+    },
+    {
+      "video": 11,
+      "title": "Nested Functions",
+      "chapter": "08-local-functions",
+      "pdf_locator": "L3 p8–11；Unit1notes p8–9",
+      "video_locator": "04:22–04:55与06:07–06:11字幕明确helper读外层x；视频未抽帧",
+      "source_visual": "PDF有countup两个代码版本，无独立闭包图。",
+      "evidence_level": "pdf_and_captions",
+      "figures": [
+        {
+          "id": "definition-environment",
+          "title": "顶层现在是 20，函数为什么仍然乘 12",
+          "page": "04-functions/index.html#visual-definition-environment",
+          "states": 7
+        },
+        {
+          "id": "local-scope",
+          "title": "silly2：左边的 x = 2，影响不到右边",
+          "page": "08-local-functions/index.html#visual-local-scope",
+          "states": 12
+        }
+      ],
+      "originals": [],
+      "note": "局部辅助函数的代码保留在第08篇，定义环境的可视化在第04篇，可交叉对照。"
+    },
+    {
+      "video": 12,
+      "title": "Let and Efficiency",
+      "chapter": "09-efficiency",
+      "pdf_locator": "L3 p12–16；重点p13/p16",
+      "video_locator": "04:19起转图；05:20全帧已实际查看",
+      "source_visual": "p13真正递归树：降序单链、升序分叉；p16优化后两输入均单链。",
+      "evidence_level": "direct_frame_verified",
+      "figures": [
+        {
+          "id": "recursion-tree",
+          "title": "同一段尾部，究竟重新算了几遍",
+          "page": "09-efficiency/index.html#visual-recursion-tree",
+          "states": 8
+        }
+      ],
+      "originals": [
+        {
+          "id": "bad-max-recursion-tree",
+          "source": "https://courses.cs.washington.edu/courses/cse341/19sp/lec3slides.pdf#page=13",
+          "file": "figures/bad-max-recursion-tree.png"
+        }
+      ]
+    },
+    {
+      "video": 13,
+      "title": "Options",
+      "chapter": "10-options",
+      "pdf_locator": "L3 p17–19；Unit1notes p10",
+      "video_locator": "07:40附近局部helper返回int字幕；视频未抽帧",
+      "source_visual": "PDF是NONE/SOME与max函数代码，无容器图。",
+      "evidence_level": "pdf_and_captions",
+      "figures": [
+        {
+          "id": "option-shapes",
+          "title": "没答案，与答案恰好为零，长得不同",
+          "page": "10-options/index.html#visual-option-shapes",
+          "states": 4
+        }
+      ],
+      "originals": []
+    },
+    {
+      "video": 14,
+      "title": "Booleans and Comparison Operations",
+      "chapter": "11-booleans-comparison",
+      "pdf_locator": "Unit1notes p11；L1–3没有此视频独立完整课件页",
+      "video_locator": "03:13转slides；03:27–03:33字幕给andalso改写；视频未抽帧",
+      "source_visual": "现有PDF笔记为运算规则文字；没有已验证原图。",
+      "evidence_level": "captions_and_notes_only",
+      "figures": [
+        {
+          "id": "short-circuit",
+          "title": "先确认有答案，才读取那个答案",
+          "page": "11-booleans-comparison/index.html#visual-short-circuit",
+          "states": 6
+        }
+      ],
+      "originals": []
+    },
+    {
+      "video": 15,
+      "title": "Benefits of No Mutation",
+      "chapter": "12-immutability",
+      "pdf_locator": "L3 p20–23；重点p21/p22；Unit1notes p11–12",
+      "video_locator": "03:04原图指示；04:31–05:15；04:50全帧已实际查看",
+      "source_visual": "p21真正元组别名/复制箭头图；p22真正append共享尾部/完整复制链表对照。",
+      "evidence_level": "direct_frame_verified",
+      "figures": [
+        {
+          "id": "shared-tail",
+          "title": "append 新建哪里，又共享哪里",
+          "page": "12-immutability/index.html#visual-shared-tail",
+          "states": 6
+        }
+      ],
+      "originals": [
+        {
+          "id": "tuple-alias",
+          "source": "https://courses.cs.washington.edu/courses/cse341/19sp/lec3slides.pdf#page=21",
+          "file": "figures/tuple-alias.png"
+        },
+        {
+          "id": "shared-list-tail",
+          "source": "https://courses.cs.washington.edu/courses/cse341/19sp/lec3slides.pdf#page=22",
+          "file": "figures/shared-list-tail.png"
+        }
+      ]
+    },
+    {
+      "video": 16,
+      "title": "Optional: Java Mutation",
+      "chapter": "12-immutability",
+      "pdf_locator": "L3 p24–25；Unit1notes p13",
+      "video_locator": "02:57–03:37字幕指出getter返回array alias；视频未抽帧",
+      "source_visual": "PDF是类代码/攻击调用/复制修复代码，没有另画对象图。",
+      "evidence_level": "pdf_and_captions",
+      "figures": [
+        {
+          "id": "java-alias",
+          "title": "getter 返回同一个数组，会发生什么",
+          "page": "12-immutability/index.html#visual-java-alias",
+          "states": 6
+        }
+      ],
+      "originals": []
+    },
+    {
+      "video": 17,
+      "title": "Pieces of a Language",
+      "chapter": "13-language-map",
+      "pdf_locator": "L1–3与Unit1notes没有此视频专门五项图页",
+      "video_locator": "字幕列syntax/semantics/idioms/libraries/tools；未抽帧",
+      "source_visual": "已核实字幕概念清单；没有验证视频是否另有图，不能声称原片无图。",
+      "evidence_level": "captions_only",
+      "figures": [],
+      "originals": [],
+      "note": "用实际best_day程序与语法、语义、惯用法、库、工具对照表连接五个方面；未另加装饰图。视频本身未逐帧检查，未声称没有原图。"
+    }
+  ]
+}

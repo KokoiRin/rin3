@@ -74,3 +74,10 @@ KaTeX 的 `public/reading/_shared/katex/` 是第三方数学排版资源，不�
 复用 `public/reading/reader.css` 与共享 KaTeX 资源；系列 `lesson.css` 只处理本系列的阅读卡片、目录、代码、来源说明和手机排版。每篇使用顶部与底部前后篇导航，并保留对应视频、来源和非官方原创讲解的范围说明；不镜像整份视频、字幕或讲义。`series.json` 保存章节、视频映射及中文源文稿的 SHA-256。课程已接入 `check:course-readers`。
 
 正文 Markdown、原始参考资料和可重复生成脚本保留在 `~/Documents/RIN III 草稿/Dan Grossman Section 1/`；生成器通过 `@rin/document` 公共入口复用 Markdown、KaTeX 与代码渲染，不向站点添加依赖，不把草稿或临时产物纳入仓库。
+
+
+## 2026-10-17：编程语言系列的环境与结构图解
+
+在上述 14 页内补充 16 组可逐步切换的图解，覆盖环境、遮蔽、REPL 会话、函数调用与定义环境、递归返回、元组与列表、Option、短路求值、结构共享及 Java 数组别名。图解的所有步骤同时保存在静态 HTML 中，关闭脚本仍可展开阅读。系列 `visuals.mjs` 负责步骤切换，`graphs.mjs` 以纯函数绘制 SVG；小屏支持全图与放大阅读切换。没有修改共享 Markdown 解析规则。
+
+`figures/` 保存 4 张带出处的原课截图；`visual-coverage.json` 记录 17 段视频的资料定位、对应图解、截图页码与实际复核范围。已渲染检查 92 页 PDF，并抽查 4 处视频画面，未声明逐帧复核全部视频。`tests/pl-visuals.test.mjs` 纳入内容检查，验证右值先求值、遮蔽不改变旧结果、定义环境与局部参数边界，以及静态图解和 SVG 输出。
