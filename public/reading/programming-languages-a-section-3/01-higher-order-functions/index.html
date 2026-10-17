@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="把变化的操作交给函数 · Dan Grossman 编程语言 第三节中文讲解"><title>把变化的操作交给函数 · 编程语言第三节 · RIN III</title><link rel="stylesheet" href="../../reader.css"><link rel="stylesheet" href="../../programming-languages-a-section-1/lesson.css"><link rel="stylesheet" href="../lesson.css"><link rel="manifest" href="../../../manifest.webmanifest"></head><body class="pl-course pl-advanced"><nav class="site-nav"><a href="../index.html">← 编程语言 · 第三节</a><a href="../../programming-languages-a-section-1/index.html">第一节</a><a href="../../programming-languages-a-section-2/index.html">第二节</a><a href="../../programming-languages-a-section-4/index.html">第四节</a><a href="https://www.coursera.org/learn/programming-languages">原课程 ↗</a></nav><main class="reader"><header class="chapter-header"><span class="chapter-kicker">Part A · 第三节 · 01 / 13</span><h1>把变化的操作交给函数</h1><p class="lead">用 n_times 把重复的控制流程与每次执行的操作分开，再读懂高阶函数与多态类型的关系。</p><p class="byline">原课程：Dan Grossman · Programming Languages, Part A · Section 3</p><details class="source-details"><summary>对应视频与来源</summary><ul><li><a href="https://www.coursera.org/learn/programming-languages/lecture/aBIYM/introduction-to-first-class-functions">V01 · Introduction to First-Class Functions</a></li><li><a href="https://www.coursera.org/learn/programming-languages/lecture/qxDSS/functions-as-arguments">V02 · Functions as Arguments</a></li><li><a href="https://www.coursera.org/learn/programming-languages/lecture/vZT1N/polymorphic-types-and-functions-as-arguments">V03 · Polymorphic Types and Functions as Arguments</a></li></ul><p>本系列依据 Dan Grossman 的 Programming Languages, Part A · Section 3 制作原创中文讲解，按问题组织解释、推演与示例；不是逐字翻译或官方译本。</p><p>依据对应官方英文字幕、<a href="https://courses.cs.washington.edu/courses/cse341/19sp/unit3notes.pdf">Unit 3 讲义</a>；<a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec7slides.pdf">Lecture 7 幻灯片</a> / <a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec7.sml">示例代码</a>；<a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec8slides.pdf">Lecture 8 幻灯片</a> / <a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec8.sml">示例代码</a>；<a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec9slides.pdf">Lecture 9 幻灯片</a> / <a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec9.sml">示例代码</a>；<a href="https://courses.cs.washington.edu/courses/cse341/19sp/course_motivation.pdf">课程动机幻灯片</a>核对。视频编号采用 Coursera 的顺序；<a href="../index.html#sources">完整范围与来源</a>。</p></details><details class="lesson-toc"><summary>本篇目录</summary><ol><li class="toc-h2"><a href="#我们已经会递归但不想为每个小变化再写一次">我们已经会递归，但不想为每个小变化再写一次</a></li><li class="toc-h2"><a href="#三段代码真正重复的是什么">三段代码真正重复的是什么</a></li><li class="toc-h2"><a href="#为什么这一个函数既能处理整数也能处理列表">为什么这一个函数既能处理整数，也能处理列表</a></li><li class="toc-h2"><a href="#高阶与多态是两件可以分开看的事">高阶与多态，是两件可以分开看的事</a></li><li class="toc-h2"><a href="#对应原课与回看线索">对应原课与回看线索</a></li></ol></details><nav class="chapter-switcher" aria-label="章节导航"><span></span><a class="course-home" href="../index.html">全部 13 篇</a><a rel="next" href="../02-anonymous-map-filter/index.html">02 临时操作、map 与 filter，怎样写得恰到好处 →</a></nav></header><article class="lesson-article translated-article"><h2 id="我们已经会递归但不想为每个小变化再写一次">我们已经会递归，但不想为每个小变化再写一次</h2>
+<p>假设需要把一个起始数连续翻倍四次：从 <code>7</code> 依次得到 <code>14、28、56、112</code>。如果明天改成连续加一，后天改成连续取列表尾部，我们不应该把“计数减一、到零停止”再复制两遍。这篇要解决的就是：<strong>把重复过程留下，把每次做什么作为输入交进去。</strong></p>
+<p>先看原课里很直接的一组值。元组的前两项放函数，第三项才是执行函数后得到的整数。</p>
+<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>fun double x = 2 * x;</span></span>
+<span data-line=""><span>fun incr x = x + 1;</span></span>
+<span data-line=""><span>val a_tuple = (double, incr, double (incr 7));</span></span>
+<span data-line=""><span>val eighteen = (#1 a_tuple) 9;</span></span></code></pre></figure>
+<p><code>double</code> 这个名字求值得到一个函数值，不会自动开始翻倍。<code>double (incr 7)</code> 才先算 <code>incr 7 = 8</code>，再算 <code>double 8 = 16</code>。所以元组可以理解为“函数、函数、16”；<code>#1 a_tuple</code> 取出第一个函数，再用 <code>9</code> 调用，结果是 <code>18</code>。</p>
+<p>这种“函数可以像其他值一样被存放、传递、返回”的能力叫<strong>一等函数</strong>（first-class functions）。你熟悉的 Kotlin 可以把 lambda 放进变量或作为参数，属于同一类能力；这里要研究的是它背后的类型与求值规则。</p>
+<p>函数式编程通常把“尽量避免修改数据”和“把函数当值使用”作为重要风格，但这两件事可以分别讨论。递归、接近数学的写法或惰性求值并不是它唯一的定义，更不能简单理解成“凡是不用对象的程序”。一种语言可以同时支持多种风格；本节先把函数值的能力看清。</p>
+<h2 id="三段代码真正重复的是什么">三段代码真正重复的是什么</h2>
+<p>原课先故意写了三个相似函数。下面的加一版本其实就是加法，但它能清楚暴露共同结构。</p>
+<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>fun increment_n_times_lame (n, x) =</span></span>
+<span data-line=""><span>    if n = 0 then x</span></span>
+<span data-line=""><span>    else 1 + increment_n_times_lame (n - 1, x);</span></span>
+<span data-line=""> </span>
+<span data-line=""><span>fun double_n_times_lame (n, x) =</span></span>
+<span data-line=""><span>    if n = 0 then x</span></span>
+<span data-line=""><span>    else 2 * double_n_times_lame (n - 1, x);</span></span>
+<span data-line=""> </span>
+<span data-line=""><span>fun nth_tail_lame (n, xs) =</span></span>
+<span data-line=""><span>    if n = 0 then xs</span></span>
+<span data-line=""><span>    else tl (nth_tail_lame (n - 1, xs));</span></span></code></pre></figure>
+<p>三者都先解决“重复 <code>n-1</code> 次”的问题，再对结果做一次操作。不同的只有“加一”“乘二”“取尾部”。于是把这个操作命名为参数 <code>f</code>，其余结构不动：</p>
+<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>fun n_times (f, n, x) =</span></span>
+<span data-line=""><span>    if n = 0 then x</span></span>
+<span data-line=""><span>    else f (n_times (f, n - 1, x));</span></span>
+<span data-line=""> </span>
+<span data-line=""><span>val doubled = n_times (double, 4, 7);</span></span>
+<span data-line=""><span>val incremented = n_times (incr, 4, 7);</span></span>
+<span data-line=""><span>val remaining = n_times (tl, 2, [4, 8, 12, 16]);</span></span></code></pre></figure>
+<p>三个结果分别是 <code>112</code>、<code>11</code>、<code>[12,16]</code>。例如最后一次不是把列表中的数字减二，而是 <code>tl (tl [4,8,12,16])</code>。调用者交来不同的函数，同一段递归就执行不同的工作。</p>
+<p>接收函数或返回函数的函数叫<strong>高阶函数</strong>。<code>n_times</code> 接收 <code>f</code>，因此是高阶函数；函数放进元组则只是展示一等函数，元组本身并不是高阶函数。</p>
+<h2 id="为什么这一个函数既能处理整数也能处理列表">为什么这一个函数既能处理整数，也能处理列表</h2>
+<p>把 <code>n_times</code> 的类型写全，可以看到它允许什么：</p>
+<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="text" data-theme="github-light"><code data-language="text" data-theme="github-light" style="display: grid;"><span data-line=""><span>('a -> 'a) * int * 'a -> 'a</span></span></code></pre></figure>
+<p><code>x</code> 是某种类型 <code>'a</code>，<code>f</code> 必须把这种类型变回同一种类型。因为第一次 <code>f</code> 的结果还要交给下一次 <code>f</code>，中间不能从整数变成字符串，再让同一个函数无条件接着处理。<code>n</code> 单独负责次数，所以固定是 <code>int</code>。</p>
+<p>一次调用中，<code>'a</code> 可以选成 <code>int</code>；另一次可以选成 <code>int list</code>。这叫多态。它也让我们在最初没打算支持的新操作上复用函数：</p>
+<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>fun triple x = 3 * x;</span></span>
+<span data-line=""><span>fun triple_n_times (n, x) = n_times (triple, n, x);</span></span>
+<span data-line=""><span>val tripled = triple_n_times (4, 7);</span></span></code></pre></figure>
+<p>结果是 <code>567</code>。如果一开始给 <code>x</code> 强行标注 <code>int</code>，列表那个用法就会被无谓地排除。</p>
+<h2 id="高阶与多态是两件可以分开看的事">高阶与多态，是两件可以分开看的事</h2>
+<p>下面的函数接收一个整数变换，反复调用它，数到输入变成零为止。<code>times_until_zero (fn x => x - 1, 3)</code> 得到 <code>3</code>。</p>
+<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>fun times_until_zero (f, x) =</span></span>
+<span data-line=""><span>    if x = 0 then 0</span></span>
+<span data-line=""><span>    else 1 + times_until_zero (f, f x);</span></span>
+<span data-line=""> </span>
+<span data-line=""><span>fun len xs =</span></span>
+<span data-line=""><span>    case xs of</span></span>
+<span data-line=""><span>        [] => 0</span></span>
+<span data-line=""><span>      | _ :: rest => 1 + len rest;</span></span></code></pre></figure>
+<p>前者是高阶函数，但 <code>x = 0</code> 和算术运算已经把类型限定为整数，它的类型是 <code>(int -> int) * int -> int</code>。后者可以数任意元素类型的列表，类型是 <code>'a list -> int</code>，却既不接收函数，也不返回函数。</p>
+<p>还有两个适用条件不能从类型里读出来：本篇 <code>n_times</code> 要求 <code>n >= 0</code>，负数不能按预期递减到零，可能持续递归，也可能先发生整数溢出；传入 <code>tl</code> 时，次数还不能超过列表长度。<code>times_until_zero</code> 也不能保证任意 <code>f</code> 都会到零，例如从正数不断加一，就不能按预期到达零，还可能先溢出。类型正确并不等于终止条件自动成立。</p>
+<p>这里的两个递归都还在等待递归结果回来后再做一次工作，因此不是尾递归。现在的重点是抽出共同结构；以后判断效率时，仍要回到实际调用过程。</p>
+<h2 id="对应原课与回看线索">对应原课与回看线索</h2>
+<p>本篇对应 Coursera Section 3 的 V1 <a href="https://www.coursera.org/learn/programming-languages/lecture/aBIYM/introduction-to-first-class-functions">Introduction to First-Class Functions</a>、V2 <a href="https://www.coursera.org/learn/programming-languages/lecture/qxDSS/functions-as-arguments">Functions as Arguments</a>、V3 <a href="https://www.coursera.org/learn/programming-languages/lecture/vZT1N/polymorphic-types-and-functions-as-arguments">Polymorphic Types and Functions as Arguments</a>。原课的元组、三份重复递归、<code>n_times</code> 与高阶/多态反例均已保留。配套可查 <a href="https://courses.cs.washington.edu/courses/cse341/19sp/unit3notes.pdf">Unit 3 阅读笔记</a> 与 <a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec7.sml">Lecture 7 代码</a>。</p></article><nav class="chapter-switcher" aria-label="章节导航"><span></span><a class="course-home" href="../index.html">全部 13 篇</a><a rel="next" href="../02-anonymous-map-filter/index.html">02 临时操作、map 与 filter，怎样写得恰到好处 →</a></nav><footer class="lesson-footer">本系列依据 Dan Grossman 的 Programming Languages, Part A · Section 3 制作原创中文讲解，按问题组织解释、推演与示例；不是逐字翻译或官方译本。<br><a href="../index.html#video-map">全部 28 段视频映射</a> · <a href="../index.html">第三节目录</a> · 资料核对与制作：2026-10-17</footer></main><script type="module" src="../../programming-languages-a-section-1/visuals.mjs"></script></body></html>

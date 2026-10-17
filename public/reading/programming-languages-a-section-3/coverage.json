@@ -1,0 +1,633 @@
+{
+  "title": "函数带着环境走：从高阶操作到闭包与回调",
+  "section": 3,
+  "date": "2026-10-17",
+  "scope": "原创中文教学材料，覆盖Coursera Section 3全部28个视频主题，含选学内容；不提供原课作业答案。",
+  "videos": [
+    {
+      "number": 1,
+      "title": "Introduction to First-Class Functions",
+      "key_points": [
+        "函数式的两个主要方向是减少可变数据、把函数作为值，二者是独立概念。",
+        "函数可放入元组、构造器、列表等位置；a_tuple前两项为函数，第三项double(increment 7)已算得16。",
+        "(#1 a_tuple) 9先取出函数再调用得18；高阶函数指接收或返回函数的函数，闭包另涉及定义环境。"
+      ],
+      "source": "https://www.coursera.org/learn/programming-languages/lecture/aBIYM/introduction-to-first-class-functions",
+      "source_locators": [
+        "unit3notes.pdf p1–2",
+        "lec7slides.pdf p2–5",
+        "captions/01-introduction-to-first-class-functions.en.txt"
+      ],
+      "chapter": "01-higher-order-functions",
+      "figures": []
+    },
+    {
+      "number": 2,
+      "title": "Functions as Arguments",
+      "key_points": [
+        "从递增、加倍、取第n个尾部三份重复递归中抽出共同骨架n_times。",
+        "n_times(f,n,x)在n=0时返回x，否则先递归再应用f；n需非负，tl重复次数不能超过列表长度。",
+        "double的4、7输入得112，increment得11，tl的2与[4,8,12,16]得[12,16]；调用者可再提供原接口包装。",
+        "新增triple只需传入新的小函数，不需修改n_times本身。"
+      ],
+      "source": "https://www.coursera.org/learn/programming-languages/lecture/qxDSS/functions-as-arguments",
+      "source_locators": [
+        "unit3notes.pdf p2–3",
+        "lec7slides.pdf p6–7",
+        "lec7.sml",
+        "captions/02-functions-as-arguments.en.txt"
+      ],
+      "chapter": "01-higher-order-functions",
+      "figures": []
+    },
+    {
+      "number": 3,
+      "title": "Polymorphic Types and Functions as Arguments",
+      "key_points": [
+        "n_times类型为('a -> 'a) * int * 'a -> 'a，所有同名参数须一致。",
+        "可分别实例化为int与int list；若把类型预先限制为int会失去列表用法。",
+        "times_until_zero是高阶但仅限整数且未承诺任意f都会收敛；len是多态却不接收函数，高阶与多态不能混同。"
+      ],
+      "source": "https://www.coursera.org/learn/programming-languages/lecture/vZT1N/polymorphic-types-and-functions-as-arguments",
+      "source_locators": [
+        "unit3notes.pdf p3",
+        "lec7slides.pdf p8–10",
+        "captions/03-polymorphic-types-and-functions-as-arguments.en.txt"
+      ],
+      "chapter": "01-higher-order-functions",
+      "figures": []
+    },
+    {
+      "number": 4,
+      "title": "Anonymous Functions",
+      "key_points": [
+        "triple从顶层移入let，再缩小至实参中的let，最后用fn y => 3*y直接表示函数值。",
+        "fun绑定不是表达式，不能直接放入要求表达式的实参位置；fn是表达式，参数名不是函数名。",
+        "非递归fun可写成val名字=fn；本课的匿名表达式没有自名可直接递归，需要fun或其他机制。",
+        "局部命名与匿名函数均利用已有求值规则，匿名函数适合只在一个位置需要的函数。"
+      ],
+      "source": "https://www.coursera.org/learn/programming-languages/lecture/BJmbf/anonymous-functions",
+      "source_locators": [
+        "unit3notes.pdf p4",
+        "lec7slides.pdf p11–13",
+        "lec7.sml",
+        "captions/04-anonymous-functions.en.txt"
+      ],
+      "chapter": "02-anonymous-map-filter",
+      "figures": []
+    },
+    {
+      "number": 5,
+      "title": "Unnecessary Function Wrapping",
+      "key_points": [
+        "fn y => tl y只把同一个参数交给tl，可直接传tl；原写法正确但掩盖意图并增加一层调用。",
+        "与if b then true else false可以直接写b的风格问题相类比。",
+        "fun rev xs=List.rev xs可改val rev=List.rev；查名字获取同一个函数值，不是此刻执行反转。"
+      ],
+      "source": "https://www.coursera.org/learn/programming-languages/lecture/vuMgK/unnecessary-function-wrapping",
+      "source_locators": [
+        "unit3notes.pdf p4–5",
+        "lec7slides.pdf p14",
+        "lec7.sml",
+        "captions/05-unnecessary-function-wrapping.en.txt"
+      ],
+      "chapter": "02-anonymous-map-filter",
+      "figures": []
+    },
+    {
+      "number": 6,
+      "title": "Map and Filter",
+      "key_points": [
+        "map把f应用于每个元素，保持顺序和长度；输入与输出元素类型可以不同。",
+        "map (hd,[[1,2],[3,4],[5,6,7]])得[1,3,5]；若含空子列表，hd仍会抛异常。",
+        "filter的f类型为'a->bool，只保留判断为true的原元素，维持顺序和元素类型，允许结果为空。",
+        "用偶数谓词和对偶第二项的模式展示filter；库List.map/List.filter采用稍后介绍的柯里化接口。"
+      ],
+      "source": "https://www.coursera.org/learn/programming-languages/lecture/3n1V8/map-and-filter",
+      "source_locators": [
+        "unit3notes.pdf p5–6",
+        "lec7slides.pdf p15–16",
+        "lec7.sml",
+        "captions/06-map-and-filter.en.txt"
+      ],
+      "chapter": "02-anonymous-map-filter",
+      "figures": []
+    },
+    {
+      "number": 7,
+      "title": "Generalizing Prior Topics",
+      "key_points": [
+        "函数不仅能处理列表，也可返回函数、接收多个函数或存进数据结构。",
+        "double_or_triple先调用f 7，再返回加倍或三倍函数；调用返回的函数才产生最终数字。",
+        "箭头右结合：t1->t2->t3等于t1->(t2->t3)。",
+        "true_of_all_constants遍历exp的每个常数并用谓词判断，返回bool而非过滤列表；andalso可短路。"
+      ],
+      "source": "https://www.coursera.org/learn/programming-languages/lecture/Flbkq/generalizing-prior-topics",
+      "source_locators": [
+        "unit3notes.pdf p6",
+        "lec7slides.pdf p17–19",
+        "lec7.sml",
+        "captions/07-generalizing-prior-topics.en.txt"
+      ],
+      "chapter": "02-anonymous-map-filter",
+      "figures": []
+    },
+    {
+      "number": 8,
+      "title": "Lexical Scope",
+      "key_points": [
+        "实参表达式在调用处当前环境求值；函数体在定义时环境加参数绑定的环境中求值。",
+        "原例x=1，定义f y=x+y，再遮蔽x=2并设y=3，f(x+y)的实参5、结果6。",
+        "闭包是代码和定义环境两部分的概念组合，不是能用#1/#2拆开的ML元组。",
+        "实现须保留仍被闭包需要的环境；不能把词法作用域画成执行时从调用者找同名变量。"
+      ],
+      "source": "https://www.coursera.org/learn/programming-languages/lecture/FFuCW/lexical-scope",
+      "source_locators": [
+        "unit3notes.pdf p6–7",
+        "lec8slides.pdf p2–5",
+        "lec8.sml",
+        "captions/08-lexical-scope.en.txt"
+      ],
+      "chapter": "03-lexical-scope",
+      "figures": [
+        "closure-bindings"
+      ]
+    },
+    {
+      "number": 9,
+      "title": "Lexical Scope and Higher-Order Functions",
+      "key_points": [
+        "返回函数的原例f 4创建并保存x=5、y=4的闭包，后续g 6得到15，外部y=5无关。",
+        "将h作为参数传入f时仍带h定义处x=4，f内部x=3不改变h，最终得到6。",
+        "从函数接收或返回函数不改变词法作用域规则；多个环境不能合并成一张会覆盖旧绑定的全局表。"
+      ],
+      "source": "https://www.coursera.org/learn/programming-languages/lecture/a3ZlH/lexical-scope-and-higher-order-functions",
+      "source_locators": [
+        "unit3notes.pdf p8",
+        "lec8slides.pdf p7–9",
+        "lec8.sml",
+        "captions/09-lexical-scope-and-higher-order-functions.en.txt"
+      ],
+      "chapter": "03-lexical-scope",
+      "figures": [
+        "closure-bindings"
+      ]
+    },
+    {
+      "number": 10,
+      "title": "Why Lexical Scope",
+      "key_points": [
+        "词法作用域允许一致改局部变量名、删除不使用的局部绑定而不改变函数含义。",
+        "能在定义处根据当时环境进行类型检查和局部推理；动态作用域会让调用处字符串或未绑定名破坏这些结论。",
+        "闭包可保存供filter等迭代器使用的阈值；函数类型不必暴露其环境数据类型。",
+        "动态作用域并非在任何用途都不存在，异常处理向当前内层handler传播与其有相似性，但普通变量采用词法默认。"
+      ],
+      "source": "https://www.coursera.org/learn/programming-languages/lecture/XdbeY/why-lexical-scope",
+      "source_locators": [
+        "unit3notes.pdf p8–9",
+        "lec8slides.pdf p10–14",
+        "lec8.sml",
+        "captions/10-why-lexical-scope.en.txt"
+      ],
+      "chapter": "03-lexical-scope",
+      "figures": [
+        "closure-bindings"
+      ]
+    },
+    {
+      "number": 11,
+      "title": "Closures and Recomputation",
+      "key_points": [
+        "函数体在调用时才求值；val绑定的右侧在绑定发生时求值并保存结果。",
+        "allShorterThan1把String.size s放在传给filter的函数体，每个元素重复计算。",
+        "allShorterThan2在外层let先计算i一次，闭包保存i；不是每次使用i都重跑原表达式。",
+        "课堂在String.size s旁加入print !让次数可见，第一版按元素多次，第二版每次外层调用一次；空列表时也可观察差别。"
+      ],
+      "source": "https://www.coursera.org/learn/programming-languages/lecture/ZRcG6/closures-and-recomputation",
+      "source_locators": [
+        "unit3notes.pdf p9–10",
+        "lec8slides.pdf p15–16",
+        "lec8.sml",
+        "captions/11-closures-and-recomputation.en.txt"
+      ],
+      "chapter": "04-closure-recomputation",
+      "figures": [
+        "recomputation-boundary"
+      ]
+    },
+    {
+      "number": 12,
+      "title": "Fold and More Closures",
+      "key_points": [
+        "自写fold从左向右累积，f先接收acc再接收当前元素，空列表直接返回acc。",
+        "sum从0开始，检查所有非负从true开始，计数区间内元素时闭包保存lo/hi。",
+        "fold的遍历骨架与元素处理分离，可对不同数据/规则复用；并非语言新增内置循环。",
+        "fold left与fold right在非交换或非结合处理下可能不同；标准库List.foldl回调参数顺序是元素、acc，与本课自写版相反。",
+        "即使布尔累积值已false可用andalso跳过谓词，fold本身仍继续遍历；这不同于能直接提前停止的专门短路递归。"
+      ],
+      "source": "https://www.coursera.org/learn/programming-languages/lecture/NtuJ7/fold-and-more-closures",
+      "source_locators": [
+        "unit3notes.pdf p10–11",
+        "lec8slides.pdf p17–20",
+        "lec8.sml",
+        "captions/12-fold-and-more-closures.en.txt"
+      ],
+      "chapter": "05-fold",
+      "figures": [
+        "fold-order"
+      ]
+    },
+    {
+      "number": 13,
+      "title": "Closure Idiom: Combining Functions",
+      "key_points": [
+        "compose(f,g)返回fn x=>f(g x)，先执行g再f；类型把中间类型连接起来。",
+        "sqrt_of_abs需要abs、Real.fromInt、Math.sqrt，整数不会自动转real。",
+        "o是标准组合运算符，管道把同一计算写为从左到右；19sp代码因编辑器问题使用!>，notes/slides用|>。",
+        "backup1在f返回NONE时才调用g；backup2在f抛异常时使用g，两种接口和控制流不同。"
+      ],
+      "source": "https://www.coursera.org/learn/programming-languages/lecture/T2gog/closure-idiom-combining-functions",
+      "source_locators": [
+        "unit3notes.pdf p11–12",
+        "lec9slides.pdf p3–5",
+        "lec9.sml",
+        "captions/13-closure-idiom-combining-functions.en.txt"
+      ],
+      "chapter": "06-function-composition",
+      "figures": []
+    },
+    {
+      "number": 14,
+      "title": "Closure Idiom: Currying",
+      "key_points": [
+        "柯里化以一参函数返回下一参函数，每次应用仍只传一个值。",
+        "sorted3 7返回保存x=7的闭包，再传9保存y=9，最后11才给bool。",
+        "函数应用左结合、函数类型箭头右结合；fun f p1 p2=e是嵌套fn的语法糖。",
+        "tupled与curried两种接口不能混用；柯里化fold仍使用本课acc先、元素后的回调顺序。"
+      ],
+      "source": "https://www.coursera.org/learn/programming-languages/lecture/HSarz/closure-idiom-currying",
+      "source_locators": [
+        "unit3notes.pdf p12–13",
+        "lec9slides.pdf p7–12",
+        "lec9.sml",
+        "captions/14-closure-idiom-currying.en.txt"
+      ],
+      "chapter": "07-currying",
+      "figures": []
+    },
+    {
+      "number": 15,
+      "title": "Partial Application",
+      "key_points": [
+        "少传柯里化函数的参数会得到等待剩余参数的闭包，不一定是错误。",
+        "sum=fold加法0、countup=range 1、hasZero=exists谓词体现部分应用。",
+        "exists用orelse短路；库迭代器通常把函数放前、数据放后以方便固定处理规则。",
+        "多态结果的部分应用可能受value restriction限制；用fun包装或显式固定单态类型可修复，这不是学习者调用语法错。"
+      ],
+      "source": "https://www.coursera.org/learn/programming-languages/lecture/hIDOX/partial-application",
+      "source_locators": [
+        "unit3notes.pdf p13–14",
+        "lec9slides.pdf p13–17",
+        "lec9.sml",
+        "captions/15-partial-application.en.txt"
+      ],
+      "chapter": "08-partial-application",
+      "figures": [
+        "curried-specialization"
+      ]
+    },
+    {
+      "number": 16,
+      "title": "Currying Wrapup",
+      "key_points": [
+        "curry把tupled函数变为curried，uncurry做反向包装，other_curry交换两个输入的先后以利部分应用。",
+        "三者是用已有函数值和闭包构造的普通高阶函数，不需要新求值规则。",
+        "柯里化与元组打包通常是常数级操作；具体快慢依赖实现，不以本课小例作通用性能结论。",
+        "把t1->t2->t3读作等待两个输入是常见方便读法，但真实机制仍是先返回函数。",
+        "原课把curry/uncurry类型中的*与->联系到逻辑的合取与蕴含，仅作选学提示，不要求证明。"
+      ],
+      "source": "https://www.coursera.org/learn/programming-languages/lecture/T4nd2/currying-wrapup",
+      "source_locators": [
+        "unit3notes.pdf p14",
+        "lec9slides.pdf p18–19",
+        "lec9.sml",
+        "captions/16-currying-wrapup.en.txt"
+      ],
+      "chapter": "08-partial-application",
+      "figures": [
+        "curried-specialization"
+      ]
+    },
+    {
+      "number": 17,
+      "title": "Mutable References",
+      "key_points": [
+        "ref e分配可变单元，!e读取，e1:=e2更新内容并返回unit；!不是布尔否定。",
+        "x=ref42、y=ref42创建两个单元，z=x共享第一个；x:=43后(!y)+(!z)=85。",
+        "名字x仍固定指向原单元，改变的是单元内容；x+1类型错误，要用!x。",
+        "引用本身是可传递的值，别名会影响后续观察；本课把mutation作为单独构造，不改变普通不可变数据默认。"
+      ],
+      "source": "https://www.coursera.org/learn/programming-languages/lecture/pwc1e/mutable-references",
+      "source_locators": [
+        "unit3notes.pdf p15",
+        "lec9slides.pdf p21–23",
+        "captions/17-mutable-references.en.txt"
+      ],
+      "chapter": "09-mutable-references",
+      "figures": [
+        "shared-ref"
+      ]
+    },
+    {
+      "number": 18,
+      "title": "Closure Idiom: Callbacks",
+      "key_points": [
+        "注册回调时保存函数，事件发生时才给事件值调用；函数环境可保存各自所需不同类型的数据。",
+        "库用(int->unit) list ref存回调，onKeyEvent向前添加，所以本例执行次序是后注册的先执行。",
+        "回调函数类型只暴露事件输入和unit结果，不列出环境中的计数器或筛选键值。",
+        "timesPressed须引用才能跨事件累加；printIfPressed i各次调用创建保存不同i的闭包，输入事件j再比较。"
+      ],
+      "source": "https://www.coursera.org/learn/programming-languages/lecture/ANQdD/closure-idiom-callbacks",
+      "source_locators": [
+        "unit3notes.pdf p15–16",
+        "lec9slides.pdf p24–28",
+        "lec9.sml",
+        "captions/18-closure-idiom-callbacks.en.txt"
+      ],
+      "chapter": "10-callbacks-and-docs",
+      "figures": [
+        "callback-capture"
+      ]
+    },
+    {
+      "number": 19,
+      "title": "Standard-Library Documentation",
+      "key_points": [
+        "标准库既提供文件/计时等语言自身不能凭空实现的外界接口，也统一map等常用算法的名字与约定。",
+        "Basis文档按structure/signature组织，String的条目可能在STRING签名页；hd等在顶层页。",
+        "在REPL只输入List.map会显示函数类型，可快速查参数顺序和tupled/curried，但类型不能替代完整语义文档。",
+        "structure X=List再signature X=LIST可让课用REPL展示整份签名；这是工具查询，不是要求死记所有库。"
+      ],
+      "source": "https://www.coursera.org/learn/programming-languages/lecture/h9R2w/standard-library-documentation",
+      "source_locators": [
+        "unit3notes.pdf p23",
+        "captions/19-standard-library-documentation.en.txt"
+      ],
+      "chapter": "10-callbacks-and-docs",
+      "figures": [
+        "callback-capture"
+      ]
+    },
+    {
+      "number": 20,
+      "title": "Optional: Abstract Data Types With Closures",
+      "key_points": [
+        "闭包记录的insert/member/size共享私有xs；客户端只能调用暴露的操作。",
+        "递归type synonym不可行，用单构造器datatype S包record表达递归返回set的类型。",
+        "实现是不可变集合，insert返回新集合；contains保持列表无重复，size才可直接用length。",
+        "原客户端两次插34后s3仍只有1项，插19得到s4；17+size(s3)=18，视频先猜19后明确自纠。"
+      ],
+      "source": "https://www.coursera.org/learn/programming-languages/lecture/BfQu5/optional-abstract-data-types-with-closures",
+      "source_locators": [
+        "unit3notes.pdf p16–18",
+        "lec9slides.pdf p30",
+        "lec9.sml",
+        "captions/20-optional-abstract-data-types-with-closures.en.txt"
+      ],
+      "chapter": "11-closure-adt",
+      "figures": []
+    },
+    {
+      "number": 21,
+      "title": "Optional: Closure Idioms Without Closures",
+      "key_points": [
+        "移植前先写自造mylist的map/filter/length，保留完整三种语言可比代码。",
+        "doubleAll通过map倍增，countNs先filter相等项再length，正确但会构造中间列表。",
+        "Java与C选学相互独立；模拟闭包需手工表达私有环境，目的为理解语言构造联系而非要求替代惯用库。"
+      ],
+      "source": "https://www.coursera.org/learn/programming-languages/lecture/8kJjP/optional-closure-idioms-without-closures",
+      "source_locators": [
+        "unit3notes.pdf p18–19",
+        "captions/21-optional-closure-idioms-without-closures.en.txt"
+      ],
+      "chapter": "12-closures-in-java-c",
+      "figures": [
+        "closure-representation"
+      ]
+    },
+    {
+      "number": 22,
+      "title": "Optional: Java Without Closures",
+      "key_points": [
+        "以单方法Func/Pred接口及对象方法模拟可调用代码，以对象字段或捕获final n保存环境。",
+        "null代表空表迫使map/filter/length写为static；若用实例方法会在空表调用时报空指针，Empty/Cons子类可改进设计。",
+        "map泛型A到B，filter保留A，length可用局部循环；doubleAll匿名内部类、countNs捕获n。",
+        "视频明确处于Java8发布前背景；当代Java已有lambda，此处是解释对象模拟机制，不是宣称现代Java没有闭包。"
+      ],
+      "source": "https://www.coursera.org/learn/programming-languages/lecture/0Exs9/optional-java-without-closures",
+      "source_locators": [
+        "unit3notes.pdf p19–21",
+        "captions/22-optional-java-without-closures.en.txt"
+      ],
+      "chapter": "12-closures-in-java-c",
+      "figures": [
+        "closure-representation"
+      ]
+    },
+    {
+      "number": 23,
+      "title": "Optional: C Without Closures",
+      "key_points": [
+        "C函数指针携带代码而无词法环境，标准C中函数定义在顶层；编译器嵌套函数扩展不等于标准构造。",
+        "map/filter及回调函数都增加void* env参数，库把env原样交还回调；回调库也应留出这种上下文入口。",
+        "doubleInt不需环境可传NULL，isN需传待比较n；void*与类型转换补足缺少类型参数的接口。",
+        "notes明确整数经intptr_t转void*再转回的示例并非可移植标准C保证；可用指向数字的指针或改变接口表示。"
+      ],
+      "source": "https://www.coursera.org/learn/programming-languages/lecture/AI5Ez/optional-c-without-closures",
+      "source_locators": [
+        "unit3notes.pdf p21–23",
+        "captions/23-optional-c-without-closures.en.txt"
+      ],
+      "chapter": "12-closures-in-java-c",
+      "figures": [
+        "closure-representation"
+      ]
+    },
+    {
+      "number": 24,
+      "title": "Course-Motivation Introduction",
+      "key_points": [
+        "课程动机被有意放在已有编程经验之后，方便准确理解学法；这些视频为选学不考。",
+        "理由面向本课学生，是部分主观判断，不是语言排名，也不声称未提及语言较差。",
+        "没有适合所有任务的最佳语言；三语言作为互补的概念教学载体。"
+      ],
+      "source": "https://www.coursera.org/learn/programming-languages/lecture/mYYPe/course-motivation-introduction",
+      "source_locators": [
+        "course_motivation.pdf p1–3",
+        "captions/24-course-motivation-introduction.en.txt"
+      ],
+      "chapter": "13-language-tradeoffs",
+      "figures": []
+    },
+    {
+      "number": 25,
+      "title": "Why Study General PL Concepts?",
+      "key_points": [
+        "车与鞋的比喻说明不同任务的设计取舍，熟悉共同原理帮助迁移，不等于所有选择都一样好用。",
+        "课程重点在semantics与idioms，准确接口和语义是判断代码、库、实现正确性的基础。",
+        "小而清晰的语言可比复杂现代语言更易看到核心结构；流行度本身不是教学价值或品质证明。",
+        "Hamlet比喻说明可以越过陌生语法学习可迁移的长期思想，而非只看短期工具或就业标签。"
+      ],
+      "source": "https://www.coursera.org/learn/programming-languages/lecture/EpFHD/why-study-general-pl-concepts",
+      "source_locators": [
+        "course_motivation.pdf p4–8",
+        "captions/25-why-study-general-pl-concepts.en.txt"
+      ],
+      "chapter": "13-language-tradeoffs",
+      "figures": []
+    },
+    {
+      "number": 26,
+      "title": "Are All PLs the Same?",
+      "key_points": [
+        "计算能力等价只指有足够计算能力的通用语言、输入输出可计算性及理想化资源，不涵盖所有语言和所有实践维度。",
+        "共同概念包括变量、抽象、one-of与递归，仍可用不同默认构造和组合方式体现。",
+        "一种语言中的直接构造在另一种里可能需要繁琐编码，影响理解、错误率、效率和工具支持。",
+        "Turing tarpit警示不能把能编码当作好设计；学多语言也帮助反过来理解熟悉语言。"
+      ],
+      "source": "https://www.coursera.org/learn/programming-languages/lecture/fbcb7/are-all-pls-the-same",
+      "source_locators": [
+        "course_motivation.pdf p9–10",
+        "captions/26-are-all-pls-the-same.en.txt"
+      ],
+      "chapter": "13-language-tradeoffs",
+      "figures": []
+    },
+    {
+      "number": 27,
+      "title": "Why Functional Languages?",
+      "key_points": [
+        "函数式语言思想常在多年后被主流吸收，例有垃圾回收、泛型、结构化树语法、高阶、类型推断、递归。",
+        "这些是有保留的历史教学论据，不宣称某一语言或个人独占发明，也不预测FP会取代所有范式。",
+        "MapReduce与map/reduce思想联系，主流吸收闭包与推断说明概念可跨语言迁移。",
+        "无mutation有助减少复杂系统中别名与并发更新负担，不能被理解为自动消除所有并发问题。"
+      ],
+      "source": "https://www.coursera.org/learn/programming-languages/lecture/J37vl/why-functional-languages",
+      "source_locators": [
+        "course_motivation.pdf p11–16",
+        "captions/27-why-functional-languages.en.txt"
+      ],
+      "chapter": "13-language-tradeoffs",
+      "figures": []
+    },
+    {
+      "number": 28,
+      "title": "Why ML, Racket, and Ruby?",
+      "key_points": [
+        "静态/动态与函数式/OOP是两个独立维度，SML、Racket、Ruby占三种组合，用常见Java/C#作第四角对照。",
+        "SML服务于多态、模式匹配与抽象类型；Racket服务于规整语法、动态类型、宏、eval和教学工具；Ruby服务于全对象、类与mixins。",
+        "语言还受教材迁移成本和教学顺序影响；Haskell惰性与Prolog逻辑搜索值得学但本课时间不足。",
+        "现实选型要考虑库、团队、标准和平台；短小教学例不代表语言只能做玩具。旧视频对Java/JS/Python/F#的历史说法须注明时代，不当现代事实。"
+      ],
+      "source": "https://www.coursera.org/learn/programming-languages/lecture/8deMO/why-ml-racket-and-ruby",
+      "source_locators": [
+        "course_motivation.pdf p17–22",
+        "captions/28-why-ml-racket-and-ruby.en.txt"
+      ],
+      "chapter": "13-language-tradeoffs",
+      "figures": []
+    }
+  ],
+  "visuals": [
+    {
+      "id": "closure-bindings",
+      "title": "返回以后，局部绑定还怎样被使用",
+      "chapter": "03-lexical-scope",
+      "states": 5
+    },
+    {
+      "id": "recomputation-boundary",
+      "title": "把计算放在哪里，就在哪一层重复",
+      "chapter": "04-closure-recomputation",
+      "states": 6
+    },
+    {
+      "id": "fold-order",
+      "title": "不要让加法掩盖 fold 的顺序",
+      "chapter": "05-fold",
+      "states": 6
+    },
+    {
+      "id": "curried-specialization",
+      "title": "固定两个输入，得到一个专用判断",
+      "chapter": "08-partial-application",
+      "states": 5
+    },
+    {
+      "id": "shared-ref",
+      "title": "闭包保存引用，后来读到的内容会变",
+      "chapter": "09-mutable-references",
+      "states": 5
+    },
+    {
+      "id": "callback-capture",
+      "title": "同样是 int → unit，各自保存不同数据",
+      "chapter": "10-callbacks-and-docs",
+      "states": 7
+    },
+    {
+      "id": "closure-representation",
+      "title": "移植时，环境到底放在哪里",
+      "chapter": "12-closures-in-java-c",
+      "states": 5
+    }
+  ],
+  "originals": [
+    {
+      "id": "ref-aliases",
+      "file": "figures/ref-aliases.png",
+      "title": "原课对照：两个名字指向同一个引用",
+      "alt": "原课指针图：x和z指向同一个引用，y指向另一个引用；通过x写入43后，读取z得到43，读取y仍得到42。",
+      "text": "x、z 共享一个可变单元，y 指向另一个单元。赋值更新的是单元内容；名字与引用之间的绑定没有改变。本页保留原课完整画面，w 的结果为 85。",
+      "source": "https://courses.cs.washington.edu/courses/cse341/19sp/lec9slides.pdf",
+      "locator": "Lecture 9 · PDF 第23页",
+      "attribution": "Dan Grossman · University of Washington · CSE341 Spring 2019",
+      "sha256": "0fc4986f02a9cc7552b0054f8e2614cf9e9b507f5f48778ca066372d8654e4d3"
+    }
+  ],
+  "source_pdfs": [
+    {
+      "source": "https://courses.cs.washington.edu/courses/cse341/19sp/course_motivation.pdf",
+      "pages": 22,
+      "sha256": "6c414bea7dfd83e4992c134568d49a81581f376b0c3780c3112fcdad3a1a798b"
+    },
+    {
+      "source": "https://courses.cs.washington.edu/courses/cse341/19sp/lec7slides.pdf",
+      "pages": 19,
+      "sha256": "bded30328860b045bc5ec6a8d90e8596f14c1dc778c053fff7acac559aafeba5"
+    },
+    {
+      "source": "https://courses.cs.washington.edu/courses/cse341/19sp/lec8slides.pdf",
+      "pages": 20,
+      "sha256": "866e35cfaf005f6cb07b023befb4f35c19df5eb4d1b7a0c11ca70a485bb5b267"
+    },
+    {
+      "source": "https://courses.cs.washington.edu/courses/cse341/19sp/lec9slides.pdf",
+      "pages": 30,
+      "sha256": "2d301dadca926dc0ba2f06640102a9789b5590f8606db55f4449ce4b14ff7141"
+    },
+    {
+      "source": "https://courses.cs.washington.edu/courses/cse341/19sp/unit3notes.pdf",
+      "pages": 23,
+      "sha256": "cf2c0053d155464d42d39caeeaf769b0cd807bb2127e89105291834a016b4356"
+    }
+  ],
+  "verification_scope": {
+    "officialEnglishCaptions": 28,
+    "sourceCode": "官方SML代码与正文示例分开核对；具体执行记录保留在制作底稿。",
+    "renderedPdfPages": 114,
+    "visualReview": "全部PDF页面渲染后的contact sheets，以及精选原页；中文过程图另逐状态验证。",
+    "fullVideoPlayback": false
+  },
+  "ordering_note": "采用Coursera顺序。V24–V28课程动机来自独立Interlude。"
+}

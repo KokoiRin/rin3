@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="几个函数或类型需要彼此认识时 · Dan Grossman 编程语言 第四节中文讲解"><title>几个函数或类型需要彼此认识时 · 编程语言第四节 · RIN III</title><link rel="stylesheet" href="../../reader.css"><link rel="stylesheet" href="../../programming-languages-a-section-1/lesson.css"><link rel="stylesheet" href="../lesson.css"><link rel="manifest" href="../../../manifest.webmanifest"></head><body class="pl-course pl-advanced"><nav class="site-nav"><a href="../index.html">← 编程语言 · 第四节</a><a href="../../programming-languages-a-section-1/index.html">第一节</a><a href="../../programming-languages-a-section-2/index.html">第二节</a><a href="../../programming-languages-a-section-3/index.html">第三节</a><a href="https://www.coursera.org/learn/programming-languages">原课程 ↗</a></nav><main class="reader"><header class="chapter-header"><span class="chapter-kicker">Part A · 第四节 · 04 / 9</span><h1>几个函数或类型需要彼此认识时</h1><p class="lead">用相互递归的函数和数据定义说明and的作用、整组类型检查，以及相互调用与尾调用的区别。</p><p class="byline">原课程：Dan Grossman · Programming Languages, Part A · Section 4</p><details class="source-details"><summary>对应视频与来源</summary><ul><li><a href="https://www.coursera.org/learn/programming-languages/lecture/6qDV2/mutual-recursion">V07 · Mutual Recursion</a></li></ul><p>本系列依据 Dan Grossman 的 Programming Languages, Part A · Section 4 制作原创中文讲解，按问题组织解释、推演与示例；不是逐字翻译或官方译本。</p><p>依据对应官方英文字幕、<a href="https://courses.cs.washington.edu/courses/cse341/19sp/unit4notes.pdf">Unit 4 讲义</a>；<a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec10slides.pdf">Lecture 10 幻灯片</a> / <a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec10.sml">示例代码</a>；<a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec11slides.pdf">Lecture 11 幻灯片</a> / <a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec11.sml">示例代码</a>；<a href="https://courses.cs.washington.edu/courses/cse341/19sp/lec12slides.pdf">Lecture 12 幻灯片</a>核对。视频编号采用 Coursera 的顺序；<a href="../index.html#sources">完整范围与来源</a>。</p></details><details class="lesson-toc"><summary>本篇目录</summary><ol><li class="toc-h2"><a href="#后面的函数也要回来调用前面的函数">后面的函数也要回来调用前面的函数</a></li><li class="toc-h2"><a href="#and-让一组函数一起建立">and 让一组函数一起建立</a></li><li class="toc-h2"><a href="#类型定义也可以互相引用">类型定义也可以互相引用</a></li><li class="toc-h2"><a href="#不放在同一组还能怎样合作">不放在同一组，还能怎样合作</a></li><li class="toc-h2"><a href="#对应原课程与来源">对应原课程与来源</a></li></ol></details><nav class="chapter-switcher" aria-label="章节导航"><a rel="prev" href="../03-value-restriction/index.html">← 03 一个共享的可变格子，为什么不能任意多态</a><a class="course-home" href="../index.html">全部 9 篇</a><a rel="next" href="../05-module-namespaces/index.html">05 先把一组定义放在同一个名字下面 →</a></nav></header><article class="lesson-article translated-article"><h2 id="后面的函数也要回来调用前面的函数">后面的函数也要回来调用前面的函数</h2>
+<p>普通绑定按顺序建立：一个函数可以使用自己与此前的定义，却不能随意使用还没出现的名字。如果一个处理过程有两个状态，每个状态都要把剩余输入交给另一个，单纯交换定义顺序就解决不了相互依赖。</p>
+<p>原课用一个小状态机说明这种需求。输入必须由零个或多个完整的 <code>1,2</code> 对组成；所以 <code>[1,2,1,2]</code> 合格，<code>[1,2,1]</code> 不合格，空列表也合格。</p>
+<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>fun match xs =</span></span>
+<span data-line=""><span>    let fun s_need_one xs =</span></span>
+<span data-line=""><span>            case xs of</span></span>
+<span data-line=""><span>                [] => true</span></span>
+<span data-line=""><span>              | 1::rest => s_need_two rest</span></span>
+<span data-line=""><span>              | _ => false</span></span>
+<span data-line=""><span>        and s_need_two xs =</span></span>
+<span data-line=""><span>            case xs of</span></span>
+<span data-line=""><span>                [] => false</span></span>
+<span data-line=""><span>              | 2::rest => s_need_one rest</span></span>
+<span data-line=""><span>              | _ => false</span></span>
+<span data-line=""><span>    in</span></span>
+<span data-line=""><span>        s_need_one xs</span></span>
+<span data-line=""><span>    end</span></span>
+<span data-line=""> </span>
+<span data-line=""><span>val complete = match [1,2,1,2]</span></span>
+<span data-line=""><span>val unfinished = match [1,2,1]</span></span>
+<span data-line=""><span>val empty = match []</span></span></code></pre></figure>
+<p>三个结果分别为 <code>true、false、true</code>。<code>s_need_one</code> 表示下一项应该是1；若此时输入结束，说明前面所有对都已完整，接受。看到1后交给 <code>s_need_two</code>，它必须看到2才能回到第一个状态；若直接结束，就有一个没有配完的1，所以拒绝。</p>
+<h2 id="and-让一组函数一起建立">and 让一组函数一起建立</h2>
+<p>只有第一个定义写 <code>fun</code>，接着用 <code>and</code> 连接其余函数。类型检查会把这一组共同处理，允许每个成员在函数体中调用组内其他成员，不要求被调用者先写在上面。</p>
+<p>这里不是布尔运算 <code>andalso</code>，也不是要求两个调用同时执行。运行时仍然只沿匹配到的分支前进：<code>[1,2]</code> 先进入 need-one，再进入 need-two，最后回到 need-one 处理 <code>[]</code>。相互递归描述的是定义与调用关系，不是并行计算。</p>
+<p>这个状态机的相互调用也都在尾位置，因为交出剩余输入以后，当前状态没有额外工作需要等返回再做。尾调用可以发生在不同函数之间，这里正好把上一节的尾位置概念用到了实际结构上。但用了 <code>and</code> 不保证一定是尾调用；若返回后还要加一，那份等待仍然存在。</p>
+<h2 id="类型定义也可以互相引用">类型定义也可以互相引用</h2>
+<p>下面保留原课的两个数据类型。第一种可以装整数，也可以装第二种类型；第二种可以装字符串，也可以再装第一种类型。</p>
+<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>datatype t1 = Foo of int | Bar of t2</span></span>
+<span data-line=""><span>and t2 = Baz of string | Quux of t1</span></span>
+<span data-line=""> </span>
+<span data-line=""><span>fun nonempty_t1 x =</span></span>
+<span data-line=""><span>    case x of</span></span>
+<span data-line=""><span>        Foo i => i &#x3C;> 0</span></span>
+<span data-line=""><span>      | Bar y => nonempty_t2 y</span></span>
+<span data-line=""><span>and nonempty_t2 x =</span></span>
+<span data-line=""><span>    case x of</span></span>
+<span data-line=""><span>        Baz s => size s > 0</span></span>
+<span data-line=""><span>      | Quux y => nonempty_t1 y</span></span>
+<span data-line=""> </span>
+<span data-line=""><span>val good = nonempty_t1 (Bar (Quux (Foo 7)))</span></span>
+<span data-line=""><span>val bad = nonempty_t2 (Quux (Bar (Baz "")))</span></span></code></pre></figure>
+<p><code>good</code> 为真，<code>bad</code> 为假。第二个 <code>and</code> 连接函数，前一个 <code>and</code> 则连接 <code>datatype</code> 声明：它创建的是两个不同的新类型，而不是把 <code>t1</code> 与 <code>t2</code> 宣布为同一种类型。</p>
+<p>沿 <code>Bar (Quux (Foo 7))</code> 走，输入先属于 <code>t1</code>，拆开 <code>Bar</code> 得到 <code>t2</code>，拆开 <code>Quux</code> 又得到 <code>t1</code>，最后在 <code>Foo 7</code> 判断非零。每次跨越都由构造器规定，并没有让一个类型直接等于它自身的无限展开；这也与第1篇无法统一的 <code>T=T list</code> 不同。</p>
+<h2 id="不放在同一组还能怎样合作">不放在同一组，还能怎样合作</h2>
+<p>原课最后展示了高阶函数的一种用途：较早的函数不必直接引用后面的函数名字，而是把“接下来怎样处理另一种类型”作为参数接收。下面继续使用上面的 <code>t1</code>、<code>t2</code>，把相同任务改写为两条按顺序建立的函数。</p>
+<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="sml" data-theme="github-light"><code data-language="sml" data-theme="github-light" style="display: grid;"><span data-line=""><span>fun check_t1 (next,x) =</span></span>
+<span data-line=""><span>    case x of</span></span>
+<span data-line=""><span>        Foo i => i &#x3C;> 0</span></span>
+<span data-line=""><span>      | Bar y => next y</span></span>
+<span data-line=""> </span>
+<span data-line=""><span>fun check_t2 x =</span></span>
+<span data-line=""><span>    case x of</span></span>
+<span data-line=""><span>        Baz s => size s > 0</span></span>
+<span data-line=""><span>      | Quux y => check_t1 (check_t2,y)</span></span>
+<span data-line=""> </span>
+<span data-line=""><span>val sameGood = check_t1 (check_t2,Bar (Quux (Foo 7)))</span></span></code></pre></figure>
+<p><code>sameGood</code> 仍为真。<code>check_t1</code> 只知道自己有一个可调用的 <code>next</code>；较晚定义的 <code>check_t2</code> 在需要时，把自己传给它。这样需要的回调沿参数进入，而不是靠较早函数向前引用一个未建立的名字。</p>
+<p>这不是建议把所有 <code>and</code> 都绕开。如果一组状态天然属于同一个过程，直接相互递归通常更清楚。这个改写有价值的地方，是让不同位置定义的代码也能合作，或在没有相互递归语法的语言里，用函数参数明确表达依赖。</p>
+<h2 id="对应原课程与来源">对应原课程与来源</h2>
+<p>对应 V7 <strong>Mutual Recursion</strong>，依据官方视频与 <a href="https://courses.cs.washington.edu/courses/cse341/19sp/unit4notes.pdf">Unit 4 讲义第16–18页</a> 原创重组，保留交替状态机、相互递归类型及传入后续处理函数的改写。</p></article><nav class="chapter-switcher" aria-label="章节导航"><a rel="prev" href="../03-value-restriction/index.html">← 03 一个共享的可变格子，为什么不能任意多态</a><a class="course-home" href="../index.html">全部 9 篇</a><a rel="next" href="../05-module-namespaces/index.html">05 先把一组定义放在同一个名字下面 →</a></nav><footer class="lesson-footer">本系列依据 Dan Grossman 的 Programming Languages, Part A · Section 4 制作原创中文讲解，按问题组织解释、推演与示例；不是逐字翻译或官方译本。<br><a href="../index.html#video-map">全部 19 段视频映射</a> · <a href="../index.html">第四节目录</a> · 资料核对与制作：2026-10-17</footer></main><script type="module" src="../../programming-languages-a-section-1/visuals.mjs"></script></body></html>

@@ -1,0 +1,367 @@
+{
+  "title": "Programming Languages, Part A · Section 3",
+  "date": "2026-10-17",
+  "attribution": "本系列依据 Dan Grossman 的 Programming Languages, Part A · Section 3 制作原创中文讲解，按问题组织解释、推演与示例；不是逐字翻译或官方译本。",
+  "videos": [
+    {
+      "number": 1,
+      "title": "Introduction to First-Class Functions",
+      "href": "https://www.coursera.org/learn/programming-languages/lecture/aBIYM/introduction-to-first-class-functions",
+      "duration": "PT7M50S"
+    },
+    {
+      "number": 2,
+      "title": "Functions as Arguments",
+      "href": "https://www.coursera.org/learn/programming-languages/lecture/qxDSS/functions-as-arguments",
+      "duration": "PT8M40S"
+    },
+    {
+      "number": 3,
+      "title": "Polymorphic Types and Functions as Arguments",
+      "href": "https://www.coursera.org/learn/programming-languages/lecture/vZT1N/polymorphic-types-and-functions-as-arguments",
+      "duration": "PT7M57S"
+    },
+    {
+      "number": 4,
+      "title": "Anonymous Functions",
+      "href": "https://www.coursera.org/learn/programming-languages/lecture/BJmbf/anonymous-functions",
+      "duration": "PT9M17S"
+    },
+    {
+      "number": 5,
+      "title": "Unnecessary Function Wrapping",
+      "href": "https://www.coursera.org/learn/programming-languages/lecture/vuMgK/unnecessary-function-wrapping",
+      "duration": "PT5M5S"
+    },
+    {
+      "number": 6,
+      "title": "Map and Filter",
+      "href": "https://www.coursera.org/learn/programming-languages/lecture/3n1V8/map-and-filter",
+      "duration": "PT8M56S"
+    },
+    {
+      "number": 7,
+      "title": "Generalizing Prior Topics",
+      "href": "https://www.coursera.org/learn/programming-languages/lecture/Flbkq/generalizing-prior-topics",
+      "duration": "PT9M1S"
+    },
+    {
+      "number": 8,
+      "title": "Lexical Scope",
+      "href": "https://www.coursera.org/learn/programming-languages/lecture/FFuCW/lexical-scope",
+      "duration": "PT7M22S"
+    },
+    {
+      "number": 9,
+      "title": "Lexical Scope and Higher-Order Functions",
+      "href": "https://www.coursera.org/learn/programming-languages/lecture/a3ZlH/lexical-scope-and-higher-order-functions",
+      "duration": "PT7M37S"
+    },
+    {
+      "number": 10,
+      "title": "Why Lexical Scope",
+      "href": "https://www.coursera.org/learn/programming-languages/lecture/XdbeY/why-lexical-scope",
+      "duration": "PT11M44S"
+    },
+    {
+      "number": 11,
+      "title": "Closures and Recomputation",
+      "href": "https://www.coursera.org/learn/programming-languages/lecture/ZRcG6/closures-and-recomputation",
+      "duration": "PT6M30S"
+    },
+    {
+      "number": 12,
+      "title": "Fold and More Closures",
+      "href": "https://www.coursera.org/learn/programming-languages/lecture/NtuJ7/fold-and-more-closures",
+      "duration": "PT11M28S"
+    },
+    {
+      "number": 13,
+      "title": "Closure Idiom: Combining Functions",
+      "href": "https://www.coursera.org/learn/programming-languages/lecture/T2gog/closure-idiom-combining-functions",
+      "duration": "PT9M18S"
+    },
+    {
+      "number": 14,
+      "title": "Closure Idiom: Currying",
+      "href": "https://www.coursera.org/learn/programming-languages/lecture/HSarz/closure-idiom-currying",
+      "duration": "PT10M32S"
+    },
+    {
+      "number": 15,
+      "title": "Partial Application",
+      "href": "https://www.coursera.org/learn/programming-languages/lecture/hIDOX/partial-application",
+      "duration": "PT9M41S"
+    },
+    {
+      "number": 16,
+      "title": "Currying Wrapup",
+      "href": "https://www.coursera.org/learn/programming-languages/lecture/T4nd2/currying-wrapup",
+      "duration": "PT6M40S"
+    },
+    {
+      "number": 17,
+      "title": "Mutable References",
+      "href": "https://www.coursera.org/learn/programming-languages/lecture/pwc1e/mutable-references",
+      "duration": "PT8M7S"
+    },
+    {
+      "number": 18,
+      "title": "Closure Idiom: Callbacks",
+      "href": "https://www.coursera.org/learn/programming-languages/lecture/ANQdD/closure-idiom-callbacks",
+      "duration": "PT8M25S"
+    },
+    {
+      "number": 19,
+      "title": "Standard-Library Documentation",
+      "href": "https://www.coursera.org/learn/programming-languages/lecture/h9R2w/standard-library-documentation",
+      "duration": "PT7M"
+    },
+    {
+      "number": 20,
+      "title": "Optional: Abstract Data Types With Closures",
+      "href": "https://www.coursera.org/learn/programming-languages/lecture/BfQu5/optional-abstract-data-types-with-closures",
+      "duration": "PT11M16S"
+    },
+    {
+      "number": 21,
+      "title": "Optional: Closure Idioms Without Closures",
+      "href": "https://www.coursera.org/learn/programming-languages/lecture/8kJjP/optional-closure-idioms-without-closures",
+      "duration": "PT4M48S"
+    },
+    {
+      "number": 22,
+      "title": "Optional: Java Without Closures",
+      "href": "https://www.coursera.org/learn/programming-languages/lecture/0Exs9/optional-java-without-closures",
+      "duration": "PT12M8S"
+    },
+    {
+      "number": 23,
+      "title": "Optional: C Without Closures",
+      "href": "https://www.coursera.org/learn/programming-languages/lecture/AI5Ez/optional-c-without-closures",
+      "duration": "PT10M56S"
+    },
+    {
+      "number": 24,
+      "title": "Course-Motivation Introduction",
+      "href": "https://www.coursera.org/learn/programming-languages/lecture/mYYPe/course-motivation-introduction",
+      "duration": "PT5M56S"
+    },
+    {
+      "number": 25,
+      "title": "Why Study General PL Concepts?",
+      "href": "https://www.coursera.org/learn/programming-languages/lecture/EpFHD/why-study-general-pl-concepts",
+      "duration": "PT10M30S"
+    },
+    {
+      "number": 26,
+      "title": "Are All PLs the Same?",
+      "href": "https://www.coursera.org/learn/programming-languages/lecture/fbcb7/are-all-pls-the-same",
+      "duration": "PT6M51S"
+    },
+    {
+      "number": 27,
+      "title": "Why Functional Languages?",
+      "href": "https://www.coursera.org/learn/programming-languages/lecture/J37vl/why-functional-languages",
+      "duration": "PT11M15S"
+    },
+    {
+      "number": 28,
+      "title": "Why ML, Racket, and Ruby?",
+      "href": "https://www.coursera.org/learn/programming-languages/lecture/8deMO/why-ml-racket-and-ruby",
+      "duration": "PT12M34S"
+    }
+  ],
+  "chapters": [
+    {
+      "slug": "01-higher-order-functions",
+      "title": "把变化的操作交给函数",
+      "number": 1,
+      "videoNumbers": [
+        1,
+        2,
+        3
+      ],
+      "sha256": "6a5777040c7e39cbff3bd901f5b0beffa7c82dc94149e723ad5cd20640460733",
+      "headingCount": 5
+    },
+    {
+      "slug": "02-anonymous-map-filter",
+      "title": "临时操作、map 与 filter，怎样写得恰到好处",
+      "number": 2,
+      "videoNumbers": [
+        4,
+        5,
+        6,
+        7
+      ],
+      "sha256": "7708734c0f9082515f75780d456e442d78adb81a1ed475eb8f5ba7b4ee008036",
+      "headingCount": 6
+    },
+    {
+      "slug": "03-lexical-scope",
+      "title": "函数记住哪份配置：词法作用域与闭包",
+      "number": 3,
+      "videoNumbers": [
+        8,
+        9,
+        10
+      ],
+      "sha256": "37872d0974c7ec466a7e5984fa58932421783114e5e6df6c832c8e8594bb61bc",
+      "headingCount": 5
+    },
+    {
+      "slug": "04-closure-recomputation",
+      "title": "闭包保存的是结果，还是以后要重复的计算",
+      "number": 4,
+      "videoNumbers": [
+        11
+      ],
+      "sha256": "f8f6b2bc8862902e08332870fef81507c98816e6e8b11bf1d0bcb656f430b037",
+      "headingCount": 5
+    },
+    {
+      "slug": "05-fold",
+      "title": "fold 的每一步，到底先拿哪个值计算",
+      "number": 5,
+      "videoNumbers": [
+        12
+      ],
+      "sha256": "31f86118af7162d4bfa49b6e37c2e8ab4506a017c92b178cdd26907919f62e79",
+      "headingCount": 4
+    },
+    {
+      "slug": "06-function-composition",
+      "title": "把转换、备用方案与管道接成一条过程",
+      "number": 6,
+      "videoNumbers": [
+        13
+      ],
+      "sha256": "a938a2c9fe5a62182078d46f9afc7226d4e90b33e9b2c005cbe783c64c7a8c7a",
+      "headingCount": 5
+    },
+    {
+      "slug": "07-currying",
+      "title": "一次交一项输入，为什么会得到另一个函数",
+      "number": 7,
+      "videoNumbers": [
+        14
+      ],
+      "sha256": "b1e4b1e129257c239db30a9bc529c2213043b36807fd1e2ed88ff2a001013f9a",
+      "headingCount": 5
+    },
+    {
+      "slug": "08-partial-application",
+      "title": "先固定配置，再留下可复用的专用函数",
+      "number": 8,
+      "videoNumbers": [
+        15,
+        16
+      ],
+      "sha256": "e161631cb13b59b73161f8f37c53287a2cc1b963f62ac22ab9020e267a99dbee",
+      "headingCount": 5
+    },
+    {
+      "slug": "09-mutable-references",
+      "title": "捕获不可变值，与共享一个可变位置",
+      "number": 9,
+      "videoNumbers": [
+        17
+      ],
+      "sha256": "9c81205a8713231aef650f068f6216b3764d63e50f5245f5e136e5d77044413e",
+      "headingCount": 5
+    },
+    {
+      "slug": "10-callbacks-and-docs",
+      "title": "登记一个回调后，配置和状态会留在哪里",
+      "number": 10,
+      "videoNumbers": [
+        18,
+        19
+      ],
+      "sha256": "c218e0b2b43e4c0d33bc14573654f77de1b974f87c6dd6dc6e5f7b5ac99f13b4",
+      "headingCount": 4
+    },
+    {
+      "slug": "11-closure-adt",
+      "title": "不用类，也能把数据和操作封在一起",
+      "number": 11,
+      "videoNumbers": [
+        20
+      ],
+      "sha256": "1a7923c28c5ab3c2c57a97eacc2cd28bf5c5231c83f8729957b8125ea3da5f48",
+      "headingCount": 5
+    },
+    {
+      "slug": "12-closures-in-java-c",
+      "title": "没有现成闭包时，环境要怎样一起传过去",
+      "number": 12,
+      "videoNumbers": [
+        21,
+        22,
+        23
+      ],
+      "sha256": "b3dc467796cf87d24c88af975c2b789770573b3e07d1676b10b7c50b28864cb0",
+      "headingCount": 4
+    },
+    {
+      "slug": "13-language-tradeoffs",
+      "title": "学会这些概念以后，怎样判断语言的取舍",
+      "number": 13,
+      "videoNumbers": [
+        24,
+        25,
+        26,
+        27,
+        28
+      ],
+      "sha256": "9aec2f7fea581dbdbff7f480274e60bb3ae88a383306bf964b64d5cf48ef9b0d",
+      "headingCount": 6
+    }
+  ],
+  "visuals": [
+    {
+      "id": "closure-bindings",
+      "title": "返回以后，局部绑定还怎样被使用",
+      "chapter": "03-lexical-scope",
+      "steps": 5
+    },
+    {
+      "id": "recomputation-boundary",
+      "title": "把计算放在哪里，就在哪一层重复",
+      "chapter": "04-closure-recomputation",
+      "steps": 6
+    },
+    {
+      "id": "fold-order",
+      "title": "不要让加法掩盖 fold 的顺序",
+      "chapter": "05-fold",
+      "steps": 6
+    },
+    {
+      "id": "curried-specialization",
+      "title": "固定两个输入，得到一个专用判断",
+      "chapter": "08-partial-application",
+      "steps": 5
+    },
+    {
+      "id": "shared-ref",
+      "title": "闭包保存引用，后来读到的内容会变",
+      "chapter": "09-mutable-references",
+      "steps": 5
+    },
+    {
+      "id": "callback-capture",
+      "title": "同样是 int → unit，各自保存不同数据",
+      "chapter": "10-callbacks-and-docs",
+      "steps": 7
+    },
+    {
+      "id": "closure-representation",
+      "title": "移植时，环境到底放在哪里",
+      "chapter": "12-closures-in-java-c",
+      "steps": 5
+    }
+  ],
+  "partial": false
+}

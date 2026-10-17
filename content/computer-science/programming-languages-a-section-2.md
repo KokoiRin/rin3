@@ -44,3 +44,7 @@ order: 51
 ## 阅读衔接与原课程
 
 [第一周目录](../../reading/programming-languages-a-section-1/index.html)保留基础概念与环境图解；本周沿用这些知识，集中解释新的组合规则与处理方式。[视频映射和出处](../../reading/programming-languages-a-section-2/index.html#sources)列出具体来源。
+
+## 接着阅读第三、第四节
+
+[第三节：函数、闭包与回调](../../reading/programming-languages-a-section-3/index.html) · [第四节：类型推导、模块与程序等价性](../../reading/programming-languages-a-section-4/index.html)。两节都可以直接进入关键推演，按问题选读。
