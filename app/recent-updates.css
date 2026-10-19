@@ -222,3 +222,19 @@ html:has(.recent-dialog[open]) { overflow: hidden; }
   .recent-dialog[open], .recent-dialog::backdrop { animation: none; }
   .recent-trigger, .recent-link, .recent-arrow, .recent-close { transition: none; }
 }
+
+
+html[data-theme="dark"] .recent-dialog { background: #24282c; color: #d8dcd7; border-color: #424a4c; }
+html[data-theme="dark"] :is(.recent-header, .recent-footer, .recent-list li + li, .recent-close, .recent-kind) { border-color: #424a4c; }
+html[data-theme="dark"] :is(.recent-eyebrow, .recent-date, .recent-date span:last-child,
+  .recent-kind, .recent-copy p, .recent-arrow, .recent-empty, .recent-footer, .recent-signature, .recent-close) { color: #abb5b0; }
+html[data-theme="dark"] .recent-header h2 > span { color: #e1c38c; }
+html[data-theme="dark"] :is(.recent-close:hover, .recent-link:hover) { background: #303a36; color: #d8dcd7; }
+html[data-theme="dark"] .recent-section { color: #a9cf9d; }
+html[data-theme="dark"] .recent-link:hover .recent-arrow { color: #a9cf9d; }
+html[data-theme="dark"] #recent-description { color: #abb5b0; }
+html[data-theme="dark"] .recent-section-mathematics { color: #e1acb7; }
+html[data-theme="dark"] .recent-section-software-engineering { color: #e1c38c; }
+html[data-theme="dark"] .recent-section-me { color: #a9cbd9; }
+html[data-theme="dark"] .recent-scroll { scrollbar-color: #65756b transparent; }
+html[data-theme="dark"] :is(.recent-close, .recent-link):focus-visible { outline-color: #9bd9bd; }

@@ -53,7 +53,7 @@ export async function renderArticleMarkdown(
     .use(rehypeKatex)
     .use(rehypeRinRichContent, options)
     .use(rehypePrettyCode, {
-      theme: "github-light",
+      theme: { light: "github-light", dark: "github-dark" },
       keepBackground: false,
     })
     .use(rehypeStringify)
