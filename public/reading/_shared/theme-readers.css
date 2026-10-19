@@ -1,0 +1,295 @@
+/* Color-only adapters for the independently maintained reading series.
+ * Load after each series stylesheet. Artwork retains its original colors. */
+.reader-theme-control {
+  display: flex;
+  justify-content: flex-end;
+  padding: 12px max(16px, env(safe-area-inset-right)) 0 16px;
+  max-width: 1440px;
+  margin-inline: auto;
+}
+
+@media screen {
+  html[data-theme="dark"] {
+    --canvas: #171b1e;
+    --paper: #202629;
+    --paper-deep: #293236;
+    --white: #242c30;
+    --ink: #dce2e4;
+    --muted: #adb9bf;
+    --accent: #91c5dd;
+    --accent-strong: #afd8e9;
+    --accent-soft: #293f49;
+    --line: #46545b;
+    --figure-bg: #262f33;
+    --code-bg: #171e22;
+    --code-ink: #dce7eb;
+    --node: #2d4652;
+    --decision: #365868;
+    --warm: #e5bc83;
+    --warm-soft: #3c3327;
+    --warm-line: #bd9461;
+    --green: #9ccfb3;
+    --green-soft: #293c33;
+    --success: #293c33;
+    --rose: #e4b2ba;
+    --rose-soft: #443038;
+    --alert: #f0a1a5;
+    --blue: #315267;
+    --blue-strong: #507d96;
+    --blue-soft: #2b424e;
+    --orange: #e2b77f;
+    --yellow: #decb88;
+    --red: #713d45;
+    --gray: #3e4a51;
+    --study: #c6afe9;
+    --study-soft: #342d42;
+    --study-line: #61536f;
+    --study-green: #9acfb9;
+    --study-green-soft: #293e36;
+    --coral: #edaa97;
+    --shadow: 0 18px 48px rgb(0 0 0 / 18%);
+    color-scheme: dark;
+    background-color: var(--canvas);
+    color: var(--ink);
+  }
+
+  html[data-theme="dark"] body { background-color: var(--canvas); color: var(--ink); }
+  html[data-theme="dark"] :is(.reader, .course-shell) { border-color: var(--line); }
+  html[data-theme="dark"] :is(a, summary):focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 4px;
+  }
+  html[data-theme="dark"] :is(.lead, .prompt, blockquote, .editorial-note, .translation-scope,
+    .compression-note, .resources, .source-note, .translator-note, .margin-note, .callout) {
+    color: #c3d0d6;
+  }
+  html[data-theme="dark"] :is(.learning-note, .how-to-study, .compression-note,
+    .boundary-note, .project-lab, .source-note, .source-details, .solution, .prompt,
+    .collapse, .recall, .translation-scope, blockquote, .math-display, .resources,
+    .translator-note, .margin-note, .exercise-answer, .editorial-note, .callout,
+    .exercise, .completion, .next-route, .note, .closing-note, .android-page-banner) {
+    background: var(--figure-bg);
+    border-color: var(--line);
+  }
+  html[data-theme="dark"] :is(.learning-note, .source-note, .prompt, .margin-note,
+    .callout, blockquote, .editorial-note, .math-display, .android-page-banner) {
+    border-left-color: #658c9e;
+  }
+  html[data-theme="dark"] :is(.concept-grid section, .chapter-card, .concept-card,
+    .card, .flow-step, .cycle-step, .layer-card, .formula > div, .matrix > div,
+    .voice-cell, .comparison > div, .context-panel, .growth-stage, .diagram-reason,
+    .module-group, .context-shell, .migration-stage, .node.white, .bounded,
+    .principles div, .decision .choice, .star .center) {
+    background: #293237;
+    border-color: var(--line);
+  }
+  html[data-theme="dark"] :is(.prerequisite-nav a, .concept-ref, .chapter-nav a:hover) {
+    color: var(--accent);
+    background: var(--accent-soft);
+    border-color: #658c9e;
+  }
+  html[data-theme="dark"] :is(.boundary-note.warning, .prompt[data-type="warning"],
+    .callout.warning, .margin-note[data-kind="action"], .source-clarification) {
+    background: var(--warm-soft);
+    border-color: var(--warm-line);
+  }
+  html[data-theme="dark"] :is(.margin-note[data-kind="project"], .evidence-card,
+    .practice, .summary-box) { background: var(--green-soft); border-color: #527461; }
+  html[data-theme="dark"] :is(.evidence-card strong, .practice h3, .summary-box h3) { color: #a5d6ba; }
+  html[data-theme="dark"] .margin-note::before { background: #658c9e; }
+  html[data-theme="dark"] .margin-note .note-kind { background: var(--accent-soft); color: var(--accent); }
+  html[data-theme="dark"] .margin-note[data-kind="project"] .note-kind { background: #365142; color: #b2dfc4; }
+  html[data-theme="dark"] .margin-note[data-kind="action"] .note-kind { background: #57432a; color: #ebce9f; }
+  html[data-theme="dark"] .term { color: #b9dceb; background: linear-gradient(transparent 64%, #365563 64%); }
+  html[data-theme="dark"] :is(.annotation-scope, .annotation-toolbar label) { color: var(--muted); }
+  html[data-theme="dark"] .annotation-toolbar { background: #263035f5; border-color: var(--line); }
+  html[data-theme="dark"] .annotation-toolbar button { background: #303c42; border-color: #596b74; color: #c7d5db; }
+  html[data-theme="dark"] .annotation-toolbar button:is(:hover, [aria-pressed="true"]) {
+    background: var(--accent); color: #172b35; border-color: var(--accent);
+  }
+
+  /* Tables and code preserve their existing dimensions and scrolling. */
+  html[data-theme="dark"] :is(table, .schema-table) { color: var(--ink); background: #252f34; }
+  html[data-theme="dark"] :is(th, td, .decision-table th, .decision-table td) { border-color: #53636c; }
+  html[data-theme="dark"] :is(th, .fact-table th, .book-table th, .schema-table strong) {
+    color: #e0e9ed; background: #354b57; border-color: #53636c;
+  }
+  html[data-theme="dark"] :is(.two-voices, .comparison, .matrix) { background: var(--line); border-color: var(--line); }
+  html[data-theme="dark"] :is(.voice-head, .comparison .head, .matrix .head, .step-index) { color: #172b35; background: var(--accent); }
+  html[data-theme="dark"] :is(.comparison .challenge, .matrix .label) { background: #344149; }
+  html[data-theme="dark"] :is(.unspoken, .comparison .battle, .matrix .warm) { color: #e3c8a2; background: var(--warm-soft); }
+  html[data-theme="dark"] :is(.comparison .learning, .matrix .green) { background: var(--green-soft); }
+  html[data-theme="dark"] .formula .operator { background: transparent; }
+  html[data-theme="dark"] pre { color: var(--code-ink); background: var(--code-bg); border-color: #40545e; }
+  html[data-theme="dark"] :is(code:not(pre code), article:not(.translated-article) code:not(pre code), .translated-article code:not(pre code)) {
+    color: #cae0eb; background: #2b3a42; border-color: #4a616c;
+  }
+  html[data-theme="dark"] pre code { color: inherit; background: transparent; }
+  html[data-theme="dark"] .kw { color: #91c9ed; }
+  html[data-theme="dark"] .fn { color: #e3acd7; }
+  html[data-theme="dark"] :is(.math-display, p > mjx-container:only-child) { color: #c6dce6; background: #28383f; }
+  html[data-theme="dark"] .exercise-answer summary { color: #a9d1e1; }
+  html[data-theme="dark"] .exercise-answer[open] summary { border-color: var(--line); }
+
+  /* Transparent source diagrams need a light backing to keep black labels legible.
+   * Raster illustrations and screenshots keep their native colors, without filters. */
+  html[data-theme="dark"] :is(.translated-article img, .figure-frame img) { background-color: #e4e9e9; }
+  html[data-theme="dark"] .android-page-banner-image { background: transparent; }
+  html[data-theme="dark"] .figure-frame { border-color: var(--line); }
+  html[data-theme="dark"] svg :is(.node, .decision) { stroke: #adc0c9; }
+  html[data-theme="dark"] svg .group { stroke: #c3a36b; }
+  html[data-theme="dark"] svg [stroke="#26343b"] { stroke: #adc0c9; }
+  html[data-theme="dark"] svg [fill="#26343b"] { fill: #adc0c9; }
+  html[data-theme="dark"] svg [fill="#fff"] { fill: #293237; }
+  html[data-theme="dark"] svg [fill="#e7f1f5"] { fill: var(--node); }
+  html[data-theme="dark"] svg [fill="#c9e0ea"] { fill: var(--decision); }
+  html[data-theme="dark"] svg [fill="#f6a63d"] { fill: #705131; }
+  html[data-theme="dark"] svg [fill="#d94b52"] { fill: #79434a; }
+  html[data-theme="dark"] :is(.diagram, .arrow, .branch-down, .flow-arrow) { color: #c3d3db; }
+  html[data-theme="dark"] :is(.node.orange, .ports span) { background: #54432d; border-color: #9c835e; }
+  html[data-theme="dark"] .endpoints span { background: #30434d; border-color: #66808d; }
+  html[data-theme="dark"] .decision .question { background: #2f4d5c; border-color: #66808d; }
+  html[data-theme="dark"] .decision .label { color: #e6c394; }
+
+  /* DDD's semantic diagram colors remain distinguishable in the dark palette. */
+  html[data-theme="dark"][data-reader-family="learning-domain-driven-design"] {
+    --event: #624329; --event-border: #c78c53;
+    --command: #2e5165; --command-border: #709eb6;
+    --actor: #5a5230; --actor-border: #c1ae5c;
+    --policy: #553d65; --policy-border: #ae89c2;
+    --read: #2c5240; --read-border: #70ab8a;
+    --external: #623c58; --external-border: #bf85ad;
+    --aggregate: #57502e; --aggregate-border: #b3a65f;
+    --pain: #70385b;
+  }
+  html[data-theme="dark"] .sticky-board {
+    background: linear-gradient(rgb(181 201 210 / 5%) 1px, transparent 1px),
+      linear-gradient(90deg, rgb(181 201 210 / 5%) 1px, transparent 1px), #252b2c;
+    background-size: 24px 24px;
+    border-color: var(--line);
+  }
+  html[data-theme="dark"] .sticky { color: #e2e7e5; }
+  html[data-theme="dark"] .context-zone { background: #202a2eb3; border-color: #657a85; }
+  html[data-theme="dark"] .wall-scene { background: linear-gradient(#343b3b 0 72%, #262e30 72%); }
+  html[data-theme="dark"] .paper-wall { background: #343c3b; border-color: #5f6867; }
+  html[data-theme="dark"] .subdomain { color: #e1e6e6; }
+  html[data-theme="dark"] .subdomain.ad { background: #614a2e; }
+  html[data-theme="dark"] .subdomain.publish { background: #345242; }
+  html[data-theme="dark"] .subdomain.campaign { background: #354f5d; }
+
+  /* DDD guided reading: preserve progress, annotation toggles and lesson layout. */
+  html[data-theme="dark"] :is(.study-rail, .study-check) { background: #2b2833; border-color: var(--study-line); }
+  html[data-theme="dark"] :is(.study-rail strong, .study-check summary, .coach-note h4, .study-map a, .study-toggle) { color: #d0bfeb; }
+  html[data-theme="dark"] :is(.study-toggle, .study-check .decision-line span) { background: #37313f; border-color: var(--study-line); }
+  html[data-theme="dark"] .study-progress { background: #484050; }
+  html[data-theme="dark"] .coach-note { color: #d0c3e0; }
+  html[data-theme="dark"] .coach-note[data-kind="project"] { color: #c2dace; border-color: #507361; }
+  html[data-theme="dark"] .retell-lab { background: #29362f; border-color: #4c6a58; }
+  html[data-theme="dark"] .retell-step { background: #303f37; border-color: #4c6a58; }
+  html[data-theme="dark"] :is(.retell-lab > p, .retell-step p, .retell-finish) { color: #c2dace; }
+  html[data-theme="dark"] .retell-step summary { color: #add8c5; }
+  html[data-theme="dark"] .retell-step > b { color: #1b3026; }
+  html[data-theme="dark"] .event-compare > div { background: #293237; }
+  html[data-theme="dark"] .coupling-list strong { color: #ebaab0; }
+
+  /* Emotions uses --ink for both text and inverse surfaces. Separate those
+   * surfaces explicitly, so pale text never becomes a pale panel background. */
+  html[data-theme="dark"][data-reader-family="emotions"] body { background: var(--paper); }
+  html[data-theme="dark"] :is(.method-card, .protocol-strip, .day-card.active,
+    .scene-caption-grid, .chapter-visual figcaption, .comparison-section) {
+    background: #162126; color: #dce4e5;
+  }
+  html[data-theme="dark"] .primary-button { color: #1e2d31; background: #b8d2d4; }
+  html[data-theme="dark"] .primary-button:is(:hover, :focus-visible) { color: #252a2b; background: var(--coral); }
+  html[data-theme="dark"] .thought-card { background: #293237; }
+  html[data-theme="dark"] .rating-options button { color: #dce2e4; border-color: #687980; }
+  html[data-theme="dark"] .rating-options button:is(:hover, .selected) { color: #192b30; background: #b8d2d4; }
+  html[data-theme="dark"] :is(.mixed-analysis, .effect-section) { background: #2a3a34; }
+  html[data-theme="dark"] .closing-section { background: #573c36; color: #f0ded7; }
+  html[data-theme="dark"] .closing-section :is(.eyebrow, p:last-child) { color: #e8cfc5; }
+  html[data-theme="dark"] .comparison-section .section-heading h2 { color: #dce4e5; }
+  html[data-theme="dark"][data-reader-family="emotions"] :is(.chapter-copy a, .hero-lede a, .research-section a:hover) { color: #a9d2e3; }
+}
+
+@media print { .reader-theme-control { display: none; } }
+
+/* Readers added since the initial theme baseline keep their own layout and
+ * semantic diagram states; these adapters only replace their light palettes. */
+@media screen {
+  html[data-theme="dark"] :is(.translated-article .notecard, .translated-article .admonitionblock,
+    .editorial-correction, .map-entry, .build-lane, .build-node, .build-merge) {
+    background: var(--figure-bg); border-color: var(--line); color: var(--ink);
+  }
+  html[data-theme="dark"] :is(.translated-article .notecard.warning, .scope-notice) {
+    background: var(--warm-soft); border-color: var(--warm-line); color: var(--ink);
+  }
+  html[data-theme="dark"] :is(.editorial-correction summary, .reading-pass, .build-arrow) { color: var(--muted); }
+  html[data-theme="dark"] body .build-node { background: var(--paper); }
+  html[data-theme="dark"] body :is(.build-merge, .map-entry) { background: var(--green-soft); }
+  html[data-theme="dark"] .map-detail { border-color: var(--line); }
+
+  html[data-theme="dark"] .pl-course {
+    --accent: #9ccfbd; --accent-soft: #293e36; --figure-bg: #26332f;
+  }
+  html[data-theme="dark"] .pl-course :is(.lead, .lesson-visual figcaption p, .course-original figcaption) { color: #c3d0ca; }
+  html[data-theme="dark"] .pl-course :is(.lesson-toc, .lesson-visual, .lesson-visual figcaption,
+    .visual-controls, .visual-table, .visual-source, .course-original, .course-route span, .continue-course) {
+    background: var(--figure-bg); border-color: var(--line); color: var(--ink);
+  }
+  html[data-theme="dark"] .pl-course :is(.chapter-card:hover, .visual-controls button:hover:not(:disabled),
+    .visual-current, .visual-explanation) { background: var(--accent-soft); border-color: #648c7b; color: var(--ink); }
+  html[data-theme="dark"] .pl-course .visual-current { box-shadow: inset 3px 0 var(--accent); }
+  html[data-theme="dark"] .pl-course :is(.lesson-article pre, .visual-code-scroll) {
+    background: var(--code-bg); color: var(--code-ink); border-color: var(--line);
+  }
+  html[data-theme="dark"] .pl-course .visual-code code { color: var(--code-ink) !important; }
+  html[data-theme="dark"] .pl-course .lesson-article blockquote { background: var(--accent-soft); color: #c3d0ca; border-color: #648c7b; }
+  html[data-theme="dark"] .pl-course :is(.visual-controls button, .visual-controls select, .visual-graph-tools button) {
+    background: var(--paper); color: var(--accent); border-color: #648c7b;
+  }
+  html[data-theme="dark"] .pl-course :is(.visual-kicker, .visual-source a, .visual-result) { color: var(--accent); }
+  html[data-theme="dark"] .pl-course :is(.visual-step-title > span, .visual-code li,
+    .visual-result > span, .visual-graph-tools) { color: var(--muted); }
+  html[data-theme="dark"] .pl-course :is(.visual-table h4, .visual-table thead th) { background: #30443a; color: #c9dfd1; }
+  html[data-theme="dark"] .pl-course :is(.visual-table th, .visual-table td) { color: var(--ink); border-color: var(--line); }
+  html[data-theme="dark"] .pl-course .visual-table .visual-new > * { background: #294a37; color: #b4e2c5; }
+  html[data-theme="dark"] .pl-course .visual-table .visual-active > * { background: #4c4026; color: #edce91; }
+  html[data-theme="dark"] .pl-course .visual-table .visual-muted > * { background: #303a36; color: #aabdb4; }
+  html[data-theme="dark"] .pl-course :is(.visual-all-states, .visual-static-step) { border-color: var(--line); }
+  html[data-theme="dark"] .pl-course .visual-graph-scroll { background: var(--paper); border-color: var(--line); }
+  html[data-theme="dark"] .pl-course .preview-note { color: var(--warm); }
+
+  html[data-theme="dark"] .reading-graph { background: #202b27; color: #dce5df; }
+  html[data-theme="dark"] .reading-graph text { fill: #dce5df; }
+  html[data-theme="dark"] .reading-graph .rg-node rect { fill: #2c3933; stroke: #8da99b; }
+  html[data-theme="dark"] .reading-graph .rg-group rect { fill: #25352d; stroke: #698677; }
+  html[data-theme="dark"] .reading-graph .rg-edge path { stroke: #9bb4a9; }
+  html[data-theme="dark"] .reading-graph marker path { fill: #9bb4a9; }
+  html[data-theme="dark"] .reading-graph .rg-edge-label { stroke: #202b27; }
+  html[data-theme="dark"] .reading-graph .rg-active rect { fill: #294a3b; stroke: #87cab0; }
+  html[data-theme="dark"] .reading-graph .rg-active text { fill: #b5e0ce; }
+  html[data-theme="dark"] .reading-graph .rg-edge.rg-active path { stroke: #87cab0; }
+  html[data-theme="dark"] .reading-graph .rg-new rect { fill: #4b3827; stroke: #d5a777; }
+  html[data-theme="dark"] .reading-graph .rg-new text { fill: #edc8a2; }
+  html[data-theme="dark"] .reading-graph .rg-edge.rg-new path { stroke: #d5a777; }
+  html[data-theme="dark"] .reading-graph .rg-shared rect { fill: #40314e; stroke: #b297cd; }
+  html[data-theme="dark"] .reading-graph .rg-shared text { fill: #d4c0e8; }
+  html[data-theme="dark"] .reading-graph .rg-edge.rg-shared path { stroke: #b297cd; }
+  html[data-theme="dark"] .reading-graph .rg-muted rect { fill: #303a36; stroke: #7e9388; }
+  html[data-theme="dark"] .reading-graph .rg-muted text { fill: #aabdb4; }
+  html[data-theme="dark"] .reading-graph .rg-edge.rg-muted path { stroke: #7e9388; }
+
+  /* These published PL examples predate dual-palette Shiki output. */
+  html[data-theme="dark"] .pl-course pre span[style*="color:#24292E" i] { color: #e1e4e8 !important; }
+  html[data-theme="dark"] .pl-course pre span[style*="color:#D73A49" i] { color: #f97583 !important; }
+  html[data-theme="dark"] .pl-course pre span[style*="color:#6F42C1" i] { color: #b392f0 !important; }
+  html[data-theme="dark"] .pl-course pre span[style*="color:#005CC5" i] { color: #79b8ff !important; }
+  html[data-theme="dark"] .pl-course pre span[style*="color:#E36209" i] { color: #ffab70 !important; }
+  html[data-theme="dark"] .pl-course pre span[style*="color:#032F62" i] { color: #9ecbff !important; }
+  html[data-theme="dark"] .pl-course pre span[style*="color:#6A737D" i] { color: #abb5c0 !important; }
+}
+
+@media screen {
+  html[data-theme="dark"] .pl-course .visual-code li::marker,
+  html[data-theme="dark"] .pl-course .course-route span::after { color: var(--muted); }
+}

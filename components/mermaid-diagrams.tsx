@@ -1,58 +1,78 @@
 "use client";
 
-// 这个组件只负责把服务端输出的惰性 Mermaid 节点升级为 SVG。
-// 没有图表节点时不会加载 Mermaid，图表内容和分页仍由文档编译器拥有。
+// Only visible diagrams load Mermaid. Original source is retained for theme changes.
 import { useEffect } from "react";
 
-// 在当前页面挂载后渲染尚未处理的图表，并保持 Mermaid 的严格安全边界。
 export default function MermaidDiagrams() {
   useEffect(() => {
     let isDisposed = false;
     let runtimePromise: Promise<(typeof import("mermaid"))["default"]> | null = null;
     let renderQueue = Promise.resolve();
+    let initializedTheme: string | null = null;
+    const sources = new WeakMap<HTMLElement, string>();
 
-    // Mermaid 只初始化一次，并且只有确实找到可见图表时才下载运行时。
     const getRuntime = () => {
-      runtimePromise ??= import("mermaid").then(({ default: mermaid }) => {
-        mermaid.initialize({
-          startOnLoad: false,
-          securityLevel: "strict",
-          theme: "neutral",
-          // Reveal 会缩放整张 SVG，但 Chromium 不会同步缩放 foreignObject 内的 HTML，
-          // 因此使用原生 SVG text，避免节点文字末尾被裁掉。
-          htmlLabels: false,
-        });
-        return mermaid;
-      });
+      runtimePromise ??= import("mermaid").then(({ default: mermaid }) => mermaid);
       return runtimePromise;
     };
 
-    // Reveal 隐藏页没有可靠尺寸，只渲染普通正文或当前 present Slide 内的图表。
     const renderVisibleDiagrams = async () => {
-      const nodes = Array.from(
-        document.querySelectorAll<HTMLElement>(
-          "[data-mermaid-diagram]:not([data-processed]):not([data-mermaid-rendering])",
-        ),
-      ).filter((node) => {
-        const slide = node.closest(".rin-slide");
-        return slide === null || slide.classList.contains("present");
-      });
-      if (nodes.length === 0) {
-        return;
+      if (isDisposed) return;
+      const theme = document.documentElement.dataset.theme === "dark" ? "dark" : "light";
+      // Hidden Reveal slides have no reliable size; render them when they become present.
+      const nodes = Array.from(document.querySelectorAll<HTMLElement>("[data-mermaid-diagram]"))
+        .filter((node) => {
+          const slide = node.closest(".rin-slide");
+          return (slide === null || slide.classList.contains("present"))
+            && (!node.hasAttribute("data-processed") || node.dataset.mermaidTheme !== theme);
+        });
+      if (nodes.length === 0) return;
+
+      const mermaid = await getRuntime();
+      if (isDisposed) return;
+      if (initializedTheme !== theme) {
+        mermaid.initialize({
+          startOnLoad: false,
+          securityLevel: "strict",
+          theme: theme === "dark" ? "dark" : "neutral",
+          ...(theme === "dark" ? {
+            themeVariables: {
+              background: "#24282c",
+              primaryColor: "#2d3a3d",
+              primaryTextColor: "#d8dcd7",
+              primaryBorderColor: "#849b9a",
+              lineColor: "#aabbb5",
+              secondaryColor: "#343d48",
+              tertiaryColor: "#2d3530",
+              mainBkg: "#2d3a3d",
+              textColor: "#d8dcd7",
+              nodeTextColor: "#d8dcd7",
+              edgeLabelBackground: "#24282c",
+              clusterBkg: "#28312f",
+              clusterBorder: "#63736e",
+            },
+          } : {}),
+          // Native SVG text avoids clipped foreignObject labels under Reveal scaling.
+          htmlLabels: false,
+        });
+        initializedTheme = theme;
       }
 
-      nodes.forEach((node) => node.setAttribute("data-mermaid-rendering", ""));
+      nodes.forEach((node) => {
+        if (!sources.has(node)) sources.set(node, node.textContent ?? "");
+        node.textContent = sources.get(node) ?? "";
+        node.removeAttribute("data-processed");
+        node.setAttribute("data-mermaid-rendering", "");
+      });
       try {
-        const mermaid = await getRuntime();
-        if (!isDisposed) {
-          await mermaid.run({ nodes, suppressErrors: false });
-        }
+        await mermaid.run({ nodes, suppressErrors: false });
+        nodes.forEach((node) => { node.dataset.mermaidTheme = theme; });
       } finally {
         nodes.forEach((node) => node.removeAttribute("data-mermaid-rendering"));
       }
     };
 
-    // 串行处理快速翻页触发的渲染请求，避免 Mermaid 全局配置并发执行。
+    // Serialize fast theme/slide changes because Mermaid has a global configuration.
     const scheduleRender = () => {
       renderQueue = renderQueue
         .then(renderVisibleDiagrams)
@@ -63,11 +83,13 @@ export default function MermaidDiagrams() {
     document.querySelectorAll(".rin-slide").forEach((slide) => {
       observer.observe(slide, { attributes: true, attributeFilter: ["class"] });
     });
+    document.addEventListener("rin-theme-change", scheduleRender);
     scheduleRender();
 
     return () => {
       isDisposed = true;
       observer.disconnect();
+      document.removeEventListener("rin-theme-change", scheduleRender);
     };
   }, []);
 

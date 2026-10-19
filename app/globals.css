@@ -1253,3 +1253,193 @@ a {
     transition: none;
   }
 }
+
+/* Shiki emits both palettes at build time; the browser only selects the colors. */
+.prose [data-rehype-pretty-code-figure] code span {
+  color: var(--shiki-light);
+  font-style: var(--shiki-light-font-style);
+  font-weight: var(--shiki-light-font-weight);
+  text-decoration: var(--shiki-light-text-decoration);
+}
+
+html[data-theme="dark"] .article-page {
+  --article-ink: #d8dcd7;
+  --article-muted: #abb5b0;
+  --article-paper: #1c1f22;
+  --article-sheet: #24282c;
+  --article-line: #424a4c;
+  --article-green: #98cbb5;
+  --article-green-soft: #2d423b;
+  --article-orange: #edb398;
+  --article-orange-soft: #35302c;
+  --article-lime: #b9c77b;
+  --article-blue: #a9cbd9;
+  background: var(--article-paper);
+}
+
+html[data-theme="dark"] .article-layout {
+  background: var(--article-sheet);
+  box-shadow: 0 26px 72px #00000026;
+}
+
+html[data-theme="dark"] .article-toc {
+  background: #292e32;
+  box-shadow: none;
+}
+
+html[data-theme="dark"] .prose > p:first-of-type,
+html[data-theme="dark"] .prose blockquote {
+  color: var(--article-ink);
+}
+
+html[data-theme="dark"] .prose em {
+  color: #b9c8bf;
+}
+
+html[data-theme="dark"] .prose a {
+  color: var(--article-orange);
+  border-bottom-color: #b88068;
+}
+
+html[data-theme="dark"] .prose a:hover {
+  color: #ffd0b8;
+}
+
+html[data-theme="dark"] .prose img,
+html[data-theme="dark"] .prose .mermaid {
+  border-color: var(--article-line);
+  box-shadow: none;
+}
+
+html[data-theme="dark"] .prose .mermaid {
+  background: var(--article-sheet);
+}
+
+html[data-theme="dark"] .prose tbody tr:nth-child(even) {
+  background: #2a3332;
+}
+
+html[data-theme="dark"] .prose figure[data-rehype-pretty-code-figure] {
+  border-color: var(--article-line);
+  background: #191e22;
+}
+
+html[data-theme="dark"] .prose [data-rehype-pretty-code-figure] code span {
+  color: var(--shiki-dark);
+  font-style: var(--shiki-dark-font-style);
+  font-weight: var(--shiki-dark-font-weight);
+  text-decoration: var(--shiki-dark-text-decoration);
+}
+
+html[data-theme="dark"] .prose code:not(pre code) {
+  background: #32393a;
+  color: #f0bb9e;
+}
+
+html[data-theme="dark"] .article-pagination {
+  border-color: var(--article-line);
+}
+
+html[data-theme="dark"] .article-pagination span,
+html[data-theme="dark"] .article-pagination-index {
+  color: var(--article-muted);
+}
+
+html[data-theme="dark"] :focus-visible {
+  outline: 2px solid #9bd9bd;
+  outline-offset: 4px;
+}
+
+html[data-theme="dark"] ::selection {
+  background: #486455;
+  color: #f0f2eb;
+}
+
+/* Slide geometry and photography stay unchanged; only the reading palette changes. */
+html[data-theme="dark"] .rin-slides-shell {
+  --slides-ink: #d8dcd7;
+  --slides-paper: #24282c;
+  --slides-rail: #202528;
+  --slides-maple: #edb398;
+  --slides-moss: #98cbb5;
+  --slides-sky: #a9cbd9;
+  background: #1c1f22;
+}
+
+html[data-theme="dark"] .slides-stage {
+  background: #1c1f22;
+}
+
+html[data-theme="dark"] :is(.slides-rail, .slides-rail-header, .slides-rail-footer),
+html[data-theme="dark"] .rin-reveal .slides section.rin-slide,
+html[data-theme="dark"] :is(.slide-matrix td, .slide-matrix th, .slide-flow li, .slide-checklist li, .slide-formula-render),
+html[data-theme="dark"] .slide-prose-content :is(img, .mermaid) {
+  border-color: #424a4c;
+}
+
+html[data-theme="dark"] .slides-rail-header > div p,
+html[data-theme="dark"] .slides-rail-header > p,
+html[data-theme="dark"] .slides-rail-footer p,
+html[data-theme="dark"] .slides-chapters small,
+html[data-theme="dark"] .slides-chapters button,
+html[data-theme="dark"] .slide-heading > p:last-child,
+html[data-theme="dark"] .slide-prose-content,
+html[data-theme="dark"] :is(.slide-card, .slide-flow, .slide-contract-grid, .slide-formula-legend) p,
+html[data-theme="dark"] .slide-code-caption {
+  color: #b5beb8;
+}
+
+html[data-theme="dark"] .slides-chapters button:is(:hover, :focus-visible, .is-active) {
+  background: #303a39;
+  color: #e4e8e1;
+}
+
+html[data-theme="dark"] :is(.slides-toolbar, .slides-controls) :is(a, button),
+html[data-theme="dark"] .slides-rail-close {
+  background: #292e32;
+  border-color: #57615f;
+  color: var(--slides-ink);
+}
+
+html[data-theme="dark"] :is(.slides-toolbar, .slides-controls) :is(a, button):hover,
+html[data-theme="dark"] .slides-section-link:hover {
+  color: #f3c9b6;
+  background: #35403e;
+}
+
+html[data-theme="dark"] .slide-prose-content .mermaid {
+  background: var(--slides-paper);
+}
+
+html[data-theme="dark"] .slide-card,
+html[data-theme="dark"] .slide-contract-grid article,
+html[data-theme="dark"] .slide-formula-legend article {
+  background: #303638;
+}
+
+html[data-theme="dark"] .slide-matrix th {
+  background: #303a39;
+  color: #d8dcd7;
+}
+
+html[data-theme="dark"] .slide-formula-render {
+  color: var(--slides-ink);
+}
+
+html[data-theme="dark"] .slide-closing-layout {
+  background: #1a2020;
+}
+
+html[data-theme="dark"] .slides-progress,
+html[data-theme="dark"] .slide-flow::before {
+  background: #53615b;
+}
+
+/* Keep wide article tables inside the reading area on narrow screens. */
+@media (max-width: 720px) {
+  .prose table {
+    display: block;
+    max-width: 100%;
+    overflow-x: auto;
+  }
+}

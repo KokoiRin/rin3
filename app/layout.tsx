@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "katex/dist/katex.min.css";
 import "./globals.css";
 import { assetPath } from "@/lib/site/sections";
+import ThemeControl from "@/components/theme-control";
 
 export const metadata: Metadata = {
   title: "RIN III",
@@ -28,8 +29,17 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body>{children}</body>
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <link rel="stylesheet" href={assetPath("/theme.css")} />
+        {/* Apply saved appearance before the first paint, including static exports. */}
+        {/* eslint-disable-next-line @next/next/no-sync-scripts */}
+        <script src={assetPath("/theme.js")} />
+      </head>
+      <body>
+        {children}
+        <ThemeControl />
+      </body>
     </html>
   );
 }

@@ -1,0 +1,72 @@
+html[data-theme="light"] { color-scheme: light; }
+html[data-theme="dark"] { color-scheme: dark; background: #1c1f22; }
+
+.rin-theme-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  box-sizing: border-box;
+  max-width: 100%;
+  padding: 6px 8px 6px 12px;
+  border: 1px solid #c8c8bf;
+  border-radius: 10px;
+  background: #f8f7f1;
+  color: #343b38;
+  font: 13px/1.4 -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+  box-shadow: 0 3px 14px #0000000d;
+}
+
+.rin-theme-control select {
+  box-sizing: border-box;
+  appearance: none;
+  height: 32px;
+  min-height: 32px;
+  max-width: 100%;
+  margin: 0;
+  padding: 4px 24px 4px 6px;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  background: linear-gradient(45deg, transparent 50%, currentColor 50%) right 12px center / 5px 5px no-repeat,
+    linear-gradient(135deg, currentColor 50%, transparent 50%) right 7px center / 5px 5px no-repeat;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.rin-theme-control select:focus-visible {
+  outline: 2px solid #247661;
+  outline-offset: 2px;
+}
+
+html[data-theme="dark"] .rin-theme-control {
+  border-color: #4c5556;
+  background: #292e32;
+  color: #d8dcd7;
+  box-shadow: 0 3px 14px #00000026;
+}
+
+html[data-theme="dark"] .rin-theme-control select:focus-visible {
+  outline-color: #9bd9bd;
+}
+
+/* Only the main site floats its control; readers can place it in their toolbar. */
+.rin-theme-floating {
+  position: fixed;
+  z-index: 150;
+  right: max(16px, env(safe-area-inset-right));
+  bottom: max(16px, env(safe-area-inset-bottom));
+}
+
+body:has(.rin-slides-shell) .rin-theme-floating {
+  right: auto;
+  left: max(16px, env(safe-area-inset-left));
+}
+
+@media (max-width: 720px) {
+  .rin-theme-floating { right: 10px; bottom: max(10px, env(safe-area-inset-bottom)); }
+  .rin-theme-floating .rin-theme-control { padding: 4px 6px 4px 9px; }
+}
+
+@media print {
+  [data-theme-control] { display: none !important; }
+}
