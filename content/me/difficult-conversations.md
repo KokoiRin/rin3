@@ -1,6 +1,7 @@
 ---
 title: 《高难度谈话》学习记录
 summary: 用十二章快速精读建立全书地图：先拆开故事、意图、归责、情绪与身份，再练习决定、开场、倾听、表达和解决问题。
+reader: /reading/difficult-conversations/chapter-1/index.html
 date: 2026-08-01
 lang: zh-CN
 topic: Communication

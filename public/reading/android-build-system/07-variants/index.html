@@ -1,0 +1,602 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light"><title>配置构建变体 · Android 构建系统</title><link rel="stylesheet" href="../../reader.css"><link rel="stylesheet" href="../source.css"><link rel="manifest" href="../../../manifest.webmanifest"><link rel="icon" href="../../../icons/apple-touch-icon.png"></head><body><nav class="site-nav" aria-label="站点导航"><a href="../index.html">← Android 构建系统</a><a href="https://developer.android.com/build/build-variants?hl=en">官方英文原文 ↗</a></nav><main class="reader"><header class="chapter-header"><span class="chapter-kicker">07 · Android 产物与变体 · 正文全文</span><h1>配置构建变体</h1><p class="byline">Configure build variants</p><div class="title-rule"></div><p class="edition-nav"><strong aria-current="page">中文阅读版</strong> · <a href="english.html">英文对照</a></p><aside class="learning-note"><span class="note-kind">编者导读 · 不属于原文</span><p><strong>同一份工程怎样生成 debug、release 和不同产品版本？</strong></p><p>将 build type、product flavor、source set 与具体 variant 一起阅读。</p></aside><details class="editorial-correction"><summary>编者校注 · 原文的版本条件与简化之处</summary><p>原文仍保留部分旧版 Android Studio 菜单和 <code>package</code> 配置说法。当前工程的生成 <code>R</code> 类等使用 <code>android.namespace</code>；它与标识应用的 <code>applicationId</code> 分工不同，不能只依赖 Manifest 的 <code>package</code> 设置。请对照 <a href="https://developer.android.com/build/configure-app-module#set-namespace">设置命名空间</a> 与工程的 AGP 版本。</p><p>“创建源集”段落以 debug 为例，却给出 <code>full/java</code> 菜单项，属于原文示例不一致；操作时选择与你实际目标相符的源集。变体过滤 API 和菜单位置也需按所用版本核对。源码、资源与清单的合并规则不同，尤其留意原文的 duplicate class 条件。</p></details><details class="source-details"><summary>本篇目录与翻译范围</summary><p>对应官方英文文档的正文全文，保留章节顺序、代码、图示、表格和正文链接；不含站点导航、反馈和自动推荐组件。</p><p>英文快照：2026-10-19。代码、命令、标识符和原图保持原样。导读与官方正文分开呈现。</p><ul><li class="toc-h2"><a href="#build-types">配置构建类型</a></li><li class="toc-h2"><a href="#product-flavors">配置产品变种</a></li><li class="toc-h3"><a href="#change-app-id">修改构建变体的应用 ID</a></li><li class="toc-h3"><a href="#flavor-dimensions">通过变种维度组合多个产品变种</a></li><li class="toc-h3"><a href="#filter-variants">过滤变体</a></li><li class="toc-h2"><a href="#sourcesets">创建源集</a></li><li class="toc-h3"><a href="#configure-sourcesets">修改默认源集配置</a></li><li class="toc-h3"><a href="#sourceset-build">使用源集构建</a></li><li class="toc-h2"><a href="#dependencies">声明依赖</a></li><li class="toc-h2"><a href="#variant_aware">使用感知变体的依赖管理</a></li><li class="toc-h3"><a href="#resolve_matching_errors">解决变体匹配相关的构建错误</a></li><li class="toc-h2"><a href="#signing">配置签名设置</a></li><li class="toc-h3"><a href="#wear-apps">为 Wear OS 应用签名</a></li></ul></details><nav class="chapter-switcher" aria-label="章节导航"><a href="../06-android-build/index.html">← Android 与 Gradle 构建概览</a><a class="course-home" href="../index.html">全部章节</a><a href="../08-ksp/index.html">Kotlin 符号处理 API →</a></nav></header><article class="translated-article"><div class="devsite-article-body clearfix
+  "><p data-unit="07-variants-001">本页介绍如何通过配置构建变体，在同一个项目中创建应用的不同版本，以及如何正确管理依赖和签名配置。</p><p data-unit="07-variants-002">每个<strong>构建变体（Build Variant）</strong>都代表一种可以构建出的应用版本。例如，你可能希望提供一个内容受限的免费版本，以及一个内容更丰富的付费版本。也可以根据 API 级别或其他设备差异，构建面向不同设备的版本。</p><p data-unit="07-variants-003">构建变体是 Gradle 按照特定规则，将构建类型与产品变种中的设置、代码和资源组合起来的结果。你并不直接配置构建变体，而是配置组成它们的构建类型和产品变种。</p><p data-unit="07-variants-004">例如，<code>demo</code> <strong>产品变种（Product Flavor）</strong>可以指定某些功能和设备要求，包括自定义源码、资源和最低 API 级别；<code>debug</code> <strong>构建类型（Build Type）</strong>则应用不同的构建与打包设置，包括调试选项和签名密钥。两者组合成应用的 <code>demoDebug</code> 版本，其中包含 <code>demo</code> 产品变种、<code>debug</code> 构建类型和 <code>main/</code> 源集中的配置与资源。</p><h2 id="build-types" data-text="   Configure build types " tabindex="-1" data-unit="07-variants-005">配置构建类型</h2><p data-unit="07-variants-006">你可以在模块级 <code>build.gradle.kts</code> 文件的 <code>android</code> 块中创建和配置构建类型。创建新模块时，Android Studio 会自动创建 Debug 和 Release 构建类型。虽然 Debug 构建类型没有显示在构建配置文件中，但 Android Studio 会为它配置 <a href="https://developer.android.com/guide/topics/manifest/application-element#debug"><code>debuggable true</code></a>。这样，你就可以在安全的 Android 设备上调试应用，并使用通用的调试密钥库配置应用签名。</p><p data-unit="07-variants-007">如果想增加或修改某些设置，可以在配置中加入 Debug 构建类型。下面的示例为 Debug 构建类型指定了 <a href="https://developer.android.com/reference/tools/gradle-api/9.4/com/android/build/api/dsl/ApplicationVariantDimension#applicationIdSuffix()"><code>applicationIdSuffix</code></a>，并配置了一个以 Debug 设置为初始值的 <code>staging</code> 构建类型：</p><div><div class="ds-selector-tabs"><section><h3 class="two-line-tab" tab-label="build.gradle.kts" id="kts" data-text="Kotlin" tabindex="-1" data-unit="07-variants-008">Kotlin</h3><div></div><div><pre class="source-code"><code class="language-Kotlin">android {
+    defaultConfig {
+        manifestPlaceholders["hostName"] = "www.example.com"
+        ...
+    }
+    buildTypes {
+        getByName("release") {
+            isMinifyEnabled = true
+            proguardFiles(getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro")
+        }
+
+        getByName("debug") {
+            applicationIdSuffix = ".debug"
+            isDebuggable = true
+        }
+
+        /**
+         * The `initWith` property lets you copy configurations from other build types,
+         * then configure only the settings you want to change. This one copies the debug build
+         * type, and then changes the manifest placeholder and application ID.
+         */
+        create("staging") {
+            initWith(getByName("debug"))
+            manifestPlaceholders["hostName"] = "internal.example.com"
+            applicationIdSuffix = ".debugStaging"
+        }
+    }
+}</code></pre></div></section><section><h3 class="two-line-tab" tab-label="build.gradle" id="groovy" data-text="Groovy" tabindex="-1" data-unit="07-variants-009">Groovy</h3><div></div><div><pre class="source-code"><code class="language-Groovy">android {
+    defaultConfig {
+        manifestPlaceholders = [hostName:"www.example.com"]
+        ...
+    }
+    buildTypes {
+        release {
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+
+        debug {
+            applicationIdSuffix ".debug"
+            debuggable true
+        }
+
+        /**
+         * The `initWith` property lets you copy configurations from other build types,
+         * then configure only the settings you want to change. This one copies the debug build
+         * type, and then changes the manifest placeholder and application ID.
+         */
+        staging {
+            initWith debug
+            manifestPlaceholders = [hostName:"internal.example.com"]
+            applicationIdSuffix ".debugStaging"
+        }
+    }
+}</code></pre></div></section></div></div><p class="note"><span data-unit="07-variants-010"><strong>注意：</strong>修改构建配置文件后，Android Studio 会要求你将项目与新配置同步。点击修改后出现的通知栏中的 <strong>Sync Now</strong>，或者点击工具栏中的 <strong>Sync Project</strong></span><img src="../assets/7ecaaf2f2e65.png" alt="官方原图" class="inline-icon" data-original-src="https://developer.android.com/static/studio/images/buttons/toolbar-sync-gradle.png" loading="lazy"><span data-unit="07-variants-011">即可同步。如果 Android Studio 发现配置错误，<strong>Messages</strong> 窗口会显示问题说明。</span></p><p data-unit="07-variants-012">关于构建类型可以配置的全部属性，请参阅 <a href="https://developer.android.com/reference/tools/gradle-api/current/com/android/build/api/dsl/BuildType"><code>BuildType</code></a> 参考文档。</p><h2 id="product-flavors" data-text="   Configure product flavors " tabindex="-1" data-unit="07-variants-013">配置产品变种</h2><p data-unit="07-variants-014">创建产品变种与创建构建类型类似。在构建配置的 <code>productFlavors</code> 块中添加产品变种，并加入所需设置即可。产品变种支持与 <code>defaultConfig</code> 相同的属性，因为 <code>defaultConfig</code> 实际上也属于 <a href="https://developer.android.com/reference/tools/gradle-api/current/com/android/build/api/dsl/ProductFlavor"><code>ProductFlavor</code></a> 类。因此，你可以在 <code>defaultConfig</code> 中提供所有产品变种的基础配置，再由每个变种修改其中任意默认值，例如 <code>applicationId</code>。关于应用 ID，请参阅<a href="https://developer.android.com/studio/build/configure-app-module#set-application-id">设置应用 ID</a>。</p><p class="note" data-unit="07-variants-015"><strong>注意：</strong>你仍然需要使用 <code>main/</code> 清单文件中的 <a href="https://developer.android.com/guide/topics/manifest/manifest-element#package"><code>package</code></a> 属性指定软件包名称。源码中引用 <code>R</code> 类，或者解析以相对名称注册的 Activity、Service 时，也必须使用这个包名。这样，你就可以通过 <code>applicationId</code> 为每个产品变种指定唯一的打包和分发标识，而不必修改源码。</p><p data-unit="07-variants-016">所有产品变种都必须属于某个有名称的变种维度（Flavor Dimension），即一组产品变种。你必须为所有变种指定维度，否则会出现以下构建错误。</p><div></div><div><pre class="source-code"><code>
+  Error: All flavors must now belong to a named flavor dimension.
+  The flavor 'flavor_name' is not assigned to a flavor dimension.
+</code></pre></div><p data-unit="07-variants-017">如果某个模块只指定了一个变种维度，Android Gradle 插件会自动把该模块的全部产品变种分配到这个维度。</p><aside class="note" data-unit="07-variants-018"><strong>提示：</strong>插件会尝试把应用的变体与本地库依赖的变体匹配起来。<a href="https://developer.android.com/studio/build/build-variants#variant_aware">感知变体的依赖匹配</a>依赖变种维度的名称，因此命名时需要慎重。合理命名能让你更好地控制：应用的每个版本会匹配本地依赖中的哪些代码和资源。</aside><p data-unit="07-variants-019">下面的代码示例创建了名为 <code>version</code> 的变种维度，并添加 <code>demo</code> 和 <code>full</code> 两个产品变种。它们分别提供自己的 <a href="https://developer.android.com/studio/build/build-variants#change-app-id"><code>applicationIdSuffix</code></a> 和 <code>versionNameSuffix</code>：</p><div><div class="ds-selector-tabs"><section><h3 class="two-line-tab" tab-label="build.gradle.kts" id="kts-2" data-text="Kotlin" tabindex="-1" data-unit="07-variants-020" data-original-id="kts">Kotlin</h3><div></div><div><pre class="source-code"><code class="language-Kotlin">android {
+    ...
+    defaultConfig {...}
+    buildTypes {
+        getByName("debug"){...}
+        getByName("release"){...}
+    }
+    // Specifies one flavor dimension.
+    flavorDimensions += "version"
+    productFlavors {
+        create("demo") {
+            // Assigns this product flavor to the "version" flavor dimension.
+            // If you are using only one dimension, this property is optional,
+            // and the plugin automatically assigns all the module's flavors to
+            // that dimension.
+            dimension = "version"
+            applicationIdSuffix = ".demo"
+            versionNameSuffix = "-demo"
+        }
+        create("full") {
+            dimension = "version"
+            applicationIdSuffix = ".full"
+            versionNameSuffix = "-full"
+        }
+    }
+}</code></pre></div></section><section><h3 class="two-line-tab" tab-label="build.gradle" id="groovy-2" data-text="Groovy" tabindex="-1" data-unit="07-variants-021" data-original-id="groovy">Groovy</h3><div></div><div><pre class="source-code"><code class="language-Groovy">android {
+    ...
+    defaultConfig {...}
+    buildTypes {
+        debug{...}
+        release{...}
+    }
+    // Specifies one flavor dimension.
+    flavorDimensions "version"
+    productFlavors {
+        demo {
+            // Assigns this product flavor to the "version" flavor dimension.
+            // If you are using only one dimension, this property is optional,
+            // and the plugin automatically assigns all the module's flavors to
+            // that dimension.
+            dimension "version"
+            applicationIdSuffix ".demo"
+            versionNameSuffix "-demo"
+        }
+        full {
+            dimension "version"
+            applicationIdSuffix ".full"
+            versionNameSuffix "-full"
+        }
+    }
+}</code></pre></div></section></div></div><p class="note" data-unit="07-variants-022"><strong>注意：</strong>如果你的旧应用创建于 2021 年 8 月之前，并通过 APK 在 Google Play 分发，那么要使用 Google Play 的<a href="https://developer.android.com/google/play/publishing/multiple-apks">多 APK 支持</a>，需要让所有变体使用相同的 <code>applicationId</code>，并为各变体分配不同的 <a href="https://developer.android.com/studio/publish/versioning#appversioning"><code>versionCode</code></a>。如果要把不同变体作为独立应用发布到 Google Play，则需要为每个变体分配不同的 <code>applicationId</code>。</p><p data-unit="07-variants-023">创建并配置产品变种后，点击通知栏中的 <strong>Sync Now</strong>。同步完成后，Gradle 会根据构建类型和产品变种自动创建构建变体，并按照 <code>&lt;product-flavor&gt;&lt;Build-Type&gt;</code> 命名。例如，如果创建了 <code>demo</code> 和 <code>full</code> 产品变种，同时保留默认的 <code>debug</code> 和 <code>release</code> 构建类型，Gradle 会创建以下变体：</p><ul><li data-unit="07-variants-024"><code>demoDebug</code></li><li data-unit="07-variants-025"><code>demoRelease</code></li><li data-unit="07-variants-026"><code>fullDebug</code></li><li data-unit="07-variants-027"><code>fullRelease</code></li></ul><p data-unit="07-variants-028">要选择构建并运行的变体，请进入 <strong>Build &gt; Select Build Variant</strong>，然后从菜单中选择。要为各变体定制功能和资源，需要按本页说明<a href="https://developer.android.com/build/build-variants?hl=en#sourcesets">创建和管理源集</a>。</p><h3 id="change-app-id" data-text="   Change the application ID for build variants " tabindex="-1" data-unit="07-variants-029">修改构建变体的应用 ID</h3><p data-unit="07-variants-030">构建应用的 APK 或 AAB 时，构建工具会使用 <code>build.gradle.kts</code> 中 <code>defaultConfig</code> 块定义的应用 ID 标识应用，如下例所示。如果想让应用的不同版本分别出现在 Google Play 商店中，例如免费版 <code>free</code> 和专业版 <code>pro</code>，就需要创建不同的<a href="https://developer.android.com/studio/build/build-variants">构建变体</a>，并为它们分配不同的应用 ID。</p><p data-unit="07-variants-031">在这种情况下，将各构建变体分别定义为<a href="https://developer.android.com/studio/build/build-variants#product-flavors">产品变种</a>。在 <code>productFlavors</code> 块的每个变种中，可以重新定义 <code>applicationId</code> 属性，也可以使用 <code>applicationIdSuffix</code> 为默认应用 ID 追加一段内容，如下所示：</p><div><div class="ds-selector-tabs"><section><h3 class="two-line-tab" tab-label="build.gradle.kts" id="kts-3" data-text="Kotlin" tabindex="-1" data-unit="07-variants-032" data-original-id="kts">Kotlin</h3><div></div><div><pre class="source-code"><code class="language-Kotlin">android {
+    defaultConfig {
+        applicationId = "com.example.myapp"
+    }
+    productFlavors {
+        create("free") {
+            applicationIdSuffix = ".free"
+        }
+        create("pro") {
+            applicationIdSuffix = ".pro"
+        }
+    }
+}</code></pre></div></section><section><h3 class="two-line-tab" tab-label="build.gradle" id="groovy-3" data-text="Groovy" tabindex="-1" data-unit="07-variants-033" data-original-id="groovy">Groovy</h3><div></div><div><pre class="source-code"><code class="language-Groovy">android {
+    defaultConfig {
+        applicationId "com.example.myapp"
+    }
+    productFlavors {
+        free {
+            applicationIdSuffix ".free"
+        }
+        pro {
+            applicationIdSuffix ".pro"
+        }
+    }
+}</code></pre></div></section></div></div><p data-unit="07-variants-034">这样，<code>free</code> 产品变种的应用 ID 就是 <code>com.example.myapp.free</code>。</p><p data-unit="07-variants-035">你也可以根据<a href="https://developer.android.com/studio/build/build-variants#build-types">构建类型</a>，通过 <code>applicationIdSuffix</code> 追加一段内容，如下所示：</p><div><div class="ds-selector-tabs"><section><h3 class="two-line-tab" tab-label="build.gradle.kts" id="kts-4" data-text="Kotlin" tabindex="-1" data-unit="07-variants-036" data-original-id="kts">Kotlin</h3><div></div><div><pre class="source-code"><code class="language-Kotlin">android {
+    ...
+    buildTypes {
+        getByName("debug") {
+            applicationIdSuffix = ".debug"
+        }
+    }
+}</code></pre></div></section><section><h3 class="two-line-tab" tab-label="build.gradle" id="groovy-4" data-text="Groovy" tabindex="-1" data-unit="07-variants-037" data-original-id="groovy">Groovy</h3><div></div><div><pre class="source-code"><code class="language-Groovy">android {
+    ...
+    buildTypes {
+        debug {
+            applicationIdSuffix ".debug"
+        }
+    }
+}</code></pre></div></section></div></div><p data-unit="07-variants-038">Gradle 会在产品变种之后应用构建类型配置，因此 <code>free debug</code> 构建变体的应用 ID 是 <code>com.example.myapp.free.debug</code>。如果希望在同一设备上同时安装 Debug 和 Release 版本，这种做法就很有用，因为两个应用不能使用相同的应用 ID。</p><p data-unit="07-variants-039">如果你的旧应用创建于 2021 年 8 月之前，通过 APK 在 Google Play 分发，而且希望在同一商店条目下提供多个 APK，分别面向不同设备配置，例如不同 API 级别，那么各构建变体必须使用相同的应用 ID，同时为每个 APK 分配不同的 <code>versionCode</code>。更多信息请参阅<a href="https://developer.android.com/google/play/publishing/multiple-apks">多 APK 支持</a>。使用 AAB 发布不受此影响，因为默认情况下只使用一个产物、一个版本代码和一个应用 ID。</p><p class="note" data-unit="07-variants-040"><strong>提示：</strong>如果需要在清单文件中引用应用 ID，可以在任意清单属性中使用 <code>${applicationId}</code> 占位符。构建时，Gradle 会将它替换成实际应用 ID。更多信息请参阅<a href="https://developer.android.com/studio/build/manage-manifests#inject_build_variables_into_the_manifest">向清单注入构建变量</a>。</p><h3 id="flavor-dimensions" data-text="   Combine multiple product flavors with flavor dimensions " tabindex="-1" data-unit="07-variants-041">通过变种维度组合多个产品变种</h3><p data-unit="07-variants-042">有时，你可能需要组合多个产品变种的配置。例如，为 <code>full</code> 和 <code>demo</code> 分别创建基于 API 级别的不同配置。Android Gradle 插件允许你创建多组产品变种，每组对应一个变种维度。</p><p data-unit="07-variants-043">构建应用时，Gradle 会从每个已定义的维度中各取一个产品变种，再结合一种构建类型，形成最终的构建变体。属于同一维度的产品变种不会相互组合。</p><p data-unit="07-variants-044">下面的代码示例使用 <a href="https://developer.android.com/reference/tools/gradle-api/current/com/android/build/api/dsl/ProductFlavor#dimension"><code>flavorDimensions</code></a> 属性创建 <code>mode</code> 维度，将 <code>full</code>、<code>demo</code> 分成一组；同时创建 <code>api</code> 维度，将按 API 级别区分的产品变种配置分成一组：</p><div><div class="ds-selector-tabs"><section><h3 class="two-line-tab" tab-label="build.gradle.kts" id="kts-5" data-text="Kotlin" tabindex="-1" data-unit="07-variants-045" data-original-id="kts">Kotlin</h3><div></div><div><pre class="source-code"><code class="language-Kotlin">android {
+  ...
+  buildTypes {
+    getByName("debug") {...}
+    getByName("release") {...}
+  }
+
+  // Specifies the flavor dimensions you want to use. The order in which you
+  // list the dimensions determines their priority, from highest to lowest,
+  // when Gradle merges variant sources and configurations. You must assign
+  // each product flavor you configure to one of the flavor dimensions.
+  flavorDimensions += listOf("api", "mode")
+
+  productFlavors {
+    create("demo") {
+      // Assigns this product flavor to the "mode" flavor dimension.
+      dimension = "mode"
+      ...
+    }
+
+    create("full") {
+      dimension = "mode"
+      ...
+    }
+
+    // Configurations in the "api" product flavors override those in "mode"
+    // flavors and the defaultConfig block. Gradle determines the priority
+    // between flavor dimensions based on the order in which they appear next
+    // to the flavorDimensions property, with the first dimension having a higher
+    // priority than the second, and so on.
+    create("minApi24") {
+      dimension = "api"
+      minSdk = 24
+      // To ensure the target device receives the version of the app with
+      // the highest compatible API level, assign version codes in increasing
+      // value with API level.
+      versionCode = 30000 + (android.defaultConfig.versionCode ?: 0)
+      versionNameSuffix = "-minApi24"
+      ...
+    }
+
+    create("minApi23") {
+      dimension = "api"
+      minSdk = 23
+      versionCode = 20000  + (android.defaultConfig.versionCode ?: 0)
+      versionNameSuffix = "-minApi23"
+      ...
+    }
+
+    create("minApi21") {
+      dimension = "api"
+      minSdk = 21
+      versionCode = 10000  + (android.defaultConfig.versionCode ?: 0)
+      versionNameSuffix = "-minApi21"
+      ...
+    }
+  }
+}
+...</code></pre></div></section><section><h3 class="two-line-tab" tab-label="build.gradle" id="groovy-5" data-text="Groovy" tabindex="-1" data-unit="07-variants-046" data-original-id="groovy">Groovy</h3><div></div><div><pre class="source-code"><code class="language-Groovy">android {
+  ...
+  buildTypes {
+    debug {...}
+    release {...}
+  }
+
+  // Specifies the flavor dimensions you want to use. The order in which you
+  // list the dimensions determines their priority, from highest to lowest,
+  // when Gradle merges variant sources and configurations. You must assign
+  // each product flavor you configure to one of the flavor dimensions.
+  flavorDimensions "api", "mode"
+
+  productFlavors {
+    demo {
+      // Assigns this product flavor to the "mode" flavor dimension.
+      dimension "mode"
+      ...
+    }
+
+    full {
+      dimension "mode"
+      ...
+    }
+
+    // Configurations in the "api" product flavors override those in "mode"
+    // flavors and the defaultConfig block. Gradle determines the priority
+    // between flavor dimensions based on the order in which they appear next
+    // to the flavorDimensions property, with the first dimension having a higher
+    // priority than the second, and so on.
+    minApi24 {
+      dimension "api"
+      minSdkVersion 24
+      // To ensure the target device receives the version of the app with
+      // the highest compatible API level, assign version codes in increasing
+      // value with API level.
+
+      versionCode 30000 + android.defaultConfig.versionCode
+      versionNameSuffix "-minApi24"
+      ...
+    }
+
+    minApi23 {
+      dimension "api"
+      minSdkVersion 23
+      versionCode 20000  + android.defaultConfig.versionCode
+      versionNameSuffix "-minApi23"
+      ...
+    }
+
+    minApi21 {
+      dimension "api"
+      minSdkVersion 21
+      versionCode 10000  + android.defaultConfig.versionCode
+      versionNameSuffix "-minApi21"
+      ...
+    }
+  }
+}
+...</code></pre></div></section></div></div><p data-unit="07-variants-047">Gradle 创建的构建变体数量，等于每个变种维度的产品变种数量与构建类型数量的乘积。为变体或相应产物命名时，优先级较高的维度中的产品变种排在前面，然后是优先级较低的维度，最后是构建类型。</p><p data-unit="07-variants-048">以前面的配置为例，Gradle 会创建共 12 个构建变体，命名方式如下：</p><ul><li data-unit="07-variants-049">构建变体：<code>[minApi24, minApi23, minApi21][Demo, Full][Debug, Release]</code></li><li data-unit="07-variants-050">对应 APK：<code>app-[minApi24, minApi23, minApi21]-[demo, full]-[debug, release].apk</code></li><dt data-unit="07-variants-051">例如：</dt><dd data-unit="07-variants-052">构建变体：<code>minApi24DemoDebug</code></dd><dd data-unit="07-variants-053">对应 APK：<code>app-minApi24-demo-debug.apk</code></dd></ul><p data-unit="07-variants-054">除了为单个产品变种和构建变体创建源集目录之外，也可以为产品变种的每种<strong>组合</strong>创建源集目录。例如，在 <code>src/demoMinApi24/java/</code> 目录中添加 Java 源码，Gradle 只会在构建同时包含这两个产品变种的变体时使用它们。</p><p data-unit="07-variants-055">为产品变种组合创建的源集，优先级高于单个产品变种的源集。关于源集及 Gradle 如何合并资源，请参阅<a href="https://developer.android.com/build/build-variants?hl=en#sourcesets">创建源集</a>。</p><h3 id="filter-variants" data-text="   Filter variants " tabindex="-1" data-unit="07-variants-056">过滤变体</h3><p data-unit="07-variants-057">Gradle 会为已配置的产品变种与构建类型的每一种可能组合创建构建变体。但其中某些变体可能不需要，或者对当前项目没有意义。可以在模块级 <code>build.gradle.kts</code> 文件中创建变体过滤器，移除这些构建变体配置。</p><p data-unit="07-variants-058">以前一节的构建配置为例，假设应用的 Demo 版本只打算支持 API 23 及以上。可以使用 <a href="https://developer.android.com/reference/tools/gradle-api/current/com/android/build/api/variant/VariantFilter"><code>variantFilter</code></a> 块，过滤掉同时包含 <code>minApi21</code> 和 <code>demo</code> 产品变种的全部变体配置：</p><div><div class="ds-selector-tabs"><section><h3 class="two-line-tab" tab-label="build.gradle.kts" id="kts-6" data-text="Kotlin" tabindex="-1" data-unit="07-variants-059" data-original-id="kts">Kotlin</h3><div></div><div><pre class="source-code"><code class="language-Kotlin">android {
+  ...
+  buildTypes {...}
+
+  flavorDimensions += listOf("api", "mode")
+  productFlavors {
+    create("demo") {...}
+    create("full") {...}
+    create("minApi24") {...}
+    create("minApi23") {...}
+    create("minApi21") {...}
+  }
+}
+
+androidComponents {
+    beforeVariants { variantBuilder -&gt;
+        // To check for a certain build type, use variantBuilder.buildType == "&lt;buildType&gt;"
+        if (variantBuilder.productFlavors.containsAll(listOf("api" to "minApi21", "mode" to "demo"))) {
+            // Gradle ignores any variants that satisfy the conditions above.
+            variantBuilder.enable = false
+        }
+    }
+}
+...</code></pre></div></section><section><h3 class="two-line-tab" tab-label="build.gradle" id="groovy-6" data-text="Groovy" tabindex="-1" data-unit="07-variants-060" data-original-id="groovy">Groovy</h3><div></div><div><pre class="source-code"><code class="language-Groovy">android {
+  ...
+  buildTypes {...}
+
+  flavorDimensions "api", "mode"
+  productFlavors {
+    demo {...}
+    full {...}
+    minApi24 {...}
+    minApi23 {...}
+    minApi21 {...}
+  }
+
+  variantFilter { variant -&gt;
+      def names = variant.flavors*.name
+      // To check for a certain build type, use variant.buildType.name == "&lt;buildType&gt;"
+      if (names.contains("minApi21") &amp;&amp; names.contains("demo")) {
+          // Gradle ignores any variants that satisfy the conditions above.
+          setIgnore(true)
+      }
+  }
+}
+...</code></pre></div></section></div></div><p><span data-unit="07-variants-061">将变体过滤器加入构建配置，并点击通知栏中的 <strong>Sync Now</strong> 后，Gradle 就会忽略满足指定条件的构建变体。之后从菜单栏进入 <strong>Build &gt; Select Build Variant</strong>，或者点击工具窗口栏中的 <strong>Build Variants</strong></span><img src="../assets/430db1f29a0e.png" class="inline-icon" alt="官方原图" data-original-src="https://developer.android.com/static/studio/images/buttons/window-monitor.png" loading="lazy"><span data-unit="07-variants-062">时，这些变体就不会再出现在菜单中。</span></p><h2 id="sourcesets" data-text="   Create source sets " tabindex="-1" data-unit="07-variants-063">创建源集</h2><p data-unit="07-variants-064">默认情况下，Android Studio 会创建 <code>main/</code> <a href="https://developer.android.com/studio/build#sourcesets">源集</a>及相关目录，用来保存所有构建变体共享的内容。你也可以创建新的源集，精确控制 Gradle 针对特定构建类型、产品变种、产品变种组合（使用<a href="https://developer.android.com/build/build-variants?hl=en#flavor-dimensions">变种维度</a>时）和构建变体，编译和打包哪些文件。</p><p data-unit="07-variants-065">例如，在 <code>main/</code> 源集中定义基础功能，再使用产品变种源集为不同客户更换应用品牌；或者只给采用 Debug 构建类型的变体加入特殊权限和日志功能。</p><p data-unit="07-variants-066">Gradle 期望源集中的文件和目录按特定结构组织，与 <code>main/</code> 源集类似。例如，专用于 <code>debug</code> 构建类型的 Kotlin 或 Java 类文件，应放在 <code>src/debug/kotlin/</code> 或 <code>src/debug/java/</code> 目录中。</p><p data-unit="07-variants-067">Android Gradle 插件提供了一个实用的 Gradle 任务，可以显示各个构建类型、产品变种和构建变体应该如何组织文件。例如，下面的任务输出片段描述了 Gradle 期望在什么位置找到 <code>debug</code> 构建类型的特定文件：</p><div></div><div><pre class="source-code"><code>
+------------------------------------------------------------
+Project :app
+------------------------------------------------------------
+
+...
+
+debug
+----
+Compile configuration: debugCompile
+build.gradle name: android.sourceSets.debug
+Java sources: [app/src/debug/java]
+Kotlin sources: [app/src/debug/kotlin, app/src/debug/java]
+Manifest file: app/src/debug/AndroidManifest.xml
+Android resources: [app/src/debug/res]
+Assets: [app/src/debug/assets]
+AIDL sources: [app/src/debug/aidl]
+RenderScript sources: [app/src/debug/rs]
+JNI sources: [app/src/debug/jni]
+JNI libraries: [app/src/debug/jniLibs]
+Java-style resources: [app/src/debug/resources]
+</code></pre></div><p data-unit="07-variants-068">要查看这份输出，请按以下步骤操作：</p><ol><li data-unit="07-variants-069">点击工具窗口栏中的 <strong>Gradle</strong>。</li><li><p data-unit="07-variants-070">进入 <strong>MyApplication &gt; Tasks &gt; android</strong>，双击 <strong>sourceSets</strong>。</p><p data-unit="07-variants-071">要显示 <strong>Tasks</strong> 文件夹，必须允许 Gradle 在同步时建立任务列表。操作步骤如下：</p><ol><li data-unit="07-variants-072">进入 <strong>File &gt; Settings &gt; Experimental</strong>；在 macOS 上则进入 <strong>Android Studio &gt; Settings &gt; Experimental</strong>。</li><li data-unit="07-variants-073">取消选中 <strong>Do not build Gradle task list during Gradle sync</strong>。</li></ol></li><li data-unit="07-variants-074">Gradle 执行任务后，会打开 <strong>Run</strong> 窗口显示输出。</li></ol><p class="note" data-unit="07-variants-075"><strong>注意：</strong>任务输出还会显示应该如何组织用于运行应用测试的源集文件，例如 <code>test/</code> 和 <code>androidTest/</code> <a href="https://developer.android.com/studio/test/advanced-test-setup#create-instrumented-test-for-build-variant">测试源集</a>。</p><p data-unit="07-variants-076">创建新的构建变体时，Android Studio 不会自动为你创建源集目录，但会提供几种辅助方式。例如，要为 <code>debug</code> 构建类型只创建 <code>java/</code> 目录：</p><ol><li data-unit="07-variants-077">打开 <strong>Project</strong> 窗格，并从窗格顶部菜单选择 <strong>Project</strong> 视图。</li><li data-unit="07-variants-078">进入 <code>MyProject/app/src/</code>。</li><li data-unit="07-variants-079">右键点击 <code>src</code> 目录，选择 <strong>New &gt; Directory</strong>。</li><li data-unit="07-variants-080">在 <strong>Gradle Source Sets</strong> 下的菜单中选择 <strong>full/java</strong>。</li><li data-unit="07-variants-081">按 Enter。</li></ol><p data-unit="07-variants-082">Android Studio 会为 Debug 构建类型创建源集目录，再在其中创建 <code>java/</code> 目录。另一种方式是：为项目中的特定构建变体添加新文件时，让 Android Studio 自动创建相应目录。</p><p data-unit="07-variants-083">例如，要为 <code>debug</code> 构建类型创建一个 values XML 文件：</p><ol><li data-unit="07-variants-084">在 <strong>Project</strong> 窗格中，右键点击 <code>src</code> 目录，选择 <strong>New &gt; XML &gt; Values XML File</strong>。</li><li data-unit="07-variants-085">输入 XML 文件名，或者保留默认名称。</li><li data-unit="07-variants-086">从 <strong>Target Source Set</strong> 旁的菜单中选择 <strong>debug</strong>。</li><li data-unit="07-variants-087">点击 <strong>Finish</strong>。</li></ol><p data-unit="07-variants-088">由于指定了 <code>debug</code> 构建类型作为目标源集，Android Studio 会在创建 XML 文件时自动建立所需目录。生成的目录结构如图 1 所示。</p><img src="../assets/09f07b0ff9fd.png" alt="官方原图" data-original-src="https://developer.android.com/static/images/tools/debug-directories_2-1_2x.png" loading="lazy"><p class="img-caption" data-unit="07-variants-089"><strong>图 1。</strong>为 <code>debug</code> 构建类型新建的源集目录。</p><p data-unit="07-variants-090">当前参与构建的源集，其图标会显示绿色标记。<code>debug</code> 源集后面带有 <code>[main]</code>，表示它会与 <code>main</code> 源集合并。</p><p data-unit="07-variants-091">使用相同方法，也可以为产品变种创建目录，例如 <code>src/demo/</code>；或者为构建变体创建目录，例如 <code>src/demoDebug/</code>。还可以创建面向特定变体的测试源集，例如 <code>src/androidTestDemoDebug/</code>。更多信息请参阅<a href="https://developer.android.com/studio/test/advanced-test-setup#create-instrumented-test-for-build-variant">测试源集</a>。</p><h3 id="configure-sourcesets" data-text="   Change default source set configurations " tabindex="-1" data-unit="07-variants-092">修改默认源集配置</h3><p data-unit="07-variants-093">如果源码没有按照上一节<a href="https://developer.android.com/build/build-variants?hl=en#sourcesets">创建源集</a>中所说的默认文件结构组织，可以使用 <a href="https://developer.android.com/reference/tools/gradle-api/current/com/android/build/api/dsl/AndroidSourceSet"><code>sourceSets</code></a> 块，修改 Gradle 为源集各个组成部分收集文件时搜索的位置。</p><p data-unit="07-variants-094"><code>sourceSets</code> 块必须位于 <code>android</code> 块中。你不必移动源文件，只需向 Gradle 提供各组成部分所在的路径；路径相对于模块级 <code>build.gradle.kts</code> 文件。关于哪些组成部分可以配置，以及是否可以映射到多个文件或目录，请参阅 <a href="https://developer.android.com/reference/tools/gradle-api">Android Gradle 插件 API 参考文档</a>。</p><p data-unit="07-variants-095">下面的代码示例将 <code>app/other/</code> 目录中的源码映射到 <code>main</code> 源集的部分组成中，并修改 <code>androidTest</code> 源集的根目录：</p><div><div class="ds-selector-tabs"><section><h3 class="two-line-tab" tab-label="build.gradle.kts" id="kts-7" data-text="Kotlin" tabindex="-1" data-unit="07-variants-096" data-original-id="kts">Kotlin</h3><div></div><div><pre class="source-code"><code class="language-Kotlin">android {
+  ...
+  // Encapsulates configurations for the main source set.
+  sourceSets.getByName("main") {
+    // Changes the directory for Java sources. The default directory is
+    // 'src/main/java'.
+    java.setSrcDirs(listOf("other/java"))
+
+    // If you list multiple directories, Gradle uses all of them to collect
+    // sources. Because Gradle gives these directories equal priority, if
+    // you define the same resource in more than one directory, you receive an
+    // error when merging resources. The default directory is 'src/main/res'.
+    res.setSrcDirs(listOf("other/res1", "other/res2"))
+
+    // Note: Avoid specifying a directory that is a parent to one
+    // or more other directories you specify. For example, avoid the following:
+    // res.srcDirs = ['other/res1', 'other/res1/layouts', 'other/res1/strings']
+    // Specify either only the root 'other/res1' directory or only the
+    // nested 'other/res1/layouts' and 'other/res1/strings' directories.
+
+    // For each source set, you can specify only one Android manifest.
+    // By default, Android Studio creates a manifest for your main source
+    // set in the src/main/ directory.
+    manifest.srcFile("other/AndroidManifest.xml")
+    ...
+  }
+
+  // Create additional blocks to configure other source sets.
+  sourceSets.getByName("androidTest") {
+      // If all the files for a source set are located under a single root
+      // directory, you can specify that directory using the setRoot property.
+      // When gathering sources for the source set, Gradle looks only in locations
+      // relative to the root directory you specify. For example, after applying the
+      // configuration below for the androidTest source set, Gradle looks for Java
+      // sources only in the src/tests/java/ directory.
+      setRoot("src/tests")
+      ...
+  }
+}
+...</code></pre></div></section><section><h3 class="two-line-tab" tab-label="build.gradle" id="groovy-7" data-text="Groovy" tabindex="-1" data-unit="07-variants-097" data-original-id="groovy">Groovy</h3><div></div><div><pre class="source-code"><code class="language-Groovy">android {
+  ...
+  sourceSets {
+    // Encapsulates configurations for the main source set.
+    main {
+      // Changes the directory for Java sources. The default directory is
+      // 'src/main/java'.
+      java.srcDirs = ['other/java']
+
+      // If you list multiple directories, Gradle uses all of them to collect
+      // sources. Because Gradle gives these directories equal priority, if
+      // you define the same resource in more than one directory, you receive an
+      // error when merging resources. The default directory is 'src/main/res'.
+      res.srcDirs = ['other/res1', 'other/res2']
+
+      // Note: Avoid specifying a directory that is a parent to one
+      // or more other directories you specify. For example, avoid the following:
+      // res.srcDirs = ['other/res1', 'other/res1/layouts', 'other/res1/strings']
+      // Specify either only the root 'other/res1' directory or only the
+      // nested 'other/res1/layouts' and 'other/res1/strings' directories.
+
+      // For each source set, you can specify only one Android manifest.
+      // By default, Android Studio creates a manifest for your main source
+      // set in the src/main/ directory.
+      manifest.srcFile 'other/AndroidManifest.xml'
+      ...
+    }
+
+    // Create additional blocks to configure other source sets.
+    androidTest {
+
+      // If all the files for a source set are located under a single root
+      // directory, you can specify that directory using the setRoot property.
+      // When gathering sources for the source set, Gradle looks only in locations
+      // relative to the root directory you specify. For example, after applying the
+      // configuration below for the androidTest source set, Gradle looks for Java
+      // sources only in the src/tests/java/ directory.
+      setRoot 'src/tests'
+      ...
+    }
+  }
+}
+...</code></pre></div></section></div></div><p data-unit="07-variants-098">注意，一个源目录只能属于一个源集。例如，不能让 <code>test</code> 和 <code>androidTest</code> 共用同一份测试源码。因为 Android Studio 会为每个源集创建独立的 IntelliJ 模块，而不同源集之间不能有重复的内容根目录。</p><h3 id="sourceset-build" data-text="   Build with source sets " tabindex="-1" data-unit="07-variants-099">使用源集构建</h3><p data-unit="07-variants-100">源集目录可以保存只希望打包进特定配置的代码和资源。例如，构建由 <code>demo</code> 产品变种与 <code>debug</code> 构建类型组合而成的 <code>demoDebug</code> 变体时，Gradle 会按以下优先级查找目录：</p><ol><li data-unit="07-variants-101"><code>src/demoDebug/</code>（构建变体源集）</li><li data-unit="07-variants-102"><code>src/debug/</code>（构建类型源集）</li><li data-unit="07-variants-103"><code>src/demo/</code>（产品变种源集）</li><li data-unit="07-variants-104"><code>src/main/</code>（主源集）</li></ol><p data-unit="07-variants-105">为产品变种组合创建的源集必须覆盖全部变种维度。例如，构建变体源集必须是构建类型与全部变种维度的组合。不支持合并覆盖了多个、但没有覆盖全部变种维度的组合目录中的代码和资源。</p><p data-unit="07-variants-106">如果<a href="https://developer.android.com/build/build-variants?hl=en#flavor-dimensions">组合多个产品变种</a>，它们之间的优先级由所属维度决定。使用 <a href="https://developer.android.com/reference/tools/gradle-api/current/com/android/build/api/dsl/ProductFlavor#dimension"><code>android.flavorDimensions</code></a> 属性列出维度时，产品变种按维度声明顺序确定优先级，前面的维度高于后面的维度。此外，为产品变种组合创建的源集，优先级高于单个产品变种的源集。</p><p data-unit="07-variants-107">Gradle 合并代码和资源时，会根据这一顺序确定源集优先级。<code>demoDebug/</code> 目录通常包含该变体专用的文件；如果 <code>demoDebug/</code> 和 <code>debug/</code> 都定义了同一个文件，Gradle 会使用 <code>demoDebug/</code> 中的文件。同样，构建类型和产品变种源集中的文件，优先于 <code>main/</code> 中的同名文件。应用下面这些构建规则时，Gradle 会考虑这一优先级：</p><ul><li><span data-unit="07-variants-108"><code>kotlin/</code> 或 <code>java/</code> 目录中的全部源码会一起编译，生成同一份输出。</span><p class="note" data-unit="07-variants-109"><strong>注意：</strong>对于某个构建变体，如果 Gradle 在两个或更多源集目录中发现同一个 Kotlin 或 Java 类的定义，就会报构建错误。例如，构建 Debug 应用时，不能同时定义 <code>src/debug/Utility.kt</code> 和 <code>src/main/Utility.kt</code>，因为 Gradle 会读取这两个目录，从而报出 <code>duplicate class</code> 错误。如果希望不同构建类型使用不同版本的 <code>Utility.kt</code>，需要在各构建类型中分别定义它，而不要把它放进 <code>main/</code> 源集。</p></li><li data-unit="07-variants-110">多个清单会合并成一份清单，优先级与前面示例列表的顺序一致。例如，构建类型中的清单设置会覆盖产品变种中的对应设置。更多信息请参阅<a href="https://developer.android.com/studio/build/manage-manifests#merge-manifests">清单合并</a>。</li><li data-unit="07-variants-111"><code>values/</code> 目录中的文件会合并。如果存在同名文件，例如两份 <code>strings.xml</code>，则按前面列表中的相同顺序确定优先级。例如，构建类型源集文件中定义的值，会覆盖产品变种文件中的同名值。</li><li data-unit="07-variants-112"><code>res/</code> 和 <code>asset/</code> 目录中的资源会一起打包。如果两个或更多源集定义了同名资源，则按前面列表中的相同顺序确定优先级。</li><li data-unit="07-variants-113">构建应用时，Gradle 会把库模块依赖中包含的资源和清单设为最低优先级。</li></ul><h2 id="dependencies" data-text="   Declare dependencies " tabindex="-1" data-unit="07-variants-114">声明依赖</h2><p data-unit="07-variants-115">要为某个构建变体或<a href="https://developer.android.com/studio/test/advanced-test-setup#create-instrumented-test-for-build-variant">测试源集</a>配置依赖，可以把变体或测试源集的名称加在 <code>Implementation</code> 关键字前面，如下例所示：</p><div><div class="ds-selector-tabs"><section><h3 class="two-line-tab" tab-label="build.gradle.kts" id="kts-8" data-text="Kotlin" tabindex="-1" data-unit="07-variants-116" data-original-id="kts">Kotlin</h3><div></div><div><pre class="source-code"><code class="language-Kotlin">dependencies {
+    // Adds the local "mylibrary" module as a dependency to the "free" flavor.
+    "freeImplementation"(project(":mylibrary"))
+
+    // Adds a remote binary dependency only for local tests.
+    testImplementation("junit:junit:4.12")
+
+    // Adds a remote binary dependency only for the instrumented test APK.
+    androidTestImplementation("com.android.support.test.espresso:espresso-core:3.6.1")
+}</code></pre></div></section><section><h3 class="two-line-tab" tab-label="build.gradle" id="groovy-8" data-text="Groovy" tabindex="-1" data-unit="07-variants-117" data-original-id="groovy">Groovy</h3><div></div><div><pre class="source-code"><code class="language-Groovy">dependencies {
+    // Adds the local "mylibrary" module as a dependency to the "free" flavor.
+    freeImplementation project(":mylibrary")
+
+    // Adds a remote binary dependency only for local tests.
+    testImplementation 'junit:junit:4.12'
+
+    // Adds a remote binary dependency only for the instrumented test APK.
+    androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.6.1'
+}</code></pre></div></section></div></div><p data-unit="07-variants-118">有关配置依赖的更多信息，请参阅<a href="https://developer.android.com/studio/build/dependencies">添加构建依赖项</a>。</p><h2 id="variant_aware" data-text="   Use variant-aware dependency management " tabindex="-1" data-unit="07-variants-119">使用感知变体的依赖管理</h2><p data-unit="07-variants-120">Android Gradle 插件 3.0.0 及以上版本提供了一种依赖机制，可以在消费库时自动匹配变体。例如，应用的 <code>debug</code> 变体会自动使用库的 <code>debug</code> 变体。使用产品变种时也一样：应用的 <code>freeDebug</code> 变体会使用库的 <code>freeDebug</code> 变体。</p><p data-unit="07-variants-121">当无法直接匹配时，需要按照下一节说明<a href="https://developer.android.com/build/build-variants?hl=en#resolve_matching_errors">提供匹配回退项</a>，才能让插件正确匹配变体。</p><p data-unit="07-variants-122">例如，假设应用配置了名为 <code>staging</code> 的构建类型，但某个库依赖没有这种类型。插件尝试构建应用的 <code>staging</code> 版本时，就无法确定应该使用哪个库版本，并会显示类似下面的错误：</p><div></div><div><pre class="source-code"><code>
+Error:Failed to resolve: Could not resolve project :mylibrary.
+Required by:
+    project :app
+</code></pre></div><h3 id="resolve_matching_errors" data-text="   Resolve build errors related to variant matching " tabindex="-1" data-unit="07-variants-123">解决变体匹配相关的构建错误</h3><p data-unit="07-variants-124">插件提供了相应的 DSL 元素，用来控制：当应用与依赖之间无法直接匹配变体时，Gradle 应如何处理。</p><p data-unit="07-variants-125">下面列出感知变体的依赖匹配中可能出现的问题，以及使用 DSL 属性解决的方法：</p><ul><li><p data-unit="07-variants-126"><strong>应用包含某种构建类型，但库依赖没有。</strong></p><p data-unit="07-variants-127">例如，应用包含 <code>staging</code> 构建类型，而依赖只包含 <code>debug</code> 和 <code>release</code>。</p><p data-unit="07-variants-128">反过来，如果库依赖包含应用没有的构建类型，则不会产生问题，因为插件不会向依赖请求那种构建类型。</p><p data-unit="07-variants-129">使用 <code>matchingFallbacks</code> 为给定构建类型指定可替代的匹配项，如下所示：</p><div><div class="ds-selector-tabs"><section><h3 class="two-line-tab" tab-label="build.gradle.kts" id="kts-9" data-text="Kotlin" tabindex="-1" data-unit="07-variants-130" data-original-id="kts">Kotlin</h3><div></div><div><pre class="source-code"><code class="language-Kotlin">// In the app's build.gradle.kts file.
+android {
+    buildTypes {
+        getByName("debug") {}
+        getByName("release") {}
+        create("staging") {
+            // Specifies a sorted list of fallback build types that the
+            // plugin can try to use when a dependency does not include a
+            // "staging" build type. You may specify as many fallbacks as you
+            // like, and the plugin selects the first build type that's
+            // available in the dependency.
+            matchingFallbacks += listOf("debug", "qa", "release")
+        }
+    }
+}</code></pre></div></section><section><h3 class="two-line-tab" tab-label="build.gradle" id="groovy-9" data-text="Groovy" tabindex="-1" data-unit="07-variants-131" data-original-id="groovy">Groovy</h3><div></div><div><pre class="source-code"><code class="language-Groovy">// In the app's build.gradle file.
+android {
+    buildTypes {
+        debug {}
+        release {}
+        staging {
+            // Specifies a sorted list of fallback build types that the
+            // plugin can try to use when a dependency does not include a
+            // "staging" build type. You may specify as many fallbacks as you
+            // like, and the plugin selects the first build type that's
+            // available in the dependency.
+            matchingFallbacks = ['debug', 'qa', 'release']
+        }
+    }
+}</code></pre></div></section></div></div></li><li><p data-unit="07-variants-132"><strong>应用和库依赖具有同一个变种维度，但应用包含的某个产品变种在库中不存在。</strong></p><p data-unit="07-variants-133">例如，应用及其库依赖都有 <code>tier</code> 维度。但应用的 <code>tier</code> 维度包含 <code>free</code> 和 <code>paid</code>，某个依赖的同一维度却只包含 <code>demo</code> 和 <code>paid</code>。</p><p data-unit="07-variants-134">对于应用和库共有的某个变种维度，如果库包含应用没有的产品变种，则不会产生问题，因为插件不会向依赖请求那个产品变种。</p><p data-unit="07-variants-135">使用 <code>matchingFallbacks</code> 为应用的 <code>free</code> 产品变种指定可替代的匹配项，如下所示：</p><div><div class="ds-selector-tabs"><section><h3 class="two-line-tab" tab-label="build.gradle.kts" id="kts-10" data-text="Kotlin" tabindex="-1" data-unit="07-variants-136" data-original-id="kts">Kotlin</h3><div></div><div><pre class="source-code"><code class="language-Kotlin">// In the app's build.gradle.kts file.
+android {
+    defaultConfig{
+    // Don't configure matchingFallbacks in the defaultConfig block.
+    // Instead, specify fallbacks for a given product flavor in the
+    // productFlavors block, as shown below.
+  }
+    flavorDimensions += "tier"
+    productFlavors {
+        create("paid") {
+            dimension = "tier"
+            // Because the dependency already includes a "paid" flavor in its
+            // "tier" dimension, you don't need to provide a list of fallbacks
+            // for the "paid" flavor.
+        }
+        create("free") {
+            dimension = "tier"
+            // Specifies a sorted list of fallback flavors that the plugin
+            // can try to use when a dependency's matching dimension does
+            // not include a "free" flavor. Specify as many
+            // fallbacks as you like; the plugin selects the first flavor
+            // that's available in the dependency's "tier" dimension.
+            matchingFallbacks += listOf("demo", "trial")
+        }
+    }
+}</code></pre></div></section><section><h3 class="two-line-tab" tab-label="build.gradle" id="groovy-10" data-text="Groovy" tabindex="-1" data-unit="07-variants-137" data-original-id="groovy">Groovy</h3><div></div><div><pre class="source-code"><code class="language-Groovy">// In the app's build.gradle file.
+android {
+    defaultConfig{
+    // Don't configure matchingFallbacks in the defaultConfig block.
+    // Instead, specify fallbacks for a given product flavor in the
+    // productFlavors block, as shown below.
+  }
+    flavorDimensions 'tier'
+    productFlavors {
+        paid {
+            dimension 'tier'
+            // Because the dependency already includes a "paid" flavor in its
+            // "tier" dimension, you don't need to provide a list of fallbacks
+            // for the "paid" flavor.
+        }
+        free {
+            dimension 'tier'
+            // Specifies a sorted list of fallback flavors that the plugin
+            // can try to use when a dependency's matching dimension does
+            // not include a "free" flavor. Specify as many
+            // fallbacks as you like; the plugin selects the first flavor
+            // that's available in the dependency's "tier" dimension.
+            matchingFallbacks = ['demo', 'trial']
+        }
+    }
+}</code></pre></div></section></div></div></li><li><p data-unit="07-variants-138"><strong>库依赖包含应用没有的某个变种维度。</strong></p><p data-unit="07-variants-139">例如，库依赖包含 <code>minApi</code> 维度中的产品变种，而应用只在 <code>tier</code> 维度中定义了产品变种。构建应用的 <code>freeDebug</code> 版本时，插件就无法确定应使用依赖的 <code>minApi23Debug</code> 还是 <code>minApi18Debug</code> 版本。</p><p data-unit="07-variants-140">反过来，如果应用包含库依赖没有的变种维度，则不会产生问题，因为插件只会匹配依赖中存在的维度。例如，如果依赖没有 ABI 维度，应用的 <code>freeX86Debug</code> 版本就会使用依赖的 <code>freeDebug</code> 版本。</p><p data-unit="07-variants-141">在 <code>defaultConfig</code> 块中使用 <code>missingDimensionStrategy</code>，为每个缺失维度指定插件默认选择的产品变种，如下例所示。也可以在 <code>productFlavors</code> 块中覆盖这些选择，让每个产品变种针对缺失维度采用不同的匹配策略。</p><div><div class="ds-selector-tabs"><section><h3 class="two-line-tab" tab-label="build.gradle.kts" id="kts-11" data-text="Kotlin" tabindex="-1" data-unit="07-variants-142" data-original-id="kts">Kotlin</h3><div></div><div><pre class="source-code"><code class="language-Kotlin">// In the app's build.gradle.kts file.
+android {
+    defaultConfig{
+    // Specifies a sorted list of flavors that the plugin can try to use from
+    // a given dimension. This tells the plugin to select the "minApi18" flavor
+    // when encountering a dependency that includes a "minApi" dimension.
+    // You can include additional flavor names to provide a
+    // sorted list of fallbacks for the dimension.
+    missingDimensionStrategy("minApi", "minApi18", "minApi23")
+    // Specify a missingDimensionStrategy property for each
+    // dimension that exists in a local dependency but not in your app.
+    missingDimensionStrategy("abi", "x86", "arm64")
+    }
+    flavorDimensions += "tier"
+    productFlavors {
+        create("free") {
+            dimension = "tier"
+            // You can override the default selection at the product flavor
+            // level by configuring another missingDimensionStrategy property
+            // for the "minApi" dimension.
+            missingDimensionStrategy("minApi", "minApi23", "minApi18")
+        }
+        create("paid") {}
+    }
+}</code></pre></div></section><section><h3 class="two-line-tab" tab-label="build.gradle" id="groovy-11" data-text="Groovy" tabindex="-1" data-unit="07-variants-143" data-original-id="groovy">Groovy</h3><div></div><div><pre class="source-code"><code class="language-Groovy">// In the app's build.gradle file.
+android {
+    defaultConfig{
+    // Specifies a sorted list of flavors that the plugin can try to use from
+    // a given dimension. This tells the plugin to select the "minApi18" flavor
+    // when encountering a dependency that includes a "minApi" dimension.
+    // You can include additional flavor names to provide a
+    // sorted list of fallbacks for the dimension.
+    missingDimensionStrategy 'minApi', 'minApi18', 'minApi23'
+    // Specify a missingDimensionStrategy property for each
+    // dimension that exists in a local dependency but not in your app.
+    missingDimensionStrategy 'abi', 'x86', 'arm64'
+    }
+    flavorDimensions 'tier'
+    productFlavors {
+        free {
+            dimension 'tier'
+            // You can override the default selection at the product flavor
+            // level by configuring another missingDimensionStrategy property
+            // for the 'minApi' dimension.
+            missingDimensionStrategy 'minApi', 'minApi23', 'minApi18'
+        }
+        paid {}
+    }
+}</code></pre></div></section></div></div></li></ul><p data-unit="07-variants-144">更多信息请参阅 Android Gradle 插件 DSL 参考文档中的 <a href="https://developer.android.com/reference/tools/gradle-api/7.0/com/android/build/api/dsl/ProductFlavor#matchingfallbacks"><code>matchingFallbacks</code></a> 和 <a href="https://developer.android.com/reference/tools/gradle-api/7.0/com/android/build/api/dsl/BaseFlavor#missingdimensionstrategy_1"><code>missingDimensionStrategy</code></a>。</p><h2 id="signing" data-text="   Configure signing settings " tabindex="-1" data-unit="07-variants-145">配置签名设置</h2><p data-unit="07-variants-146">除非为 Release 构建明确指定签名配置，否则 Gradle 不会为它的 APK 或 AAB 签名。如果还没有签名密钥，请使用 Android Studio <a href="https://developer.android.com/studio/publish/app-signing#generate-key">生成上传密钥和密钥库</a>。</p><p data-unit="07-variants-147">要通过 Gradle 构建配置，手动配置 Release 构建类型的签名：</p><ol><li data-unit="07-variants-148">创建密钥库。<strong>密钥库（Keystore）</strong>是保存一组私钥的二进制文件，必须存放在安全的地方。</li><li data-unit="07-variants-149">创建私钥。<strong>私钥（Private Key）</strong>用于为待分发的应用签名，绝不能随应用一起提供，也不能向未获授权的第三方披露。</li><li><p data-unit="07-variants-150">把签名配置加入模块级 <code>build.gradle.kts</code> 文件：</p><div><div class="ds-selector-tabs"><section><h3 class="two-line-tab" tab-label="build.gradle.kts" id="kts-12" data-text="Kotlin" tabindex="-1" data-unit="07-variants-151" data-original-id="kts">Kotlin</h3><div></div><div><pre class="source-code"><code class="language-Kotlin">...
+android {
+    ...
+    defaultConfig {...}
+    signingConfigs {
+        create("release") {
+            storeFile = file("myreleasekey.keystore")
+            storePassword = "password"
+            keyAlias = "MyReleaseKey"
+            keyPassword = "password"
+        }
+    }
+    buildTypes {
+        getByName("release") {
+            ...
+            signingConfig = signingConfigs.getByName("release")
+        }
+    }
+}</code></pre></div></section><section><h3 class="two-line-tab" tab-label="build.gradle" id="groovy-12" data-text="Groovy" tabindex="-1" data-unit="07-variants-152" data-original-id="groovy">Groovy</h3><div></div><div><pre class="source-code"><code class="language-Groovy">...
+android {
+    ...
+    defaultConfig {...}
+    signingConfigs {
+        release {
+            storeFile file("myreleasekey.keystore")
+            storePassword "password"
+            keyAlias "MyReleaseKey"
+            keyPassword "password"
+        }
+    }
+    buildTypes {
+        release {
+            ...
+            signingConfig signingConfigs.release
+        }
+    }
+}</code></pre></div></section></div></div></li></ol><p class="note" data-unit="07-variants-153"><strong>注意：</strong>把发布密钥和密钥库的密码直接写进构建文件并不安全。应配置为从环境变量读取密码，或者让构建过程提示输入密码。</p><p data-unit="07-variants-154">要从环境变量读取这些密码：</p><div><div class="ds-selector-tabs"><section><h3 class="two-line-tab" tab-label="build.gradle.kts" id="kts-13" data-text="Kotlin" tabindex="-1" data-unit="07-variants-155" data-original-id="kts">Kotlin</h3><div></div><div><pre class="source-code"><code class="language-Kotlin">storePassword = System.getenv("KSTOREPWD")
+keyPassword = System.getenv("KEYPWD")</code></pre></div></section><section><h3 class="two-line-tab" tab-label="build.gradle" id="groovy-13" data-text="Groovy" tabindex="-1" data-unit="07-variants-156" data-original-id="groovy">Groovy</h3><div></div><div><pre class="source-code"><code class="language-Groovy">storePassword System.getenv("KSTOREPWD")
+keyPassword System.getenv("KEYPWD")</code></pre></div></section></div></div><p data-unit="07-variants-157">另一种方式是从本地 properties 文件加载密钥库。出于安全考虑，不要把这个文件加入源码版本控制，而应由每位开发者在本地配置。更多信息请参阅<a href="https://developer.android.com/studio/publish/app-signing#secure-shared-keystore">从构建文件中移除签名信息</a>。</p><p data-unit="07-variants-158">完成这些步骤后，就可以分发应用，并将其发布到 Google Play。</p><p class="warning" data-unit="07-variants-159"><strong>警告：</strong>请将密钥库和私钥保存在安全位置，并确保有可靠的备份。如果使用 Play App Signing，却丢失了上传密钥，可以通过 Play Console <a href="https://support.google.com/googleplay/android-developer/answer/9842756#reset">申请重置</a>。如果未使用 Play App Signing 发布应用——这种情况适用于 2021 年 8 月之前创建的应用——并且丢失了应用签名密钥，就无法再发布任何更新，因为同一个应用的所有版本必须始终用同一把密钥签名。</p><h3 id="wear-apps" data-text="   Signing Wear OS apps " tabindex="-1" data-unit="07-variants-160">为 Wear OS 应用签名</h3><p data-unit="07-variants-161">发布 Wear OS 应用时，手表 APK 及可选的手机 APK 必须使用同一把密钥签名。有关 Wear OS 应用的打包与签名，请参阅<a href="https://developer.android.com/training/wearables/packaging">打包和分发 Wear 应用</a>。</p></div>
+
+  
+    
+      </article><nav class="chapter-switcher" aria-label="章节导航"><a href="../06-android-build/index.html">← Android 与 Gradle 构建概览</a><a class="course-home" href="../index.html">全部章节</a><a href="../08-ksp/index.html">Kotlin 符号处理 API →</a></nav><footer class="license-note"><p>非官方中文阅读版。原文、代码和图示由各官方来源维护；中文翻译与独立导读另行标明。<a href="../NOTICE.html">来源与许可说明</a> · 英文文档快照：2026-10-19。</p></footer></main></body></html>

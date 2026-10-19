@@ -1,4 +1,6 @@
 import { EntranceGates } from "./entrance-gates";
+import { RecentUpdates } from "./recent-updates";
+import { getRecentUpdates } from "@/lib/content/recent-updates";
 
 export default function Home() {
   return (
@@ -10,6 +12,7 @@ export default function Home() {
       </header>
 
       <EntranceGates />
+      <RecentUpdates entries={getRecentUpdates()} />
 
       <p className="swipe-hint" aria-hidden="true">SWIPE TO EXPLORE</p>
     </main>

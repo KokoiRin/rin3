@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light"><title>配置 KMP 编译单元 · Android 构建系统</title><link rel="stylesheet" href="../../reader.css"><link rel="stylesheet" href="../source.css"><link rel="manifest" href="../../../manifest.webmanifest"><link rel="icon" href="../../../icons/apple-touch-icon.png"></head><body><nav class="site-nav" aria-label="站点导航"><a href="../index.html">← Android 构建系统</a><a href="https://kotlinlang.org/docs/multiplatform/multiplatform-configure-compilations.html">官方英文原文 ↗</a></nav><main class="reader"><header class="chapter-header"><span class="chapter-kicker">13 · Kotlin Multiplatform · 正文全文</span><h1>配置 KMP 编译单元</h1><p class="byline">Configure compilations</p><div class="title-rule"></div><p class="edition-nav"><strong aria-current="page">中文阅读版</strong> · <a href="english.html">英文对照</a></p><aside class="learning-note"><span class="note-kind">编者导读 · 不属于原文</span><p><strong>target 下面的 compilation 究竟组织哪些代码与产物？</strong></p><p>接着阅读默认编译单元、自定义编译和平台特有的配置。</p></aside><details class="editorial-correction"><summary>编者校注 · 原文的版本条件与简化之处</summary><p>一个 target 可以有多个 compilation，一个 compilation 可以收集多个 source set；这些也不等同于 Gradle Task。本文的目标与任务名对应官方 Kotlin 插件；公司定制的 Harmony 目标、FFI、HAR 等仍需回到实际构建配置核对。</p></details><details class="source-details"><summary>本篇目录与翻译范围</summary><p>对应官方英文文档的正文全文，保留章节顺序、代码、图示、表格和正文链接；不含站点导航、反馈和自动推荐组件。</p><p>英文快照：2026-10-19。代码、命令、标识符和原图保持原样。导读与官方正文分开呈现。</p><ul><li class="toc-h2"><a href="#configure-all-compilations">配置所有编译</a></li><li class="toc-h2"><a href="#configure-compilations-for-one-target">配置某个目标的编译</a></li><li class="toc-h2"><a href="#configure-one-compilation">配置某一个编译</a></li><li class="toc-h2"><a href="#create-a-custom-compilation">创建自定义编译</a></li><li class="toc-h2"><a href="#compilation-for-jvm">JVM 编译</a></li><li class="toc-h2"><a href="#configure-interop-with-native-languages">配置与原生语言的互操作</a></li><li class="toc-h2"><a href="#compilation-for-android">Android 编译</a></li><li class="toc-h2"><a href="#compilation-of-the-source-set-hierarchy">源集层级的编译</a></li><li class="toc-h2"><a href="#configure-isolated-projects-feature-in-gradle">在 Gradle 中配置 Isolated Projects 功能</a></li></ul></details><nav class="chapter-switcher" aria-label="章节导航"><a href="../12-kmp-project/index.html">← KMP 项目结构基础</a><a class="course-home" href="../index.html">全部章节</a><a href="../14-r8/index.html">使用 R8 启用应用优化 →</a></nav></header><article class="translated-article"><div class="article" data-shortcut-switcher="inactive"><p id="ru50z2_2" data-unit="13-kmp-compilations-001">Kotlin 多平台项目通过编译（compilation）生成产物。每个目标可以具有一个或多个编译，例如分别用于生产代码和测试代码。</p><p id="ru50z2_3" data-unit="13-kmp-compilations-002">对于每个目标，默认的编译包括：</p><ul class="list _bullet" id="ru50z2_4"><li class="list__item" id="ru50z2_19"><p id="ru50z2_21" data-unit="13-kmp-compilations-003">对于 JVM、JS 和 Native 目标，包含 <code>main</code> 和 <code>test</code> 编译。</p></li><li class="list__item" id="ru50z2_20"><p id="ru50z2_24" data-unit="13-kmp-compilations-004">对于 Android 目标，每个 <a href="https://developer.android.com/build/build-variants">Android 构建变体</a>都有一个对应的<a href="https://kotlinlang.org/docs/multiplatform/multiplatform-configure-compilations.html#compilation-for-android">编译</a>。</p></li></ul><figure id="ru50z2_5"><img alt="Compilations" src="../assets/ce6d831219c0.svg" title="Compilations" data-original-src="https://kotlinlang.org/docs/multiplatform/images/compilations.svg" loading="lazy"></figure><p id="ru50z2_6" data-unit="13-kmp-compilations-005">如果除了生产代码和单元测试，还需要编译其他内容，例如集成测试或性能测试，可以<a href="https://kotlinlang.org/docs/multiplatform/multiplatform-configure-compilations.html#create-a-custom-compilation">创建自定义编译</a>。</p><p id="ru50z2_7" data-unit="13-kmp-compilations-006">你可以在以下范围内配置产物的生成方式：</p><ul class="list _bullet" id="ru50z2_8"><li class="list__item" id="ru50z2_28"><p id="ru50z2_31" data-unit="13-kmp-compilations-007">一次配置项目中的<a href="https://kotlinlang.org/docs/multiplatform/multiplatform-configure-compilations.html#configure-all-compilations">所有编译</a>。</p></li><li class="list__item" id="ru50z2_29"><p id="ru50z2_33" data-unit="13-kmp-compilations-008">配置<a href="https://kotlinlang.org/docs/multiplatform/multiplatform-configure-compilations.html#configure-compilations-for-one-target">某一个目标的编译</a>，因为一个目标可以具有多个编译。</p></li><li class="list__item" id="ru50z2_30"><p id="ru50z2_35" data-unit="13-kmp-compilations-009">配置<a href="https://kotlinlang.org/docs/multiplatform/multiplatform-configure-compilations.html#configure-one-compilation">某一个具体编译</a>。</p></li></ul><p id="ru50z2_9" data-unit="13-kmp-compilations-010">有关适用于所有目标或特定目标的设置，请参阅<a href="https://kotlinlang.org/docs/multiplatform/multiplatform-dsl-reference.html#compilation-parameters">编译参数列表</a>和<a href="https://kotlinlang.org/docs/gradle-compiler-options.html">编译器选项</a>。</p><section class="chapter"><h2 id="configure-all-compilations" data-toc="configure-all-compilations" data-unit="13-kmp-compilations-011">配置所有编译</h2><p id="ru50z2_39" data-unit="13-kmp-compilations-012">以下示例配置了一个适用于所有目标的公共编译器选项：</p><div class="tabs" id="ru50z2_40" data-group="build-script" data-anchors="[ru50z2_41,ru50z2_42]"><div class="tabs__content" data-gtm="tab" id="ru50z2_41" data-sync-tabs="kotlin" data-title="Kotlin"><pre class="source-code"><code class="language-kotlin">
+kotlin {
+    compilerOptions {
+        allWarningsAsErrors.set(true)
+    }
+}
+</code></pre></div><div class="tabs__content" data-gtm="tab" id="ru50z2_42" data-sync-tabs="groovy" data-title="Groovy"><pre class="source-code"><code class="language-groovy">
+kotlin {
+    compilerOptions {
+        allWarningsAsErrors = true
+    }
+}
+</code></pre></div></div></section><section class="chapter"><h2 id="configure-compilations-for-one-target" data-toc="configure-compilations-for-one-target" data-unit="13-kmp-compilations-013">配置某个目标的编译</h2><div class="tabs" id="ru50z2_45" data-group="build-script" data-anchors="[ru50z2_46,ru50z2_47]"><div class="tabs__content" data-gtm="tab" id="ru50z2_46" data-sync-tabs="kotlin" data-title="Kotlin"><pre class="source-code"><code class="language-kotlin">
+kotlin {
+    jvm {
+        compilerOptions {
+            jvmTarget.set(JvmTarget.JVM_1_8)
+        }
+    }
+}
+</code></pre></div><div class="tabs__content" data-gtm="tab" id="ru50z2_47" data-sync-tabs="groovy" data-title="Groovy"><pre class="source-code"><code class="language-groovy">
+kotlin {
+    jvm {
+        compilerOptions {
+            jvmTarget = JvmTarget.JVM_1_8
+        }
+    }
+}
+</code></pre></div></div></section><section class="chapter"><h2 id="configure-one-compilation" data-toc="configure-one-compilation" data-unit="13-kmp-compilations-014">配置某一个编译</h2><div class="tabs" id="ru50z2_50" data-group="build-script" data-anchors="[ru50z2_51,ru50z2_52]"><div class="tabs__content" data-gtm="tab" id="ru50z2_51" data-sync-tabs="kotlin" data-title="Kotlin"><pre class="source-code"><code class="language-kotlin">
+kotlin {
+    jvm {
+        val main by compilations.getting {
+            compileTaskProvider.configure {
+                compilerOptions {
+                    jvmTarget.set(JvmTarget.JVM_1_8)
+                }
+            }
+        }
+    }
+}
+</code></pre></div><div class="tabs__content" data-gtm="tab" id="ru50z2_52" data-sync-tabs="groovy" data-title="Groovy"><pre class="source-code"><code class="language-groovy">
+kotlin {
+    jvm {
+        compilations.main {
+            compileTaskProvider.configure {
+                compilerOptions {
+                    jvmTarget = JvmTarget.JVM_1_8
+                }
+            }
+        }
+    }
+}
+</code></pre></div></div></section><section class="chapter"><h2 id="create-a-custom-compilation" data-toc="create-a-custom-compilation" data-unit="13-kmp-compilations-015">创建自定义编译</h2><p id="ru50z2_55" data-unit="13-kmp-compilations-016">如果除了生产代码和单元测试，还需要编译其他内容，例如集成测试或性能测试，就需要创建自定义编译。</p><p id="ru50z2_56" data-unit="13-kmp-compilations-017">对于自定义编译，所有依赖都需要手动配置。自定义编译的默认源集不会依赖 <code>commonMain</code> 和 <code>commonTest</code> 源集。</p><p id="ru50z2_57" data-unit="13-kmp-compilations-018">例如，要为 <code>jvm</code> 目标的集成测试创建自定义编译，可以在 <code>integrationTest</code> 和 <code>main</code> 编译之间建立 <a href="https://kotlinlang.org/docs/gradle-configure-project.html#associate-compiler-tasks"><code>associateWith</code></a> 关系：</p><div class="tabs" id="ru50z2_58" data-group="build-script" data-anchors="[ru50z2_69,ru50z2_70]"><div class="tabs__content" data-gtm="tab" id="ru50z2_69" data-sync-tabs="kotlin" data-title="Kotlin"><pre class="source-code"><code class="language-kotlin">
+kotlin {
+    jvm {
+        compilations {
+            val main by getting
+            val integrationTest by creating {
+                // Import main and its classpath as dependencies and establish internal visibility
+                associateWith(main)
+                defaultSourceSet {
+                    dependencies {
+                        implementation(kotlin("test-junit"))
+                        /* ... */
+                    }
+                }
+            }
+
+            // Create a test task to run the tests produced by this compilation:
+            testRuns.create("integration") {
+                // Configure the test task
+                setExecutionSourceFrom(integrationTest)
+            }
+        }
+    }
+}
+</code></pre></div><div class="tabs__content" data-gtm="tab" id="ru50z2_70" data-sync-tabs="groovy" data-title="Groovy"><pre class="source-code"><code class="language-groovy">
+kotlin {
+    jvm {
+        compilations.create('integrationTest') {
+            def main = compilations.main
+            // Import main and its classpath as dependencies and establish internal visibility
+            associateWith(main)
+            defaultSourceSet {
+                dependencies {
+                    implementation kotlin('test-junit')
+                    /* ... */
+                }
+            }
+        }
+
+        // Create a test task to run the tests produced by this compilation
+        testRuns.create('integration') {
+            // Configure the test task
+            setExecutionSourceFrom(compilations.integrationTest)
+        }
+    }
+}
+</code></pre></div></div><p id="ru50z2_59" data-unit="13-kmp-compilations-019">关联编译后，主编译的输出会被添加为依赖，同时会在这些编译之间建立 <code>internal</code> 可见性。</p><p id="ru50z2_60" data-unit="13-kmp-compilations-020">其他情况下也可能需要自定义编译。例如，希望在最终产物中组合面向不同 JVM 版本的编译结果，或者已经在 Gradle 中配置了源集，希望将其迁移到多平台项目。</p><aside class="prompt" data-type="tip" data-title="" id="ru50z2_61"><p id="ru50z2_74" data-unit="13-kmp-compilations-021">要为 <a href="https://kotlinlang.org/docs/multiplatform/multiplatform-configure-compilations.html#compilation-for-android"><code>android</code></a> 创建自定义编译，请通过 <a href="https://developer.android.com/build/build-variants">Android Gradle 插件</a>配置构建变体。</p></aside></section><section class="chapter"><h2 id="compilation-for-jvm" data-toc="compilation-for-jvm" data-unit="13-kmp-compilations-022">JVM 编译</h2><p id="ru50z2_78" data-unit="13-kmp-compilations-023">在多平台项目中声明 <code>jvm</code> 目标后，Kotlin Multiplatform Gradle 插件会自动创建 Java 源集，并将其纳入 JVM 目标的编译。</p><p id="ru50z2_79" data-unit="13-kmp-compilations-024">通用源集不能包含 Java 资源，因此应将这些资源放在多平台项目中相应的子目录下。例如：</p><figure id="ru50z2_80"><img alt="Java source files" src="../assets/db4dbded78a4.png" title="Java source files" data-original-src="https://kotlinlang.org/docs/multiplatform/images/java-source-paths.png" loading="lazy"></figure><p id="ru50z2_81" data-unit="13-kmp-compilations-025">目前，Kotlin Multiplatform Gradle 插件会替换 Java 插件配置的部分任务：</p><ul class="list _bullet" id="ru50z2_82"><li class="list__item" id="ru50z2_87"><p id="ru50z2_90" data-unit="13-kmp-compilations-026">JAR 任务：使用与产物名称相关的目标专用任务，替代标准的 <code>jar</code>。例如，声明 <code>jvm()</code> 目标时使用 <code>jvmJar</code>，声明 <code>jvm("desktop")</code> 时使用 <code>desktopJar</code>。</p></li><li class="list__item" id="ru50z2_88"><p id="ru50z2_96" data-unit="13-kmp-compilations-027">测试任务：使用与产物名称相关的目标专用任务，例如 <code>jvmTest</code>，替代标准的 <code>test</code>。</p></li><li class="list__item" id="ru50z2_89"><p id="ru50z2_99" data-unit="13-kmp-compilations-028">资源处理：由相应的编译任务处理资源，不再使用 <code>*ProcessResources</code> 任务。</p></li></ul><p id="ru50z2_83" data-unit="13-kmp-compilations-029">声明目标时，这些任务会自动创建。不过，必要时也可以手动定义并配置 JAR 任务：</p><div class="tabs" id="ru50z2_84" data-group="build-script" data-anchors="[ru50z2_101,ru50z2_102]"><div class="tabs__content" data-gtm="tab" id="ru50z2_101" data-sync-tabs="kotlin" data-title="Kotlin"><pre class="source-code"><code class="language-kotlin">
+// Shared module's `build.gradle.kts` file
+plugins {
+    kotlin("multiplatform") version "2.4.21"
+}
+
+kotlin {
+    // Specify the JVM target
+    jvm {
+        // Add the task for JAR generation
+        tasks.named&lt;Jar&gt;(artifactsTaskName).configure {
+            // Configure the task
+        }
+    }
+
+    sourceSets {
+        jvmMain {
+            dependencies {
+                // Add JVM-specific dependencies
+            }
+        }
+    }
+}
+</code></pre></div><div class="tabs__content" data-gtm="tab" id="ru50z2_102" data-sync-tabs="groovy" data-title="Groovy"><pre class="source-code"><code class="language-groovy">
+// Shared module's `build.gradle` file
+plugins {
+    id 'org.jetbrains.kotlin.multiplatform' version '2.4.21'
+}
+
+kotlin {
+    // Specify the JVM target
+    jvm {
+        // Add the task for JAR generation
+        tasks.named&lt;Jar&gt;(artifactsTaskName).configure {
+            // Configure the task
+        }
+    }
+
+    sourceSets {
+        jvmMain {
+            dependencies {
+                // Add JVM-specific dependencies
+            }
+        }
+    }
+}
+</code></pre></div></div><p id="ru50z2_85" data-unit="13-kmp-compilations-030">此目标由 Kotlin Multiplatform Gradle 插件发布，无需执行 Java 插件专用的步骤。</p></section><section class="chapter"><h2 id="configure-interop-with-native-languages" data-toc="configure-interop-with-native-languages" data-unit="13-kmp-compilations-031">配置与原生语言的互操作</h2><p id="ru50z2_105" data-unit="13-kmp-compilations-032">Kotlin 提供<a href="https://kotlinlang.org/docs/native-overview.html">与原生语言的互操作能力</a>，以及为某个具体编译配置互操作的 DSL。</p><div class="table-wrapper"><table class="wide" id="ru50z2_106"><thead><tr class="ijRowHead" id="ru50z2_110"><th id="ru50z2_114"><p data-unit="13-kmp-compilations-033">原生语言</p></th><th id="ru50z2_115"><p data-unit="13-kmp-compilations-034">支持的平台</p></th><th id="ru50z2_116"><p data-unit="13-kmp-compilations-035">说明</p></th></tr></thead><tbody><tr id="ru50z2_111"><td id="ru50z2_117"><p data-unit="13-kmp-compilations-036">C</p></td><td id="ru50z2_118"><p data-unit="13-kmp-compilations-037">所有平台</p></td><td id="ru50z2_119"></td></tr><tr id="ru50z2_112"><td id="ru50z2_120"><p data-unit="13-kmp-compilations-038">Objective-C</p></td><td id="ru50z2_121"><p data-unit="13-kmp-compilations-039">Apple 平台（macOS、iOS、watchOS、tvOS）</p></td><td id="ru50z2_122"></td></tr><tr id="ru50z2_113"><td id="ru50z2_123"><p data-unit="13-kmp-compilations-040">通过 Objective-C 使用 Swift</p></td><td id="ru50z2_124"><p data-unit="13-kmp-compilations-041">Apple 平台（macOS、iOS、watchOS、tvOS）</p></td><td id="ru50z2_125"><p data-unit="13-kmp-compilations-042">Kotlin 只能使用带有 <code>@objc</code> 属性的 Swift 声明。</p></td></tr></tbody></table></div><p id="ru50z2_107" data-unit="13-kmp-compilations-043">一个编译可以与多个原生库交互。可以通过<a href="https://kotlinlang.org/docs/native-definition-file.html">定义文件</a>中可用的属性，或构建文件中的 <a href="https://kotlinlang.org/docs/multiplatform/multiplatform-dsl-reference.html#cinterops"><code>cinterops</code> 块</a>配置互操作：</p><div class="tabs" id="ru50z2_108" data-group="build-script" data-anchors="[ru50z2_130,ru50z2_131]"><div class="tabs__content" data-gtm="tab" id="ru50z2_130" data-sync-tabs="kotlin" data-title="Kotlin"><pre class="source-code"><code class="language-kotlin">
+kotlin {
+    linuxX64 { // Replace with a target you need.
+        compilations.getByName("main") {
+            val myInterop by cinterops.creating {
+                // Def-file describing the native API.
+                // The default path is src/nativeInterop/cinterop/&lt;interop-name&gt;.def
+                definitionFile.set(project.file("def-file.def"))
+                
+                // Package to place the Kotlin API generated.
+                packageName("org.sample")
+                
+                // Options to be passed to compiler by cinterop tool.
+                compilerOpts("-Ipath/to/headers")
+              
+                // Directories to look for headers.
+                includeDirs.apply {
+                    // Directories for header search (an equivalent of the -I&lt;path&gt; compiler option).
+                    allHeaders("path1", "path2")
+                    
+                    // Additional directories to search headers listed in the 'headerFilter' def-file option.
+                    // -headerFilterAdditionalSearchPrefix command line option equivalent.
+                    headerFilterOnly("path1", "path2")
+                }
+                // A shortcut for includeDirs.allHeaders.
+                includeDirs("include/directory", "another/directory")
+            }
+            
+            val anotherInterop by cinterops.creating { /* ... */ }
+        }
+    }
+}
+</code></pre></div><div class="tabs__content" data-gtm="tab" id="ru50z2_131" data-sync-tabs="groovy" data-title="Groovy"><pre class="source-code"><code class="language-groovy">
+kotlin {
+    linuxX64 { // Replace with a target you need.
+        compilations.main {
+            cinterops {
+                myInterop {
+                    // Def-file describing the native API.
+                    // The default path is src/nativeInterop/cinterop/&lt;interop-name&gt;.def
+                    definitionFile = project.file("def-file.def")
+                    
+                    // Package to place the Kotlin API generated.
+                    packageName 'org.sample'
+                    
+                    // Options to be passed to compiler by cinterop tool.
+                    compilerOpts '-Ipath/to/headers'
+                    
+                    // Directories for header search (an equivalent of the -I&lt;path&gt; compiler option).
+                    includeDirs.allHeaders("path1", "path2")
+                    
+                    // Additional directories to search headers listed in the 'headerFilter' def-file option.
+                    // -headerFilterAdditionalSearchPrefix command line option equivalent.
+                    includeDirs.headerFilterOnly("path1", "path2")
+                    
+                    // A shortcut for includeDirs.allHeaders.
+                    includeDirs("include/directory", "another/directory")
+                }
+                
+                anotherInterop { /* ... */ }
+            }
+        }
+    }
+}
+</code></pre></div></div></section><section class="chapter"><h2 id="compilation-for-android" data-toc="compilation-for-android" data-unit="13-kmp-compilations-044">Android 编译</h2><p id="ru50z2_134" data-unit="13-kmp-compilations-045">Android 目标默认创建的编译与 <a href="https://developer.android.com/build/build-variants">Android 构建变体</a>绑定：每个构建变体都会创建一个同名的 Kotlin 编译。</p><p id="ru50z2_135" data-unit="13-kmp-compilations-046">接着，对于各个变体编译时使用的每个 <a href="https://developer.android.com/build/build-variants#sourcesets">Android 源集</a>，会创建一个 Kotlin 源集，其名称是在原源集名称前加上目标名称。例如，Android 源集 <code>debug</code> 和名为 <code>android</code> 的 Kotlin 目标，对应的 Kotlin 源集名为 <code>androidDebug</code>。这些 Kotlin 源集随后会被添加到相应变体的编译中。</p><p id="ru50z2_136" data-unit="13-kmp-compilations-047">默认源集 <code>commonMain</code> 会被添加到每个生产变体（应用或库）的编译中。同样，<code>commonTest</code> 源集会被添加到单元测试变体和插桩测试变体的编译中。</p><p id="ru50z2_137" data-unit="13-kmp-compilations-048">也支持使用 <a href="https://kotlinlang.org/docs/kapt.html"><code>kapt</code></a> 进行注解处理，但受当前限制影响，必须先创建 Android 目标，再配置 <code>kapt</code> 依赖。依赖需要配置在顶层 <code>dependencies {}</code> 块中，而不是 Kotlin 源集的依赖块中。</p><pre class="source-code"><code class="language-kotlin">
+kotlin {
+    android { /* ... */ }
+}
+
+dependencies {
+    kapt("com.my.annotation:processor:1.0.0")
+}
+</code></pre></section><section class="chapter"><h2 id="compilation-of-the-source-set-hierarchy" data-toc="compilation-of-the-source-set-hierarchy" data-unit="13-kmp-compilations-049">源集层级的编译</h2><p id="ru50z2_150" data-unit="13-kmp-compilations-050">Kotlin 可以通过 <code>dependsOn</code> 关系构建<a href="https://kotlinlang.org/docs/multiplatform/multiplatform-share-on-platforms.html#share-code-on-similar-platforms">源集层级</a>。</p><figure id="ru50z2_151"><img alt="Source set hierarchy" src="../assets/bf9a9d235d5d.svg" title="Source set hierarchy" data-original-src="https://kotlinlang.org/docs/multiplatform/images/jvm-js-main.svg" loading="lazy"></figure><p id="ru50z2_152" data-unit="13-kmp-compilations-051">如果源集 <code>jvmMain</code> 依赖源集 <code>commonMain</code>，则有以下关系：</p><ul class="list _bullet" id="ru50z2_153"><li class="list__item" id="ru50z2_160"><p id="ru50z2_165" data-unit="13-kmp-compilations-052">每当将 <code>jvmMain</code> 编译到某个目标时，<code>commonMain</code> 也会参与该编译，并被编译为相同目标的二进制格式，例如 JVM class 文件。</p></li><li class="list__item" id="ru50z2_161"><p id="ru50z2_168" data-unit="13-kmp-compilations-053"><code>jvmMain</code> 的源码能够“看到” <code>commonMain</code> 的声明，包括内部声明；也能够看到 <code>commonMain</code> 的<a href="https://kotlinlang.org/docs/multiplatform/multiplatform-add-dependencies.html">依赖</a>，即使这些依赖声明为 <code>implementation</code>。</p></li><li class="list__item" id="ru50z2_162"><p id="ru50z2_174" data-unit="13-kmp-compilations-054"><code>jvmMain</code> 可以为 <code>commonMain</code> 的<a href="https://kotlinlang.org/docs/multiplatform/multiplatform-expect-actual.html">预期声明</a>提供平台专用实现。</p></li><li class="list__item" id="ru50z2_163"><p id="ru50z2_178" data-unit="13-kmp-compilations-055"><code>commonMain</code> 的资源始终会与 <code>jvmMain</code> 的资源一起处理和复制。</p></li><li class="list__item" id="ru50z2_164"><p id="ru50z2_181" data-unit="13-kmp-compilations-056"><code>jvmMain</code> 和 <code>commonMain</code> 的<a href="https://kotlinlang.org/docs/multiplatform/multiplatform-dsl-reference.html#language-settings">语言设置</a>应保持一致。</p></li></ul><p id="ru50z2_154" data-unit="13-kmp-compilations-057">语言设置按以下方式检查一致性：</p><ul class="list _bullet" id="ru50z2_155"><li class="list__item" id="ru50z2_185"><p id="ru50z2_189" data-unit="13-kmp-compilations-058"><code>jvmMain</code> 设置的 <code>languageVersion</code> 应大于或等于 <code>commonMain</code> 的值。</p></li><li class="list__item" id="ru50z2_186"><p id="ru50z2_193" data-unit="13-kmp-compilations-059"><code>jvmMain</code> 应启用 <code>commonMain</code> 已启用的所有不稳定语言特性；缺陷修复类特性没有这一要求。</p></li><li class="list__item" id="ru50z2_187"><p id="ru50z2_196" data-unit="13-kmp-compilations-060"><code>jvmMain</code> 应使用 <code>commonMain</code> 所使用的所有实验性注解。</p></li><li class="list__item" id="ru50z2_188"><p id="ru50z2_199" data-unit="13-kmp-compilations-061"><code>apiVersion</code>、缺陷修复类语言特性和 <code>progressiveMode</code> 可以自由设置。</p></li></ul></section><section class="chapter"><h2 id="configure-isolated-projects-feature-in-gradle" data-toc="configure-isolated-projects-feature-in-gradle" data-unit="13-kmp-compilations-062">在 Gradle 中配置 Isolated Projects 功能</h2><aside class="prompt" data-type="warning" data-title="" id="ru50z2_202"><p id="ru50z2_206" data-unit="13-kmp-compilations-063">此功能为<a href="https://kotlinlang.org/docs/multiplatform/supported-platforms.html#general-kotlin-stability-levels">实验性功能</a>，目前在 Gradle 中处于 pre-alpha 阶段。只能在 Gradle 8.10 或更高版本中使用，并且仅用于评估。此功能可能随时被移除或更改。欢迎在 <a href="https://youtrack.jetbrains.com/issue/KT-57279/Support-Gradle-Project-Isolation-Feature-for-Kotlin-Multiplatform">YouTrack</a> 中提供反馈。使用时需要显式选择启用，详见下文。</p></aside><p id="ru50z2_203" data-unit="13-kmp-compilations-064">Gradle 提供 <a href="https://docs.gradle.org/current/userguide/isolated_projects.html">Isolated Projects</a> 功能，通过相互“隔离”各个项目来提升构建性能。它将不同项目的构建脚本和插件隔离开来，使它们能够安全地并行运行。</p><p id="ru50z2_204" data-unit="13-kmp-compilations-065">要启用此功能，请按 Gradle 的说明<a href="https://docs.gradle.org/current/userguide/isolated_projects.html#how_do_i_use_it">设置系统属性</a>。</p><p id="ru50z2_205" data-unit="13-kmp-compilations-066">有关 Isolated Projects 功能的更多信息，请参阅 <a href="https://docs.gradle.org/current/userguide/isolated_projects.html">Gradle 文档</a>。</p></section></div></article><nav class="chapter-switcher" aria-label="章节导航"><a href="../12-kmp-project/index.html">← KMP 项目结构基础</a><a class="course-home" href="../index.html">全部章节</a><a href="../14-r8/index.html">使用 R8 启用应用优化 →</a></nav><footer class="license-note"><p>非官方中文阅读版。原文、代码和图示由各官方来源维护；中文翻译与独立导读另行标明。<a href="../NOTICE.html">来源与许可说明</a> · 英文文档快照：2026-10-19。</p></footer></main></body></html>

@@ -1,6 +1,7 @@
 ---
 title: 《程序员的范畴论》学习记录
 summary: 从程序的可组合性出发学习范畴论，先保留 Bartosz Milewski 原书的逐段完整中文译文，再观察这些结构是否真的能帮助理解类型、抽象、效应与并发。
+reader: /reading/category-theory-for-programmers/preface/index.html
 date: 2026-08-26
 lang: zh-CN
 topic: Category Theory / Programming

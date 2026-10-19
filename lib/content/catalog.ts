@@ -9,7 +9,8 @@ import {
   type ArticleHeading,
   type RinDocument,
 } from "@rin/document";
-import { assetPath, sections, type SectionSlug } from "@/lib/site/sections";
+import { assetPath, sections, type SectionSlug } from "../site/sections.ts";
+import { readUpdateMetadata } from "./recent-update-data.js";
 
 const contentRoot = path.join(process.cwd(), "content");
 const sectionSlugs = new Set<string>(sections.map((section) => section.slug));
@@ -23,6 +24,8 @@ export type ArticleSummary = {
   title: string;
   summary: string;
   date: string;
+  updated?: string;
+  reader?: string;
   topic: string;
   tags: string[];
   order: number;
@@ -65,6 +68,7 @@ function readArticleSource(section: SectionSlug, fileName: string) {
         section,
         slides: `/slides/${slug}`,
         tldr: readOptionalString(data, "tldr", filePath),
+        ...readUpdateMetadata(data, filePath, rinDocument.summary.date),
       } satisfies ArticleSummary,
       rinDocument,
     };
@@ -106,6 +110,7 @@ function readArticleSource(section: SectionSlug, fileName: string) {
       title: readString(data, "title", filePath),
       summary: readString(data, "summary", filePath),
       date,
+      ...readUpdateMetadata(data, filePath, date),
       topic: readString(data, "topic", filePath),
       tags,
       order: typeof data.order === "number" ? data.order : 999,

@@ -1,6 +1,7 @@
 ---
 title: 情绪识别练习：五天主线与随手选读
 summary: 先用五天主线把十二种情绪放回真实事件，再通过四篇无进度压力的选读页认识注意、比较、落差与超越自我的情绪。
+reader: /reading/emotions/day-one/index.html
 date: 2026-08-29
 lang: zh-CN
 topic: Emotional Awareness

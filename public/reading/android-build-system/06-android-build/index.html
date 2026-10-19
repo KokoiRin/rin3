@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light"><title>Android 与 Gradle 构建概览 · Android 构建系统</title><link rel="stylesheet" href="../../reader.css"><link rel="stylesheet" href="../source.css"><link rel="manifest" href="../../../manifest.webmanifest"><link rel="icon" href="../../../icons/apple-touch-icon.png"></head><body><nav class="site-nav" aria-label="站点导航"><a href="../index.html">← Android 构建系统</a><a href="https://developer.android.com/build/gradle-build-overview?hl=en">官方英文原文 ↗</a></nav><main class="reader"><header class="chapter-header"><span class="chapter-kicker">06 · Android 产物与变体 · 正文全文</span><h1>Android 与 Gradle 构建概览</h1><p class="byline">Gradle build overview</p><div class="title-rule"></div><p class="edition-nav"><strong aria-current="page">中文阅读版</strong> · <a href="english.html">英文对照</a></p><aside class="learning-note"><span class="note-kind">编者导读 · 不属于原文</span><p><strong>Gradle 怎样把插件、任务、依赖与 Android 构建联系起来？</strong></p><p>先看整体构建过程，再连接工具链、任务和 Android Gradle Plugin。</p></aside><details class="editorial-correction"><summary>编者校注 · 原文的版本条件与简化之处</summary><p>原文关于 Debug / Release 的概括不能代替真实配置：Release 是否启用 R8、是否配置发布签名，要查看工程中的优化和签名设置。第 07 篇明确指出：未配置签名时，Gradle 不会自动为 Release APK / AAB 签名。执行阶段能否跳过任务也取决于输出是否有效等条件，并非只看输入有没有变化。</p><p>同名 Kotlin / Java 类不能靠高优先级 source set 覆盖；参与同一变体的重复类会导致错误。资源和 Manifest 才有各自的合并规则。完整产物关系见<a href="../build-map.html">源码到产物导读</a>。</p></details><details class="source-details"><summary>本篇目录与翻译范围</summary><p>对应官方英文文档的正文全文，保留章节顺序、代码、图示、表格和正文链接；不含站点导航、反馈和自动推荐组件。</p><p>英文快照：2026-10-19。代码、命令、标识符和原图保持原样。导读与官方正文分开呈现。</p><ul><li class="toc-h2"><a href="#is-build%3F">什么是构建？</a></li><li class="toc-h2"><a href="#happens-when">运行 Gradle 构建时会发生什么？</a></li><li class="toc-h2"><a href="#configuration-dsls">配置 DSL</a></li><li class="toc-h2"><a href="#external-dependencies">外部依赖</a></li><li class="toc-h2"><a href="#build-variants">构建变体</a></li><li class="toc-h2"><a href="#next-steps">后续步骤</a></li></ul></details><nav class="chapter-switcher" aria-label="章节导航"><a href="../05-api/index.html">← API 与实现依赖的分离</a><a class="course-home" href="../index.html">全部章节</a><a href="../07-variants/index.html">配置构建变体 →</a></nav></header><article class="translated-article"><div class="devsite-article-body clearfix
+  "><p data-unit="06-android-build-001">Android 应用通常使用 <a href="https://gradle.org/">Gradle</a> 构建系统。在深入了解如何配置构建之前，我们先介绍构建背后的概念，帮助你看清整个系统。</p><h2 id="is-build?" data-text="What is a build?" tabindex="-1" data-unit="06-android-build-002">什么是构建？</h2><p data-unit="06-android-build-003">构建系统会把源代码转换成可执行的应用。构建通常需要多个工具，分别负责分析、编译、链接，以及打包应用或库。Gradle 通过任务来组织和运行这些命令。</p><p data-unit="06-android-build-004"><a href="https://docs.gradle.org/current/userguide/more_about_tasks.html">任务（Task）</a>封装了把输入转换为输出的命令。<a href="https://docs.gradle.org/current/userguide/custom_plugins.html">插件（Plugin）</a>定义任务及其配置。将插件应用到构建中，就会注册它提供的任务，并通过任务的输入和输出把它们连接起来。例如，在构建文件中应用 <a href="https://developer.android.com/build/releases/gradle-plugin">Android Gradle Plugin</a>（AGP），就会注册构建 APK 或 Android 库所需的全部任务。<code>java-library</code> 插件可以把 Java 源代码构建成 JAR。Kotlin 和其他语言也有类似的插件。另外一些插件则用于扩展已有插件，例如，<code>protobuf</code> 插件会为 AGP、<code>java-library</code> 等插件添加 protobuf 支持。</p><p data-unit="06-android-build-005">Gradle 倾向于“约定优于配置”，因此插件通常会提供合理的默认值。你也可以使用声明式的<a href="https://docs.gradle.org/current/dsl">领域特定语言</a>（Domain-Specific Language，DSL）进一步配置构建。DSL 让你描述要构建<strong>什么</strong>，而把<strong>如何</strong>构建的逻辑交给插件。这些配置分布在<a href="https://docs.gradle.org/current/userguide/multi_project_builds.html">项目</a>及其子项目的多个<a href="https://developer.android.com/build/android-build-structure">构建文件</a>中。</p><p data-unit="06-android-build-006">任务输入可以是文件、目录，也可以是以 Java 类型表示的其他信息，例如整数、字符串或自定义类。输出则只能是文件或目录，因为它们必须写入磁盘。把一个任务的输出连接到另一个任务的输入，就建立了任务之间的关联，使前一个任务必须先于后一个任务运行。</p><p data-unit="06-android-build-007">虽然 Gradle 允许你在构建文件中编写任意代码和声明任务，但这样会让工具更难理解构建，也会增加维护难度。例如，插件中的代码可以编写测试，而构建文件中的代码不具备同样的测试方式。因此，应把构建逻辑和任务声明限制在插件中——插件可以由你或其他人定义——再在构建文件中声明如何使用这些逻辑。</p><h2 id="happens-when" data-text="What happens when a Gradle build runs?" tabindex="-1" data-unit="06-android-build-008">运行 Gradle 构建时会发生什么？</h2><p data-unit="06-android-build-009">Gradle 构建分为三个阶段。每个阶段会执行构建文件中不同部分的代码。</p><ul><li data-unit="06-android-build-010"><strong>初始化（Initialization）</strong>：确定哪些项目和子项目参与构建，并准备包含构建文件及所应用插件的类路径。这个阶段围绕 Settings 文件展开，你会在其中声明要构建的项目，以及获取插件和库的位置。</li><li data-unit="06-android-build-011"><strong>配置（Configuration）</strong>：为各项目注册任务，并执行构建文件，应用用户声明的构建配置。需要理解的是，配置代码无法访问执行阶段才会生成的数据或文件。</li><li data-unit="06-android-build-012"><strong>执行（Execution）</strong>：实际完成应用的“构建”。配置阶段的结果是一张任务的<a href="https://en.wikipedia.org/wiki/Directed_acyclic_graph">有向无环图</a>（DAG），表示用户请求的全部构建步骤，也就是命令行指定的任务，或构建文件指定的默认任务。这张图反映任务之间的关系：关系可以在任务声明中明确指定，也可以来自输入和输出。如果某个任务的输入是另一个任务的输出，它就必须在后者之后运行。执行阶段按照图中的顺序运行需要更新的任务；如果任务的输入自上次执行以来没有变化，Gradle 会跳过它。</li></ul><p data-unit="06-android-build-013">更多信息请参阅 Gradle 的<a href="https://docs.gradle.org/current/userguide/build_lifecycle.html">构建生命周期</a>。</p><h2 id="configuration-dsls" data-text="Configuration DSLs" tabindex="-1" data-unit="06-android-build-014">配置 DSL</h2><p data-unit="06-android-build-015">Gradle 使用<a href="https://docs.gradle.org/current/dsl">领域特定语言</a>（DSL）配置构建。这种声明式写法侧重于描述数据，而不是编写逐步执行的命令式指令。构建文件可以用 Kotlin 或 Groovy 编写，不过我们强烈建议使用 Kotlin。</p><p data-unit="06-android-build-016">DSL 通过定义一种小型语言，以更自然的方式表达数据，让领域专家和程序员都更容易参与项目。Gradle 插件可以扩展 DSL，以便配置自身任务所需的数据。</p><p data-unit="06-android-build-017">例如，构建中 Android 部分的配置可能如下所示：</p><div><div class="ds-selector-tabs"><section><h3 class="two-line-tab" tab-label="build.gradle.kts" id="kts" data-text="Kotlin" tabindex="-1" data-unit="06-android-build-018">Kotlin</h3><div></div><div><pre class="source-code"><code class="language-Kotlin">android {
+    namespace = "com.example.app"
+    compileSdk {
+        version = release(36) {
+            minorApiLevel = 1
+        }
+    }
+    // ...
+
+    defaultConfig {
+        applicationId = "com.example.app"
+        minSdk {
+            version = release(23)
+        }
+        targetSdk {
+            version = release(36)
+        }
+        // ...
+    }
+}</code></pre></div></section><section><h3 class="two-line-tab" tab-label="build.gradle" id="groovy" data-text="Groovy" tabindex="-1" data-unit="06-android-build-019">Groovy</h3><div></div><div><pre class="source-code"><code class="language-Groovy">android {
+    namespace = 'com.example.app'
+    compileSdk {
+        version = release(36) {
+            minorApiLevel = 1
+        }
+    }
+    // ...
+
+    defaultConfig {
+        applicationId = 'com.example.app'
+        minSdk {
+            version = release(23)
+        }
+        targetSdk {
+            version = release(36)
+        }
+        // ...
+    }
+}</code></pre></div></section></div></div><p data-unit="06-android-build-020">在底层，这段 DSL 代码类似于：</p><div></div><div><pre class="source-code"><code class="language-Kotlin">fun Project.android(configure: ApplicationExtension.() -&gt; Unit) {
+    ...
+}
+
+interface ApplicationExtension {
+    var namespace: String?
+
+    fun compileSdk(configure: CompileSdkSpec.() -&gt; Unit) {
+        ...
+    }
+
+    val defaultConfig: DefaultConfig
+
+    fun defaultConfig(configure: DefaultConfig.() -&gt; Unit) {
+        ...
+    }
+}
+</code></pre></div><p data-unit="06-android-build-021">DSL 中的每个代码块，都对应一个接收 lambda 进行配置的函数，以及一个用于访问该配置的同名属性。这样，构建文件中的代码读起来就更像一份数据说明。</p><aside class="note" data-unit="06-android-build-022"><strong>注意：</strong>如果你想了解 Kotlin 如何实现这种写法，请参阅<a href="https://kotlinlang.org/docs/type-safe-builders.html">类型安全构建器</a>。关于 DSL 的一般原理，可阅读 Martin Fowler 和 Rebecca Parsons 所著的 <a href="https://martinfowler.com/books/dsl.html">Domain Specific Languages</a>。</aside><h2 id="external-dependencies" data-text="External dependencies" tabindex="-1" data-unit="06-android-build-023">外部依赖</h2><p data-unit="06-android-build-024">Maven 构建系统引入了一套<a href="https://docs.gradle.org/current/userguide/declaring_dependencies.html">依赖</a>描述、存储和管理机制。库保存在<a href="https://docs.gradle.org/current/userguide/declaring_repositories.html">仓库</a>中，仓库可以是服务器或目录，同时保存库的版本、对其他库的依赖等元数据。你需要指定要搜索的仓库和所需依赖的版本，构建系统会在构建期间下载它们。</p><p data-unit="06-android-build-025">Maven 产物通过组名（公司、开发者等）、产物名（库名）和产物版本来标识，通常写成 <code>group:artifact:version</code>。</p><p data-unit="06-android-build-026">这种方式大幅改善了构建管理。你经常会听到“Maven 仓库”这个说法，但这里真正指的是产物的打包和发布方式。这套仓库与元数据机制被多个构建系统复用，其中也包括 Gradle；Gradle 还可以向这些仓库发布产物。公共仓库方便所有人共享使用，公司内部仓库则让内部依赖留在公司内部。</p><p data-unit="06-android-build-027">你也可以把项目<a href="https://developer.android.com/topic/modularization">模块化</a>，拆成多个<a href="https://docs.gradle.org/current/userguide/multi_project_builds.html#sec:creating_multi_project_builds">子项目</a>，也就是 Android Studio 中所说的“模块”。子项目也可以作为依赖使用。每个子项目会生成输出，例如 JAR，供其他子项目或顶层项目消费。这既有助于隔离需要重新构建的部分、改善构建耗时，也有助于分开应用中不同部分的职责。</p><p data-unit="06-android-build-028">关于如何声明依赖，我们会在<a href="https://developer.android.com/build/dependencies">添加构建依赖项</a>中进一步介绍。</p><h2 id="build-variants" data-text="Build variants" tabindex="-1" data-unit="06-android-build-029">构建变体</h2><p data-unit="06-android-build-030">创建 Android 应用时，通常需要构建多个<a href="https://developer.android.com/build/build-variants">变体</a>。不同变体可以包含不同的代码，也可以采用不同的构建选项；它们由构建类型和产品变种组合而成。</p><p data-unit="06-android-build-031"><a href="https://developer.android.com/build/build-variants#build-types">构建类型（Build Type）</a>用于改变所声明的构建选项。默认情况下，AGP 会建立 <code>release</code> 和 <code>debug</code> 两种构建类型。你可以调整它们，也可以增加更多类型，例如用于预发布环境或内部测试。</p><p data-unit="06-android-build-032">Debug 构建不会对应用进行压缩或混淆，从而加快构建并保留原有符号。它还会把应用标记为“可调试”，使用通用的调试密钥签名，并允许访问设备上已安装应用的文件。因此，你可以在运行应用时查看文件和数据库中保存的数据。</p><p data-unit="06-android-build-033">Release 构建会优化应用，使用你的发布密钥签名，并保护已安装应用的文件。</p><p data-unit="06-android-build-034">通过<a href="https://developer.android.com/build/build-variants#product-flavors">产品变种（Product Flavor）</a>，你可以改变应用所包含的源码和<a href="https://developer.android.com/build/build-variants#variant_aware">依赖变体</a>。例如，为应用创建 <code>demo</code> 和 <code>full</code>，或者 <code>free</code> 和 <code>paid</code> 两种产品变种。公共源码写在 <code>main</code> <a href="https://developer.android.com/build/build-variants#sourcesets">源集</a>目录中，需要覆盖或补充的内容则放在以产品变种命名的源集中。</p><p data-unit="06-android-build-035">AGP 会为构建类型与产品变种的每一种组合创建变体。如果没有定义产品变种，变体就以构建类型命名。如果二者都定义了，变体名称就是 <code>&lt;flavor&gt;&lt;Buildtype&gt;</code>。例如，构建类型为 <code>release</code>、<code>debug</code>，产品变种为 <code>demo</code>、<code>full</code> 时，AGP 会创建以下变体：</p><ul><li data-unit="06-android-build-036"><code>demoRelease</code></li><li data-unit="06-android-build-037"><code>demoDebug</code></li><li data-unit="06-android-build-038"><code>fullRelease</code></li><li data-unit="06-android-build-039"><code>fullDebug</code></li></ul><h2 id="next-steps" data-text="Next steps" tabindex="-1" data-unit="06-android-build-040">后续步骤</h2><p data-unit="06-android-build-041">了解构建概念后，接下来看看项目的 <a href="https://developer.android.com/build/android-build-structure">Android 构建结构</a>。</p></div>
+
+  
+    
+      </article><nav class="chapter-switcher" aria-label="章节导航"><a href="../05-api/index.html">← API 与实现依赖的分离</a><a class="course-home" href="../index.html">全部章节</a><a href="../07-variants/index.html">配置构建变体 →</a></nav><footer class="license-note"><p>非官方中文阅读版。原文、代码和图示由各官方来源维护；中文翻译与独立导读另行标明。<a href="../NOTICE.html">来源与许可说明</a> · 英文文档快照：2026-10-19。</p></footer></main></body></html>

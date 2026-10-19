@@ -1,0 +1,2 @@
+# Preserve original source-code whitespace in the bilingual build readers.
+public/reading/android-build-system/**/*.html whitespace=-blank-at-eol

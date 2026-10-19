@@ -5,6 +5,7 @@ import test from "node:test";
 import matter from "gray-matter";
 import { parseRinDocument } from "@rin/document";
 import { validateCourseReaders } from "../scripts/check-course-readers.mjs";
+import { readUpdateMetadata } from "../lib/content/recent-update-data.js";
 
 const contentRoot = path.resolve(import.meta.dirname, "../content");
 const knownSections = new Set([
@@ -75,6 +76,8 @@ test("[CONTENT-CONTRACT-001] 每个内容源在完整构建前通过快速契约
     }
     requireString(data, "topic", filePath);
     requireValidDate(data, filePath);
+    const publicationDate = data.date instanceof Date ? data.date.toISOString().slice(0, 10) : data.date;
+    readUpdateMetadata(data, filePath, publicationDate, path.resolve(contentRoot, "../public"));
     assert.ok(["en", "zh-CN"].includes(data.lang), `${filePath}: lang must be "en" or "zh-CN"`);
     assert.equal(
       Array.isArray(data.tags) && data.tags.every((tag) => typeof tag === "string"),

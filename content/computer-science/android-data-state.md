@@ -1,6 +1,7 @@
 ---
 title: Android 应用的数据与状态 · 官方文档中文阅读版
 summary: 十篇完整译文，连接界面状态、用户事件、数据层、网络请求、协程取消与 SQL／Room 本地存储，保留英文对照和第一轮直译。
+reader: /reading/android-data-state/index.html
 date: 2026-10-13
 lang: zh-CN
 topic: Android

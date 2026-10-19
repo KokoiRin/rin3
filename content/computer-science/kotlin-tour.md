@@ -1,6 +1,7 @@
 ---
 title: Kotlin Tour 中文学习版
 summary: 从 Kotlin 基础语法一路学到集合、泛型、协程、Flow 与 KMP 工程边界，并在项目实战篇随时返回对应的初级或中级概念。
+reader: /reading/kotlin-tour/index.html
 date: 2026-08-15
 lang: zh-CN
 topic: Programming Languages / Kotlin

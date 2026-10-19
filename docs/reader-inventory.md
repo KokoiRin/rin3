@@ -100,3 +100,14 @@ KaTeX 的 `public/reading/_shared/katex/` 是第三方数学排版资源，不�
 源正文、47份官方英文字幕、192页PDF的渲染核对记录和验证报告保存在相应`~/Documents/RIN III 草稿/Dan Grossman Section 3/`、`Section 4/`。共同生成器和验证工具位于相邻`Dan Grossman Part A 3-4/`，经`@rin/document`公共入口渲染；公开产物不含字幕镜像、签名下载URL或草稿路径。来源记录明确未逐段播放全部视频，也不把发布与代码检查视为学习掌握证明。
 
 第二节目录、末篇和站内导读接上后续入口；新增两节已接入`check:course-readers`，`tests/pl-sections-three-four.test.mjs`核对全部主题映射、选学范围、静态图解、资源和衔接链接。
+
+
+## 2026-10-19：Android 构建系统 · 官方文档中文阅读版
+
+新增 `public/reading/android-build-system/`：15 篇中文阅读版、15 篇英文对照、系列目录、产物导读与许可页面，共 33 个 HTML 页面。站内入口为 `content/computer-science/android-build-system.md`，并通过 `reader` 元数据从主页最近更新直接进入系列目录。
+
+材料来自 Gradle、Android Developers 与 Kotlin 官方文档，快照日期为 2026-10-19。14 篇覆盖对应文章正文全文；第 05 篇明确只选译 Java Library Plugin 的两个依赖边界小节。正文保留 996 个文本单元、133 个代码块、26 张原图与 16 张表格，独立导读与版本校注和官方正文分开呈现。
+
+复用 `public/reading/reader.css`；系列 `source.css` 处理原站组件、表格与构建流程导读，资源和许可文本保留在系列内。`sources.json`、`coverage.json` 与 `assets.json` 记录来源、正文单元和资源哈希；双版正文与代码、原图及范围声明接入内容检查，章节导航接入 `check:course-readers`。所有页面关联全站应用清单。
+
+原始网页快照、译稿、可重复生成脚本和完整核对报告保留在 `~/Documents/RIN III 草稿/Android构建系统-官方译文/`。本次校验不代表示例构建已实际运行或学习者已掌握。

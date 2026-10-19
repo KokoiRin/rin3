@@ -1,6 +1,7 @@
 ---
 title: 编程语言 Part A · 第三节：函数带着环境走：从高阶操作到闭包与回调
 summary: 从一个可配置的筛选器出发，追踪函数怎样被传递、怎样保存绑定，以及何时重新计算。熟悉的 Kotlin 用法简短对照，重点放在闭包、折叠、部分应用与共享状态的准确含义。
+reader: /reading/programming-languages-a-section-3/index.html
 date: 2026-10-17
 lang: zh-CN
 topic: Programming Languages / Standard ML

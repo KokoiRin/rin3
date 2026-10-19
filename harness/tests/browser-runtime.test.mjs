@@ -10,6 +10,10 @@ const gateArtifactRoot = resolve(
   import.meta.dirname,
   "../output/artifacts/HOME-GATE-001",
 );
+const recentArtifactRoot = resolve(
+  import.meta.dirname,
+  "../output/artifacts/RECENT-UPDATES-001",
+);
 const basePath = process.env.GITHUB_ACTIONS === "true" ? "/rin3" : "";
 const mimeTypes = new Map([
   [".css", "text/css; charset=utf-8"],
@@ -353,4 +357,244 @@ test("[HOME-GATE-001] 真实手机浏览器到达末端并三次滑动后显示�
     assert.equal(await extraGate.getAttribute("aria-hidden"), null);
     assert.equal(await extraGate.isVisible(), true);
   });
+});
+
+
+// 对静态导出的实际目录和文字执行交互，不把最近更新的标题写死在验收代码中。
+function recentLayout(dialog) {
+  const firstLink = dialog.querySelector(".recent-link");
+  let scroller = firstLink?.parentElement;
+  while (scroller && scroller !== dialog) {
+    const overflow = getComputedStyle(scroller).overflowY;
+    if ((overflow === "auto" || overflow === "scroll")
+      && scroller.scrollHeight > scroller.clientHeight + 1) break;
+    scroller = scroller.parentElement;
+  }
+  const bounds = dialog.getBoundingClientRect();
+  const scrollBounds = scroller && scroller !== dialog ? scroller.getBoundingClientRect() : null;
+  return {
+    dialog: { left: bounds.left, right: bounds.right, top: bounds.top, bottom: bounds.bottom },
+    pageWidth: document.documentElement.scrollWidth,
+    viewportWidth: window.innerWidth,
+    viewportHeight: window.innerHeight,
+    scroller: scrollBounds ? {
+      left: scrollBounds.left, top: scrollBounds.top,
+      width: scrollBounds.width, height: scrollBounds.height,
+      clientWidth: scroller.clientWidth, scrollWidth: scroller.scrollWidth,
+      clientHeight: scroller.clientHeight, scrollHeight: scroller.scrollHeight,
+      scrollTop: scroller.scrollTop,
+    } : null,
+  };
+}
+
+async function withRecentEvidence(name, contextOptions, verify) {
+  await mkdir(recentArtifactRoot, { recursive: true });
+  const context = await browser.newContext(contextOptions);
+  const page = await context.newPage();
+  const errors = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  page.on("console", (message) => {
+    // 独立阅读器未声明 favicon 时，桌面 Chrome 会探测域名根目录；
+    // /favicon.ico 不属于部署在 /rin3/ 的应用，临时服务器也不托管它。
+    const isOriginFaviconProbe = basePath && message.location().url === `${origin}/favicon.ico`
+      && message.text().includes("404 (Not Found)");
+    if (message.type() === "error" && !isOriginFaviconProbe) {
+      errors.push(`${message.text()} ${message.location().url}`);
+    }
+  });
+  page.on("response", (response) => {
+    if (response.status() >= 400 && response.url().startsWith(origin)) {
+      errors.push(`${response.status()} ${response.url()}`);
+    }
+  });
+  await context.tracing.start({ screenshots: true, snapshots: true, sources: true });
+  try {
+    await verify(page);
+    assert.deepEqual(errors, [], "home, dialog and reader navigation have no console errors or HTTP failures");
+    await context.tracing.stop();
+  } catch (error) {
+    await page.screenshot({ path: join(recentArtifactRoot, `${name}-failure.png`), fullPage: false }).catch(() => {});
+    await context.tracing.stop({ path: join(recentArtifactRoot, `${name}-trace.zip`) }).catch(() => {});
+    throw error;
+  } finally {
+    await context.close();
+  }
+}
+
+for (const [name, viewport, mobile] of [
+  ["desktop", { width: 1440, height: 900 }, false],
+  ["mobile", { width: 390, height: 844 }, true],
+  ["narrow", { width: 320, height: 568 }, true],
+]) {
+  test(`[RECENT-UPDATES-001] ${name} 最近更新可滚动、关闭并直接进入阅读器`, async () => {
+    await withRecentEvidence(name, {
+      viewport, isMobile: mobile, hasTouch: mobile, reducedMotion: "reduce",
+    }, async (page) => {
+      const response = await page.goto(`${origin}${basePath}/`, { waitUntil: "networkidle" });
+      assert.equal(response?.status(), 200);
+      const trigger = page.getByRole("button", { name: "最近更新", exact: true });
+      const dialog = page.locator("dialog.recent-dialog");
+      const extraGate = page.locator("[data-extra-gate]");
+      const close = page.getByRole("button", { name: "关闭最近更新", exact: true });
+      assert.equal(await trigger.getAttribute("aria-expanded"), "false");
+      assert.equal(await dialog.isVisible(), false);
+      assert.equal(await extraGate.getAttribute("data-extra-gate"), "hidden");
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1), true);
+      await page.screenshot({ path: join(recentArtifactRoot, `${name}-home.png`), fullPage: false });
+
+      const open = async () => {
+        await trigger.click();
+        await page.getByRole("dialog", { name: "最近更新", exact: true }).waitFor();
+        await page.waitForFunction((element) => element.getAttribute("aria-expanded") === "true", await trigger.elementHandle());
+        assert.equal(await dialog.evaluate((element) => element.matches(":modal")), true);
+        assert.equal(await dialog.evaluate((element) => element.contains(document.activeElement)), true);
+      };
+      const expectClosed = async () => {
+        await dialog.waitFor({ state: "hidden" });
+        await page.waitForFunction((element) => element.getAttribute("aria-expanded") === "false", await trigger.elementHandle());
+        assert.equal(await trigger.evaluate((element) => document.activeElement === element), true);
+      };
+      await open();
+      const links = dialog.locator("a.recent-link");
+      assert.equal(await links.count(), 12);
+      const updates = await links.evaluateAll((elements) => elements.map((element) => ({
+        href: element.getAttribute("href"),
+        title: element.textContent?.trim(),
+        date: element.querySelector("time")?.getAttribute("datetime"),
+      })));
+      assert.ok(updates.every((entry) => entry.title && entry.href?.startsWith(`${basePath}/`)));
+      assert.deepEqual(updates.map((entry) => entry.date), updates.map((entry) => entry.date).sort().reverse());
+      const reader = updates.find((entry) => entry.href.startsWith(`${basePath}/reading/`));
+      assert.ok(reader, "the exported recent list includes a standalone reader");
+      assert.ok(reader.href.endsWith("/index.html"));
+      const layout = await dialog.evaluate(recentLayout);
+      assert.ok(layout.pageWidth <= layout.viewportWidth + 1, "page has no horizontal overflow");
+      assert.ok(layout.dialog.left >= 0 && layout.dialog.right <= layout.viewportWidth + 1);
+      assert.ok(layout.dialog.top >= 0 && layout.dialog.bottom <= layout.viewportHeight + 1);
+      assert.ok(layout.scroller, "the update list scrolls inside the dialog");
+      assert.ok(layout.scroller.scrollWidth <= layout.scroller.clientWidth + 1, "list has no horizontal overflow");
+      await page.screenshot({ path: join(recentArtifactRoot, `${name}-dialog.png`), fullPage: false });
+
+      // 原生模态框必须将键盘导航留在框内，两个方向都能回环。
+      const focusables = dialog.locator('a[href], button:not([disabled]), [tabindex="0"]');
+      await focusables.last().focus();
+      await page.keyboard.press("Tab");
+      assert.equal(await focusables.first().evaluate((element) => document.activeElement === element), true);
+      await page.keyboard.press("Shift+Tab");
+      assert.equal(await focusables.last().evaluate((element) => document.activeElement === element), true);
+      await focusables.first().focus();
+
+      // 对真正的滚动区域发送滚轮，末项应进入可见范围，标题/关闭按钮仍留在视口。
+      const scroll = (await dialog.evaluate(recentLayout)).scroller;
+      await page.mouse.move(scroll.left + scroll.width / 2, scroll.top + scroll.height / 2);
+      await page.mouse.wheel(0, 10_000);
+      await page.waitForFunction(() => {
+        const dialogElement = document.querySelector("dialog.recent-dialog");
+        const lastLink = dialogElement?.querySelectorAll(".recent-link").item(11);
+        if (!dialogElement || !lastLink) return false;
+        const bounds = lastLink.getBoundingClientRect();
+        const dialogBounds = dialogElement.getBoundingClientRect();
+        return bounds.top >= dialogBounds.top && bounds.bottom <= dialogBounds.bottom + 1
+          && bounds.bottom <= window.innerHeight + 1;
+      });
+      assert.ok((await dialog.evaluate(recentLayout)).scroller.scrollTop > 0);
+      const closeBounds = await close.boundingBox();
+      assert.ok(closeBounds && closeBounds.y >= 0 && closeBounds.y + closeBounds.height <= viewport.height + 1);
+      if (!mobile) {
+        for (let gesture = 0; gesture < 3; gesture += 1) {
+          await page.mouse.wheel(180, 0);
+          await page.waitForTimeout(100);
+        }
+        assert.equal(await extraGate.getAttribute("data-extra-gate"), "hidden", "dialog scrolling must not reveal Me");
+      }
+
+      await page.keyboard.press("Escape");
+      await expectClosed();
+      await open();
+      await close.click();
+      await expectClosed();
+      await open();
+      const bounds = (await dialog.evaluate(recentLayout)).dialog;
+      const backdrop = [
+        { x: 2, y: 2 }, { x: viewport.width - 2, y: 2 },
+        { x: 2, y: viewport.height - 2 }, { x: viewport.width - 2, y: viewport.height - 2 },
+      ].find((point) => point.x < bounds.left || point.x > bounds.right
+        || point.y < bounds.top || point.y > bounds.bottom);
+      assert.ok(backdrop, "dialog leaves a clickable backdrop");
+      await page.mouse.click(backdrop.x, backdrop.y);
+      await expectClosed();
+      assert.equal(await extraGate.getAttribute("data-extra-gate"), "hidden");
+
+      // 阅读器必须完整导航到公开 HTML，避免被 Next 路由当成不存在的站内页面。
+      await open();
+      const readerUrl = `${origin}${reader.href}`;
+      const navigation = page.waitForResponse((result) =>
+        result.url() === readerUrl && result.request().resourceType() === "document");
+      await links.nth(updates.findIndex((entry) => entry.href === reader.href)).click();
+      assert.equal((await navigation).status(), 200);
+      await page.waitForURL(readerUrl);
+      await page.waitForLoadState("networkidle");
+      assert.ok(await page.locator("h1").first().textContent(), "reader has a visible document heading");
+    });
+  });
+}
+
+
+// 阅读器走静态 HTML 的真实链接；两种设备都能切换语言，并沿同语言前后导航。
+test("[ANDROID-BUILD-READER-001] 桌面和手机可以切换构建课程中英文并前后阅读", async () => {
+  const { documents } = JSON.parse(await readFile(join(outputRoot, "reading/android-build-system/coverage.json"), "utf8"));
+  const [first, second] = documents;
+  assert.ok(first && second);
+  const artifactRoot = resolve(import.meta.dirname, "../output/artifacts/ANDROID-BUILD-READER-001");
+  await mkdir(artifactRoot, { recursive: true });
+  for (const [name, viewport, mobile] of [
+    ["desktop", { width: 1440, height: 900 }, false],
+    ["mobile", { width: 390, height: 844 }, true],
+  ]) {
+    const page = await browser.newPage({ viewport, isMobile: mobile, hasTouch: mobile });
+    const errors = [];
+    page.on("pageerror", (error) => errors.push(error.message));
+    page.on("console", (message) => {
+      if (message.type() === "error") errors.push(message.text());
+    });
+    page.on("response", (response) => {
+      if (response.status() >= 400 && response.url().startsWith(origin)) {
+        errors.push(`${response.status()} ${response.url()}`);
+      }
+    });
+    const seriesUrl = `${origin}${basePath}/reading/android-build-system/`;
+    try {
+      await page.goto(`${origin}${basePath}/computer-science/android-build-system/`);
+      const entry = page.locator("a[href]");
+      const entryIndex = await entry.evaluateAll((links, target) =>
+        links.findIndex((link) => link.href === target), `${seriesUrl}index.html`);
+      assert.ok(entryIndex >= 0, "article contains the direct course reader link");
+      await entry.nth(entryIndex).click();
+      await page.waitForURL(`${seriesUrl}index.html`);
+      assert.equal(await page.locator("a.chapter-card").count(), documents.length);
+      await page.locator(`a.chapter-card[href="${first.id}/index.html"]`).click();
+      await page.waitForURL(`${seriesUrl}${first.id}/index.html`);
+      await page.locator("article.translated-article").waitFor();
+      assert.equal(await page.locator("html").getAttribute("lang"), "zh-CN");
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1), true);
+      await page.screenshot({ path: join(artifactRoot, `${name}-reader.png`), fullPage: false });
+
+      await page.locator(".edition-nav").getByRole("link", { name: "英文对照", exact: true }).click();
+      await page.waitForURL(`${seriesUrl}${first.id}/english.html`);
+      assert.equal(await page.locator("html").getAttribute("lang"), "en");
+      assert.equal(await page.locator("article [data-unit]").first().getAttribute("data-unit"), first.unitIds[0]);
+      await page.locator(".chapter-switcher").first().locator(`a[href="../${second.id}/english.html"]`).click();
+      await page.waitForURL(`${seriesUrl}${second.id}/english.html`);
+      assert.equal(await page.locator("html").getAttribute("lang"), "en");
+      await page.locator(".chapter-switcher").first().locator(`a[href="../${first.id}/english.html"]`).click();
+      await page.waitForURL(`${seriesUrl}${first.id}/english.html`);
+      await page.locator(".edition-nav").getByRole("link", { name: "中文阅读版", exact: true }).click();
+      await page.waitForURL(`${seriesUrl}${first.id}/index.html`);
+      assert.equal(await page.locator("html").getAttribute("lang"), "zh-CN");
+      await page.waitForLoadState("networkidle");
+      assert.deepEqual(errors, [], `${name}: no reader navigation or resource errors`);
+    } finally {
+      await page.close();
+    }
+  }
 });

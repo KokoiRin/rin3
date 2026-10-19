@@ -1,6 +1,7 @@
 ---
 title: 编程语言 Part A · 第二周：数据与模式
 summary: 接续第一周，把 Dan Grossman Section 2 的 22 段视频整理为 13 篇中文讲解，连起组合类型、模式匹配、类型推导、异常与尾递归。
+reader: /reading/programming-languages-a-section-2/index.html
 date: 2026-10-17
 lang: zh-CN
 topic: Programming Languages / Standard ML

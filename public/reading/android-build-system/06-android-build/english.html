@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light"><title>Gradle build overview · Android 构建系统</title><link rel="stylesheet" href="../../reader.css"><link rel="stylesheet" href="../source.css"><link rel="manifest" href="../../../manifest.webmanifest"><link rel="icon" href="../../../icons/apple-touch-icon.png"></head><body><nav class="site-nav" aria-label="站点导航"><a href="../index.html">← Android 构建系统</a><a href="https://developer.android.com/build/gradle-build-overview?hl=en">官方英文原文 ↗</a></nav><main class="reader"><header class="chapter-header"><span class="chapter-kicker">06 · Android 产物与变体 · 正文全文</span><h1>Gradle build overview</h1><p class="byline">Gradle build overview</p><div class="title-rule"></div><p class="edition-nav"><a href="index.html">中文阅读版</a> · <strong aria-current="page">English source</strong></p><aside class="learning-note"><span class="note-kind">编者导读 · 不属于原文</span><p><strong>Gradle 怎样把插件、任务、依赖与 Android 构建联系起来？</strong></p><p>先看整体构建过程，再连接工具链、任务和 Android Gradle Plugin。</p></aside><details class="editorial-correction"><summary>编者校注 · 原文的版本条件与简化之处</summary><p>原文关于 Debug / Release 的概括不能代替真实配置：Release 是否启用 R8、是否配置发布签名，要查看工程中的优化和签名设置。第 07 篇明确指出：未配置签名时，Gradle 不会自动为 Release APK / AAB 签名。执行阶段能否跳过任务也取决于输出是否有效等条件，并非只看输入有没有变化。</p><p>同名 Kotlin / Java 类不能靠高优先级 source set 覆盖；参与同一变体的重复类会导致错误。资源和 Manifest 才有各自的合并规则。完整产物关系见<a href="../build-map.html">源码到产物导读</a>。</p></details><details class="source-details"><summary>本篇目录与翻译范围</summary><p>对应官方英文文档的正文全文，保留章节顺序、代码、图示、表格和正文链接；不含站点导航、反馈和自动推荐组件。</p><p>英文快照：2026-10-19。代码、命令、标识符和原图保持原样。导读与官方正文分开呈现。</p><ul><li class="toc-h2"><a href="#is-build%3F">What is a build?</a></li><li class="toc-h2"><a href="#happens-when">What happens when a Gradle build runs?</a></li><li class="toc-h2"><a href="#configuration-dsls">Configuration DSLs</a></li><li class="toc-h2"><a href="#external-dependencies">External dependencies</a></li><li class="toc-h2"><a href="#build-variants">Build variants</a></li><li class="toc-h2"><a href="#next-steps">Next steps</a></li></ul></details><nav class="chapter-switcher" aria-label="章节导航"><a href="../05-api/english.html">← API 与实现依赖的分离</a><a class="course-home" href="../index.html">全部章节</a><a href="../07-variants/english.html">配置构建变体 →</a></nav></header><article class="translated-article"><div class="devsite-article-body clearfix
+  "><p data-unit="06-android-build-001">Android applications are typically built using the <a href="https://gradle.org/" class="external">Gradle</a> build
+system. Before we dive into the details of how to configure your build, we'll
+explore the concepts behind the build so you can see the system as a whole.</p><h2 id="is-build?" data-text="What is a build?" tabindex="-1" data-unit="06-android-build-002">What is a build?</h2><p data-unit="06-android-build-003">A build system transforms your source code into an executable application.
+Builds often involve multiple tools, to analyze, compile, link, and package your
+application or library. Gradle uses a task-based approach to organize and run
+these commands.</p><p data-unit="06-android-build-004"><a href="https://docs.gradle.org/current/userguide/more_about_tasks.html" class="external">Tasks</a> encapsulate commands that translate their inputs into
+outputs. <a href="https://docs.gradle.org/current/userguide/custom_plugins.html" class="external">Plugins</a> define tasks and their configuration. Applying
+a plugin to your build registers its tasks, and wires them together using their
+inputs and outputs. For example, applying the <a href="https://developer.android.com/build/releases/gradle-plugin">Android Gradle Plugin</a> (AGP)
+to your build file will register all the tasks necessary to build an APK, or an
+Android Library. The <code translate="no" dir="ltr">java-library</code> plugin lets you build a jar from Java source
+code. Similar plugins exist for Kotlin, and other languages, but other plugins
+are meant to extend plugins. For example, the <code translate="no" dir="ltr">protobuf</code> plugin is meant to add
+protobuf support to existing plugins like AGP or <code translate="no" dir="ltr">java-library</code>.</p><p data-unit="06-android-build-005">Gradle prefers convention over configuration so plugins will come with good
+default values out of the box, but you can further configure the build through a
+declarative <a href="https://docs.gradle.org/current/dsl" class="external">Domain-Specific Language</a> (DSL). The DSL is designed
+so you can specify <em>what</em> to build, rather than <em>how</em> to build it. The logic in
+the plugins manages the "how". That configuration is specified across several
+<a href="https://developer.android.com/build/android-build-structure">build files</a> in your <a href="https://docs.gradle.org/current/userguide/multi_project_builds.html" class="external">project</a> (and subprojects).</p><p data-unit="06-android-build-006">Task inputs can be files and directories as well as other information encoded as
+Java types (integer, strings, or custom classes). Outputs can only be directory
+or files as they have to be written on disk. Wiring a task output into another
+task input, links the tasks together so that one has to run before the other.</p><p data-unit="06-android-build-007">While Gradle supports writing arbitrary code and task declarations in your build
+files, this can make it more difficult for tooling to understand your build and
+for you to maintain. For example, you can write tests for code inside plugins
+but not in build files. Instead, you should restrict build logic and task
+declarations to plugins (that you or someone else define) and declare how you
+want to use that logic in your build files.</p><h2 id="happens-when" data-text="What happens when a Gradle build runs?" tabindex="-1" data-unit="06-android-build-008">What happens when a Gradle build runs?</h2><p data-unit="06-android-build-009">Gradle builds run in three phases. Each of these phases executes different parts
+of code that you define in your build files.</p><ul><li data-unit="06-android-build-010"><strong>Initialization</strong> determines which projects and subprojects are included in
+the build, and sets up classpaths containing your build files and applied
+plugins. This phase focuses on a settings file where you declare projects to
+build and the locations from which to fetch plugins and libraries.</li><li data-unit="06-android-build-011"><strong>Configuration</strong> registers tasks for each project, and executes the build
+file to apply the user's build specification. It's important to understand
+that your configuration code won't have access to data or files produced
+during execution.</li><li data-unit="06-android-build-012"><strong>Execution</strong> performs the actual "building" of your application. The output
+of configuration is a <a href="https://en.wikipedia.org/wiki/Directed_acyclic_graph" class="external">Directed Acyclic Graph</a> (DAG) of tasks,
+representing all required build steps that were requested by the user (the
+tasks provided on the command line or as defaults in the build files). This
+graph represents the relationship between tasks, either explicit in a task's
+declaration, or based on its inputs and outputs. If a task has an input that
+is the output of another task, then it must run after the other task. This
+phase runs out-of-date tasks in the order defined in the graph; if a task's
+inputs haven't changed since its last execution, Gradle will skip it.</li></ul><p data-unit="06-android-build-013">For more information see the Gradle <a href="https://docs.gradle.org/current/userguide/build_lifecycle.html" class="external">Build lifecycle</a>.</p><h2 id="configuration-dsls" data-text="Configuration DSLs" tabindex="-1" data-unit="06-android-build-014">Configuration DSLs</h2><p data-unit="06-android-build-015">Gradle uses a <a href="https://docs.gradle.org/current/dsl" class="external">Domain-Specific Language</a> (DSL) to configure
+builds. This declarative approach focuses on specifying your data rather than
+writing step-by-step (imperative) instructions. You can write your build files
+using Kotlin or Groovy, but we strongly recommend using Kotlin.</p><p data-unit="06-android-build-016">DSLs attempt to make it easier for everyone, domain experts and programmers, to
+contribute to a project, defining a small language that represents data in a
+more natural way. Gradle plugins can extend the DSL to configure the data they
+need for their tasks.</p><p data-unit="06-android-build-017">For example, configuring the Android part of your build might look like:</p><div><div class="ds-selector-tabs"><section><h3 class="two-line-tab" tab-label="build.gradle.kts" id="kts" data-text="Kotlin" tabindex="-1" data-unit="06-android-build-018">Kotlin</h3><div></div><div><pre class="source-code"><code class="language-Kotlin">android {
+    namespace = "com.example.app"
+    compileSdk {
+        version = release(36) {
+            minorApiLevel = 1
+        }
+    }
+    // ...
+
+    defaultConfig {
+        applicationId = "com.example.app"
+        minSdk {
+            version = release(23)
+        }
+        targetSdk {
+            version = release(36)
+        }
+        // ...
+    }
+}</code></pre></div></section><section><h3 class="two-line-tab" tab-label="build.gradle" id="groovy" data-text="Groovy" tabindex="-1" data-unit="06-android-build-019">Groovy</h3><div></div><div><pre class="source-code"><code class="language-Groovy">android {
+    namespace = 'com.example.app'
+    compileSdk {
+        version = release(36) {
+            minorApiLevel = 1
+        }
+    }
+    // ...
+
+    defaultConfig {
+        applicationId = 'com.example.app'
+        minSdk {
+            version = release(23)
+        }
+        targetSdk {
+            version = release(36)
+        }
+        // ...
+    }
+}</code></pre></div></section></div></div><p data-unit="06-android-build-020">Behind the scenes, the DSL code is similar to:</p><div></div><div><pre class="source-code"><code class="language-Kotlin">fun Project.android(configure: ApplicationExtension.() -&gt; Unit) {
+    ...
+}
+
+interface ApplicationExtension {
+    var namespace: String?
+
+    fun compileSdk(configure: CompileSdkSpec.() -&gt; Unit) {
+        ...
+    }
+
+    val defaultConfig: DefaultConfig
+
+    fun defaultConfig(configure: DefaultConfig.() -&gt; Unit) {
+        ...
+    }
+}
+</code></pre></div><p data-unit="06-android-build-021">Each block in the DSL is represented by a function that takes a lambda to
+configure it, and a property with the same name to access it. This makes the
+code in your build files feel more like a data specification.</p><aside class="note" data-unit="06-android-build-022"><strong>Note:</strong><span> If you're interested in the details that make this work in Kotlin, see
+<a href="https://kotlinlang.org/docs/type-safe-builders.html" class="external">Type-safe builders</a>. For more details on DSLs in general, see
+the book <a href="https://martinfowler.com/books/dsl.html" class="external">Domain Specific Languages</a>, by Martin Fowler and
+Rebecca Parsons.</span></aside><h2 id="external-dependencies" data-text="External dependencies" tabindex="-1" data-unit="06-android-build-023">External dependencies</h2><p data-unit="06-android-build-024">The Maven build system introduced a <a href="https://docs.gradle.org/current/userguide/declaring_dependencies.html" class="external">dependency</a> specification,
+storage and management system. Libraries are stored in
+<a href="https://docs.gradle.org/current/userguide/declaring_repositories.html" class="external">repositories</a> (servers or directories), with metadata including
+their version and dependencies on other libraries. You specify which
+repositories to search, versions of the dependencies you want to use, and the
+build system downloads them during the build.</p><p data-unit="06-android-build-025">Maven Artifacts are identified by group name (company, developer, etc), artifact
+name (the name of the library) and version of that artifact. This is typically
+represented as <code translate="no" dir="ltr">group:artifact:version</code>.</p><p data-unit="06-android-build-026">This approach significantly improves build management. You'll often hear such
+repositories called "Maven repositories", but it's all about the way the
+artifacts are packaged and published. These repositories and metadata have been
+reused in several build systems, including Gradle (and Gradle can publish to
+these repositories). Public repositories allow sharing for all to use, and
+company repositories keep internal dependencies in-house.</p><p data-unit="06-android-build-027">You can also <a href="https://developer.android.com/topic/modularization">modularize</a> your project into <a href="https://docs.gradle.org/current/userguide/multi_project_builds.html#sec:creating_multi_project_builds" class="external">subprojects</a> 
+(also known as "modules" in Android Studio), which can also be used as
+dependencies. Each subproject produces outputs (such as jars) that can be
+consumed by subprojects or your top-level project. This can improve build time
+by isolating which parts need to be rebuilt, as well as better separate
+responsibilities in the application.</p><p data-unit="06-android-build-028">We'll go into more detail on how to specify dependencies in <a href="https://developer.android.com/build/dependencies">Add build
+dependencies</a>.</p><h2 id="build-variants" data-text="Build variants" tabindex="-1" data-unit="06-android-build-029">Build variants</h2><p data-unit="06-android-build-030">When you create an Android application, you'll typically want to build multiple
+<a href="https://developer.android.com/build/build-variants">variants</a>. Variants contain different code or are built with different
+options, and are composed of build types and product flavors.</p><p data-unit="06-android-build-031"><a href="https://developer.android.com/build/build-variants#build-types">Build types</a> vary declared build options. By default, AGP sets up "release"
+and "debug" build types, but you can adjust them and add more (perhaps for
+staging or internal testing).</p><p data-unit="06-android-build-032">A debug build doesn't minify or obfuscate your application, speeding up its
+build and preserving all symbols as is. It also marks the application as
+"debuggable", signing it with a generic debug key and enabling access to the
+installed application files on the device. This makes it possible to explore
+saved data in files and databases while running the application.</p><p data-unit="06-android-build-033">A release build optimizes the application, signs it with your release key, and
+protects the installed application files.</p><p data-unit="06-android-build-034">Using <a href="https://developer.android.com/build/build-variants#product-flavors">product flavors</a>, you can change the included source and <a href="https://developer.android.com/build/build-variants#variant_aware">dependency
+variants</a> for the application. For example, you may want to create "demo"
+and "full" flavors for your application, or perhaps "free" and "paid" flavors.
+You write your common source in a "main" <a href="https://developer.android.com/build/build-variants#sourcesets">source set</a> directory, and
+override or add source in a source set named after the flavor.</p><p data-unit="06-android-build-035">AGP creates variants for each combination of build type and product flavor. If
+you don't define flavors, the variants are named after the build types. If you
+define both, the variant is named <code translate="no" dir="ltr">&lt;flavor&gt;&lt;Buildtype&gt;</code>. For example, with build
+types <code translate="no" dir="ltr">release</code> and <code translate="no" dir="ltr">debug</code>, and flavors <code translate="no" dir="ltr">demo</code> and <code translate="no" dir="ltr">full</code>, AGP will create
+variants:</p><ul><li data-unit="06-android-build-036"><code translate="no" dir="ltr">demoRelease</code></li><li data-unit="06-android-build-037"><code translate="no" dir="ltr">demoDebug</code></li><li data-unit="06-android-build-038"><code translate="no" dir="ltr">fullRelease</code></li><li data-unit="06-android-build-039"><code translate="no" dir="ltr">fullDebug</code></li></ul><h2 id="next-steps" data-text="Next steps" tabindex="-1" data-unit="06-android-build-040">Next steps</h2><p data-unit="06-android-build-041">Now that you've seen the build concepts, take a look at the <a href="https://developer.android.com/build/android-build-structure">Android build
+structure</a> in your project.</p></div>
+
+  
+    
+      </article><nav class="chapter-switcher" aria-label="章节导航"><a href="../05-api/english.html">← API 与实现依赖的分离</a><a class="course-home" href="../index.html">全部章节</a><a href="../07-variants/english.html">配置构建变体 →</a></nav><footer class="license-note"><p>非官方中文阅读版。原文、代码和图示由各官方来源维护；中文翻译与独立导读另行标明。<a href="../NOTICE.html">来源与许可说明</a> · 英文文档快照：2026-10-19。</p></footer></main></body></html>
