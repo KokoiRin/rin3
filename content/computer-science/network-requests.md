@@ -1,6 +1,7 @@
 ---
 title: 网络请求 · MDN 中文阅读版
 summary: 从域名与 DNS 到 HTTP 消息、连接、TLS、缓存与协议演进，七篇完整中文译文，附英文对照、原图和独立校注。
+reader: /reading/network-requests/index.html
 date: 2026-10-10
 lang: zh-CN
 topic: Networking

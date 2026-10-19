@@ -1,7 +1,9 @@
 ---
 title: 编程语言 Part A · Section 1 中文讲解
 summary: 把 Dan Grossman 的 17 段入门视频连成 13 篇原创中文讲解，从表达式、名字与函数，走到列表递归、局部绑定、Option 和不可变。
+reader: /reading/programming-languages-a-section-1/index.html
 date: 2026-10-16
+updated: 2026-10-17
 lang: zh-CN
 topic: Programming Languages / Standard ML
 tags:

@@ -1,0 +1,1136 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light"><title>Configure build variants · Android 构建系统</title><link rel="stylesheet" href="../../reader.css"><link rel="stylesheet" href="../source.css"><link rel="manifest" href="../../../manifest.webmanifest"><link rel="icon" href="../../../icons/apple-touch-icon.png"></head><body><nav class="site-nav" aria-label="站点导航"><a href="../index.html">← Android 构建系统</a><a href="https://developer.android.com/build/build-variants?hl=en">官方英文原文 ↗</a></nav><main class="reader"><header class="chapter-header"><span class="chapter-kicker">07 · Android 产物与变体 · 正文全文</span><h1>Configure build variants</h1><p class="byline">Configure build variants</p><div class="title-rule"></div><p class="edition-nav"><a href="index.html">中文阅读版</a> · <strong aria-current="page">English source</strong></p><aside class="learning-note"><span class="note-kind">编者导读 · 不属于原文</span><p><strong>同一份工程怎样生成 debug、release 和不同产品版本？</strong></p><p>将 build type、product flavor、source set 与具体 variant 一起阅读。</p></aside><details class="editorial-correction"><summary>编者校注 · 原文的版本条件与简化之处</summary><p>原文仍保留部分旧版 Android Studio 菜单和 <code>package</code> 配置说法。当前工程的生成 <code>R</code> 类等使用 <code>android.namespace</code>；它与标识应用的 <code>applicationId</code> 分工不同，不能只依赖 Manifest 的 <code>package</code> 设置。请对照 <a href="https://developer.android.com/build/configure-app-module#set-namespace">设置命名空间</a> 与工程的 AGP 版本。</p><p>“创建源集”段落以 debug 为例，却给出 <code>full/java</code> 菜单项，属于原文示例不一致；操作时选择与你实际目标相符的源集。变体过滤 API 和菜单位置也需按所用版本核对。源码、资源与清单的合并规则不同，尤其留意原文的 duplicate class 条件。</p></details><details class="source-details"><summary>本篇目录与翻译范围</summary><p>对应官方英文文档的正文全文，保留章节顺序、代码、图示、表格和正文链接；不含站点导航、反馈和自动推荐组件。</p><p>英文快照：2026-10-19。代码、命令、标识符和原图保持原样。导读与官方正文分开呈现。</p><ul><li class="toc-h2"><a href="#build-types">
+  Configure build types
+</a></li><li class="toc-h2"><a href="#product-flavors">
+  Configure product flavors
+</a></li><li class="toc-h3"><a href="#change-app-id">
+  Change the application ID for build variants
+</a></li><li class="toc-h3"><a href="#flavor-dimensions">
+  Combine multiple product flavors with flavor dimensions
+</a></li><li class="toc-h3"><a href="#filter-variants">
+  Filter variants
+</a></li><li class="toc-h2"><a href="#sourcesets">
+  Create source sets
+</a></li><li class="toc-h3"><a href="#configure-sourcesets">
+  Change default source set configurations
+</a></li><li class="toc-h3"><a href="#sourceset-build">
+  Build with source sets
+</a></li><li class="toc-h2"><a href="#dependencies">
+  Declare dependencies
+</a></li><li class="toc-h2"><a href="#variant_aware">
+  Use variant-aware dependency management
+</a></li><li class="toc-h3"><a href="#resolve_matching_errors">
+  Resolve build errors related to variant matching
+</a></li><li class="toc-h2"><a href="#signing">
+  Configure signing settings
+</a></li><li class="toc-h3"><a href="#wear-apps">
+  Signing Wear OS apps
+</a></li></ul></details><nav class="chapter-switcher" aria-label="章节导航"><a href="../06-android-build/english.html">← Android 与 Gradle 构建概览</a><a class="course-home" href="../index.html">全部章节</a><a href="../08-ksp/english.html">Kotlin 符号处理 API →</a></nav></header><article class="translated-article"><div class="devsite-article-body clearfix
+  "><p data-unit="07-variants-001">
+  This page shows you how you can configure build variants to
+  create different versions of your app from a single project and how
+  to properly manage your dependencies and signing configurations.
+</p><p data-unit="07-variants-002">
+  Each <em>build variant</em> represents a different version of your app that
+  you can build. For example, you might want to build one version of your app
+  that's free with a limited set of content, and another paid version that
+  includes more. You can also build different versions of your app that target
+  different devices, based on API level or other device variations.
+</p><p data-unit="07-variants-003">
+  Build variants are the result of Gradle using a specific
+  set of rules to combine settings, code, and resources configured in your
+  build types and product flavors. Although you don't configure build variants
+  directly, you do configure the build types and product flavors that form them.
+</p><p data-unit="07-variants-004">
+  For example, a "demo" <em>product flavor</em> might specify certain features
+  and device requirements, such as custom source code, resources, and minimum
+  API levels, while the "debug" <em>build type</em> applies different build and
+  packaging settings, such as debug options and signing keys. The
+  build variant that combines these two is the "demoDebug" version of your app, and it includes a
+  combination of the configurations and resources included in the "demo"
+  product flavor, "debug" build type, and <code translate="no" dir="ltr">main/</code> source set.
+</p><h2 id="build-types" data-text="   Configure build types " tabindex="-1" data-unit="07-variants-005">
+  Configure build types
+</h2><p data-unit="07-variants-006">
+  You can create and configure build types inside the <code translate="no" dir="ltr">android</code>
+  block of the module-level <code translate="no" dir="ltr">build.gradle.kts</code> file. When you create
+  a new module, Android Studio automatically creates the debug and release build
+  types. Although the debug build type doesn't appear in the build configuration
+  file, Android Studio configures it with <a href="https://developer.android.com/guide/topics/manifest/application-element#debug"> <code translate="no" dir="ltr">debuggable
+  true</code></a>. This lets you debug the app on secure Android devices and
+  configures app signing with a generic debug keystore.
+</p><p data-unit="07-variants-007">
+  You can add the debug build type to your configuration if you want to add
+  or change certain settings. The following sample specifies an <a href="https://developer.android.com/reference/tools/gradle-api/9.4/com/android/build/api/dsl/ApplicationVariantDimension#applicationIdSuffix()">
+  <code translate="no" dir="ltr">applicationIdSuffix</code></a> for the debug build type and configures
+  a "staging" build type that is initialized using settings from the debug build type:
+</p><div><div class="ds-selector-tabs"><section><h3 class="two-line-tab" tab-label="build.gradle.kts" id="kts" data-text="Kotlin" tabindex="-1" data-unit="07-variants-008">Kotlin</h3><div></div><div><pre class="source-code"><code class="language-Kotlin">android {
+    defaultConfig {
+        manifestPlaceholders["hostName"] = "www.example.com"
+        ...
+    }
+    buildTypes {
+        getByName("release") {
+            isMinifyEnabled = true
+            proguardFiles(getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro")
+        }
+
+        getByName("debug") {
+            applicationIdSuffix = ".debug"
+            isDebuggable = true
+        }
+
+        /**
+         * The `initWith` property lets you copy configurations from other build types,
+         * then configure only the settings you want to change. This one copies the debug build
+         * type, and then changes the manifest placeholder and application ID.
+         */
+        create("staging") {
+            initWith(getByName("debug"))
+            manifestPlaceholders["hostName"] = "internal.example.com"
+            applicationIdSuffix = ".debugStaging"
+        }
+    }
+}</code></pre></div></section><section><h3 class="two-line-tab" tab-label="build.gradle" id="groovy" data-text="Groovy" tabindex="-1" data-unit="07-variants-009">Groovy</h3><div></div><div><pre class="source-code"><code class="language-Groovy">android {
+    defaultConfig {
+        manifestPlaceholders = [hostName:"www.example.com"]
+        ...
+    }
+    buildTypes {
+        release {
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+
+        debug {
+            applicationIdSuffix ".debug"
+            debuggable true
+        }
+
+        /**
+         * The `initWith` property lets you copy configurations from other build types,
+         * then configure only the settings you want to change. This one copies the debug build
+         * type, and then changes the manifest placeholder and application ID.
+         */
+        staging {
+            initWith debug
+            manifestPlaceholders = [hostName:"internal.example.com"]
+            applicationIdSuffix ".debugStaging"
+        }
+    }
+}</code></pre></div></section></div></div><p class="note"><span data-unit="07-variants-010">
+  <strong>Note:</strong> When you make changes to a build configuration file,
+  Android Studio requires that you sync your project with the new
+  configuration. To sync your project, click <strong>Sync Now</strong>
+  in the notification bar that appears when you make a change or click
+  <strong>Sync Project</strong> </span><img src="../assets/7ecaaf2f2e65.png" alt="官方原图" class="inline-icon" data-original-src="https://developer.android.com/static/studio/images/buttons/toolbar-sync-gradle.png" loading="lazy"><span data-unit="07-variants-011"> from the toolbar. If Android
+  Studio notices any errors with your configuration, the
+  <strong>Messages</strong> window appears to describe the issue.
+</span></p><p data-unit="07-variants-012">
+  To learn more about all the properties you can configure with build types,
+  read the <a href="https://developer.android.com/reference/tools/gradle-api/current/com/android/build/api/dsl/BuildType">
+  <code translate="no" dir="ltr">BuildType</code></a> reference.
+</p><h2 id="product-flavors" data-text="   Configure product flavors " tabindex="-1" data-unit="07-variants-013">
+  Configure product flavors
+</h2><p data-unit="07-variants-014">
+  Creating product flavors is similar to creating build types. Add product flavors to the
+  <code translate="no" dir="ltr">productFlavors</code> block in your build configuration and include the settings you want.
+  The product flavors support the same properties as
+  <code translate="no" dir="ltr">defaultConfig</code>, because <code translate="no" dir="ltr">defaultConfig</code>
+  actually belongs to the
+  <a href="https://developer.android.com/reference/tools/gradle-api/current/com/android/build/api/dsl/ProductFlavor">
+  <code translate="no" dir="ltr">ProductFlavor</code></a> class. This means you can provide the base
+  configuration for all flavors in the <code translate="no" dir="ltr">defaultConfig</code> block, and
+  each flavor can change any of these default values, such as the <code translate="no" dir="ltr">applicationId</code>. To
+  learn more about the application ID, read
+  <a href="https://developer.android.com/studio/build/configure-app-module#set-application-id">Set the application ID</a>.
+</p><p class="note" data-unit="07-variants-015">
+  <strong>Note:</strong> You still need to specify a package name using the
+  <a href="https://developer.android.com/guide/topics/manifest/manifest-element#package"><code translate="no" dir="ltr">package</code></a>
+  attribute in the <code translate="no" dir="ltr">main/</code> manifest file. You must also use that
+  package name in your source code to refer to the <code translate="no" dir="ltr">R</code> class or to resolve any
+  relative activity or service registration. This lets you use
+  <code translate="no" dir="ltr">applicationId</code> to give each product flavor a unique ID for
+  packaging and distribution without having to change your source code.
+</p><p data-unit="07-variants-016">
+  All flavors must belong to a named flavor dimension, which is a group of
+  product flavors. You must assign all flavors to a flavor dimension;
+  otherwise, you will get the following build error.
+</p><div></div><div><pre class="source-code"><code>
+  Error: All flavors must now belong to a named flavor dimension.
+  The flavor 'flavor_name' is not assigned to a flavor dimension.
+</code></pre></div><p data-unit="07-variants-017">If a given module
+  specifies only one flavor dimension, the Android Gradle plugin automatically
+  assigns all of the module's flavors to that dimension.</p><aside class="note" data-unit="07-variants-018">
+      <b>Tip:</b>
+  The plugin tries to match variants of your app with those of local library dependencies.
+  Because <a href="https://developer.android.com/studio/build/build-variants#variant_aware">variant-aware dependency
+  matching</a> relies on how you name a flavor dimension, name your flavor dimensions
+  carefully. Doing so gives you more control over which code and resources from your local
+  dependencies are matched with each version of the app.
+ </aside><p data-unit="07-variants-019">
+  The following code sample creates a flavor dimension named "version" and adds
+  "demo" and "full" product flavors. These flavors provide their own
+  <a href="https://developer.android.com/studio/build/build-variants#change-app-id">
+  <code translate="no" dir="ltr">applicationIdSuffix</code></a> and
+  <code translate="no" dir="ltr">versionNameSuffix</code>:
+</p><div><div class="ds-selector-tabs"><section><h3 class="two-line-tab" tab-label="build.gradle.kts" id="kts-2" data-text="Kotlin" tabindex="-1" data-unit="07-variants-020" data-original-id="kts">Kotlin</h3><div></div><div><pre class="source-code"><code class="language-Kotlin">android {
+    ...
+    defaultConfig {...}
+    buildTypes {
+        getByName("debug"){...}
+        getByName("release"){...}
+    }
+    // Specifies one flavor dimension.
+    flavorDimensions += "version"
+    productFlavors {
+        create("demo") {
+            // Assigns this product flavor to the "version" flavor dimension.
+            // If you are using only one dimension, this property is optional,
+            // and the plugin automatically assigns all the module's flavors to
+            // that dimension.
+            dimension = "version"
+            applicationIdSuffix = ".demo"
+            versionNameSuffix = "-demo"
+        }
+        create("full") {
+            dimension = "version"
+            applicationIdSuffix = ".full"
+            versionNameSuffix = "-full"
+        }
+    }
+}</code></pre></div></section><section><h3 class="two-line-tab" tab-label="build.gradle" id="groovy-2" data-text="Groovy" tabindex="-1" data-unit="07-variants-021" data-original-id="groovy">Groovy</h3><div></div><div><pre class="source-code"><code class="language-Groovy">android {
+    ...
+    defaultConfig {...}
+    buildTypes {
+        debug{...}
+        release{...}
+    }
+    // Specifies one flavor dimension.
+    flavorDimensions "version"
+    productFlavors {
+        demo {
+            // Assigns this product flavor to the "version" flavor dimension.
+            // If you are using only one dimension, this property is optional,
+            // and the plugin automatically assigns all the module's flavors to
+            // that dimension.
+            dimension "version"
+            applicationIdSuffix ".demo"
+            versionNameSuffix "-demo"
+        }
+        full {
+            dimension "version"
+            applicationIdSuffix ".full"
+            versionNameSuffix "-full"
+        }
+    }
+}</code></pre></div></section></div></div><p class="note" data-unit="07-variants-022">
+  <strong>Note:</strong> If you have a legacy app (created before
+  August 2021) that you distribute using APKs on Google Play, to distribute your app using <a href="https://developer.android.com/google/play/publishing/multiple-apks">multiple APK
+  support</a> in Google Play, assign the same <code translate="no" dir="ltr">applicationId</code> value
+  to all variants and give each variant a different
+  <a href="https://developer.android.com/studio/publish/versioning#appversioning"><code translate="no" dir="ltr">versionCode</code></a>. To distribute
+  different variants of your app as separate apps in Google Play, you need to assign a
+  different <code translate="no" dir="ltr">applicationId</code> to each variant.
+</p><p data-unit="07-variants-023">
+  After you create and configure your product flavors, click <strong>Sync
+  Now</strong> in the notification bar. Once the sync completes, Gradle
+  automatically creates build variants based on your build types and product
+  flavors and names them according to
+  <code translate="no" dir="ltr">&lt;product-flavor&gt;&lt;Build-Type&gt;</code>. For example, if you
+  created "demo" and "full" product flavors, and kept the default
+  "debug" and
+  "release" build types, Gradle creates the following build variants:
+</p><ul><li data-unit="07-variants-024">
+    <code translate="no" dir="ltr">demoDebug</code>
+  </li><li data-unit="07-variants-025">
+    <code translate="no" dir="ltr">demoRelease</code>
+  </li><li data-unit="07-variants-026">
+    <code translate="no" dir="ltr">fullDebug</code>
+  </li><li data-unit="07-variants-027">
+    <code translate="no" dir="ltr">fullRelease</code>
+  </li></ul><p data-unit="07-variants-028">
+  To select which build variant to build and
+  run, go to <strong>Build</strong> &gt; <strong>Select Build Variant</strong> and select
+ a build variant from the menu. To start customizing each build variant with its own features and
+ resources, you'll need to <a href="https://developer.android.com/build/build-variants?hl=en#sourcesets">create and manage source
+ sets</a>, as described on this page.
+</p><h3 id="change-app-id" data-text="   Change the application ID for build variants " tabindex="-1" data-unit="07-variants-029">
+  Change the application ID for build variants
+</h3><p data-unit="07-variants-030">When you build an APK or AAB for your app, the build tools tag the app with the
+application ID defined in the <code translate="no" dir="ltr">defaultConfig</code> block from the <code translate="no" dir="ltr">build.gradle.kts</code>
+file, as shown in the following example. However, if you want to create different versions of your
+app to appear as separate listings on Google Play Store, such as a "free" and "pro"
+version, you need to create separate
+<a href="https://developer.android.com/studio/build/build-variants">build variants</a> that each have a different
+application ID.</p><p data-unit="07-variants-031">In this case, define each build variant as a separate
+<a href="https://developer.android.com/studio/build/build-variants#product-flavors">product flavor</a>. For each flavor
+inside the <code translate="no" dir="ltr">productFlavors</code> block, you can redefine the <code translate="no" dir="ltr">applicationId</code>
+property, or you can instead append a segment to the default application ID
+using <code translate="no" dir="ltr">applicationIdSuffix</code>, as shown here:</p><div><div class="ds-selector-tabs"><section><h3 class="two-line-tab" tab-label="build.gradle.kts" id="kts-3" data-text="Kotlin" tabindex="-1" data-unit="07-variants-032" data-original-id="kts">Kotlin</h3><div></div><div><pre class="source-code"><code class="language-Kotlin">android {
+    defaultConfig {
+        applicationId = "com.example.myapp"
+    }
+    productFlavors {
+        create("free") {
+            applicationIdSuffix = ".free"
+        }
+        create("pro") {
+            applicationIdSuffix = ".pro"
+        }
+    }
+}</code></pre></div></section><section><h3 class="two-line-tab" tab-label="build.gradle" id="groovy-3" data-text="Groovy" tabindex="-1" data-unit="07-variants-033" data-original-id="groovy">Groovy</h3><div></div><div><pre class="source-code"><code class="language-Groovy">android {
+    defaultConfig {
+        applicationId "com.example.myapp"
+    }
+    productFlavors {
+        free {
+            applicationIdSuffix ".free"
+        }
+        pro {
+            applicationIdSuffix ".pro"
+        }
+    }
+}</code></pre></div></section></div></div><p data-unit="07-variants-034">This way, the application ID for the "free" product flavor is
+"com.example.myapp.free".</p><p data-unit="07-variants-035">You can also use <code translate="no" dir="ltr">applicationIdSuffix</code> to append a segment based on
+your <a href="https://developer.android.com/studio/build/build-variants#build-types">build type</a>, as shown here:</p><div><div class="ds-selector-tabs"><section><h3 class="two-line-tab" tab-label="build.gradle.kts" id="kts-4" data-text="Kotlin" tabindex="-1" data-unit="07-variants-036" data-original-id="kts">Kotlin</h3><div></div><div><pre class="source-code"><code class="language-Kotlin">android {
+    ...
+    buildTypes {
+        getByName("debug") {
+            applicationIdSuffix = ".debug"
+        }
+    }
+}</code></pre></div></section><section><h3 class="two-line-tab" tab-label="build.gradle" id="groovy-4" data-text="Groovy" tabindex="-1" data-unit="07-variants-037" data-original-id="groovy">Groovy</h3><div></div><div><pre class="source-code"><code class="language-Groovy">android {
+    ...
+    buildTypes {
+        debug {
+            applicationIdSuffix ".debug"
+        }
+    }
+}</code></pre></div></section></div></div><p data-unit="07-variants-038">Because Gradle applies the build type configuration after the product flavor,
+the application ID for the "free debug" build variant is
+"com.example.myapp.free.debug". This is useful when you want to have both the
+debug and the release build on the same device, because no two apps can have the
+same application ID.</p><p data-unit="07-variants-039">If you have a legacy app (created before August
+2021) that you distribute using APKs on Google Play, and you want to use the same app listing to
+distribute multiple APKs that
+each target a different device configuration, such as the API level,
+then you must use the same application ID for each build variant but give each
+APK a different <code translate="no" dir="ltr">versionCode</code>. For more information, read about
+<a href="https://developer.android.com/google/play/publishing/multiple-apks">Multiple APK support</a>. Publishing
+using AABs is unaffected, as it uses a single artifact that uses a single
+version code and application ID by default.</p><p class="note" data-unit="07-variants-040"><b>Tip:</b> If you need to reference the application ID in your
+manifest file, you can use the <code translate="no" dir="ltr">${applicationId}</code> placeholder in any
+manifest attribute. During a build, Gradle replaces this tag with the actual
+application ID. For more information, see <a href="https://developer.android.com/studio/build/manage-manifests#inject_build_variables_into_the_manifest">Inject build
+variables into the manifest</a>.</p><h3 id="flavor-dimensions" data-text="   Combine multiple product flavors with flavor dimensions " tabindex="-1" data-unit="07-variants-041">
+  Combine multiple product flavors with flavor dimensions
+</h3><p data-unit="07-variants-042">
+  In some cases, you may want to combine configurations from multiple product
+  flavors. For example, you may want to create different configurations for the
+  "full" and "demo" product flavors that are based on API level. To do this,
+  the Android Gradle plugin lets you create multiple groups of product flavors as flavor
+  dimensions.</p><p data-unit="07-variants-043">When building your app, Gradle combines a product
+  flavor configuration from each flavor dimension you define, along with a
+  build type configuration, to create the final build variant. Gradle doesn't
+  combine product flavors that belong to the same flavor dimension.
+</p><p data-unit="07-variants-044">
+  The following code sample uses the
+  <a href="https://developer.android.com/reference/tools/gradle-api/current/com/android/build/api/dsl/ProductFlavor#dimension">
+  <code translate="no" dir="ltr">flavorDimensions</code></a> property to create a "mode" flavor
+  dimension to group the "full" and "demo" product flavors and an "api" flavor
+  dimension to group product flavor configurations based on API level:
+</p><div><div class="ds-selector-tabs"><section><h3 class="two-line-tab" tab-label="build.gradle.kts" id="kts-5" data-text="Kotlin" tabindex="-1" data-unit="07-variants-045" data-original-id="kts">Kotlin</h3><div></div><div><pre class="source-code"><code class="language-Kotlin">android {
+  ...
+  buildTypes {
+    getByName("debug") {...}
+    getByName("release") {...}
+  }
+
+  // Specifies the flavor dimensions you want to use. The order in which you
+  // list the dimensions determines their priority, from highest to lowest,
+  // when Gradle merges variant sources and configurations. You must assign
+  // each product flavor you configure to one of the flavor dimensions.
+  flavorDimensions += listOf("api", "mode")
+
+  productFlavors {
+    create("demo") {
+      // Assigns this product flavor to the "mode" flavor dimension.
+      dimension = "mode"
+      ...
+    }
+
+    create("full") {
+      dimension = "mode"
+      ...
+    }
+
+    // Configurations in the "api" product flavors override those in "mode"
+    // flavors and the defaultConfig block. Gradle determines the priority
+    // between flavor dimensions based on the order in which they appear next
+    // to the flavorDimensions property, with the first dimension having a higher
+    // priority than the second, and so on.
+    create("minApi24") {
+      dimension = "api"
+      minSdk = 24
+      // To ensure the target device receives the version of the app with
+      // the highest compatible API level, assign version codes in increasing
+      // value with API level.
+      versionCode = 30000 + (android.defaultConfig.versionCode ?: 0)
+      versionNameSuffix = "-minApi24"
+      ...
+    }
+
+    create("minApi23") {
+      dimension = "api"
+      minSdk = 23
+      versionCode = 20000  + (android.defaultConfig.versionCode ?: 0)
+      versionNameSuffix = "-minApi23"
+      ...
+    }
+
+    create("minApi21") {
+      dimension = "api"
+      minSdk = 21
+      versionCode = 10000  + (android.defaultConfig.versionCode ?: 0)
+      versionNameSuffix = "-minApi21"
+      ...
+    }
+  }
+}
+...</code></pre></div></section><section><h3 class="two-line-tab" tab-label="build.gradle" id="groovy-5" data-text="Groovy" tabindex="-1" data-unit="07-variants-046" data-original-id="groovy">Groovy</h3><div></div><div><pre class="source-code"><code class="language-Groovy">android {
+  ...
+  buildTypes {
+    debug {...}
+    release {...}
+  }
+
+  // Specifies the flavor dimensions you want to use. The order in which you
+  // list the dimensions determines their priority, from highest to lowest,
+  // when Gradle merges variant sources and configurations. You must assign
+  // each product flavor you configure to one of the flavor dimensions.
+  flavorDimensions "api", "mode"
+
+  productFlavors {
+    demo {
+      // Assigns this product flavor to the "mode" flavor dimension.
+      dimension "mode"
+      ...
+    }
+
+    full {
+      dimension "mode"
+      ...
+    }
+
+    // Configurations in the "api" product flavors override those in "mode"
+    // flavors and the defaultConfig block. Gradle determines the priority
+    // between flavor dimensions based on the order in which they appear next
+    // to the flavorDimensions property, with the first dimension having a higher
+    // priority than the second, and so on.
+    minApi24 {
+      dimension "api"
+      minSdkVersion 24
+      // To ensure the target device receives the version of the app with
+      // the highest compatible API level, assign version codes in increasing
+      // value with API level.
+
+      versionCode 30000 + android.defaultConfig.versionCode
+      versionNameSuffix "-minApi24"
+      ...
+    }
+
+    minApi23 {
+      dimension "api"
+      minSdkVersion 23
+      versionCode 20000  + android.defaultConfig.versionCode
+      versionNameSuffix "-minApi23"
+      ...
+    }
+
+    minApi21 {
+      dimension "api"
+      minSdkVersion 21
+      versionCode 10000  + android.defaultConfig.versionCode
+      versionNameSuffix "-minApi21"
+      ...
+    }
+  }
+}
+...</code></pre></div></section></div></div><p data-unit="07-variants-047">
+  The number of build variants Gradle creates is equal to the product of the
+  number of flavors in each flavor dimension and the number of build types you
+  configure. When Gradle names each build variant or corresponding artifacts, product
+  flavors belonging to higher-priority flavor dimension appear first, followed
+  by those from lower-priority dimensions, followed by the build type.</p><p data-unit="07-variants-048">Using
+  the previous build configuration as an example, Gradle creates a total of 12
+  build variants with the following naming scheme:
+</p><ul><li data-unit="07-variants-049">Build variant: <code translate="no" dir="ltr">[minApi24, minApi23, minApi21][Demo, Full][Debug, Release]</code></li><li data-unit="07-variants-050">Corresponding APK: <code translate="no" dir="ltr">app-[minApi24, minApi23, minApi21]-[demo, full]-[debug, release].apk</code></li><dt data-unit="07-variants-051">For example,</dt><dd data-unit="07-variants-052">Build variant: <code translate="no" dir="ltr">minApi24DemoDebug</code></dd><dd data-unit="07-variants-053">Corresponding APK: <code translate="no" dir="ltr">app-minApi24-demo-debug.apk</code></dd></ul><p data-unit="07-variants-054">
+  In addition to the source set directories you can create for each individual
+  product flavor and build variant, you can also create source set directories
+  for each <em>combination</em> of product flavors. For example, you can create
+  and add Java sources to the <code translate="no" dir="ltr">src/demoMinApi24/java/</code> directory,
+  and Gradle uses those sources only when building a variant that combines
+  those two product flavors.</p><p data-unit="07-variants-055">Source sets you create for product flavor
+  combinations have a higher priority than source sets that belong to each
+  individual product flavor. To learn more about source sets and how Gradle
+  merges resources, read the section about how to <a href="https://developer.android.com/build/build-variants?hl=en#sourcesets">create
+  source sets</a>.
+</p><h3 id="filter-variants" data-text="   Filter variants " tabindex="-1" data-unit="07-variants-056">
+  Filter variants
+</h3><p data-unit="07-variants-057">
+  Gradle creates a build variant for every possible combination of the product
+  flavors and build types that you configure. However, there may be certain
+  build variants that you don't need or that don't make sense in the
+  context of your project. To remove certain build variant configurations,
+  create a variant filter in your module-level <code translate="no" dir="ltr">build.gradle.kts</code>
+  file.
+</p><p data-unit="07-variants-058">
+  Using the build configuration from the previous section as an example,
+  suppose you plan to support only API levels 23 and higher for the demo
+  version of the app. You can use the
+  <a href="https://developer.android.com/reference/tools/gradle-api/current/com/android/build/api/variant/VariantFilter">
+  <code translate="no" dir="ltr">variantFilter</code></a> block to filter out all build variant
+  configurations that combine the "minApi21" and "demo" product flavors:
+</p><div><div class="ds-selector-tabs"><section><h3 class="two-line-tab" tab-label="build.gradle.kts" id="kts-6" data-text="Kotlin" tabindex="-1" data-unit="07-variants-059" data-original-id="kts">Kotlin</h3><div></div><div><pre class="source-code"><code class="language-Kotlin">android {
+  ...
+  buildTypes {...}
+
+  flavorDimensions += listOf("api", "mode")
+  productFlavors {
+    create("demo") {...}
+    create("full") {...}
+    create("minApi24") {...}
+    create("minApi23") {...}
+    create("minApi21") {...}
+  }
+}
+
+androidComponents {
+    beforeVariants { variantBuilder -&gt;
+        // To check for a certain build type, use variantBuilder.buildType == "&lt;buildType&gt;"
+        if (variantBuilder.productFlavors.containsAll(listOf("api" to "minApi21", "mode" to "demo"))) {
+            // Gradle ignores any variants that satisfy the conditions above.
+            variantBuilder.enable = false
+        }
+    }
+}
+...</code></pre></div></section><section><h3 class="two-line-tab" tab-label="build.gradle" id="groovy-6" data-text="Groovy" tabindex="-1" data-unit="07-variants-060" data-original-id="groovy">Groovy</h3><div></div><div><pre class="source-code"><code class="language-Groovy">android {
+  ...
+  buildTypes {...}
+
+  flavorDimensions "api", "mode"
+  productFlavors {
+    demo {...}
+    full {...}
+    minApi24 {...}
+    minApi23 {...}
+    minApi21 {...}
+  }
+
+  variantFilter { variant -&gt;
+      def names = variant.flavors*.name
+      // To check for a certain build type, use variant.buildType.name == "&lt;buildType&gt;"
+      if (names.contains("minApi21") &amp;&amp; names.contains("demo")) {
+          // Gradle ignores any variants that satisfy the conditions above.
+          setIgnore(true)
+      }
+  }
+}
+...</code></pre></div></section></div></div><p><span data-unit="07-variants-061">
+  Once you add a variant filter to your build configuration and click <b>Sync
+  Now</b> in the notification bar, Gradle ignores any build variants that meet
+  the conditions you specify. The build variants no longer appear in the menu
+  when you click <b>Build &gt; Select Build Variant</b> from the menu bar
+  or <b>Build Variants</b> </span><img src="../assets/430db1f29a0e.png" class="inline-icon" alt="官方原图" data-original-src="https://developer.android.com/static/studio/images/buttons/window-monitor.png" loading="lazy"><span data-unit="07-variants-062"> in
+  the tool window bar.
+</span></p><h2 id="sourcesets" data-text="   Create source sets " tabindex="-1" data-unit="07-variants-063">
+  Create source sets
+</h2><p data-unit="07-variants-064">
+  By default, Android Studio creates the <code translate="no" dir="ltr">main/</code>
+  <a href="https://developer.android.com/studio/build#sourcesets">source set</a> and directories for
+  everything you want to share between all your build variants. However, you
+  can create new source sets to control exactly which files Gradle compiles and
+  packages for specific build types, product flavors, combinations of
+  product flavors (when using <a href="https://developer.android.com/build/build-variants?hl=en#flavor-dimensions">flavor
+  dimensions</a>), and build variants.</p><p data-unit="07-variants-065">For example, you can define basic
+  functionality in the <code translate="no" dir="ltr">main/</code> source set and use product flavor
+  source sets to change the branding of your app for different clients, or
+  include special permissions and logging functionality only for build variants
+  that use the debug build type.
+</p><p data-unit="07-variants-066">
+  Gradle expects source set files and directories to be organized in a certain
+  way, similar to the <code translate="no" dir="ltr">main/</code> source set. For example, Gradle
+  expects Kotlin or Java class files that are specific to your "debug" build type to be
+  located in the <code translate="no" dir="ltr">src/debug/kotlin/</code> or <code translate="no" dir="ltr">src/debug/java/</code> directories.
+</p><p data-unit="07-variants-067">
+  The Android Gradle plugin provides a useful Gradle task that shows
+  you how to organize your files for each of your build types, product
+  flavors, and build variants. For example, the following sample from the task output
+  describes where Gradle expects to find certain files for the "debug" build
+  type:
+</p><div></div><div><pre class="source-code"><code>
+------------------------------------------------------------
+Project :app
+------------------------------------------------------------
+
+...
+
+debug
+----
+Compile configuration: debugCompile
+build.gradle name: android.sourceSets.debug
+Java sources: [app/src/debug/java]
+Kotlin sources: [app/src/debug/kotlin, app/src/debug/java]
+Manifest file: app/src/debug/AndroidManifest.xml
+Android resources: [app/src/debug/res]
+Assets: [app/src/debug/assets]
+AIDL sources: [app/src/debug/aidl]
+RenderScript sources: [app/src/debug/rs]
+JNI sources: [app/src/debug/jni]
+JNI libraries: [app/src/debug/jniLibs]
+Java-style resources: [app/src/debug/resources]
+</code></pre></div><p data-unit="07-variants-068">
+  To view this output, proceed as follows:
+</p><ol><li data-unit="07-variants-069">Click <b>Gradle</b> in the tool window bar.
+  </li><li><p data-unit="07-variants-070">Navigate to <b>MyApplication &gt; Tasks &gt; android</b> and
+  double-click <b>sourceSets</b>.</p><p data-unit="07-variants-071">To see the <b>Tasks</b> folder, you must let Gradle build the
+  task list during sync. To do so, follow these steps:</p><ol><li data-unit="07-variants-072">Click <b>File &gt; Settings &gt; Experimental</b> (<b>Android Studio &gt; Settings &gt; Experimental</b>
+      on macOS).</li><li data-unit="07-variants-073">Deselect <b>Do not
+  build Gradle task list during Gradle sync</b>.</li></ol></li><li data-unit="07-variants-074">After Gradle executes the task, the <b>Run</b> window opens to display the
+  output.</li></ol><p class="note" data-unit="07-variants-075">
+  <strong>Note:</strong> The task output also shows you how to organize source sets
+  for files you want to use to run tests for your app, such as the
+  <code translate="no" dir="ltr">test/</code> and <code translate="no" dir="ltr">androidTest/</code>
+  <a href="https://developer.android.com/studio/test/advanced-test-setup#create-instrumented-test-for-build-variant">testing source sets</a>.
+</p><p data-unit="07-variants-076">
+  When you create a new build variant, Android Studio doesn't create the source
+  set directories for you, but it does give you a few options to help you. For
+  example, to create just the <code translate="no" dir="ltr">java/</code> directory for your "debug"
+  build type:
+</p><ol><li data-unit="07-variants-077">Open the <strong>Project</strong> pane and select the
+  <strong>Project</strong> view from the menu at the top of the pane.
+  </li><li data-unit="07-variants-078">Navigate to <code translate="no" dir="ltr">MyProject/app/src/</code>.
+  </li><li data-unit="07-variants-079">Right-click the <code translate="no" dir="ltr">src</code> directory and select
+  <strong>New</strong> &gt; <strong>Directory</strong>.
+  </li><li data-unit="07-variants-080">From the menu under <strong>Gradle Source Sets</strong>, select
+  <strong>full/java</strong>.
+  </li><li data-unit="07-variants-081">Press <kbd>Enter</kbd>.
+  </li></ol><p data-unit="07-variants-082">
+  Android Studio creates a source set directory for your debug build type and
+  then creates the <code translate="no" dir="ltr">java/</code> directory inside it. Alternatively,
+  Android Studio can create the directories for you when you add a new file to
+  your project for a specific build variant.</p><p data-unit="07-variants-083">For example, to create a values XML file for your "debug" build type:
+</p><ol><li data-unit="07-variants-084">In the <strong>Project</strong> pane, right-click the <code translate="no" dir="ltr">src</code>
+  directory and select <strong>New</strong> &gt; <strong>XML</strong> &gt;
+  <strong>Values XML File</strong>.
+  </li><li data-unit="07-variants-085">Enter the name for the XML file or keep the default name.
+  </li><li data-unit="07-variants-086">From the menu next to <strong>Target Source Set</strong>, select
+  <strong>debug</strong>.
+  </li><li data-unit="07-variants-087">Click <strong>Finish</strong>.
+  </li></ol><p data-unit="07-variants-088">
+  Because the "debug" build type was specified as the target source set,
+  Android Studio automatically creates the necessary directories when it
+  creates the XML file. The resulting directory structure looks like
+  figure 1.
+</p><img src="../assets/09f07b0ff9fd.png" alt="官方原图" data-original-src="https://developer.android.com/static/images/tools/debug-directories_2-1_2x.png" loading="lazy"><p class="img-caption" data-unit="07-variants-089">
+  <strong>Figure 1.</strong> New source set directories for the "debug" build
+  type.
+</p><p data-unit="07-variants-090">
+  Active source sets have a green indicator in their icon to show that they are active. The
+  <code translate="no" dir="ltr">debug</code> source set is suffixed with <code translate="no" dir="ltr">[main]</code> to show that it will be merged
+  in to the <code translate="no" dir="ltr">main</code> source set.
+</p><p data-unit="07-variants-091">
+  Using the same procedure, you can also create source set directories for
+  product flavors, such as <code translate="no" dir="ltr">src/demo/</code>, and build variants, such as
+  <code translate="no" dir="ltr">src/demoDebug/</code>. Additionally, you can create testing source sets
+  that target specific build variants, such as
+  <code translate="no" dir="ltr">src/androidTestDemoDebug/</code>. To learn more, read about
+  <a href="https://developer.android.com/studio/test/advanced-test-setup#create-instrumented-test-for-build-variant">testing source sets</a>.
+</p><h3 id="configure-sourcesets" data-text="   Change default source set configurations " tabindex="-1" data-unit="07-variants-092">
+  Change default source set configurations
+</h3><p data-unit="07-variants-093">
+  If you have sources that are not organized into the default source set file
+  structure that Gradle expects, as described in the previous section about
+  <a href="https://developer.android.com/build/build-variants?hl=en#sourcesets">creating source sets</a>, you can use the
+  <a href="https://developer.android.com/reference/tools/gradle-api/current/com/android/build/api/dsl/AndroidSourceSet">
+  <code translate="no" dir="ltr">sourceSets</code></a> block to change where Gradle looks to gather
+  files for each component of a source set.</p><p data-unit="07-variants-094">The <code translate="no" dir="ltr">sourceSets</code> block must be
+  in the <code translate="no" dir="ltr">android</code> block. You don't need to relocate the
+  source files; you only need to provide Gradle with the path(s), relative to the
+  module-level <code translate="no" dir="ltr">build.gradle.kts</code> file, where Gradle can
+  find files for each source set component. To learn which components you can
+  configure and whether you can map them to multiple files or directories,
+  see the <a href="https://developer.android.com/reference/tools/gradle-api">Android Gradle plugin API reference</a>.
+</p><p data-unit="07-variants-095">
+  The following code sample maps sources from the <code translate="no" dir="ltr">app/other/</code> directory
+  to certain components of the <code translate="no" dir="ltr">main</code> source set and changes the
+  root directory of the <code translate="no" dir="ltr">androidTest</code> source set:
+</p><div><div class="ds-selector-tabs"><section><h3 class="two-line-tab" tab-label="build.gradle.kts" id="kts-7" data-text="Kotlin" tabindex="-1" data-unit="07-variants-096" data-original-id="kts">Kotlin</h3><div></div><div><pre class="source-code"><code class="language-Kotlin">android {
+  ...
+  // Encapsulates configurations for the main source set.
+  sourceSets.getByName("main") {
+    // Changes the directory for Java sources. The default directory is
+    // 'src/main/java'.
+    java.setSrcDirs(listOf("other/java"))
+
+    // If you list multiple directories, Gradle uses all of them to collect
+    // sources. Because Gradle gives these directories equal priority, if
+    // you define the same resource in more than one directory, you receive an
+    // error when merging resources. The default directory is 'src/main/res'.
+    res.setSrcDirs(listOf("other/res1", "other/res2"))
+
+    // Note: Avoid specifying a directory that is a parent to one
+    // or more other directories you specify. For example, avoid the following:
+    // res.srcDirs = ['other/res1', 'other/res1/layouts', 'other/res1/strings']
+    // Specify either only the root 'other/res1' directory or only the
+    // nested 'other/res1/layouts' and 'other/res1/strings' directories.
+
+    // For each source set, you can specify only one Android manifest.
+    // By default, Android Studio creates a manifest for your main source
+    // set in the src/main/ directory.
+    manifest.srcFile("other/AndroidManifest.xml")
+    ...
+  }
+
+  // Create additional blocks to configure other source sets.
+  sourceSets.getByName("androidTest") {
+      // If all the files for a source set are located under a single root
+      // directory, you can specify that directory using the setRoot property.
+      // When gathering sources for the source set, Gradle looks only in locations
+      // relative to the root directory you specify. For example, after applying the
+      // configuration below for the androidTest source set, Gradle looks for Java
+      // sources only in the src/tests/java/ directory.
+      setRoot("src/tests")
+      ...
+  }
+}
+...</code></pre></div></section><section><h3 class="two-line-tab" tab-label="build.gradle" id="groovy-7" data-text="Groovy" tabindex="-1" data-unit="07-variants-097" data-original-id="groovy">Groovy</h3><div></div><div><pre class="source-code"><code class="language-Groovy">android {
+  ...
+  sourceSets {
+    // Encapsulates configurations for the main source set.
+    main {
+      // Changes the directory for Java sources. The default directory is
+      // 'src/main/java'.
+      java.srcDirs = ['other/java']
+
+      // If you list multiple directories, Gradle uses all of them to collect
+      // sources. Because Gradle gives these directories equal priority, if
+      // you define the same resource in more than one directory, you receive an
+      // error when merging resources. The default directory is 'src/main/res'.
+      res.srcDirs = ['other/res1', 'other/res2']
+
+      // Note: Avoid specifying a directory that is a parent to one
+      // or more other directories you specify. For example, avoid the following:
+      // res.srcDirs = ['other/res1', 'other/res1/layouts', 'other/res1/strings']
+      // Specify either only the root 'other/res1' directory or only the
+      // nested 'other/res1/layouts' and 'other/res1/strings' directories.
+
+      // For each source set, you can specify only one Android manifest.
+      // By default, Android Studio creates a manifest for your main source
+      // set in the src/main/ directory.
+      manifest.srcFile 'other/AndroidManifest.xml'
+      ...
+    }
+
+    // Create additional blocks to configure other source sets.
+    androidTest {
+
+      // If all the files for a source set are located under a single root
+      // directory, you can specify that directory using the setRoot property.
+      // When gathering sources for the source set, Gradle looks only in locations
+      // relative to the root directory you specify. For example, after applying the
+      // configuration below for the androidTest source set, Gradle looks for Java
+      // sources only in the src/tests/java/ directory.
+      setRoot 'src/tests'
+      ...
+    }
+  }
+}
+...</code></pre></div></section></div></div><p data-unit="07-variants-098">
+  Note that a source directory can only belong to one source set. For example, you can't share the
+  same test sources with both the <code translate="no" dir="ltr">test</code> and <code translate="no" dir="ltr">androidTest</code> source sets. This
+  is because Android Studio creates separate IntelliJ modules for each source set and can't support
+  duplicate content roots across source sets.
+</p><h3 id="sourceset-build" data-text="   Build with source sets " tabindex="-1" data-unit="07-variants-099">
+  Build with source sets
+</h3><p data-unit="07-variants-100">
+  You can use source set directories to contain the code and resources you
+  want packaged only with certain configurations. For example, if you are
+  building the "demoDebug" build variant, which is the crossproduct of a
+  "demo" product flavor and "debug" build type, Gradle looks at
+  these directories and gives them the following priority:
+</p><ol><li data-unit="07-variants-101">
+    <code translate="no" dir="ltr">src/demoDebug/</code> (build variant source set)
+  </li><li data-unit="07-variants-102">
+    <code translate="no" dir="ltr">src/debug/</code> (build type source set)
+  </li><li data-unit="07-variants-103">
+    <code translate="no" dir="ltr">src/demo/</code> (product flavor source set)
+  </li><li data-unit="07-variants-104">
+    <code translate="no" dir="ltr">src/main/</code> (main source set)
+  </li></ol><p data-unit="07-variants-105">
+  Source sets created for combinations of product flavors must include all flavor dimensions.
+  For example, the build variant source set must be the combination of the build type and all flavor
+  dimensions. Merging code and resources involving folders that cover multiple but not all
+  flavor dimensions is not supported.
+</p><p data-unit="07-variants-106">If you <a href="https://developer.android.com/build/build-variants?hl=en#flavor-dimensions">combine multiple product
+  flavors</a>, priority between the product flavors is determined by the flavor
+  dimension they belong to. When listing flavor dimensions with the
+  <a href="https://developer.android.com/reference/tools/gradle-api/current/com/android/build/api/dsl/ProductFlavor#dimension">
+  <code translate="no" dir="ltr">android.flavorDimensions</code></a> property, product flavors are
+  prioritized in the order their dimensions are declared, with earlier dimensions
+  taking precedence over subsequent ones. Additionally,
+  source sets you create for combinations of product flavors have a higher
+  priority than source sets that belong to an individual product flavor.
+</p><p data-unit="07-variants-107">
+  The priority order determines which source set has a higher
+  priority when Gradle combines code and resources. Because the <code translate="no" dir="ltr">demoDebug/</code>
+  source set directory likely contains files that are specific to that build
+  variant, if <code translate="no" dir="ltr">demoDebug/</code> includes a file that is also defined in
+  <code translate="no" dir="ltr">debug/</code>, Gradle uses the file in the <code translate="no" dir="ltr">demoDebug/</code>
+  source set. Similarly, Gradle gives files in the build type and product flavor
+  source sets a higher priority than the same files in <code translate="no" dir="ltr">main/</code>.
+  Gradle considers this priority order when applying the following build rules:
+</p><ul><li><span data-unit="07-variants-108">All source code in the <code translate="no" dir="ltr">kotlin/</code> or <code translate="no" dir="ltr">java/</code> directories are compiled
+  together to generate a single output.
+    </span><p class="note" data-unit="07-variants-109">
+      <strong>Note:</strong> For a given build variant, Gradle throws a build
+      error if it encounters two or more source set directories that have defined
+      the same Kotlin or Java class. For example, when building a debug app, you can't
+      define both <code translate="no" dir="ltr">src/debug/Utility.kt</code> and
+      <code translate="no" dir="ltr">src/main/Utility.kt</code>, because Gradle looks at both
+      these directories during the build process and throws a "duplicate class"
+      error. If you want different versions of <code translate="no" dir="ltr">Utility.kt</code> for
+      different build types, each build type must define its own version of
+      the file and not include it in the <code translate="no" dir="ltr">main/</code> source set.
+    </p></li><li data-unit="07-variants-110">Manifests are merged together into a single manifest. Priority is given
+  in the same order as the list in the previous example. For example, manifest settings for a build
+  type override the manifest settings for a product flavor. To learn
+  more, read about <a href="https://developer.android.com/studio/build/manage-manifests#merge-manifests">manifest merging</a>.
+  </li><li data-unit="07-variants-111">Files in the <code translate="no" dir="ltr">values/</code> directories are merged
+  together. If two files have the same name, such as two
+  <code translate="no" dir="ltr">strings.xml</code> files, priority is given in the same order as the
+  list in the previous example. For example, values defined in a file in the build type source set
+  override the values defined in the same file in a product flavor.
+  </li><li data-unit="07-variants-112">Resources in the <code translate="no" dir="ltr">res/</code> and <code translate="no" dir="ltr">asset/</code> directories
+  are packaged together. If there are resources with the same name defined in
+  two or more source sets, priority is given in the same order as the list
+  in the previous example.
+  </li><li data-unit="07-variants-113">Gradle gives resources and manifests included with library
+  module dependencies the lowest priority when building the app.
+  </li></ul><h2 id="dependencies" data-text="   Declare dependencies " tabindex="-1" data-unit="07-variants-114">
+  Declare dependencies
+</h2><p data-unit="07-variants-115">To configure a dependency for a specific build variant or
+<a href="https://developer.android.com/studio/test/advanced-test-setup#create-instrumented-test-for-build-variant">testing source set</a>,
+prefix the name of the build variant or testing source set before the
+<code translate="no" dir="ltr">Implementation</code> keyword, as shown in the following example:</p><div><div class="ds-selector-tabs"><section><h3 class="two-line-tab" tab-label="build.gradle.kts" id="kts-8" data-text="Kotlin" tabindex="-1" data-unit="07-variants-116" data-original-id="kts">Kotlin</h3><div></div><div><pre class="source-code"><code class="language-Kotlin">dependencies {
+    // Adds the local "mylibrary" module as a dependency to the "free" flavor.
+    "freeImplementation"(project(":mylibrary"))
+
+    // Adds a remote binary dependency only for local tests.
+    testImplementation("junit:junit:4.12")
+
+    // Adds a remote binary dependency only for the instrumented test APK.
+    androidTestImplementation("com.android.support.test.espresso:espresso-core:3.6.1")
+}</code></pre></div></section><section><h3 class="two-line-tab" tab-label="build.gradle" id="groovy-8" data-text="Groovy" tabindex="-1" data-unit="07-variants-117" data-original-id="groovy">Groovy</h3><div></div><div><pre class="source-code"><code class="language-Groovy">dependencies {
+    // Adds the local "mylibrary" module as a dependency to the "free" flavor.
+    freeImplementation project(":mylibrary")
+
+    // Adds a remote binary dependency only for local tests.
+    testImplementation 'junit:junit:4.12'
+
+    // Adds a remote binary dependency only for the instrumented test APK.
+    androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.6.1'
+}</code></pre></div></section></div></div><p data-unit="07-variants-118">For more information about configuring dependencies,
+  see <a href="https://developer.android.com/studio/build/dependencies">Add build dependencies</a>.
+</p><h2 id="variant_aware" data-text="   Use variant-aware dependency management " tabindex="-1" data-unit="07-variants-119">
+  Use variant-aware dependency management
+</h2><p data-unit="07-variants-120">
+  The Android Gradle plugin 3.0.0 and higher includes a new dependency mechanism that automatically
+  matches variants when consuming a library. For example, an app's <code translate="no" dir="ltr">debug</code> variant
+  automatically consumes a library's <code translate="no" dir="ltr">debug</code> variant. It also works when using
+  flavors: an app's <code translate="no" dir="ltr">freeDebug</code> variant will consume a library's <code translate="no" dir="ltr">freeDebug</code>
+  variant.
+</p><p data-unit="07-variants-121">
+  For the plugin to accurately match variants, you need to
+  <a href="https://developer.android.com/build/build-variants?hl=en#resolve_matching_errors">provide matching fallbacks</a> as described in
+  the following section, for instances where a direct match is not possible.</p><p data-unit="07-variants-122">For example, suppose your app configures a build type called "staging", but one of
+  its library dependencies doesn't. When the plugin tries to build the "staging" version of your
+  app, it won't know which version of the library to use, and you'll see an error message similar
+  to the following:
+</p><div></div><div><pre class="source-code"><code>
+Error:Failed to resolve: Could not resolve project :mylibrary.
+Required by:
+    project :app
+</code></pre></div><h3 id="resolve_matching_errors" data-text="   Resolve build errors related to variant matching " tabindex="-1" data-unit="07-variants-123">
+  Resolve build errors related to variant matching
+</h3><p data-unit="07-variants-124">
+  The plugin includes DSL elements to help you control how Gradle resolves situations in
+  which a direct variant match between an app and a dependency is not possible.</p><p data-unit="07-variants-125">
+  The following is a list of issues related to variant-aware dependency matching and how
+  to solve them using DSL properties:
+</p><ul><li><p data-unit="07-variants-126"><b>Your app includes a build type that a library dependency does not.</b>
+      </p><p data-unit="07-variants-127">
+        For example, your app includes a "staging" build type, but a dependency includes only
+        "debug" and "release" build types.
+      </p><p data-unit="07-variants-128">
+        Note that there is no issue when a library dependency includes a build
+        type that your app doesn't. That's because the plugin never
+        requests that build type from the dependency.
+      </p><p data-unit="07-variants-129">
+        Use <code translate="no" dir="ltr">matchingFallbacks</code> to specify alternative matches for a given build type,
+        as shown here:
+      </p><div><div class="ds-selector-tabs"><section><h3 class="two-line-tab" tab-label="build.gradle.kts" id="kts-9" data-text="Kotlin" tabindex="-1" data-unit="07-variants-130" data-original-id="kts">Kotlin</h3><div></div><div><pre class="source-code"><code class="language-Kotlin">// In the app's build.gradle.kts file.
+android {
+    buildTypes {
+        getByName("debug") {}
+        getByName("release") {}
+        create("staging") {
+            // Specifies a sorted list of fallback build types that the
+            // plugin can try to use when a dependency does not include a
+            // "staging" build type. You may specify as many fallbacks as you
+            // like, and the plugin selects the first build type that's
+            // available in the dependency.
+            matchingFallbacks += listOf("debug", "qa", "release")
+        }
+    }
+}</code></pre></div></section><section><h3 class="two-line-tab" tab-label="build.gradle" id="groovy-9" data-text="Groovy" tabindex="-1" data-unit="07-variants-131" data-original-id="groovy">Groovy</h3><div></div><div><pre class="source-code"><code class="language-Groovy">// In the app's build.gradle file.
+android {
+    buildTypes {
+        debug {}
+        release {}
+        staging {
+            // Specifies a sorted list of fallback build types that the
+            // plugin can try to use when a dependency does not include a
+            // "staging" build type. You may specify as many fallbacks as you
+            // like, and the plugin selects the first build type that's
+            // available in the dependency.
+            matchingFallbacks = ['debug', 'qa', 'release']
+        }
+    }
+}</code></pre></div></section></div></div></li><li><p data-unit="07-variants-132"><b>For a given flavor dimension that exists in both the app and its library
+          dependency, your app includes flavors that the library does not.</b>
+      </p><p data-unit="07-variants-133">
+        For example, both your app and its library dependencies include a "tier" flavor dimension.
+        However, the "tier" dimension in the app includes "free" and "paid" flavors, but a
+        dependency includes only "demo" and "paid" flavors for the same dimension.
+      </p><p data-unit="07-variants-134">
+        Note that for a given flavor dimension that exists in both the app and its library
+        dependencies, there is no issue when a library includes a product flavor that your app
+        does not. That's because the plugin never requests that flavor from the dependency.
+      </p><p data-unit="07-variants-135">
+        Use <code translate="no" dir="ltr">matchingFallbacks</code> to specify alternative matches for the app's "free"
+        product flavor, as shown here:
+      </p><div><div class="ds-selector-tabs"><section><h3 class="two-line-tab" tab-label="build.gradle.kts" id="kts-10" data-text="Kotlin" tabindex="-1" data-unit="07-variants-136" data-original-id="kts">Kotlin</h3><div></div><div><pre class="source-code"><code class="language-Kotlin">// In the app's build.gradle.kts file.
+android {
+    defaultConfig{
+    // Don't configure matchingFallbacks in the defaultConfig block.
+    // Instead, specify fallbacks for a given product flavor in the
+    // productFlavors block, as shown below.
+  }
+    flavorDimensions += "tier"
+    productFlavors {
+        create("paid") {
+            dimension = "tier"
+            // Because the dependency already includes a "paid" flavor in its
+            // "tier" dimension, you don't need to provide a list of fallbacks
+            // for the "paid" flavor.
+        }
+        create("free") {
+            dimension = "tier"
+            // Specifies a sorted list of fallback flavors that the plugin
+            // can try to use when a dependency's matching dimension does
+            // not include a "free" flavor. Specify as many
+            // fallbacks as you like; the plugin selects the first flavor
+            // that's available in the dependency's "tier" dimension.
+            matchingFallbacks += listOf("demo", "trial")
+        }
+    }
+}</code></pre></div></section><section><h3 class="two-line-tab" tab-label="build.gradle" id="groovy-10" data-text="Groovy" tabindex="-1" data-unit="07-variants-137" data-original-id="groovy">Groovy</h3><div></div><div><pre class="source-code"><code class="language-Groovy">// In the app's build.gradle file.
+android {
+    defaultConfig{
+    // Don't configure matchingFallbacks in the defaultConfig block.
+    // Instead, specify fallbacks for a given product flavor in the
+    // productFlavors block, as shown below.
+  }
+    flavorDimensions 'tier'
+    productFlavors {
+        paid {
+            dimension 'tier'
+            // Because the dependency already includes a "paid" flavor in its
+            // "tier" dimension, you don't need to provide a list of fallbacks
+            // for the "paid" flavor.
+        }
+        free {
+            dimension 'tier'
+            // Specifies a sorted list of fallback flavors that the plugin
+            // can try to use when a dependency's matching dimension does
+            // not include a "free" flavor. Specify as many
+            // fallbacks as you like; the plugin selects the first flavor
+            // that's available in the dependency's "tier" dimension.
+            matchingFallbacks = ['demo', 'trial']
+        }
+    }
+}</code></pre></div></section></div></div></li><li><p data-unit="07-variants-138"><b>A library dependency includes a flavor dimension that your app does not.</b>
+      </p><p data-unit="07-variants-139">
+        For example, a library dependency includes flavors for a "minApi" dimension, but your app
+        includes flavors for only the "tier" dimension. When you want to build the "freeDebug"
+        version of your app, the plugin doesn't know whether to use the "minApi23Debug" or
+        "minApi18Debug" version of the dependency.
+      </p><p data-unit="07-variants-140">
+        Note that there is no issue when your app includes a flavor dimension that a library
+        dependency doesn't. That's because the plugin matches flavors of only the dimensions that
+        exist in the dependency. For example, if a dependency does not include a dimension for ABIs,
+        the "freeX86Debug" version of your app would use the "freeDebug" version of the
+        dependency.
+      </p><p data-unit="07-variants-141">
+        Use <code translate="no" dir="ltr">missingDimensionStrategy</code> in the <code translate="no" dir="ltr">defaultConfig</code> block to specify
+        the default flavor for the plugin to select from each missing dimension, as shown in the
+        following sample. You can also override your selections in the <code translate="no" dir="ltr">productFlavors</code>
+        block, so each flavor can specify a different matching strategy for a missing dimension.
+      </p><div><div class="ds-selector-tabs"><section><h3 class="two-line-tab" tab-label="build.gradle.kts" id="kts-11" data-text="Kotlin" tabindex="-1" data-unit="07-variants-142" data-original-id="kts">Kotlin</h3><div></div><div><pre class="source-code"><code class="language-Kotlin">// In the app's build.gradle.kts file.
+android {
+    defaultConfig{
+    // Specifies a sorted list of flavors that the plugin can try to use from
+    // a given dimension. This tells the plugin to select the "minApi18" flavor
+    // when encountering a dependency that includes a "minApi" dimension.
+    // You can include additional flavor names to provide a
+    // sorted list of fallbacks for the dimension.
+    missingDimensionStrategy("minApi", "minApi18", "minApi23")
+    // Specify a missingDimensionStrategy property for each
+    // dimension that exists in a local dependency but not in your app.
+    missingDimensionStrategy("abi", "x86", "arm64")
+    }
+    flavorDimensions += "tier"
+    productFlavors {
+        create("free") {
+            dimension = "tier"
+            // You can override the default selection at the product flavor
+            // level by configuring another missingDimensionStrategy property
+            // for the "minApi" dimension.
+            missingDimensionStrategy("minApi", "minApi23", "minApi18")
+        }
+        create("paid") {}
+    }
+}</code></pre></div></section><section><h3 class="two-line-tab" tab-label="build.gradle" id="groovy-11" data-text="Groovy" tabindex="-1" data-unit="07-variants-143" data-original-id="groovy">Groovy</h3><div></div><div><pre class="source-code"><code class="language-Groovy">// In the app's build.gradle file.
+android {
+    defaultConfig{
+    // Specifies a sorted list of flavors that the plugin can try to use from
+    // a given dimension. This tells the plugin to select the "minApi18" flavor
+    // when encountering a dependency that includes a "minApi" dimension.
+    // You can include additional flavor names to provide a
+    // sorted list of fallbacks for the dimension.
+    missingDimensionStrategy 'minApi', 'minApi18', 'minApi23'
+    // Specify a missingDimensionStrategy property for each
+    // dimension that exists in a local dependency but not in your app.
+    missingDimensionStrategy 'abi', 'x86', 'arm64'
+    }
+    flavorDimensions 'tier'
+    productFlavors {
+        free {
+            dimension 'tier'
+            // You can override the default selection at the product flavor
+            // level by configuring another missingDimensionStrategy property
+            // for the 'minApi' dimension.
+            missingDimensionStrategy 'minApi', 'minApi23', 'minApi18'
+        }
+        paid {}
+    }
+}</code></pre></div></section></div></div></li></ul><p data-unit="07-variants-144">
+  For more information, see <a href="https://developer.android.com/reference/tools/gradle-api/7.0/com/android/build/api/dsl/ProductFlavor#matchingfallbacks"><code translate="no" dir="ltr">matchingFallbacks</code></a>
+  and <a href="https://developer.android.com/reference/tools/gradle-api/7.0/com/android/build/api/dsl/BaseFlavor#missingdimensionstrategy_1"><code translate="no" dir="ltr">missingDimensionStrategy</code></a>
+  in the Android Gradle plugin DSL reference.
+</p><h2 id="signing" data-text="   Configure signing settings " tabindex="-1" data-unit="07-variants-145">
+  Configure signing settings
+</h2><p data-unit="07-variants-146">
+  Gradle doesn't sign your release build's APK or AAB unless you explicitly define a
+  signing configuration for this build. If you don't have a signing key yet,
+  <a href="https://developer.android.com/studio/publish/app-signing#generate-key">generate an upload key and keystore</a>
+  using Android Studio.
+</p><p data-unit="07-variants-147">
+  To manually configure the signing configurations for your release build type
+  using Gradle build configurations:
+</p><ol><li data-unit="07-variants-148">
+    Create a keystore. A <em>keystore</em> is a binary file
+    that contains a set of private keys. You must keep your keystore in a safe
+    and secure place.
+  </li><li data-unit="07-variants-149">
+    Create a private key. A <em>private key</em> is used to sign your app
+    for distribution and is never included with the app or disclosed to unauthorized third parties.
+  </li><li><p data-unit="07-variants-150">
+      Add the signing configuration to the module-level <code translate="no" dir="ltr">build.gradle.kts</code>
+      file:
+    </p><div><div class="ds-selector-tabs"><section><h3 class="two-line-tab" tab-label="build.gradle.kts" id="kts-12" data-text="Kotlin" tabindex="-1" data-unit="07-variants-151" data-original-id="kts">Kotlin</h3><div></div><div><pre class="source-code"><code class="language-Kotlin">...
+android {
+    ...
+    defaultConfig {...}
+    signingConfigs {
+        create("release") {
+            storeFile = file("myreleasekey.keystore")
+            storePassword = "password"
+            keyAlias = "MyReleaseKey"
+            keyPassword = "password"
+        }
+    }
+    buildTypes {
+        getByName("release") {
+            ...
+            signingConfig = signingConfigs.getByName("release")
+        }
+    }
+}</code></pre></div></section><section><h3 class="two-line-tab" tab-label="build.gradle" id="groovy-12" data-text="Groovy" tabindex="-1" data-unit="07-variants-152" data-original-id="groovy">Groovy</h3><div></div><div><pre class="source-code"><code class="language-Groovy">...
+android {
+    ...
+    defaultConfig {...}
+    signingConfigs {
+        release {
+            storeFile file("myreleasekey.keystore")
+            storePassword "password"
+            keyAlias "MyReleaseKey"
+            keyPassword "password"
+        }
+    }
+    buildTypes {
+        release {
+            ...
+            signingConfig signingConfigs.release
+        }
+    }
+}</code></pre></div></section></div></div></li></ol><p class="note" data-unit="07-variants-153">
+  <strong>Note:</strong> Including the passwords for your release key and
+  keystore inside the build file is not a good security practice.
+  Instead, configure the build file to obtain these passwords
+  from environment variables or have the build process prompt you for these
+  passwords.
+</p><p data-unit="07-variants-154">
+  To obtain these passwords from environment variables:
+</p><div><div class="ds-selector-tabs"><section><h3 class="two-line-tab" tab-label="build.gradle.kts" id="kts-13" data-text="Kotlin" tabindex="-1" data-unit="07-variants-155" data-original-id="kts">Kotlin</h3><div></div><div><pre class="source-code"><code class="language-Kotlin">storePassword = System.getenv("KSTOREPWD")
+keyPassword = System.getenv("KEYPWD")</code></pre></div></section><section><h3 class="two-line-tab" tab-label="build.gradle" id="groovy-13" data-text="Groovy" tabindex="-1" data-unit="07-variants-156" data-original-id="groovy">Groovy</h3><div></div><div><pre class="source-code"><code class="language-Groovy">storePassword System.getenv("KSTOREPWD")
+keyPassword System.getenv("KEYPWD")</code></pre></div></section></div></div><p data-unit="07-variants-157">
+  Alternatively, you can load the keystore from a local properties file. For security reasons, don't
+  add this file to source control. Instead, set it up locally for each
+  developer. To learn more, read <a href="https://developer.android.com/studio/publish/app-signing#secure-shared-keystore">
+  Remove signing information from your build files</a>.
+</p><p data-unit="07-variants-158">
+  After you complete this process, you can distribute your app and publish it
+  on Google Play.
+</p><p class="warning" data-unit="07-variants-159">
+  <strong>Warning:</strong> Keep your keystore and private key in a safe and
+  secure place, and ensure that you have secure backups of them. If you use Play App Signing
+  and you lose your upload key, you can
+  <a href="https://support.google.com/googleplay/android-developer/answer/9842756#reset">request a
+  reset</a> using the Play Console.
+  If you are publishing an app without Play App Signing (for apps created before August 2021) and
+  you lose your app signing key, you won't be able to publish any updates to your app, since you
+  must always sign all versions of your app with the same key.
+</p><h3 id="wear-apps" data-text="   Signing Wear OS apps " tabindex="-1" data-unit="07-variants-160">
+  Signing Wear OS apps
+</h3><p data-unit="07-variants-161">
+  When publishing Wear OS apps, both the watch APK and optional phone APK must be signed with the
+  same key. For more information on packaging and signing Wear OS apps, see
+  <a href="https://developer.android.com/training/wearables/packaging">Package and distribute Wear apps</a>.
+</p></div>
+
+  
+    
+      </article><nav class="chapter-switcher" aria-label="章节导航"><a href="../06-android-build/english.html">← Android 与 Gradle 构建概览</a><a class="course-home" href="../index.html">全部章节</a><a href="../08-ksp/english.html">Kotlin 符号处理 API →</a></nav><footer class="license-note"><p>非官方中文阅读版。原文、代码和图示由各官方来源维护；中文翻译与独立导读另行标明。<a href="../NOTICE.html">来源与许可说明</a> · 英文文档快照：2026-10-19。</p></footer></main></body></html>

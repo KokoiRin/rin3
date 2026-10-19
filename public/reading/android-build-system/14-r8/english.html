@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light"><title>Enable app optimization with R8 · Android 构建系统</title><link rel="stylesheet" href="../../reader.css"><link rel="stylesheet" href="../source.css"><link rel="manifest" href="../../../manifest.webmanifest"><link rel="icon" href="../../../icons/apple-touch-icon.png"></head><body><nav class="site-nav" aria-label="站点导航"><a href="../index.html">← Android 构建系统</a><a href="https://developer.android.com/topic/performance/app-optimization/enable-app-optimization?hl=en">官方英文原文 ↗</a></nav><main class="reader"><header class="chapter-header"><span class="chapter-kicker">14 · 优化与排障 · 正文全文</span><h1>Enable app optimization with R8</h1><p class="byline">Enable app optimization with R8</p><div class="title-rule"></div><p class="edition-nav"><a href="index.html">中文阅读版</a> · <strong aria-current="page">English source</strong></p><aside class="learning-note"><span class="note-kind">编者导读 · 不属于原文</span><p><strong>release 构建为什么会删减和改写代码，需要怎样启用与核对？</strong></p><p>先认识 R8 的作用和开启方式，再看资源缩减、兼容性与优化配置。</p></aside><details class="editorial-correction"><summary>编者校注 · 原文的版本条件与简化之处</summary><p>本页同时介绍不同 AGP 版本的 DSL。修改工程时，先确认其 AGP 版本，再选择适用的代码片段。R8 会做缩减、优化和重命名；反射等动态入口可能需要精确的保留规则。只出现 Release 问题也不能单凭现象就认定是 R8，仍需核对任务、配置和产物证据。</p></details><details class="source-details"><summary>本篇目录与翻译范围</summary><p>对应官方英文文档的正文全文，保留章节顺序、代码、图示、表格和正文链接；不含站点导航、反馈和自动推荐组件。</p><p>英文快照：2026-10-19。代码、命令、标识符和原图保持原样。导读与官方正文分开呈现。</p><ul><li class="toc-h2"><a href="#android-skills-card__r8-analyzer">
+              Android skills
+          </a></li><li class="toc-h3"><a href="#skill-title_r8-analyzer">
+          R8 Analyzer
+        </a></li><li class="toc-h2"><a href="#overview">R8 optimization overview</a></li><li class="toc-h2"><a href="#enable">Enable optimization</a></li><li class="toc-h3"><a href="#optimization-dsl">For AGP versions 9.3 and higher</a></li><li class="toc-h3"><a href="#legacy-optimization-dsl">Legacy DSL for AGP versions lower than 9.3</a></li><li class="toc-h3"><a href="#legacy-dsl-kotlin">Legacy DSL (Kotlin)</a></li><li class="toc-h3"><a href="#legacy-dsl-groovy">Legacy DSL (Groovy)</a></li><li class="toc-h2"><a href="#improve-r8-optimization">Improve R8 optimization</a></li><li class="toc-h2"><a href="#optimize-resource-shrinking">Optimize resource shrinking for even smaller apps</a></li><li class="toc-h3"><a href="#optimized-resource-shrinking-2">Enable optimized resource shrinking</a></li><li class="toc-h2"><a href="#r8-optimization-settings">Verify and configure R8 optimization settings</a></li><li class="toc-h2"><a href="#agp-r8-behavior-changes">AGP and R8 version behavior changes</a></li><li class="toc-h2"><a href="#other-build-systems">Use R8 with other build systems</a></li></ul></details><nav class="chapter-switcher" aria-label="章节导航"><a href="../13-kmp-compilations/english.html">← 配置 KMP 编译单元</a><a class="course-home" href="../index.html">全部章节</a><a href="../15-dependency-debugging/english.html">查看与排查依赖 →</a></nav></header><article class="translated-article"><div class="devsite-article-body clearfix
+  "><p><section class="android-skills-card nocontent"><div class="android-skills-card-inner"><header class="android-skills-card-header"><div class="android-skills-card-header-text"><div class="android-skills-card-section-title-container"><h2 class="android-skills-card-section-title no-link" data-text="Android skills" id="android-skills-card__r8-analyzer" tabindex="-1" data-unit="14-r8-001">
+              Android skills
+          </h2><span data-unit="14-r8-002">
+          <a class="android-skills-card-github-link" href="https://github.com/android/skills/tree/main/performance/r8-analyzer" target="_blank" aria-label="View on GitHub">View on GitHub
+            <span class="material-icons" aria-hidden="true" translate="no">open_in_new</span>
+          </a>
+        </span></div><h3 class="android-skills-card-title" id="skill-title_r8-analyzer" data-text="           R8 Analyzer         " tabindex="-1" data-unit="14-r8-003">
+          R8 Analyzer
+        </h3></div></header><div class="android-skills-card-description" data-unit="14-r8-004">Use the R8 Analyzer <a href="https://developer.android.com/tools/agents/android-skills">Android skill</a> to analyze build files and identify redundant, broad, or subsumed <a href="https://developer.android.com/topic/performance/app-optimization/keep-rules-overview">keep rules</a>.</div><div class="android-skills-card-description" data-unit="14-r8-005">To install the skill from the <a href="https://developer.android.com/tools/agents/android-cli">Android CLI</a>, run:</div><div></div><div><pre class="source-code"><code class="language-android-skills-card-text">android skills add r8-analyzer</code></pre></div></div></section></p><p data-unit="14-r8-006">For the best user experience, you should optimize your app to make it as small
+and fast as possible. Our app optimizer, called R8, streamlines your app by
+removing unused code and resources, rewriting code to optimize runtime
+performance, and more. To your users, this means:</p><ul><li data-unit="14-r8-007">Faster startup time</li><li data-unit="14-r8-008">Reduced memory usage</li><li data-unit="14-r8-009">Improved rendering and runtime performance</li><li data-unit="14-r8-010">Fewer <a href="https://developer.android.com/topic/performance/anrs/keep-your-app-responsive">ANRs</a></li></ul><aside class="special" data-unit="14-r8-011"><strong>Important:</strong><span> You should always enable optimization for your app's release build;
+however, you probably don't want to enable it for tests or libraries. For more
+information about using R8 with tests, see <a href="https://developer.android.com/topic/performance/app-optimization/test-and-troubleshoot-the-optimization">Test and troubleshoot the
+optimization</a>. For more information about enabling R8 from libraries, see
+<a href="https://developer.android.com/topic/performance/app-optimization/library-optimization">Optimization for library authors</a>.</span></aside><h2 id="overview" data-text="R8 optimization overview" tabindex="-1" data-unit="14-r8-012">R8 optimization overview</h2><p data-unit="14-r8-013">R8 uses a multi-phase process to optimize your app for size and speed. Key
+operations include the following:</p><ul><li><p data-unit="14-r8-014"><strong>Code shrinking (also known as tree shaking)</strong>: R8 identifies and removes
+unreachable code from your application and its library dependencies. By
+analyzing the entry points of your app (such as <code translate="no" dir="ltr">Activities</code> or <code translate="no" dir="ltr">Services</code>
+defined in the manifest), R8 builds a graph of referenced code and removes
+anything that remains unreferenced.</p></li><li><p data-unit="14-r8-015"><strong>Logical optimizations</strong>: R8 rewrites your code to improve execution
+efficiency and reduce overhead. Key techniques include:</p><ul><li><p data-unit="14-r8-016"><strong>Method inlining</strong>: R8 replaces a method call site with the actual body
+of the called method. This eliminates the overhead of a function call
+and lets R8 conduct further optimizations.</p></li><li><p data-unit="14-r8-017"><strong>Class merging</strong>: R8 combines sets of classes and interfaces into a
+single class. This reduces the number of classes in the app, lowering
+memory pressure and improving startup speed.</p></li></ul></li><li><p data-unit="14-r8-018"><strong>Obfuscation (also known as minification)</strong>: To reduce the size of the DEX
+file, R8 shortens the names of classes, fields, and methods (for example,
+<code translate="no" dir="ltr">com.example.MyActivity</code> could become <code translate="no" dir="ltr">a.b.a</code>).</p></li></ul><p data-unit="14-r8-019">Since 8.12.0 version of Android Gradle Plugin (AGP), R8 also optimizes resources
+as part of its optimization phases. For more information, see <a href="https://developer.android.com/topic/performance/app-optimization/enable-app-optimization?hl=en#optimize-resource-shrinking">Optimized
+resource shrinking</a>.</p><h2 id="enable" data-text="Enable optimization" tabindex="-1" data-unit="14-r8-020">Enable optimization</h2><p data-unit="14-r8-021">To enable app optimization for your app use the appropriate DSL based on your
+project's AGP version. We recommend enabling app optimization only in the final
+version of your app that you test before publishing—usually your release
+build—because the optimizations increase the build time of your project and can
+make debugging harder due to the way it modifies code.</p><h3 id="optimization-dsl" data-text="For AGP versions 9.3 and higher" tabindex="-1" data-unit="14-r8-022">For AGP versions 9.3 and higher</h3><p data-unit="14-r8-023">To enable app optimization for AGP 9.3 and higher:</p><ul><li data-unit="14-r8-024">Set <code translate="no" dir="ltr">enable = true</code> in the <code translate="no" dir="ltr">optimization</code> block in your release build's
+app-level build script.</li><li data-unit="14-r8-025">Add your <a href="https://developer.android.com/topic/performance/app-optimization/add-keep-rules">keep rules</a> to a file with the suffix <code translate="no" dir="ltr">.keep</code> in the
+<code translate="no" dir="ltr">src/&lt;variant&gt;/keepRules</code> source set. For example,
+<code translate="no" dir="ltr">src/main/keepRules/custom-rules.keep</code>.</li></ul><aside class="note" data-unit="14-r8-026"><strong>Note:</strong><span> The updated DSL enables both code and resource optimization. It also
+includes a set of default keep rules for the Android platform, equivalent to
+"proguard-android-optimize.txt". To omit the default rules, see <a href="https://developer.android.com/topic/performance/app-optimization/keep-rules-overview#omit-default">Omit default
+rules</a>.</span></aside><div><div data-ds-scope="code-sample" class="code-variants"><section><h3 id="kotlin" data-text="Kotlin" tabindex="-1" data-unit="14-r8-027">Kotlin</h3><div></div><div><pre class="source-code"><code class="language-Kotlin">android {
+    buildTypes {
+        release {
+            optimization {
+                enable = true // Enables code and resource optimizations.
+            }
+        }
+    }
+}
+</code></pre></div></section><section><h3 id="groovy" data-text="Groovy" tabindex="-1" data-unit="14-r8-028">Groovy</h3><div></div><div><pre class="source-code"><code class="language-Groovy">android {
+    buildTypes {
+        release {
+            optimization {
+                enable = true // Enables code and resource optimizations.
+            }
+        }
+    }
+}
+</code></pre></div></section></div></div><h3 id="legacy-optimization-dsl" data-text="Legacy DSL for AGP versions lower than 9.3" tabindex="-1" data-unit="14-r8-029">Legacy DSL for AGP versions lower than 9.3</h3><p data-unit="14-r8-030">To enable app optimization, set <code translate="no" dir="ltr">isMinifyEnabled = true</code> (for code optimization)
+and <code translate="no" dir="ltr">isShrinkResources = true</code> (for resource optimization) in your <a href="https://developer.android.com/studio/publish/preparing#turn-off-debugging">release
+build's</a> app-level build script. We recommend that you always enable both
+settings.</p><div><div data-ds-scope="code-sample" class="code-variants"><section><h3 id="legacy-dsl-kotlin" data-text="Legacy DSL (Kotlin)" tabindex="-1" data-unit="14-r8-031">Legacy DSL (Kotlin)</h3><div></div><div><pre class="source-code"><code class="language-Kotlin">android {
+    buildTypes {
+        release {
+
+            // Enables code optimizations.
+            isMinifyEnabled = true
+
+            // Enables resource shrinking.
+            isShrinkResources = true
+
+            proguardFiles(
+                // Default file with automatically generated optimization rules.
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+
+                ...
+            )
+            ...
+        }
+    }
+    ...
+}
+</code></pre></div></section><section><h3 id="legacy-dsl-groovy" data-text="Legacy DSL (Groovy)" tabindex="-1" data-unit="14-r8-032">Legacy DSL (Groovy)</h3><div></div><div><pre class="source-code"><code class="language-Groovy">android {
+    buildTypes {
+        release {
+
+            // Enables code optimizations.
+            minifyEnabled = true
+
+            // Enables resource shrinking.
+            shrinkResources = true
+
+            // Default file with automatically generated optimization rules.
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt')
+
+            ...
+        }
+    }
+}
+</code></pre></div></section></div></div><h2 id="improve-r8-optimization" data-text="Improve R8 optimization" tabindex="-1" data-unit="14-r8-033">Improve R8 optimization</h2><p data-unit="14-r8-034">The performance benefits of R8 are directly correlated to how much of your
+codebase R8 is able to optimize. To get the maximum benefits out of R8, follow
+best practices:</p><ul><li data-unit="14-r8-035">Enable R8 in <a href="https://developer.android.com/topic/performance/app-optimization/full-mode">full mode</a></li><li data-unit="14-r8-036">Enable <a href="https://developer.android.com/topic/performance/app-optimization/adopt-optimizations-incrementally">obfuscation, optimization, and shrinking</a></li><li data-unit="14-r8-037">Enable resource shrinking and <a href="https://developer.android.com/topic/performance/app-optimization/enable-app-optimization?hl=en#optimize-resource-shrinking">optimized resource shrinking</a></li><li data-unit="14-r8-038"><a href="https://developer.android.com/topic/performance/app-optimization/keep-rules-best-practices">Refine keep rules</a> to allow maximum optimization of classes, fields and
+methods.</li></ul><p data-unit="14-r8-039">To help you refine keep rules, use the <a href="https://developer.android.com/topic/performance/app-optimization/r8-configuration-analyzer">R8 Configuration Analyzer</a>.</p><p data-unit="14-r8-040">The R8 Configuration Analyzer lets you do the following:</p><ul><li data-unit="14-r8-041">Track and improve the overall R8 configuration quality by monitoring the
+metrics provided by the R8 Configuration Analyzer report.</li><li data-unit="14-r8-042">Find the broadest keep rules - those which prevent the most optimization</li><li data-unit="14-r8-043">and understand what optimization they prevent to refine them.</li></ul><p data-unit="14-r8-044">The R8 Configuration Analyzer is available in AGP version 9.3.0-alpha05 or from
+R8 version 9.3.7-dev. For more information, see <a href="https://developer.android.com/topic/performance/app-optimization/r8-configuration-analyzer">Analyze R8 configuration</a>.</p><h2 id="optimize-resource-shrinking" data-text="Optimize resource shrinking for even smaller apps" tabindex="-1" data-unit="14-r8-045">Optimize resource shrinking for even smaller apps</h2><p data-unit="14-r8-046">The 8.12.0 version of AGP introduces optimized resource shrinking, which aims to
+integrate resource and code optimization to create even smaller and faster apps.
+Before optimized resource shrinking, Android Asset Packaging Tool (AAPT2)
+generated keep rules that effectively treating resource shrinking separately
+from code, often retaining inaccessible code or resources that referenced each
+other.</p><p data-unit="14-r8-047">With optimized resource shrinking, resources are considered like a part of
+program code, forming the reference graph. When a collection of code or
+resources is not referenced, it is not protected by a keep rule, and can be
+removed.</p><h3 id="optimized-resource-shrinking-2" data-text="Enable optimized resource shrinking" tabindex="-1" data-unit="14-r8-048">Enable optimized resource shrinking</h3><p data-unit="14-r8-049">To enable the new optimized resource shrinking pipeline for AGP 8.12 or 8.13,
+add the following to your project's <code translate="no" dir="ltr">gradle.properties</code> file:</p><div></div><div><pre class="source-code"><code class="language-Bash">android.r8.optimizedResourceShrinking=true
+</code></pre></div><p data-unit="14-r8-050">If you are using AGP 9.0.0 or a newer version, you don't need to set
+<code translate="no" dir="ltr">android.r8.optimizedResourceShrinking=true</code>. Optimized resource shrinking is
+automatically applied when <code translate="no" dir="ltr">isShrinkResources = true</code> is enabled in your build
+configuration.</p><h2 id="r8-optimization-settings" data-text="Verify and configure R8 optimization settings" tabindex="-1" data-unit="14-r8-051">Verify and configure R8 optimization settings</h2><p data-unit="14-r8-052">To enable R8 to use its <a href="https://developer.android.com/topic/performance/app-optimization/full-mode">full optimization capabilities</a>, remove the
+following line from your project's <code translate="no" dir="ltr">gradle.properties</code> file, if it exists:</p><div></div><div><pre class="source-code"><code class="language-Bash">android.enableR8.fullMode=false
+</code></pre></div><p data-unit="14-r8-053">Note that enabling app optimization makes stack traces difficult to understand,
+especially if R8 renames class or method names. To get stack traces that
+correctly correspond to your source code, see <a href="https://developer.android.com/topic/performance/app-optimization/test-and-troubleshoot-the-optimization#recover-original-stack-trace">Recover the original stack
+trace</a>.</p><p data-unit="14-r8-054">If R8 is enabled, you should also <a href="https://developer.android.com/topic/performance/baselineprofiles/dex-layout-optimizations">create Startup Profiles</a> for even better
+startup performance.</p><p data-unit="14-r8-055">If you enable app optimization and it causes errors, here are some strategies to
+fix them:</p><ul><li data-unit="14-r8-056"><a href="https://developer.android.com/topic/performance/app-optimization/add-keep-rules">Add keep rules</a> to keep some code untouched.</li><li data-unit="14-r8-057"><a href="https://developer.android.com/topic/performance/app-optimization/adopt-optimizations-incrementally">Adopt optimizations incrementally</a>.</li><li data-unit="14-r8-058">Update your code to <a href="https://developer.android.com/topic/performance/app-optimization/choose-libraries-wisely">use libraries that are better suited for
+optimization</a>.</li></ul><aside class="caution" data-unit="14-r8-059"><strong>Caution:</strong><span> Tools that replace or modify R8's output can negatively impact runtime
+performance. R8 is careful about including and testing many optimizations at the
+code level, in <a href="https://developer.android.com/topic/performance/baselineprofiles/dex-layout-optimizations">DEX layout</a>, and in correctly producing Baseline Profiles -
+other tools producing or modifying DEX files can break these optimizations, or
+otherwise regress performance.</span></aside><p data-unit="14-r8-060">If you are interested in optimizing your build speed, see <a href="https://developer.android.com/build/r8-execution-profiles">Configure how R8
+runs</a> for information on how to configure R8 based on your environment.</p><h2 id="agp-r8-behavior-changes" data-text="AGP and R8 version behavior changes" tabindex="-1" data-unit="14-r8-061">AGP and R8 version behavior changes</h2><p data-unit="14-r8-062">The following table outlines the key features introduced in various versions of
+the Android Gradle Plugin (AGP) and the R8 compiler.</p><div class="table-wrapper" tabindex="0" role="region" aria-label="原文表格，可横向滚动"><table><thead><tr><th data-unit="14-r8-063">AGP version</th><th data-unit="14-r8-064">Features introduced</th></tr></thead><tbody><tr><td data-unit="14-r8-065">9.3</td><td data-unit="14-r8-066">
+        <strong>Simplified DSL:</strong>New `optimization {}` block enables requires less configuration- optimized resource shrinking is always enabled, default Android keep rules are opt-out.
+        <br><br>
+        <strong>`keepRules` source set:</strong> If you use the new DSL, you must place your keep rules in the <code translate="no" dir="ltr">src/&lt;variant&gt;/keepRules</code> source set, in files with the suffix <code translate="no" dir="ltr">.keep</code>. The source sets are also compatible with the legacy DSL.
+        <br><br>
+        <strong>KMP (Kotlin MultiPlatform) consumer rules:</strong> KMP no longer requires setting <code translate="no" dir="ltr">publish = true</code>, and supports the <code translate="no" dir="ltr">src/&lt;variant&gt;/keepRules</code> source set with the <code translate="no" dir="ltr">.keep</code> extension.
+        <br><br>
+        Note that the legacy DSL is still supported.
+      </td></tr><tr><td data-unit="14-r8-067">9.1</td><td data-unit="14-r8-068">
+        <strong>Classes repackaged by default:</strong> R8 repackages classes (moving them to the unnamed package, at the top level) to compact DEX further, eliminating the need to specify <code translate="no" dir="ltr">-repackageclasses</code> option. For information about how this works and how to opt out, see <a href="https://developer.android.com/topic/performance/app-optimization/global-options#global-options">global options</a>.
+      </td></tr><tr><td data-unit="14-r8-069">9.0</td><td data-unit="14-r8-070">
+        <strong>Optimized resource shrinking:</strong> Enabled by default (controlled using <code translate="no" dir="ltr">android.r8.optimizedResourceShrinking</code>). <a href="https://developer.android.com/topic/performance/app-optimization/enable-app-optimization#optimize-resource-shrinking">Optimized resource shrinking</a> helps integrate resource shrinking with the code optimization pipeline, leading to smaller, faster apps. By optimizing both code and resource references simultaneously, it identifies and removes resources referenced exclusively from unused code. This is a significant improvement over the previous separate optimization processes.<br><br>
+        This is especially useful for apps that share substantial resources and code across different form factor verticals, with measured improvements of over 50% in app size. The resulting size reduction leads to smaller downloads, faster installations, and a better user experience with faster startup, improved rendering, and fewer ANRs.<br><br>
+        <strong>Library rule filtering:</strong> Support for global options (for example, <code translate="no" dir="ltr">-dontobfuscate</code>) in library consumer rules has been dropped, and apps will filter them out. For more information, see <a href="https://developer.android.com/topic/performance/app-optimization/global-options">Add global options</a>.<br><br>
+        <strong>Kotlin null checks:</strong> Optimized by default (controlled using <code translate="no" dir="ltr">-processkotlinnullchecks</code>). This version also introduced significant improvements in build speed. For more information, see <a href="https://developer.android.com/topic/performance/app-optimization/global-options#global-options">Global options for additional optimization</a>.<br><br>
+        <strong>Optimize specific packages:</strong> You can use <code translate="no" dir="ltr">packageScope</code> to optimize specific packages. This is in experimental support. For more information, see <a href="https://developer.android.com/topic/performance/app-optimization/optimize-specified-packages">Optimize specified packages with <code translate="no" dir="ltr">packageScope</code></a>.<br><br>
+        <strong>Optimized by default:</strong> Support for <code translate="no" dir="ltr">getDefaultProguardFile("proguard-android.txt")</code> has been dropped, because it includes <code translate="no" dir="ltr">-dontoptimize</code>, which should be avoided. Instead, use <code translate="no" dir="ltr">"proguard-android-optimize.txt"</code>. If you need to globally disable optimization in your app, <a href="https://developer.android.com/topic/performance/app-optimization/global-options#global-options-2">add the flag manually to a proguard file</a>.
+      </td></tr><tr><td data-unit="14-r8-071">8.12</td><td data-unit="14-r8-072">
+        <strong>Optimized resource shrinking:</strong> Initial support added (controlled using <code translate="no" dir="ltr">android.r8.optimizedResourceShrinking</code>).  <a href="https://developer.android.com/topic/performance/app-optimization/enable-app-optimization#optimize-resource-shrinking">Optimized resource shrinking</a> helps integrate resource shrinking with the code optimization pipeline. You must manually enable it in this version of AGP.<br><br>
+        <strong>Logcat retracing:</strong> Support for automatic retracing in the Android Studio <a href="https://developer.android.com/studio/debug/logcat">Logcat window</a>.
+      </td></tr><tr><td data-unit="14-r8-073">8.6</td><td data-unit="14-r8-074">
+        <strong>Improved retracing:</strong> Includes filename and line number retracing by default for all <code translate="no" dir="ltr">minSdk</code> levels (previously required <code translate="no" dir="ltr">minSdk</code> 26+ in version 8.2).<br><br>
+        Updating R8 helps ensure that stack traces from obfuscated builds are readily and clearly readable. This version improves how line numbers and source files are mapped, making it easier for tools like the Android Studio Logcat to automatically retrace crashes to the original source code.
+      </td></tr><tr><td data-unit="14-r8-075">8.0</td><td data-unit="14-r8-076">
+        <strong>Full mode by default:</strong> <a href="https://developer.android.com/topic/performance/app-optimization/full-mode">R8 full mode</a> provides significantly more powerful optimization. It is enabled by default. You can opt out using <code translate="no" dir="ltr">android.enableR8.fullMode=false</code>.
+      </td></tr><tr><td data-unit="14-r8-077">7.0</td><td data-unit="14-r8-078">
+        <strong>Full mode available:</strong> Introduced as an opt-in feature using <code translate="no" dir="ltr">android.enableR8.fullMode=true</code>. Full mode applies more powerful optimizations by making stricter assumptions about how your code uses reflection and other dynamic features. While it reduces app size and improves performance, it might require additional keep rules to prevent necessary code from being stripped.
+      </td></tr></tbody></table></div><h2 id="other-build-systems" data-text="Use R8 with other build systems" tabindex="-1" data-unit="14-r8-079">Use R8 with other build systems</h2><p data-unit="14-r8-080">While AGP is the recommended and officially supported build system for Android
+apps, you might use an alternative build system like <a href="https://bazel.build/" class="external">Bazel</a>. If
+you're using Bazel, you can integrate R8 into your build pipeline to shrink,
+obfuscate, and optimize your app.</p><p data-unit="14-r8-081">For information about optimizing an Android app using Bazel, see Bazel's
+<a href="https://github.com/bazelbuild/rules_android/tree/main/docs/r8-optimization.md" class="external"><code translate="no" dir="ltr">rules_android</code> documentation</a>. Note that Bazel isn't
+<a href="https://developer.android.com/build#other-build-systems">officially supported</a> for Android app development.</p></div>
+
+  
+    
+      </article><nav class="chapter-switcher" aria-label="章节导航"><a href="../13-kmp-compilations/english.html">← 配置 KMP 编译单元</a><a class="course-home" href="../index.html">全部章节</a><a href="../15-dependency-debugging/english.html">查看与排查依赖 →</a></nav><footer class="license-note"><p>非官方中文阅读版。原文、代码和图示由各官方来源维护；中文翻译与独立导读另行标明。<a href="../NOTICE.html">来源与许可说明</a> · 英文文档快照：2026-10-19。</p></footer></main></body></html>

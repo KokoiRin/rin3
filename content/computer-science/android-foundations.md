@@ -1,6 +1,7 @@
 ---
 title: Android 基础 · 官方文档中文阅读版
 summary: 第一周五天的二十一份 Android 官方文档，正文全文逐段翻译，保留原文结构、代码、图示和完整示例。
+reader: /reading/android-foundations/index.html
 date: 2026-09-09
 lang: zh-CN
 topic: Android

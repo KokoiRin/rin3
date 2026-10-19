@@ -1,6 +1,7 @@
 ---
 title: 编程语言 Part A · 第四节：从类型约束到模块抽象，判断程序何时可以替换
 summary: 把类型推导拆成可跟随的约束求解，再看清抽象类型、等价实现与程序变换的条件。
+reader: /reading/programming-languages-a-section-4/index.html
 date: 2026-10-17
 lang: zh-CN
 topic: Programming Languages / Standard ML

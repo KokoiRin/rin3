@@ -1,6 +1,7 @@
 ---
 title: 《Learning Domain-Driven Design》学习记录
 summary: 从业务复杂度、设计演进、EventStorming、遗留系统现代化、微服务边界、事件驱动集成到数据网格，形成一套“先理解业务，再发现边界，最后选择实现并持续复查”的工作方法。
+reader: /reading/learning-domain-driven-design/chapter-10/index.html
 date: 2026-07-31
 lang: zh-CN
 topic: Domain-Driven Design

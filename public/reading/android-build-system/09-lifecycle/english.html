@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light"><title>Gradle Build Lifecycle · Android 构建系统</title><link rel="stylesheet" href="../../reader.css"><link rel="stylesheet" href="../source.css"><link rel="manifest" href="../../../manifest.webmanifest"><link rel="icon" href="../../../icons/apple-touch-icon.png"></head><body><nav class="site-nav" aria-label="站点导航"><a href="../index.html">← Android 构建系统</a><a href="https://docs.gradle.org/current/userguide/build_lifecycle_intermediate.html">官方英文原文 ↗</a></nav><main class="reader"><header class="chapter-header"><span class="chapter-kicker">09 · 代码生成与任务、缓存 · 正文全文</span><h1>Gradle Build Lifecycle</h1><p class="byline">Gradle Build Lifecycle</p><div class="title-rule"></div><p class="edition-nav"><a href="index.html">中文阅读版</a> · <strong aria-current="page">English source</strong></p><aside class="learning-note"><span class="note-kind">编者导读 · 不属于原文</span><p><strong>指定一个任务后，Gradle 先配置什么，随后执行什么？</strong></p><p>围绕初始化、配置、执行三个阶段，观察任务图怎样形成。</p></aside><details class="editorial-correction"><summary>编者校注 · 原文的版本条件与简化之处</summary><p><code>include</code> 把子项目加入同一次构建；<code>includeBuild</code> 引入另一份构建，属于复合构建。二者不要混成同一种“模块引入”。另外，配置脚本执行、任务注册、惰性任务配置与任务动作执行是不同的事情；哪些任务会被实际配置，取决于构建逻辑、插件和配置缓存状态。</p></details><details class="source-details"><summary>本篇目录与翻译范围</summary><p>对应官方英文文档的正文全文，保留章节顺序、代码、图示、表格和正文链接；不含站点导航、反馈和自动推荐组件。</p><p>英文快照：2026-10-19。代码、命令、标识符和原图保持原样。导读与官方正文分开呈现。</p><ul><li class="toc-h2"><a href="#sec%3Abuild_phases">Build Phases</a></li><li class="toc-h3"><a href="#sec%3Ainitialization">Phase 1. Initialization</a></li><li class="toc-h3"><a href="#sec%3Aconfiguration">Phase 2. Configuration</a></li><li class="toc-h3"><a href="#sec%3Atask_execution">Phase 3. Execution</a></li><li class="toc-h2"><a href="#sec%3Atask_graph">Task Graphs</a></li><li class="toc-h2"><a href="#hooking_into_the_build_lifecycle">Hooking into the Build Lifecycle</a></li></ul></details><nav class="chapter-switcher" aria-label="章节导航"><a href="../08-ksp/english.html">← Kotlin 符号处理 API</a><a class="course-home" href="../index.html">全部章节</a><a href="../10-caching/english.html">增量构建与构建缓存基础 →</a></nav></header><article class="translated-article"><div id="content"><div id="preamble"><div class="sectionbody"><div class="paragraph"><p data-unit="09-lifecycle-001">The build lifecycle is the sequence of phases Gradle executes to turn your build scripts, source code, and more, into completed work.
+From initializing the build environment to configuring projects and finally executing tasks.</p></div><div class="imageblock"><div class="content"><img src="../assets/eb6c29cfefd0.png" alt="gradle basic 10" data-original-src="https://docs.gradle.org/current/userguide/img/gradle-basic-10.png" loading="lazy"></div></div><p>
+  </p><div><iframe src="https://www.youtube-nocookie.com/embed/AryTb7QxgfA?si=yxiubs7URE4LRg-J&amp;rel=0" frameborder="0" allowfullscreen></iframe></div></div></div><div class="sect1"><h2 id="sec:build_phases" data-unit="09-lifecycle-002"><a class="link" href="https://docs.gradle.org/current/userguide/build_lifecycle_intermediate.html#sec:build_phases">Build Phases</a></h2><div class="sectionbody"><div class="paragraph"><p data-unit="09-lifecycle-003">A Gradle build has three distinct phases.</p></div><div class="imageblock"><div class="content"><img src="../assets/bd6e9a0cc072.png" alt="author gradle 1" data-original-src="https://docs.gradle.org/current/userguide/img/author-gradle-1.png" loading="lazy"></div></div><div class="paragraph"><p data-unit="09-lifecycle-004">Gradle runs these phases in order:</p></div><div class="table-wrapper" tabindex="0" role="region" aria-label="原文表格，可横向滚动"><table class="tableblock frame-all grid-all stretch"><colgroup>
+<col>
+<col>
+<col>
+</colgroup><thead><tr><th class="tableblock halign-left valign-top" data-unit="09-lifecycle-005">Phase 1. Initialization</th><th class="tableblock halign-left valign-top" data-unit="09-lifecycle-006">Phase 2. Configuration</th><th class="tableblock halign-left valign-top" data-unit="09-lifecycle-007">Phase 3. Execution</th></tr></thead><tbody><tr><td class="tableblock halign-left valign-top"><p class="tableblock" data-unit="09-lifecycle-008">- Detects the <strong>settings file</strong><br>
+- Creates a <a href="https://docs.gradle.org/current/dsl/org.gradle.api.initialization.Settings.html"><code><strong>Settings</strong></code></a> instance<br>
+- Evaluates the <strong>settings file</strong> to determine which projects (and included builds) make up the build<br>
+- Creates a <a href="https://docs.gradle.org/current/dsl/org.gradle.api.Project.html"><code><strong>Project</strong></code></a> instance <strong>for every project</strong></p></td><td class="tableblock halign-left valign-top"><p class="tableblock" data-unit="09-lifecycle-009">- Evaluates the <strong>build files of every project</strong> participating in the build<br>
+- Evaluates the <strong>configuration</strong> (input/output) of <strong>tasks</strong><br>
+- Creates a <strong>task graph</strong> for requested tasks</p></td><td class="tableblock halign-left valign-top"><p class="tableblock" data-unit="09-lifecycle-010">- Schedules and <strong>executes</strong> the selected <strong>tasks</strong></p></td></tr></tbody></table></div><div class="imageblock"><div class="content"><img src="../assets/c597606f8436.png" alt="build lifecycle example" data-original-src="https://docs.gradle.org/current/userguide/img/build-lifecycle-example.png" loading="lazy"></div></div><div class="paragraph"><p data-unit="09-lifecycle-011">The following example shows which parts of settings and build files correspond to various build phases:</p></div><div class="exampleblock"><div class="content"><div class="exampleblock testable-sample multi-language-sample"><div class="content"><div class="listingblock"><div class="title" data-unit="09-lifecycle-012">settings.gradle.kts</div><div class="content"><pre class="source-code"><code class="language-kotlin">rootProject.name = "basic"
+println("This is executed during the initialization phase.")</code></pre></div></div><div class="listingblock"><div class="title" data-unit="09-lifecycle-013">build.gradle.kts</div><div class="content"><pre class="source-code"><code class="language-kotlin">// Configuration Phase
+println("This is executed during the configuration phase.")
+
+tasks.register("configured") {
+    println("This is also executed during the configuration phase.")
+}
+
+// Execution Phase
+tasks.register("test") {
+    doLast {
+        println("This is executed during the execution phase.")
+    }
+}
+
+// Configurations AND Execution Phase
+tasks.register("testBoth") {
+    println("This is executed during the configuration phase as well.")
+    doFirst {
+        println("This is executed first during the execution phase.")
+    }
+    doLast {
+        println("This is executed last during the execution phase.")
+    }
+}</code></pre></div></div></div></div><div class="exampleblock testable-sample multi-language-sample"><div class="content"><div class="listingblock"><div class="title" data-unit="09-lifecycle-014">settings.gradle</div><div class="content"><pre class="source-code"><code class="language-groovy">rootProject.name = 'basic'
+println 'This is executed during the initialization phase.'</code></pre></div></div><div class="listingblock"><div class="title" data-unit="09-lifecycle-015">build.gradle</div><div class="content"><pre class="source-code"><code class="language-groovy">// Configuration Phase
+println 'This is executed during the configuration phase.'
+
+tasks.register('configured') {
+    println 'This is also executed during the configuration phase.'
+}
+
+// Execution Phase
+tasks.register('test') {
+    doLast {
+        println 'This is executed during the execution phase.'
+    }
+}
+
+// Configurations AND Execution Phase
+tasks.register('testBoth') {
+    println 'This is executed during the configuration phase as well.'
+    doFirst {
+	  println 'This is executed first during the execution phase.'
+	}
+	doLast {
+	  println 'This is executed last during the execution phase.'
+	}
+}</code></pre></div></div></div></div></div></div><div class="paragraph"><p data-unit="09-lifecycle-016">The following command executes the <code>test</code> task and <code>testBoth</code> task specified above.
+Because Gradle only configures the tasks that are required to run (i.e., the requested task and its dependencies), the <code>configured</code> task will not be configured or executed:</p></div><div class="exampleblock"><div class="content"><div class="exampleblock multi-language-text lang-kotlin"><div class="content"><div class="listingblock"><div class="content"><pre class="source-code"><code class="language-bash">$ ./gradlew test testBoth</code></pre></div></div><div class="listingblock"><div class="content"><pre class="source-code"><code class="language-text">This is executed during the initialization phase.
+
+&gt; Configure project :
+This is executed during the configuration phase.
+This is executed during the configuration phase as well.
+
+&gt; Task :test
+This is executed during the execution phase.
+
+&gt; Task :testBoth
+This is executed first during the execution phase.
+This is executed last during the execution phase.
+
+BUILD SUCCESSFUL in 0s
+2 actionable tasks: 2 executed</code></pre></div></div></div></div><div class="exampleblock multi-language-text lang-groovy"><div class="content"><div class="listingblock"><div class="content"><pre class="source-code"><code class="language-bash">$ ./gradlew test testBoth</code></pre></div></div><div class="listingblock"><div class="content"><pre class="source-code"><code class="language-text">This is executed during the initialization phase.
+
+&gt; Configure project :
+This is executed during the configuration phase.
+This is executed during the configuration phase as well.
+
+&gt; Task :test
+This is executed during the execution phase.
+
+&gt; Task :testBoth
+This is executed first during the execution phase.
+This is executed last during the execution phase.
+
+BUILD SUCCESSFUL in 0s
+2 actionable tasks: 2 executed</code></pre></div></div></div></div></div></div><div class="sect2"><h3 id="sec:initialization" data-unit="09-lifecycle-017"><a class="link" href="https://docs.gradle.org/current/userguide/build_lifecycle_intermediate.html#sec:initialization">Phase 1. Initialization</a></h3><div class="paragraph"><p data-unit="09-lifecycle-018">In the <strong>initialization phase</strong>, Gradle detects the set of projects (root and subprojects) and included builds participating in the build.</p></div><div class="paragraph"><p data-unit="09-lifecycle-019">Gradle first evaluates the settings file, <code>settings.gradle(.kts)</code>, and instantiates a <code>Settings</code> object.</p></div><div class="paragraph"><p data-unit="09-lifecycle-020">Then, Gradle instantiates <code>Project</code> object instances for each project included in the build (using <code>includeBuild()</code> or <code>include()</code> in the settings file).</p></div></div><div class="sect2"><h3 id="sec:configuration" data-unit="09-lifecycle-021"><a class="link" href="https://docs.gradle.org/current/userguide/build_lifecycle_intermediate.html#sec:configuration">Phase 2. Configuration</a></h3><div class="paragraph"><p data-unit="09-lifecycle-022">In the <strong>configuration phase</strong>, Gradle adds tasks and other properties to the projects found by the initialization phase.</p></div><div class="paragraph"><p data-unit="09-lifecycle-023">Gradle constructs the <a href="https://docs.gradle.org/current/userguide/build_lifecycle_intermediate.html#sec:task_graph">task graph</a> by understanding the dependencies between tasks.</p></div></div><div class="sect2"><h3 id="sec:task_execution" data-unit="09-lifecycle-024"><a class="link" href="https://docs.gradle.org/current/userguide/build_lifecycle_intermediate.html#sec:task_execution">Phase 3. Execution</a></h3><div class="paragraph"><p data-unit="09-lifecycle-025">In the <strong>execution phase</strong>, Gradle runs tasks.</p></div><div class="paragraph"><p data-unit="09-lifecycle-026">Gradle uses the <a href="https://docs.gradle.org/current/userguide/build_lifecycle_intermediate.html#sec:task_graph">task execution graphs</a> generated by the configuration phase to determine which tasks to execute.
+Gradle can execute tasks in parallel.</p></div></div></div></div><div class="sect1"><h2 id="sec:task_graph" data-unit="09-lifecycle-027"><a class="link" href="https://docs.gradle.org/current/userguide/build_lifecycle_intermediate.html#sec:task_graph">Task Graphs</a></h2><div class="sectionbody"><div class="paragraph"><p data-unit="09-lifecycle-028">As a build author, you write build logic by defining tasks and declaring how they depend on one another.
+Gradle uses this information to construct a <strong>task graph</strong> during the <strong>configuration phase</strong> that models the relationships between these tasks.</p></div><div class="paragraph"><p data-unit="09-lifecycle-029">For example, if your project includes tasks such as <code>buildHtml</code>, <code>assembleDocs</code>, and <code>createDocs</code>, and you declare that <code>assembleDocs</code> depends on <code>buildHtml</code>, and <code>createDocs</code> depends on <code>assembleDocs</code>, Gradle constructs a graph with this order: <code>buildHtml</code> → <code>assembleDocs</code> → <code>createDocs</code>.</p></div><div class="paragraph"><p data-unit="09-lifecycle-030">Gradle builds the task graph <strong>before</strong> executing any task(s).</p></div><div class="paragraph"><p data-unit="09-lifecycle-031">Across all projects in the build, tasks form a <a href="http://en.wikipedia.org/wiki/Directed_acyclic_graph" target="_blank" rel="noopener">Directed Acyclic Graph</a> (DAG).</p></div><div class="paragraph"><p data-unit="09-lifecycle-032">This diagram shows two example task graphs, one abstract and the other concrete, with dependencies between tasks represented as arrows:</p></div><div class="imageblock"><div class="content"><img src="../assets/66faa41a5343.png" alt="task dag examples" data-original-src="https://docs.gradle.org/current/userguide/img/task-dag-examples.png" loading="lazy"></div></div><div id="build_lifecycle_events" class="paragraph"><p data-unit="09-lifecycle-033"><strong>Your build scripts and plugins are responsible for declaring this task dependency graph</strong>, either explicitly via the <a href="https://docs.gradle.org/current/userguide/writing_tasks_intermediate.html#sec:task_dependencies">task dependency mechanism</a> (e.g., <code>dependsOn</code>) or implicitly using <a href="https://docs.gradle.org/current/userguide/incremental_build.html#sec:task_inputs_outputs">task annotation</a> (e.g., by wiring task inputs and outputs).</p></div><div class="paragraph text-right"><p data-unit="09-lifecycle-034"><strong>Next Step:</strong> <a href="https://docs.gradle.org/current/userguide/writing_build_scripts_intermediate.html#writing_build_scripts">Learn how to write Build Scripts</a> &gt;&gt;</p></div></div></div><div class="sect1"><h2 id="hooking_into_the_build_lifecycle" data-unit="09-lifecycle-035"><a class="link" href="https://docs.gradle.org/current/userguide/build_lifecycle_intermediate.html#hooking_into_the_build_lifecycle">Hooking into the Build Lifecycle</a></h2><div class="sectionbody"><div class="paragraph"><p data-unit="09-lifecycle-036">As your build logic becomes more advanced, you might need to execute custom actions during specific build phases. Gradle exposes several APIs that let you listen to or react to key events in the lifecycle.</p></div><div class="paragraph"><p data-unit="09-lifecycle-037">For a detailed guide on available callbacks and listeners, refer to <a href="https://docs.gradle.org/current/userguide/build_lifecycle.html#sec:lifecycle_api">Lifecycle API</a>.</p></div></div></div></div>
+</article><nav class="chapter-switcher" aria-label="章节导航"><a href="../08-ksp/english.html">← Kotlin 符号处理 API</a><a class="course-home" href="../index.html">全部章节</a><a href="../10-caching/english.html">增量构建与构建缓存基础 →</a></nav><footer class="license-note"><p>非官方中文阅读版。原文、代码和图示由各官方来源维护；中文翻译与独立导读另行标明。<a href="../NOTICE.html">来源与许可说明</a> · 英文文档快照：2026-10-19。</p></footer></main></body></html>

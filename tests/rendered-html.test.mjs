@@ -84,7 +84,9 @@ test("exports the fourth seasonal destination", async () => {
   assert.match(home, new RegExp(`href="${basePath}/me/"`));
   assert.match(personal, /<title>Me \| RIN III<\/title>/i);
   assert.match(personal, /THE QUIET WORK OF BECOMING/);
-  assert.doesNotMatch(home, /<button/i);
+  const gates = home.match(/<nav\b[^>]*class="[^"]*\bgates\b[^"]*"[^>]*>[\s\S]*?<\/nav>/i)?.[0];
+  assert.ok(gates, "learning gates remain a navigation landmark");
+  assert.doesNotMatch(gates, /<button/i);
   assert.ok(artwork.size < 500_000, "winter-path.webp should remain below 500 KB");
 });
 
@@ -407,9 +409,14 @@ test("removes Eigenvalues from the mathematics section and static export", async
   await assert.rejects(readOutput("mathematics/eigenvalues/index.html"), { code: "ENOENT" });
 });
 
-test("keeps the entrance copy English-only", async () => {
+test("keeps the brand and learning gates English-only while allowing the updates dialog", async () => {
   const html = await readOutput("index.html");
-  assert.doesNotMatch(html, /\p{Script=Han}/u);
+  const brand = html.match(/<header\b[^>]*class="[^"]*\bbrand-lockup\b[^"]*"[^>]*>[\s\S]*?<\/header>/i)?.[0];
+  const gates = html.match(/<nav\b[^>]*class="[^"]*\bgates\b[^"]*"[^>]*>[\s\S]*?<\/nav>/i)?.[0];
+  assert.ok(brand, "home contains the original brand lockup");
+  assert.ok(gates, "home contains the original learning gates");
+  assert.doesNotMatch(brand, /\p{Script=Han}/u);
+  assert.doesNotMatch(gates, /\p{Script=Han}/u);
 });
 
 test("Me keeps its Glimpse introduction and the old app entrance redirects to the independent site", async () => {
@@ -423,5 +430,91 @@ test("Me keeps its Glimpse introduction and the old app entrance redirects to th
   assert.match(entrance, /location\.replace\('https:\/\/kokoirin\.github\.io\/Glimpse\/'\)/);
   for (const asset of ["app.js", "cards.js", "navigation.js", "feedback.js", "style.css", "icon.svg"]) {
     await assert.rejects(readOutput(`apps/glimpse/${asset}`), { code: "ENOENT" });
+  }
+});
+
+
+// 从公开 HTML 验证交付结果；领域数据的筛选与排序另由内容模块测试覆盖。
+test("[RECENT-UPDATES-001] 首页导出十二条按日期降序排列的真实更新链接", async () => {
+  const home = await readOutput("index.html");
+  const dialog = home.match(/<dialog\b[^>]*class="[^"]*\brecent-dialog\b[^"]*"[^>]*>[\s\S]*?<\/dialog>/i)?.[0];
+  assert.ok(dialog, "updates are exported inside a native dialog");
+  assert.match(home, /<button\b[^>]*aria-expanded="false"[^>]*>[\s\S]*?最近更新/);
+  assert.doesNotMatch(dialog.match(/^<dialog\b[^>]*>/i)?.[0] ?? "", /\sopen(?:=|\s|>)/);
+  const labelledBy = dialog.match(/^<dialog\b[^>]*aria-labelledby="([^"]+)"/i)?.[1];
+  assert.ok(labelledBy, "dialog has an accessible heading reference");
+  assert.match(dialog, new RegExp(`id="${labelledBy}"[^>]*>最近更新<`));
+  assert.match(dialog, /<button\b[^>]*aria-label="关闭最近更新"/);
+
+  const decode = (value) => value
+    .replace(/&#(?:x([\da-f]+)|(\d+));/gi, (_, hex, decimal) =>
+      String.fromCodePoint(Number.parseInt(hex ?? decimal, hex ? 16 : 10)))
+    .replace(/&(amp|quot|apos|lt|gt|nbsp);/g, (_, name) => ({
+      amp: "&", quot: '"', apos: "'", lt: "<", gt: ">", nbsp: " ",
+    })[name]);
+  const links = [...dialog.matchAll(/<a\b([^>]*class="[^"]*\brecent-link\b[^"]*"[^>]*)>([\s\S]*?)<\/a>/gi)]
+    .map((match) => ({ attributes: match[1], body: match[2] }));
+  assert.equal(links.length, 12);
+  const dates = [];
+  const hrefs = [];
+  for (const link of links) {
+    const href = decode(link.attributes.match(/\bhref="([^"]+)"/)?.[1] ?? "");
+    assert.ok(href.startsWith(`${basePath}/`), `deployment-safe recent href: ${href}`);
+    const target = new URL(href, "https://example.com");
+    assert.equal(target.origin, "https://example.com");
+    const relative = decodeURIComponent(target.pathname.slice(basePath.length + 1));
+    assert.ok(relative && !relative.startsWith("rin3/"), `base path appears once: ${href}`);
+    const file = relative.endsWith(".html")
+      ? relative
+      : `${relative.replace(/\/$/, "")}/index.html`;
+    assert.ok((await stat(new URL(`../out/${file}`, import.meta.url))).isFile(), href);
+    assert.ok(decode(link.body.replace(/<[^>]*>/g, "")).trim(), `link has visible text: ${href}`);
+    const date = link.body.match(/<time\b[^>]*datetime="([^"]+)"/i)?.[1];
+    assert.match(date ?? "", /^\d{4}-\d{2}-\d{2}$/);
+    assert.equal(new Date(`${date}T00:00:00Z`).toISOString().slice(0, 10), date);
+    hrefs.push(href);
+    dates.push(date);
+  }
+  assert.deepEqual(dates, [...dates].sort().reverse());
+  assert.equal(new Set(hrefs).size, hrefs.length, "updates do not duplicate destinations");
+  const readerHrefs = hrefs.filter((href) => href.startsWith(`${basePath}/reading/`));
+  assert.ok(readerHrefs.length > 0, "at least one update enters a standalone reader directly");
+  for (const href of readerHrefs) assert.ok(href.endsWith("/index.html"), href);
+});
+
+
+// 新课程既能从站点文章进入，也以完整 HTML 保留章节、英文版和应用清单。
+test("[ANDROID-BUILD-READER-001] Android 构建课程从分区导读进入双语独立阅读器", async () => {
+  const listing = await readOutput("computer-science/index.html");
+  const note = await readOutput("computer-science/android-build-system/index.html");
+  const series = await readOutput("reading/android-build-system/index.html");
+  const coverage = JSON.parse(await readOutput("reading/android-build-system/coverage.json"));
+  assert.match(listing, new RegExp(`href="${basePath}/computer-science/android-build-system/"`));
+  const noteUrl = `https://example.com${basePath}/computer-science/android-build-system/`;
+  const readerUrl = `https://example.com${basePath}/reading/android-build-system/index.html`;
+  const noteLinks = [...note.matchAll(/\bhref="([^"]+)"/g)].map((match) =>
+    new URL(match[1].replace(/&amp;/g, "&"), noteUrl).href);
+  assert.ok(noteLinks.includes(readerUrl), "published note links directly to the standalone series");
+  assert.equal((series.match(/class="chapter-card"/g) ?? []).length, 15);
+  assert.ok(coverage.documents.some((document) => document.id === "05-api"
+    && document.coverage === "selected-two-sections"));
+  const assertManifest = (html, relative) => {
+    const links = html.match(/<link\b[^>]*rel="manifest"[^>]*>/g) ?? [];
+    assert.equal(links.length, 1, `${relative}: one app manifest`);
+    const href = links[0].match(/href="([^"]+)"/)?.[1];
+    assert.ok(href);
+    const page = `https://example.com${basePath}/reading/android-build-system/${relative}`;
+    assert.equal(new URL(href, page).href, `https://example.com${basePath}/manifest.webmanifest`, relative);
+  };
+  for (const document of coverage.documents) {
+    for (const edition of ["index.html", "english.html"]) {
+      const html = await readOutput(`reading/android-build-system/${document.id}/${edition}`);
+      assert.match(html, /<article class="translated-article">/);
+      assertManifest(html, `${document.id}/${edition}`);
+    }
+  }
+  for (const relative of ["index.html", "build-map.html", "NOTICE.html"]) {
+    const html = await readOutput(`reading/android-build-system/${relative}`);
+    assertManifest(html, relative);
   }
 });

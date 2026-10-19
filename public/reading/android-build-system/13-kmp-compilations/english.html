@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light"><title>Configure compilations · Android 构建系统</title><link rel="stylesheet" href="../../reader.css"><link rel="stylesheet" href="../source.css"><link rel="manifest" href="../../../manifest.webmanifest"><link rel="icon" href="../../../icons/apple-touch-icon.png"></head><body><nav class="site-nav" aria-label="站点导航"><a href="../index.html">← Android 构建系统</a><a href="https://kotlinlang.org/docs/multiplatform/multiplatform-configure-compilations.html">官方英文原文 ↗</a></nav><main class="reader"><header class="chapter-header"><span class="chapter-kicker">13 · Kotlin Multiplatform · 正文全文</span><h1>Configure compilations</h1><p class="byline">Configure compilations</p><div class="title-rule"></div><p class="edition-nav"><a href="index.html">中文阅读版</a> · <strong aria-current="page">English source</strong></p><aside class="learning-note"><span class="note-kind">编者导读 · 不属于原文</span><p><strong>target 下面的 compilation 究竟组织哪些代码与产物？</strong></p><p>接着阅读默认编译单元、自定义编译和平台特有的配置。</p></aside><details class="editorial-correction"><summary>编者校注 · 原文的版本条件与简化之处</summary><p>一个 target 可以有多个 compilation，一个 compilation 可以收集多个 source set；这些也不等同于 Gradle Task。本文的目标与任务名对应官方 Kotlin 插件；公司定制的 Harmony 目标、FFI、HAR 等仍需回到实际构建配置核对。</p></details><details class="source-details"><summary>本篇目录与翻译范围</summary><p>对应官方英文文档的正文全文，保留章节顺序、代码、图示、表格和正文链接；不含站点导航、反馈和自动推荐组件。</p><p>英文快照：2026-10-19。代码、命令、标识符和原图保持原样。导读与官方正文分开呈现。</p><ul><li class="toc-h2"><a href="#configure-all-compilations">Configure all compilations</a></li><li class="toc-h2"><a href="#configure-compilations-for-one-target">Configure compilations for one target</a></li><li class="toc-h2"><a href="#configure-one-compilation">Configure one compilation</a></li><li class="toc-h2"><a href="#create-a-custom-compilation">Create a custom compilation</a></li><li class="toc-h2"><a href="#compilation-for-jvm">Compilation for JVM</a></li><li class="toc-h2"><a href="#configure-interop-with-native-languages">Configure interop with native languages</a></li><li class="toc-h2"><a href="#compilation-for-android">Compilation for Android</a></li><li class="toc-h2"><a href="#compilation-of-the-source-set-hierarchy">Compilation of the source set hierarchy</a></li><li class="toc-h2"><a href="#configure-isolated-projects-feature-in-gradle">Configure Isolated Projects feature in Gradle</a></li></ul></details><nav class="chapter-switcher" aria-label="章节导航"><a href="../12-kmp-project/english.html">← KMP 项目结构基础</a><a class="course-home" href="../index.html">全部章节</a><a href="../14-r8/english.html">使用 R8 启用应用优化 →</a></nav></header><article class="translated-article"><div class="article" data-shortcut-switcher="inactive"><p id="ru50z2_2" data-unit="13-kmp-compilations-001">Kotlin multiplatform projects use compilations for producing artifacts. Each target can have one or more compilations, for example, for production and test purposes.</p><p id="ru50z2_3" data-unit="13-kmp-compilations-002">For each target, default compilations include:</p><ul class="list _bullet" id="ru50z2_4"><li class="list__item" id="ru50z2_19"><p id="ru50z2_21" data-unit="13-kmp-compilations-003"><code class="code" id="ru50z2_22">main</code> and <code class="code" id="ru50z2_23">test</code> compilations for JVM, JS, and Native targets.</p></li><li class="list__item" id="ru50z2_20"><p id="ru50z2_24" data-unit="13-kmp-compilations-004">A <a href="https://kotlinlang.org/docs/multiplatform/multiplatform-configure-compilations.html#compilation-for-android" id="ru50z2_25">compilation</a> per <a href="https://developer.android.com/build/build-variants" id="ru50z2_26" data-external="true" rel="noopener noreferrer">Android build variant</a>, for Android targets.</p></li></ul><figure id="ru50z2_5"><img alt="Compilations" src="../assets/ce6d831219c0.svg" title="Compilations" data-original-src="https://kotlinlang.org/docs/multiplatform/images/compilations.svg" loading="lazy"></figure><p id="ru50z2_6" data-unit="13-kmp-compilations-005">If you need to compile something other than production code and unit tests, for example, integration or performance tests, you can <a href="https://kotlinlang.org/docs/multiplatform/multiplatform-configure-compilations.html#create-a-custom-compilation" id="ru50z2_27">create a custom compilation</a>.</p><p id="ru50z2_7" data-unit="13-kmp-compilations-006">You can configure how artifacts are produced in:</p><ul class="list _bullet" id="ru50z2_8"><li class="list__item" id="ru50z2_28"><p id="ru50z2_31" data-unit="13-kmp-compilations-007"><a href="https://kotlinlang.org/docs/multiplatform/multiplatform-configure-compilations.html#configure-all-compilations" id="ru50z2_32">All compilations</a> in your project at once.</p></li><li class="list__item" id="ru50z2_29"><p id="ru50z2_33" data-unit="13-kmp-compilations-008"><a href="https://kotlinlang.org/docs/multiplatform/multiplatform-configure-compilations.html#configure-compilations-for-one-target" id="ru50z2_34">Compilations for one target</a> since one target can have multiple compilations.</p></li><li class="list__item" id="ru50z2_30"><p id="ru50z2_35" data-unit="13-kmp-compilations-009"><a href="https://kotlinlang.org/docs/multiplatform/multiplatform-configure-compilations.html#configure-one-compilation" id="ru50z2_36">A specific compilation</a>.</p></li></ul><p id="ru50z2_9" data-unit="13-kmp-compilations-010">See the <a href="https://kotlinlang.org/docs/multiplatform/multiplatform-dsl-reference.html#compilation-parameters" id="ru50z2_37">list of compilation parameters</a> and <a href="https://kotlinlang.org/docs/gradle-compiler-options.html" id="ru50z2_38" data-external="true" rel="noopener noreferrer">compiler options</a> available for all or specific targets.</p><section class="chapter"><h2 id="configure-all-compilations" data-toc="configure-all-compilations" data-unit="13-kmp-compilations-011">Configure all compilations</h2><p id="ru50z2_39" data-unit="13-kmp-compilations-012">This example configures a compiler option that is common across all targets:</p><div class="tabs" id="ru50z2_40" data-group="build-script" data-anchors="[ru50z2_41,ru50z2_42]"><div class="tabs__content" data-gtm="tab" id="ru50z2_41" data-sync-tabs="kotlin" data-title="Kotlin"><pre class="source-code"><code class="language-kotlin">
+kotlin {
+    compilerOptions {
+        allWarningsAsErrors.set(true)
+    }
+}
+</code></pre></div><div class="tabs__content" data-gtm="tab" id="ru50z2_42" data-sync-tabs="groovy" data-title="Groovy"><pre class="source-code"><code class="language-groovy">
+kotlin {
+    compilerOptions {
+        allWarningsAsErrors = true
+    }
+}
+</code></pre></div></div></section><section class="chapter"><h2 id="configure-compilations-for-one-target" data-toc="configure-compilations-for-one-target" data-unit="13-kmp-compilations-013">Configure compilations for one target</h2><div class="tabs" id="ru50z2_45" data-group="build-script" data-anchors="[ru50z2_46,ru50z2_47]"><div class="tabs__content" data-gtm="tab" id="ru50z2_46" data-sync-tabs="kotlin" data-title="Kotlin"><pre class="source-code"><code class="language-kotlin">
+kotlin {
+    jvm {
+        compilerOptions {
+            jvmTarget.set(JvmTarget.JVM_1_8)
+        }
+    }
+}
+</code></pre></div><div class="tabs__content" data-gtm="tab" id="ru50z2_47" data-sync-tabs="groovy" data-title="Groovy"><pre class="source-code"><code class="language-groovy">
+kotlin {
+    jvm {
+        compilerOptions {
+            jvmTarget = JvmTarget.JVM_1_8
+        }
+    }
+}
+</code></pre></div></div></section><section class="chapter"><h2 id="configure-one-compilation" data-toc="configure-one-compilation" data-unit="13-kmp-compilations-014">Configure one compilation</h2><div class="tabs" id="ru50z2_50" data-group="build-script" data-anchors="[ru50z2_51,ru50z2_52]"><div class="tabs__content" data-gtm="tab" id="ru50z2_51" data-sync-tabs="kotlin" data-title="Kotlin"><pre class="source-code"><code class="language-kotlin">
+kotlin {
+    jvm {
+        val main by compilations.getting {
+            compileTaskProvider.configure {
+                compilerOptions {
+                    jvmTarget.set(JvmTarget.JVM_1_8)
+                }
+            }
+        }
+    }
+}
+</code></pre></div><div class="tabs__content" data-gtm="tab" id="ru50z2_52" data-sync-tabs="groovy" data-title="Groovy"><pre class="source-code"><code class="language-groovy">
+kotlin {
+    jvm {
+        compilations.main {
+            compileTaskProvider.configure {
+                compilerOptions {
+                    jvmTarget = JvmTarget.JVM_1_8
+                }
+            }
+        }
+    }
+}
+</code></pre></div></div></section><section class="chapter"><h2 id="create-a-custom-compilation" data-toc="create-a-custom-compilation" data-unit="13-kmp-compilations-015">Create a custom compilation</h2><p id="ru50z2_55" data-unit="13-kmp-compilations-016">If you need to compile something other than production code and unit tests, for example, integration or performance tests, create a custom compilation.</p><p id="ru50z2_56" data-unit="13-kmp-compilations-017">For custom compilations, you need to set up all dependencies manually. The default source set of a custom compilation does not depend on the <code class="code" id="ru50z2_62">commonMain</code> and the <code class="code" id="ru50z2_63">commonTest</code> source sets.</p><p id="ru50z2_57" data-unit="13-kmp-compilations-018">For example, to create a custom compilation for integration tests of the <code class="code" id="ru50z2_64">jvm</code> target, set up an <a href="https://kotlinlang.org/docs/gradle-configure-project.html#associate-compiler-tasks" id="ru50z2_65" data-external="true" rel="noopener noreferrer"><code class="code" id="ru50z2_68">associateWith</code></a> relation between the <code class="code" id="ru50z2_66">integrationTest</code> and <code class="code" id="ru50z2_67">main</code> compilations:</p><div class="tabs" id="ru50z2_58" data-group="build-script" data-anchors="[ru50z2_69,ru50z2_70]"><div class="tabs__content" data-gtm="tab" id="ru50z2_69" data-sync-tabs="kotlin" data-title="Kotlin"><pre class="source-code"><code class="language-kotlin">
+kotlin {
+    jvm {
+        compilations {
+            val main by getting
+            val integrationTest by creating {
+                // Import main and its classpath as dependencies and establish internal visibility
+                associateWith(main)
+                defaultSourceSet {
+                    dependencies {
+                        implementation(kotlin("test-junit"))
+                        /* ... */
+                    }
+                }
+            }
+
+            // Create a test task to run the tests produced by this compilation:
+            testRuns.create("integration") {
+                // Configure the test task
+                setExecutionSourceFrom(integrationTest)
+            }
+        }
+    }
+}
+</code></pre></div><div class="tabs__content" data-gtm="tab" id="ru50z2_70" data-sync-tabs="groovy" data-title="Groovy"><pre class="source-code"><code class="language-groovy">
+kotlin {
+    jvm {
+        compilations.create('integrationTest') {
+            def main = compilations.main
+            // Import main and its classpath as dependencies and establish internal visibility
+            associateWith(main)
+            defaultSourceSet {
+                dependencies {
+                    implementation kotlin('test-junit')
+                    /* ... */
+                }
+            }
+        }
+
+        // Create a test task to run the tests produced by this compilation
+        testRuns.create('integration') {
+            // Configure the test task
+            setExecutionSourceFrom(compilations.integrationTest)
+        }
+    }
+}
+</code></pre></div></div><p id="ru50z2_59" data-unit="13-kmp-compilations-019">By associating compilations, you add the main compilation output as a dependency and establish the <code class="code" id="ru50z2_73">internal</code> visibility between compilations.</p><p id="ru50z2_60" data-unit="13-kmp-compilations-020">Custom compilations are also necessary in other cases. For example, if you want to combine compilations for different JVM versions in your final artifact, or you have already set up source sets in Gradle and want to migrate to a multiplatform project.</p><aside class="prompt" data-type="tip" data-title="" id="ru50z2_61"><p id="ru50z2_74" data-unit="13-kmp-compilations-021">To create custom compilations for the <a href="https://kotlinlang.org/docs/multiplatform/multiplatform-configure-compilations.html#compilation-for-android" id="ru50z2_75"><code class="code" id="ru50z2_77">android</code></a>, set up build variants through the <a href="https://developer.android.com/build/build-variants" id="ru50z2_76" data-external="true" rel="noopener noreferrer">Android Gradle plugin</a>.</p></aside></section><section class="chapter"><h2 id="compilation-for-jvm" data-toc="compilation-for-jvm" data-unit="13-kmp-compilations-022">Compilation for JVM</h2><p id="ru50z2_78" data-unit="13-kmp-compilations-023">When you declare the <code class="code" id="ru50z2_86">jvm</code> target in your multiplatform project, the Kotlin Multiplatform Gradle plugin automatically creates Java sources sets and includes them in the compilations of the JVM target.</p><p id="ru50z2_79" data-unit="13-kmp-compilations-024">The common source sets can't include Java resources, so you should place them in the corresponding child directories of your multiplatform project. For example:</p><figure id="ru50z2_80"><img alt="Java source files" src="../assets/db4dbded78a4.png" title="Java source files" data-original-src="https://kotlinlang.org/docs/multiplatform/images/java-source-paths.png" loading="lazy"></figure><p id="ru50z2_81" data-unit="13-kmp-compilations-025">Currently, the Kotlin Multiplatform Gradle plugin replaces some tasks configured by the Java plugin:</p><ul class="list _bullet" id="ru50z2_82"><li class="list__item" id="ru50z2_87"><p id="ru50z2_90" data-unit="13-kmp-compilations-026">JAR task: instead of a standard <code class="code" id="ru50z2_91">jar</code>, it uses a target-specific task based on the artifact's name, for example, <code class="code" id="ru50z2_92">jvmJar</code> for the <code class="code" id="ru50z2_93">jvm()</code> target declaration and <code class="code" id="ru50z2_94">desktopJar</code> for <code class="code" id="ru50z2_95">jvm("desktop")</code>.</p></li><li class="list__item" id="ru50z2_88"><p id="ru50z2_96" data-unit="13-kmp-compilations-027">Test task: instead of a standard <code class="code" id="ru50z2_97">test</code>, it uses a target-specific task based on the artifact's name, for example, <code class="code" id="ru50z2_98">jvmTest</code>.</p></li><li class="list__item" id="ru50z2_89"><p id="ru50z2_99" data-unit="13-kmp-compilations-028">Resource processing: instead of <code class="code" id="ru50z2_100">*ProcessResources</code> tasks, resources are handled by the corresponding compilation tasks.</p></li></ul><p id="ru50z2_83" data-unit="13-kmp-compilations-029">These tasks are created automatically when the target is declared. However, you can manually define the JAR task and configure it if necessary:</p><div class="tabs" id="ru50z2_84" data-group="build-script" data-anchors="[ru50z2_101,ru50z2_102]"><div class="tabs__content" data-gtm="tab" id="ru50z2_101" data-sync-tabs="kotlin" data-title="Kotlin"><pre class="source-code"><code class="language-kotlin">
+// Shared module's `build.gradle.kts` file
+plugins {
+    kotlin("multiplatform") version "2.4.21"
+}
+
+kotlin {
+    // Specify the JVM target
+    jvm {
+        // Add the task for JAR generation
+        tasks.named&lt;Jar&gt;(artifactsTaskName).configure {
+            // Configure the task
+        }
+    }
+
+    sourceSets {
+        jvmMain {
+            dependencies {
+                // Add JVM-specific dependencies
+            }
+        }
+    }
+}
+</code></pre></div><div class="tabs__content" data-gtm="tab" id="ru50z2_102" data-sync-tabs="groovy" data-title="Groovy"><pre class="source-code"><code class="language-groovy">
+// Shared module's `build.gradle` file
+plugins {
+    id 'org.jetbrains.kotlin.multiplatform' version '2.4.21'
+}
+
+kotlin {
+    // Specify the JVM target
+    jvm {
+        // Add the task for JAR generation
+        tasks.named&lt;Jar&gt;(artifactsTaskName).configure {
+            // Configure the task
+        }
+    }
+
+    sourceSets {
+        jvmMain {
+            dependencies {
+                // Add JVM-specific dependencies
+            }
+        }
+    }
+}
+</code></pre></div></div><p id="ru50z2_85" data-unit="13-kmp-compilations-030">This target is published by the Kotlin Multiplatform Gradle plugin and doesn't require steps that are specific to the Java plugin.</p></section><section class="chapter"><h2 id="configure-interop-with-native-languages" data-toc="configure-interop-with-native-languages" data-unit="13-kmp-compilations-031">Configure interop with native languages</h2><p id="ru50z2_105" data-unit="13-kmp-compilations-032">Kotlin provides <a href="https://kotlinlang.org/docs/native-overview.html" id="ru50z2_109" data-external="true" rel="noopener noreferrer">interoperability with native languages</a> and DSL to configure this for a specific compilation.</p><div class="table-wrapper"><table class="wide" id="ru50z2_106"><thead><tr class="ijRowHead" id="ru50z2_110"><th id="ru50z2_114"><p data-unit="13-kmp-compilations-033">Native language</p></th><th id="ru50z2_115"><p data-unit="13-kmp-compilations-034">Supported platforms</p></th><th id="ru50z2_116"><p data-unit="13-kmp-compilations-035">Comments</p></th></tr></thead><tbody><tr id="ru50z2_111"><td id="ru50z2_117"><p data-unit="13-kmp-compilations-036">C</p></td><td id="ru50z2_118"><p data-unit="13-kmp-compilations-037">All platforms</p></td><td id="ru50z2_119"></td></tr><tr id="ru50z2_112"><td id="ru50z2_120"><p data-unit="13-kmp-compilations-038">Objective-C</p></td><td id="ru50z2_121"><p data-unit="13-kmp-compilations-039">Apple platforms (macOS, iOS, watchOS, tvOS)</p></td><td id="ru50z2_122"></td></tr><tr id="ru50z2_113"><td id="ru50z2_123"><p data-unit="13-kmp-compilations-040">Swift via Objective-C</p></td><td id="ru50z2_124"><p data-unit="13-kmp-compilations-041">Apple platforms (macOS, iOS, watchOS, tvOS)</p></td><td id="ru50z2_125"><p data-unit="13-kmp-compilations-042">Kotlin can use only Swift declarations marked with the <code class="code" id="ru50z2_126">@objc</code> attribute.</p></td></tr></tbody></table></div><p id="ru50z2_107" data-unit="13-kmp-compilations-043">A compilation can interact with several native libraries. Configure interoperability with available properties in the <a href="https://kotlinlang.org/docs/native-definition-file.html" id="ru50z2_127" data-external="true" rel="noopener noreferrer">definition file</a> or in the <a href="https://kotlinlang.org/docs/multiplatform/multiplatform-dsl-reference.html#cinterops" id="ru50z2_128"><code class="code" id="ru50z2_129">cinterops</code> block</a> of your build file:</p><div class="tabs" id="ru50z2_108" data-group="build-script" data-anchors="[ru50z2_130,ru50z2_131]"><div class="tabs__content" data-gtm="tab" id="ru50z2_130" data-sync-tabs="kotlin" data-title="Kotlin"><pre class="source-code"><code class="language-kotlin">
+kotlin {
+    linuxX64 { // Replace with a target you need.
+        compilations.getByName("main") {
+            val myInterop by cinterops.creating {
+                // Def-file describing the native API.
+                // The default path is src/nativeInterop/cinterop/&lt;interop-name&gt;.def
+                definitionFile.set(project.file("def-file.def"))
+                
+                // Package to place the Kotlin API generated.
+                packageName("org.sample")
+                
+                // Options to be passed to compiler by cinterop tool.
+                compilerOpts("-Ipath/to/headers")
+              
+                // Directories to look for headers.
+                includeDirs.apply {
+                    // Directories for header search (an equivalent of the -I&lt;path&gt; compiler option).
+                    allHeaders("path1", "path2")
+                    
+                    // Additional directories to search headers listed in the 'headerFilter' def-file option.
+                    // -headerFilterAdditionalSearchPrefix command line option equivalent.
+                    headerFilterOnly("path1", "path2")
+                }
+                // A shortcut for includeDirs.allHeaders.
+                includeDirs("include/directory", "another/directory")
+            }
+            
+            val anotherInterop by cinterops.creating { /* ... */ }
+        }
+    }
+}
+</code></pre></div><div class="tabs__content" data-gtm="tab" id="ru50z2_131" data-sync-tabs="groovy" data-title="Groovy"><pre class="source-code"><code class="language-groovy">
+kotlin {
+    linuxX64 { // Replace with a target you need.
+        compilations.main {
+            cinterops {
+                myInterop {
+                    // Def-file describing the native API.
+                    // The default path is src/nativeInterop/cinterop/&lt;interop-name&gt;.def
+                    definitionFile = project.file("def-file.def")
+                    
+                    // Package to place the Kotlin API generated.
+                    packageName 'org.sample'
+                    
+                    // Options to be passed to compiler by cinterop tool.
+                    compilerOpts '-Ipath/to/headers'
+                    
+                    // Directories for header search (an equivalent of the -I&lt;path&gt; compiler option).
+                    includeDirs.allHeaders("path1", "path2")
+                    
+                    // Additional directories to search headers listed in the 'headerFilter' def-file option.
+                    // -headerFilterAdditionalSearchPrefix command line option equivalent.
+                    includeDirs.headerFilterOnly("path1", "path2")
+                    
+                    // A shortcut for includeDirs.allHeaders.
+                    includeDirs("include/directory", "another/directory")
+                }
+                
+                anotherInterop { /* ... */ }
+            }
+        }
+    }
+}
+</code></pre></div></div></section><section class="chapter"><h2 id="compilation-for-android" data-toc="compilation-for-android" data-unit="13-kmp-compilations-044">Compilation for Android</h2><p id="ru50z2_134" data-unit="13-kmp-compilations-045">The compilations created for an Android target by default are tied to <a href="https://developer.android.com/build/build-variants" id="ru50z2_139" data-external="true" rel="noopener noreferrer">Android build variants</a>: for each build variant, a Kotlin compilation is created under the same name.</p><p id="ru50z2_135" data-unit="13-kmp-compilations-046">Then, for each <a href="https://developer.android.com/build/build-variants#sourcesets" id="ru50z2_140" data-external="true" rel="noopener noreferrer">Android source set</a> compiled for each of the variants, a Kotlin source set is created under that source set name prepended by the target name, like the Kotlin source set <code class="code" id="ru50z2_141">androidDebug</code> for an Android source set <code class="code" id="ru50z2_142">debug</code> and the Kotlin target named <code class="code" id="ru50z2_143">android</code>. These Kotlin source sets are added to the variants' compilations accordingly.</p><p id="ru50z2_136" data-unit="13-kmp-compilations-047">The default source set <code class="code" id="ru50z2_144">commonMain</code> is added to each production (application or library) variant's compilation. The <code class="code" id="ru50z2_145">commonTest</code> source set is similarly added to the compilations of unit test and instrumented test variants.</p><p id="ru50z2_137" data-unit="13-kmp-compilations-048">Annotation processing with <a href="https://kotlinlang.org/docs/kapt.html" id="ru50z2_146" data-external="true" rel="noopener noreferrer"><code class="code" id="ru50z2_149">kapt</code></a> is also supported, but due to current limitations it requires that the Android target is created before the <code class="code" id="ru50z2_147">kapt</code> dependencies are configured, which needs to be done in a top-level <code class="code" id="ru50z2_148">dependencies {}</code> block rather than within Kotlin source set dependencies.</p><pre class="source-code"><code class="language-kotlin">
+kotlin {
+    android { /* ... */ }
+}
+
+dependencies {
+    kapt("com.my.annotation:processor:1.0.0")
+}
+</code></pre></section><section class="chapter"><h2 id="compilation-of-the-source-set-hierarchy" data-toc="compilation-of-the-source-set-hierarchy" data-unit="13-kmp-compilations-049">Compilation of the source set hierarchy</h2><p id="ru50z2_150" data-unit="13-kmp-compilations-050">Kotlin can build a <a href="https://kotlinlang.org/docs/multiplatform/multiplatform-share-on-platforms.html#share-code-on-similar-platforms" id="ru50z2_156">source set hierarchy</a> with the <code class="code" id="ru50z2_157">dependsOn</code> relation.</p><figure id="ru50z2_151"><img alt="Source set hierarchy" src="../assets/bf9a9d235d5d.svg" title="Source set hierarchy" data-original-src="https://kotlinlang.org/docs/multiplatform/images/jvm-js-main.svg" loading="lazy"></figure><p id="ru50z2_152" data-unit="13-kmp-compilations-051">If the source set <code class="code" id="ru50z2_158">jvmMain</code> depends on a source set <code class="code" id="ru50z2_159">commonMain</code> then:</p><ul class="list _bullet" id="ru50z2_153"><li class="list__item" id="ru50z2_160"><p id="ru50z2_165" data-unit="13-kmp-compilations-052">Whenever <code class="code" id="ru50z2_166">jvmMain</code> is compiled for a certain target, <code class="code" id="ru50z2_167">commonMain</code> takes part in that compilation as well and is also compiled into the same target binary form, such as JVM class files.</p></li><li class="list__item" id="ru50z2_161"><p id="ru50z2_168" data-unit="13-kmp-compilations-053">Sources of <code class="code" id="ru50z2_169">jvmMain</code> 'see' the declarations of <code class="code" id="ru50z2_170">commonMain</code>, including internal declarations, and also see the <a href="https://kotlinlang.org/docs/multiplatform/multiplatform-add-dependencies.html" id="ru50z2_171">dependencies</a> of <code class="code" id="ru50z2_172">commonMain</code>, even those specified as <code class="code" id="ru50z2_173">implementation</code> dependencies.</p></li><li class="list__item" id="ru50z2_162"><p id="ru50z2_174" data-unit="13-kmp-compilations-054"><code class="code" id="ru50z2_175">jvmMain</code> can contain platform-specific implementations for the <a href="https://kotlinlang.org/docs/multiplatform/multiplatform-expect-actual.html" id="ru50z2_176">expected declarations</a> of <code class="code" id="ru50z2_177">commonMain</code>.</p></li><li class="list__item" id="ru50z2_163"><p id="ru50z2_178" data-unit="13-kmp-compilations-055">The resources of <code class="code" id="ru50z2_179">commonMain</code> are always processed and copied along with the resources of <code class="code" id="ru50z2_180">jvmMain</code>.</p></li><li class="list__item" id="ru50z2_164"><p id="ru50z2_181" data-unit="13-kmp-compilations-056">The <a href="https://kotlinlang.org/docs/multiplatform/multiplatform-dsl-reference.html#language-settings" id="ru50z2_182">language settings</a> of <code class="code" id="ru50z2_183">jvmMain</code> and <code class="code" id="ru50z2_184">commonMain</code> should be consistent.</p></li></ul><p id="ru50z2_154" data-unit="13-kmp-compilations-057">Language settings are checked for consistency in the following ways:</p><ul class="list _bullet" id="ru50z2_155"><li class="list__item" id="ru50z2_185"><p id="ru50z2_189" data-unit="13-kmp-compilations-058"><code class="code" id="ru50z2_190">jvmMain</code> should set a <code class="code" id="ru50z2_191">languageVersion</code> that is greater than or equal to that of <code class="code" id="ru50z2_192">commonMain</code>.</p></li><li class="list__item" id="ru50z2_186"><p id="ru50z2_193" data-unit="13-kmp-compilations-059"><code class="code" id="ru50z2_194">jvmMain</code> should enable all unstable language features that <code class="code" id="ru50z2_195">commonMain</code> enables (there's no such requirement for bugfix features).</p></li><li class="list__item" id="ru50z2_187"><p id="ru50z2_196" data-unit="13-kmp-compilations-060"><code class="code" id="ru50z2_197">jvmMain</code> should use all experimental annotations that <code class="code" id="ru50z2_198">commonMain</code> uses.</p></li><li class="list__item" id="ru50z2_188"><p id="ru50z2_199" data-unit="13-kmp-compilations-061"><code class="code" id="ru50z2_200">apiVersion</code>, bugfix language features, and <code class="code" id="ru50z2_201">progressiveMode</code> can be set arbitrarily.</p></li></ul></section><section class="chapter"><h2 id="configure-isolated-projects-feature-in-gradle" data-toc="configure-isolated-projects-feature-in-gradle" data-unit="13-kmp-compilations-062">Configure Isolated Projects feature in Gradle</h2><aside class="prompt" data-type="warning" data-title="" id="ru50z2_202"><p id="ru50z2_206" data-unit="13-kmp-compilations-063">This feature is <a href="https://kotlinlang.org/docs/multiplatform/supported-platforms.html#general-kotlin-stability-levels" id="ru50z2_207">Experimental</a> and is currently in a pre-alpha state with Gradle. Use it only with Gradle versions 8.10 or higher, and solely for evaluation purposes. The feature may be dropped or changed at any time. We would appreciate your feedback on it in <a href="https://youtrack.jetbrains.com/issue/KT-57279/Support-Gradle-Project-Isolation-Feature-for-Kotlin-Multiplatform" id="ru50z2_208" data-external="true" rel="noopener noreferrer">YouTrack</a>. Opt-in is required (see details below).</p></aside><p id="ru50z2_203" data-unit="13-kmp-compilations-064">Gradle provides the <a href="https://docs.gradle.org/current/userguide/isolated_projects.html" id="ru50z2_209" data-external="true" rel="noopener noreferrer">Isolated Projects</a> feature, which improves build performance by "isolating" individual projects from each other. The feature separates the build scripts and plugins between projects, allowing them to run safely in parallel.</p><p id="ru50z2_204" data-unit="13-kmp-compilations-065">To enable this feature, follow Gradle's instructions to <a href="https://docs.gradle.org/current/userguide/isolated_projects.html#how_do_i_use_it" id="ru50z2_210" data-external="true" rel="noopener noreferrer">set the system property</a>.</p><p id="ru50z2_205" data-unit="13-kmp-compilations-066">For more information about the Isolated Projects feature, see <a href="https://docs.gradle.org/current/userguide/isolated_projects.html" id="ru50z2_211" data-external="true" rel="noopener noreferrer">Gradle's documentation</a>.</p></section></div></article><nav class="chapter-switcher" aria-label="章节导航"><a href="../12-kmp-project/english.html">← KMP 项目结构基础</a><a class="course-home" href="../index.html">全部章节</a><a href="../14-r8/english.html">使用 R8 启用应用优化 →</a></nav><footer class="license-note"><p>非官方中文阅读版。原文、代码和图示由各官方来源维护；中文翻译与独立导读另行标明。<a href="../NOTICE.html">来源与许可说明</a> · 英文文档快照：2026-10-19。</p></footer></main></body></html>

@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light"><title>构建脚本基础 · Android 构建系统</title><link rel="stylesheet" href="../../reader.css"><link rel="stylesheet" href="../source.css"><link rel="manifest" href="../../../manifest.webmanifest"><link rel="icon" href="../../../icons/apple-touch-icon.png"></head><body><nav class="site-nav" aria-label="站点导航"><a href="../index.html">← Android 构建系统</a><a href="https://docs.gradle.org/current/userguide/build_file_basics.html">官方英文原文 ↗</a></nav><main class="reader"><header class="chapter-header"><span class="chapter-kicker">02 · 工程配置 · 正文全文</span><h1>构建脚本基础</h1><p class="byline">Build File Basics</p><div class="title-rule"></div><p class="edition-nav"><strong aria-current="page">中文阅读版</strong> · <a href="english.html">英文对照</a></p><aside class="learning-note"><span class="note-kind">编者导读 · 不属于原文</span><p><strong>构建脚本描述什么，插件又为它提供了什么？</strong></p><p>把 Project、任务、插件和属性放回同一份脚本里看。</p></aside><details class="editorial-correction"><summary>编者校注 · 原文的版本条件与简化之处</summary><p>原文把 <code>run</code> 与打包任务列在一起，是面向整体构建能力的简化介绍。<code>application</code> 插件的 <code>run</code> 用来运行应用；生成分发包则可用 <code>distZip</code>、<code>distTar</code> 等。参阅 <a href="https://docs.gradle.org/current/userguide/application_plugin.html">Application Plugin</a>。</p></details><details class="source-details"><summary>本篇目录与翻译范围</summary><p>对应官方英文文档的正文全文，保留章节顺序、代码、图示、表格和正文链接；不含站点导航、反馈和自动推荐组件。</p><p>英文快照：2026-10-19。代码、命令、标识符和原图保持原样。导读与官方正文分开呈现。</p><ul><li class="toc-h2"><a href="#sec%3Abuild_script">构建脚本</a></li><li class="toc-h2"><a href="#sec%3Aadd_plugins">1. 添加插件</a></li><li class="toc-h2"><a href="#sec%3Aadd_dependencies">2. 添加依赖</a></li><li class="toc-h2"><a href="#sec%3Ause_convention_properties">3. 使用约定属性</a></li></ul></details><nav class="chapter-switcher" aria-label="章节导航"><a href="../01-settings/index.html">← Settings 文件基础</a><a class="course-home" href="../index.html">全部章节</a><a href="../03-plugins/index.html">插件基础 →</a></nav></header><article class="translated-article"><div id="content"><div id="preamble"><div class="sectionbody"><div class="paragraph"><p data-unit="02-build-001">一般来说，构建脚本（<code>build.gradle(.kts)</code>）会具体描述<strong>构建配置、任务和插件</strong>。</p></div><div class="imageblock"><div class="content"><img src="../assets/0e0e1bd82952.png" alt="gradle basic 4" data-original-src="https://docs.gradle.org/current/userguide/img/gradle-basic-4.png" loading="lazy"></div></div><div class="paragraph"><p data-unit="02-build-002">每个 Gradle 构建都至少包含一个<em>构建脚本</em>。</p></div></div></div><div class="sect1"><h2 id="sec:build_script" data-unit="02-build-003"><a href="https://docs.gradle.org/current/userguide/build_file_basics.html#sec:build_script">构建脚本</a></h2><div class="sectionbody"><div class="paragraph"><p data-unit="02-build-004">构建脚本可以是用 Groovy 编写的 <code>build.gradle</code> 文件，也可以是用 Kotlin 编写的 <code>build.gradle.kts</code> 文件。</p></div><div class="paragraph"><p data-unit="02-build-005">Gradle 脚本只接受 <a href="https://docs.gradle.org/current/dsl/index.html">Groovy DSL</a> 和 <a href="https://docs.gradle.org/current/kotlin-dsl/index.html">Kotlin DSL</a> 这两种语言。</p></div><div class="paragraph"><p data-unit="02-build-006">在多项目构建中，每个子项目通常都有自己的构建文件，位于该子项目的根目录。</p></div><div class="paragraph"><p data-unit="02-build-007">在构建脚本中，通常需要指定：</p></div><div class="ulist"><ul><li><p data-unit="02-build-008"><strong>插件</strong>：扩展 Gradle 功能的工具，可用于编译代码、运行测试或打包产物等任务。</p></li><li><p data-unit="02-build-009"><strong>依赖</strong>：项目使用的外部库和工具。</p></li></ul></div><div class="paragraph"><p data-unit="02-build-010">具体来说，构建脚本中主要有两类依赖：</p></div><div class="ulist"><ul><li><p data-unit="02-build-011"><strong>Gradle 和构建脚本的依赖</strong>：包括 Gradle 本身或构建脚本逻辑所需的插件和库。</p></li><li><p data-unit="02-build-012"><strong>项目依赖</strong>：项目源代码为了正确编译和运行而直接需要的库。</p></li></ul></div><div class="paragraph"><p data-unit="02-build-013">下面来看一个例子，并逐项说明：</p></div><div class="exampleblock"><div class="content"><div class="exampleblock testable-sample multi-language-sample"><div class="content"><div class="listingblock"><div class="title" data-unit="02-build-014">app/build.gradle.kts</div><div class="content"><pre class="source-code"><code class="language-kotlin">plugins {   (1)
+    // Apply the application plugin to add support for building a CLI application in Java.
+    application
+}
+dependencies {  (2)
+    // Use JUnit Jupiter for testing.
+    testImplementation(libs.junit.jupiter)
+
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+
+    // This dependency is used by the application.
+    implementation(libs.guava)
+}
+application {   (3)
+    // Define the main class for the application.
+    mainClass = "org.example.App"
+}</code></pre></div></div></div></div><div class="exampleblock testable-sample multi-language-sample"><div class="content"><div class="listingblock"><div class="title" data-unit="02-build-015">app/build.gradle</div><div class="content"><pre class="source-code"><code class="language-groovy">plugins {   (1)
+    // Apply the application plugin to add support for building a CLI application in Java.
+    id 'application'
+}
+dependencies {  (2)
+    // Use JUnit Jupiter for testing.
+    testImplementation libs.junit.jupiter
+
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+    // This dependency is used by the application.
+    implementation libs.guava
+}
+application {   (3)
+    // Define the main class for the application.
+    mainClass = 'org.example.App'
+}</code></pre></div></div></div></div></div></div><div class="colist arabic"><div class="table-wrapper" tabindex="0" role="region" aria-label="原文表格，可横向滚动"><table><tr><td data-unit="02-build-016"><strong>1</strong></td><td data-unit="02-build-017">添加插件。</td></tr><tr><td data-unit="02-build-018"><strong>2</strong></td><td data-unit="02-build-019">添加依赖。</td></tr><tr><td data-unit="02-build-020"><strong>3</strong></td><td data-unit="02-build-021">使用约定属性。</td></tr></table></div></div></div></div><div class="sect1"><h2 id="sec:add_plugins" data-unit="02-build-022"><a href="https://docs.gradle.org/current/userguide/build_file_basics.html#sec:add_plugins">1. 添加插件</a></h2><div class="sectionbody"><div class="paragraph"><p data-unit="02-build-023">插件可以扩展 Gradle 的功能，并为项目添加任务。</p></div><div class="paragraph"><p data-unit="02-build-024">将插件加入构建称为<em>应用</em>插件，这会使额外的功能可用。</p></div><div class="exampleblock"><div class="content"><div class="exampleblock testable-sample multi-language-sample"><div class="content"><div class="listingblock"><div class="title" data-unit="02-build-025">app/build.gradle.kts</div><div class="content"><pre class="source-code"><code class="language-kotlin">plugins {   (1)
+    // Apply the application plugin to add support for building a CLI application in Java.
+    application
+}</code></pre></div></div></div></div><div class="exampleblock testable-sample multi-language-sample"><div class="content"><div class="listingblock"><div class="title" data-unit="02-build-026">app/build.gradle</div><div class="content"><pre class="source-code"><code class="language-groovy">plugins {   (1)
+    // Apply the application plugin to add support for building a CLI application in Java.
+    id 'application'
+}</code></pre></div></div></div></div></div></div><div class="paragraph"><p data-unit="02-build-027"><code>application</code> 插件方便你创建可执行的 JVM 应用程序。</p></div><div class="paragraph"><p data-unit="02-build-028">应用 <a href="https://docs.gradle.org/current/userguide/application_plugin.html#application_plugin">Application 插件</a>时，也会隐式应用 <a href="https://docs.gradle.org/current/userguide/java_plugin.html#java_plugin">Java 插件</a>。<code>java</code> 插件为项目添加 Java 编译、测试和打包功能。</p></div></div></div><div class="sect1"><h2 id="sec:add_dependencies" data-unit="02-build-029"><a href="https://docs.gradle.org/current/userguide/build_file_basics.html#sec:add_dependencies">2. 添加依赖</a></h2><div class="sectionbody"><div class="paragraph"><p data-unit="02-build-030">项目需要使用外部库来进行编译、运行和测试。</p></div><div class="paragraph"><p data-unit="02-build-031">在这个例子中，项目使用 <code>JUnit Jupiter</code> 进行测试，并在应用程序的主要代码中使用 Google 的 <code>Guava</code> 库：</p></div><div class="exampleblock"><div class="content"><div class="exampleblock testable-sample multi-language-sample"><div class="content"><div class="listingblock"><div class="title" data-unit="02-build-032">app/build.gradle.kts</div><div class="content"><pre class="source-code"><code class="language-kotlin">dependencies {  (2)
+    // Use JUnit Jupiter for testing.
+    testImplementation(libs.junit.jupiter)
+
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+
+    // This dependency is used by the application.
+    implementation(libs.guava)
+}</code></pre></div></div></div></div><div class="exampleblock testable-sample multi-language-sample"><div class="content"><div class="listingblock"><div class="title" data-unit="02-build-033">app/build.gradle</div><div class="content"><pre class="source-code"><code class="language-groovy">dependencies {  (2)
+    // Use JUnit Jupiter for testing.
+    testImplementation libs.junit.jupiter
+
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+    // This dependency is used by the application.
+    implementation libs.guava
+}</code></pre></div></div></div></div></div></div></div></div><div class="sect1"><h2 id="sec:use_convention_properties" data-unit="02-build-034"><a href="https://docs.gradle.org/current/userguide/build_file_basics.html#sec:use_convention_properties">3. 使用约定属性</a></h2><div class="sectionbody"><div class="paragraph"><p data-unit="02-build-035">插件会为项目添加任务，也会添加属性和方法。</p></div><div class="paragraph"><p data-unit="02-build-036"><code>application</code> 插件定义了用于打包和分发应用程序的任务，例如 <code>run</code> 任务。</p></div><div class="paragraph"><p data-unit="02-build-037">Application 插件提供了一种声明 Java 应用程序主类的方式；执行代码时需要知道这个主类。</p></div><div class="exampleblock"><div class="content"><div class="exampleblock testable-sample multi-language-sample"><div class="content"><div class="listingblock"><div class="title" data-unit="02-build-038">app/build.gradle.kts</div><div class="content"><pre class="source-code"><code class="language-kotlin">application {   (3)
+    // Define the main class for the application.
+    mainClass = "org.example.App"
+}</code></pre></div></div></div></div><div class="exampleblock testable-sample multi-language-sample"><div class="content"><div class="listingblock"><div class="title" data-unit="02-build-039">app/build.gradle</div><div class="content"><pre class="source-code"><code class="language-groovy">application {   (3)
+    // Define the main class for the application.
+    mainClass = 'org.example.App'
+}</code></pre></div></div></div></div></div></div><div class="paragraph"><p data-unit="02-build-040">在这个例子中，主类（即程序开始执行的位置）是 <code>org.example.App</code>。</p></div><div class="paragraph"><p data-unit="02-build-041">构建脚本在构建的配置阶段求值，是定义某个项目或子项目构建逻辑的主要入口。除了应用插件和设置约定属性，构建脚本还可以：</p></div><div class="ulist"><ul><li><p data-unit="02-build-042">声明依赖</p></li><li><p data-unit="02-build-043">配置任务</p></li><li><p data-unit="02-build-044">引用共享设置（来自版本目录或约定插件）</p></li></ul></div><div class="paragraph text-right"><p data-unit="02-build-045"><strong>下一步：</strong><a href="https://docs.gradle.org/current/userguide/dependency_management_basics.html#dependency_management_basics">了解依赖管理</a> &gt;&gt;</p></div></div></div></div>
+</article><nav class="chapter-switcher" aria-label="章节导航"><a href="../01-settings/index.html">← Settings 文件基础</a><a class="course-home" href="../index.html">全部章节</a><a href="../03-plugins/index.html">插件基础 →</a></nav><footer class="license-note"><p>非官方中文阅读版。原文、代码和图示由各官方来源维护；中文翻译与独立导读另行标明。<a href="../NOTICE.html">来源与许可说明</a> · 英文文档快照：2026-10-19。</p></footer></main></body></html>

@@ -1,0 +1,132 @@
+{
+  "https://developer.android.com/static/images/tools/debug-directories_2-1_2x.png": {
+    "path": "assets/09f07b0ff9fd.png",
+    "sha256": "69dedeffeced70f2ea78f48560bbb0704fa6364e6bd01c404f66aa7c49a93978",
+    "bytes": 39617
+  },
+  "https://developer.android.com/static/studio/images/buttons/toolbar-sync-gradle.png": {
+    "path": "assets/7ecaaf2f2e65.png",
+    "sha256": "498af03ed46cbdaa804f4caf63770eca90cfc69974193ebf003270617a2f38c2",
+    "bytes": 4689
+  },
+  "https://developer.android.com/static/studio/images/buttons/window-monitor.png": {
+    "path": "assets/430db1f29a0e.png",
+    "sha256": "5b1b3d32735f2c9e9a90fc47577da0391929aa6426e084221418f0fc4aa224c6",
+    "bytes": 460
+  },
+  "https://docs.gradle.org/current/userguide/img/author-gradle-1.png": {
+    "path": "assets/bd6e9a0cc072.png",
+    "sha256": "12636ef58075e91a6ab0d30dd5230fdc1931193d596d79b78ea2b7f99d28ca4d",
+    "bytes": 8710
+  },
+  "https://docs.gradle.org/current/userguide/img/build-lifecycle-example.png": {
+    "path": "assets/c597606f8436.png",
+    "sha256": "30cbf5df2090cff059e16dda4935991be56597a48707da03913c269c04b6d209",
+    "bytes": 136027
+  },
+  "https://docs.gradle.org/current/userguide/img/dependency-management-dependency-insight-report-build-scan.png": {
+    "path": "assets/03fc037bcddb.png",
+    "sha256": "5bbceee02b694b6b66001d0df5ddf75c20e833da0557e62da2bf215979a5c3f8",
+    "bytes": 50261
+  },
+  "https://docs.gradle.org/current/userguide/img/gradle-basic-10.png": {
+    "path": "assets/eb6c29cfefd0.png",
+    "sha256": "672adb00fc06fa65f5e0474d4b7e44b3c57401aff026bb301ab6935b228a3dee",
+    "bytes": 131141
+  },
+  "https://docs.gradle.org/current/userguide/img/gradle-basic-3.png": {
+    "path": "assets/4097f6c6fa57.png",
+    "sha256": "20da647011dd31a2a78591fbfd86494ce4e489d7f98cb7411fa382f9d77ccbed",
+    "bytes": 110352
+  },
+  "https://docs.gradle.org/current/userguide/img/gradle-basic-4.png": {
+    "path": "assets/0e0e1bd82952.png",
+    "sha256": "5717209c80ab5bfdafcdf980f8def7ad97a2a894c276a954164dc8d24cce3ae7",
+    "bytes": 109801
+  },
+  "https://docs.gradle.org/current/userguide/img/gradle-basic-6.png": {
+    "path": "assets/ceb2d9f96694.png",
+    "sha256": "44f9699236fbe3f1a6df39abaa870cf764b2331a98ef2e6f36d4a0e34d7951c0",
+    "bytes": 111466
+  },
+  "https://docs.gradle.org/current/userguide/img/gradle-basic-7.png": {
+    "path": "assets/9b3f241650ad.png",
+    "sha256": "31ec70441136399af8be076cd85396f64f9e693d930e90dab1fcee99a4333e2b",
+    "bytes": 111858
+  },
+  "https://docs.gradle.org/current/userguide/img/gradle-basic-8.png": {
+    "path": "assets/9be0141fd7c2.png",
+    "sha256": "f9eae5c8eb1928ba38a6a52f01bcf72baf7171fd4b33a4b524d3540fd5b9cf57",
+    "bytes": 111123
+  },
+  "https://docs.gradle.org/current/userguide/img/task-dag-examples.png": {
+    "path": "assets/66faa41a5343.png",
+    "sha256": "1d50d46988d62f894c61a78b39f99a6b8095a403287dc53a5668bd57156cbd32",
+    "bytes": 27010
+  },
+  "https://kotlinlang.org/docs/multiplatform/images/common-code-diagram.svg": {
+    "path": "assets/5b6af0af4067.svg",
+    "sha256": "d9cf856a59a3317b0e5286a2d92183fb72ec6e1c1db59f3ef389202eef49c6da",
+    "bytes": 39743
+  },
+  "https://kotlinlang.org/docs/multiplatform/images/compilation-jvm-diagram.svg": {
+    "path": "assets/649d5ea8ddcf.svg",
+    "sha256": "a62d0a83034aca125d92337064d383ab527460a12e3d7b3994813d89dda22e97",
+    "bytes": 102000
+  },
+  "https://kotlinlang.org/docs/multiplatform/images/compilations.svg": {
+    "path": "assets/ce6d831219c0.svg",
+    "sha256": "76381a07fb11b91c3df2242bf25c94962e1c2bcd353e8faecb6cad5d942f7d8d",
+    "bytes": 168770
+  },
+  "https://kotlinlang.org/docs/multiplatform/images/intermediate-source-sets-diagram.svg": {
+    "path": "assets/e09e184cc53e.svg",
+    "sha256": "35f36051f20172b73c12317e9a9f753c67c4a7c4e4a381c4fbcb673e0eb59b8f",
+    "bytes": 137925
+  },
+  "https://kotlinlang.org/docs/multiplatform/images/java-source-paths.png": {
+    "path": "assets/db4dbded78a4.png",
+    "sha256": "cd2e6e986cef37b2cc5d8d92c918178295a4427533d135be3e25cfcfbea8bec9",
+    "bytes": 24282
+  },
+  "https://kotlinlang.org/docs/multiplatform/images/jvm-js-main.svg": {
+    "path": "assets/bf9a9d235d5d.svg",
+    "sha256": "025af6e372ea37809a95336527a2fc6a294a6cb8063b23accf7126e03bcb6751",
+    "bytes": 17890
+  },
+  "https://kotlinlang.org/docs/multiplatform/images/modules-structure.png": {
+    "path": "assets/3871f6e7bbb5.png",
+    "sha256": "6df43fb2b91ed25bcc85703b110f06e9b6147a093a2ec5d75f1cb2525a0d05f5",
+    "bytes": 8626
+  },
+  "https://kotlinlang.org/docs/multiplatform/images/multiplatform-executables-diagram.svg": {
+    "path": "assets/d1af5f98ff03.svg",
+    "sha256": "ae7a6146982a49e3d862d1d7b3ecbd673bf83c7811ee59e5046266a8540d9e5b",
+    "bytes": 124413
+  },
+  "https://kotlinlang.org/docs/multiplatform/images/specific-target-diagram.svg": {
+    "path": "assets/6aa7510e9b92.svg",
+    "sha256": "a4d51ebfac3cf682f0a1f0f125059c4e9c50a055ecef3763c2fe020ecee7815c",
+    "bytes": 117001
+  },
+  "https://kotlinlang.org/docs/multiplatform/images/src-directory-diagram.png": {
+    "path": "assets/55acdb47e42b.png",
+    "sha256": "15fae484abd91d42df2e4013141e9b489a599e18c3355ec15b393962bfedbb0a",
+    "bytes": 25051
+  },
+  "https://kotlinlang.org/docs/multiplatform/images/target-diagram.svg": {
+    "path": "assets/b3d55265a482.svg",
+    "sha256": "24728e54f33c66b0bd0ffa6fa242825b61e4f5b194aa4adb73de8419fbb3c565",
+    "bytes": 62926
+  },
+  "https://kotlinlang.org/docs/multiplatform/images/target-labels-diagram.svg": {
+    "path": "assets/915d314e233d.svg",
+    "sha256": "82b085ea311cbbcd21521efc40f77908a041834c3aa5da22395c8aa59e50c620",
+    "bytes": 70031
+  },
+  "https://kotlinlang.org/docs/multiplatform/images/unresolved-java-reference.png": {
+    "path": "assets/abe1e7025681.png",
+    "sha256": "877d2da084105b6e0755d15e181793a6a493edfc302b2bc409e8c7d07a557e39",
+    "bytes": 74324
+  }
+}

@@ -1,6 +1,7 @@
 ---
 title: Android 原生基础桥接课
 summary: 接在 Kotlin Tour Intermediate 之后，用 8 章建立 Android 应用模型、生命周期、状态恢复、返回栈、主线程、View 与 ViewModel 的完整心智地图。
+reader: /reading/android-native-bridge/index.html
 date: 2026-08-24
 lang: zh-CN
 topic: Mobile Development / Android
