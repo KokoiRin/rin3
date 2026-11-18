@@ -4,31 +4,31 @@
 <meta charset="utf-8"><script src="../../../theme.js"></script>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Coroutine exceptions handling｜RIN III</title>
-<meta name="description" content="This section covers exception handling and cancellation on exceptions. We already know that a cancelled coroutine throws CancellationException in suspension points and that it is ignored by the coroutines&#x27; machinery. Here we look at what happens if an exception is thrown during cancellation or multiple children of the same coroutine throw an exception.">
+<meta name="description" content="Coroutine exceptions handling · English">
 <link rel="manifest" href="../../../manifest.webmanifest">
 <link rel="stylesheet" href="../../../reading/reader.css">
 <link rel="stylesheet" href="../../../theme.css">
 <link rel="stylesheet" href="../../../reading/_shared/theme-readers.css">
 <link rel="stylesheet" href="../../../reading/kotlin-coroutines-guide/course.css">
 </head><body><div class="reader-theme-control" data-theme-control></div>
-<nav class="site-nav"><a href="../index.html">← Kotlin 协程指南</a><a href="index.html">中文译文</a><a href="https://kotlinlang.org/docs/exception-handling.html">Kotlin 原文 ↗</a></nav><main class="reader project-reader"><header class="chapter-header"><span class="chapter-kicker">Kotlin 协程指南 · 08 / 12</span><h1>Coroutine exceptions handling</h1></header><nav class="chapter-switcher" aria-label="章节导航"><a href="../channels/english.html">← Channels</a><a class="course-home" href="../english.html">Contents</a><a href="../shared-mutable-state-and-concurrency/english.html">Shared mutable state and concurrency →</a></nav><details class="source-details chapter-toc"><summary>On this page</summary><ul><li><a href="#exception-propagation">Exception propagation</a></li><li><a href="#coroutineexceptionhandler">CoroutineExceptionHandler</a></li><li><a href="#cancellation-and-exceptions">Cancellation and exceptions</a></li><li><a href="#exceptions-aggregation">Exceptions aggregation</a></li><li><a href="#supervision">Supervision</a></li></ul></details><article class="translated-article"><p id="-3i3drl_3">This section covers exception handling and cancellation on exceptions. We already know that a cancelled coroutine throws <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-cancellation-exception/index.html" id="-3i3drl_9">CancellationException</a> in suspension points and that it is ignored by the coroutines' machinery. Here we look at what happens if an exception is thrown during cancellation or multiple children of the same coroutine throw an exception.</p>
+<nav class="site-nav"><a href="../english.html">← Contents</a><div class="version-links" aria-label="版本"><a href="index.html">中文润色稿</a><a href="literal.html">严格译稿</a><a href="english.html" aria-current="page">English</a></div></nav><main class="reader project-reader"><header class="chapter-header"><span class="chapter-kicker">8 / 12 · English</span><h1 id="exception-handling.md">Coroutine exceptions handling</h1></header><nav class="chapter-switcher" aria-label="章节导航"><a href="../channels/english.html">← Channels</a><a class="course-home" href="../english.html">Contents</a><a href="../shared-mutable-state-and-concurrency/english.html">Shared mutable state and concurrency →</a></nav><details class="source-details chapter-toc"><summary>On this page</summary><ul><li><a href="#exception-propagation">Exception propagation</a></li><li><a href="#coroutineexceptionhandler">CoroutineExceptionHandler</a></li><li><a href="#cancellation-and-exceptions">Cancellation and exceptions</a></li><li><a href="#exceptions-aggregation">Exceptions aggregation</a></li><li><a href="#supervision">Supervision</a></li></ul></details><article class="translated-article"><p id="-3i3drl_3">This section covers exception handling and cancellation on exceptions. We already know that a cancelled coroutine throws <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-cancellation-exception/index.html" id="-3i3drl_9">CancellationException</a> in suspension points and that it is ignored by the coroutines' machinery. Here we look at what happens if an exception is thrown during cancellation or multiple children of the same coroutine throw an exception.</p>
 <section class="chapter"><h2 id="exception-propagation">Exception propagation</h2>
 <p id="-3i3drl_10">Coroutine builders come in two flavors: propagating exceptions automatically (<a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/launch.html" id="-3i3drl_17">launch</a>) or exposing them to users (<a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/async.html" id="-3i3drl_18">async</a> and <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.channels/produce.html" id="-3i3drl_19">produce</a>). When these builders are used to create a <span class="emphasis" id="-3i3drl_20">root</span> coroutine, that is not a <span class="emphasis" id="-3i3drl_21">child</span> of another coroutine, the former builders treat exceptions as <span class="control" id="-3i3drl_22">uncaught</span> exceptions, similar to Java's <code class="code" id="-3i3drl_23">Thread.uncaughtExceptionHandler</code>, while the latter are relying on the user to consume the final exception, for example via <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-deferred/await.html" id="-3i3drl_24">await</a> or <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.channels/-receive-channel/receive.html" id="-3i3drl_25">receive</a> (<a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.channels/produce.html" id="-3i3drl_26">produce</a> and <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.channels/-receive-channel/receive.html" id="-3i3drl_27">receive</a> are covered in <a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/docs/channels.md" id="-3i3drl_28">Channels</a> section).</p>
 <p id="-3i3drl_11">It can be demonstrated by a simple example that creates root coroutines using the <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-global-scope/index.html" id="-3i3drl_29">GlobalScope</a>:</p>
 <aside class="prompt" data-type="note" id="-3i3drl_12"><p id="-3i3drl_30"><a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-global-scope/index.html" id="-3i3drl_31">GlobalScope</a> is a delicate API that can backfire in non-trivial ways. Creating a root coroutine for the whole application is one of the rare legitimate uses for <code class="code" id="-3i3drl_32">GlobalScope</code>, so you must explicitly opt-in into using <code class="code" id="-3i3drl_33">GlobalScope</code> with <code class="code" id="-3i3drl_34">@OptIn(DelicateCoroutinesApi::class)</code>.</p></aside><pre><code class="language-kotlin">import kotlinx.coroutines.*
 
-//sampleStart
+//<span class="code-comment">sampleStart</span>
 @OptIn(DelicateCoroutinesApi::class)
 fun main() = runBlocking {
-    val job = GlobalScope.launch { // root coroutine with launch
+    val job = GlobalScope.launch { // <span class="code-comment">root coroutine with launch</span>
         println("Throwing exception from launch")
-        throw IndexOutOfBoundsException() // Will be printed to the console by Thread.defaultUncaughtExceptionHandler
+        throw IndexOutOfBoundsException() // <span class="code-comment">Will be printed to the console by Thread.defaultUncaughtExceptionHandler</span>
     }
     job.join()
     println("Joined failed job")
-    val deferred = GlobalScope.async { // root coroutine with async
+    val deferred = GlobalScope.async { // <span class="code-comment">root coroutine with async</span>
         println("Throwing exception from async")
-        throw ArithmeticException() // Nothing is printed, relying on user to call await
+        throw ArithmeticException() // <span class="code-comment">Nothing is printed, relying on user to call await</span>
     }
     try {
         deferred.await()
@@ -37,7 +37,7 @@ fun main() = runBlocking {
         println("Caught ArithmeticException")
     }
 }
-//sampleEnd</code></pre>
+//<span class="code-comment">sampleEnd</span></code></pre>
 <aside class="prompt" data-type="note" id="-3i3drl_14"><p id="-3i3drl_35">You can get the full code <a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-exceptions-01.kt" id="-3i3drl_36">here</a>.</p></aside><p id="-3i3drl_15">The output of this code is (with <a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/docs/coroutine-context-and-dispatchers.md#debugging-coroutines-and-threads" id="-3i3drl_37">debug</a>):</p>
 <pre><code class="language-none">Throwing exception from launch
 Exception in thread "DefaultDispatcher-worker-1 @coroutine#2" java.lang.IndexOutOfBoundsException
@@ -50,18 +50,18 @@ Caught ArithmeticException</code></pre></section><section class="chapter"><h2 id
 
 @OptIn(DelicateCoroutinesApi::class)
 fun main() = runBlocking {
-//sampleStart
-    val handler = CoroutineExceptionHandler { _, exception -&gt; 
-        println("CoroutineExceptionHandler got $exception") 
+//<span class="code-comment">sampleStart</span>
+    val handler = CoroutineExceptionHandler { _, exception -&gt;&#32;
+        println("CoroutineExceptionHandler got $exception")&#32;
     }
-    val job = GlobalScope.launch(handler) { // root coroutine, running in GlobalScope
+    val job = GlobalScope.launch(handler) { // <span class="code-comment">root coroutine, running in GlobalScope</span>
         throw AssertionError()
     }
-    val deferred = GlobalScope.async(handler) { // also root, but async instead of launch
-        throw ArithmeticException() // Nothing will be printed, relying on user to call deferred.await()
+    val deferred = GlobalScope.async(handler) { // <span class="code-comment">also root, but async instead of launch</span>
+        throw ArithmeticException() // <span class="code-comment">Nothing will be printed, relying on user to call deferred.await()</span>
     }
     joinAll(job, deferred)
-//sampleEnd    
+//<span class="code-comment">sampleEnd</span>&#32;&#32;&#32;&#32;
 }</code></pre>
 <aside class="prompt" data-type="note" id="-3i3drl_42"><p id="-3i3drl_62">You can get the full code <a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-exceptions-02.kt" id="-3i3drl_63">here</a>.</p></aside><p id="-3i3drl_43">The output of this code is:</p>
 <pre><code class="language-none">CoroutineExceptionHandler got java.lang.AssertionError</code></pre></section><section class="chapter"><h2 id="cancellation-and-exceptions">Cancellation and exceptions</h2>
@@ -69,7 +69,7 @@ fun main() = runBlocking {
 <pre><code class="language-kotlin">import kotlinx.coroutines.*
 
 fun main() = runBlocking {
-//sampleStart
+//<span class="code-comment">sampleStart</span>
     val job = launch {
         val child = launch {
             try {
@@ -86,7 +86,7 @@ fun main() = runBlocking {
         println("Parent is not cancelled")
     }
     job.join()
-//sampleEnd    
+//<span class="code-comment">sampleEnd</span>&#32;&#32;&#32;&#32;
 }</code></pre>
 <aside class="prompt" data-type="note" id="-3i3drl_66"><p id="-3i3drl_79">You can get the full code <a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-exceptions-03.kt" id="-3i3drl_80">here</a>.</p></aside><p id="-3i3drl_67">The output of this code is:</p>
 <pre><code class="language-none">Cancelling child
@@ -98,12 +98,12 @@ Parent is not cancelled</code></pre>
 
 @OptIn(DelicateCoroutinesApi::class)
 fun main() = runBlocking {
-//sampleStart
-    val handler = CoroutineExceptionHandler { _, exception -&gt; 
-        println("CoroutineExceptionHandler got $exception") 
+//<span class="code-comment">sampleStart</span>
+    val handler = CoroutineExceptionHandler { _, exception -&gt;&#32;
+        println("CoroutineExceptionHandler got $exception")&#32;
     }
     val job = GlobalScope.launch(handler) {
-        launch { // the first child
+        launch { // <span class="code-comment">the first child</span>
             try {
                 delay(Long.MAX_VALUE)
             } finally {
@@ -114,14 +114,14 @@ fun main() = runBlocking {
                 }
             }
         }
-        launch { // the second child
+        launch { // <span class="code-comment">the second child</span>
             delay(10)
             println("Second child throws an exception")
             throw ArithmeticException()
         }
     }
     job.join()
-//sampleEnd 
+//<span class="code-comment">sampleEnd</span>&#32;
 }</code></pre>
 <aside class="prompt" data-type="note" id="-3i3drl_73"><p id="-3i3drl_88">You can get the full code <a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-exceptions-04.kt" id="-3i3drl_89">here</a>.</p></aside><p id="-3i3drl_74">The output of this code is:</p>
 <pre><code class="language-none">Second child throws an exception
@@ -140,18 +140,18 @@ fun main() = runBlocking {
     val job = GlobalScope.launch(handler) {
         launch {
             try {
-                delay(Long.MAX_VALUE) // it gets cancelled when another sibling fails with IOException
+                delay(Long.MAX_VALUE) // <span class="code-comment">it gets cancelled when another sibling fails with IOException</span>
             } finally {
-                throw ArithmeticException() // the second exception
+                throw ArithmeticException() // <span class="code-comment">the second exception</span>
             }
         }
         launch {
             delay(100)
-            throw IOException() // the first exception
+            throw IOException() // <span class="code-comment">the first exception</span>
         }
         delay(Long.MAX_VALUE)
     }
-    job.join()  
+    job.join()&#32;&#32;
 }</code></pre>
 <aside class="prompt" data-type="note" id="-3i3drl_92"><p id="-3i3drl_101">You can get the full code <a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-exceptions-05.kt" id="-3i3drl_102">here</a>.</p></aside><p id="-3i3drl_93">The output of this code is:</p>
 <pre><code class="language-none">CoroutineExceptionHandler got java.io.IOException with suppressed [java.lang.ArithmeticException]</code></pre>
@@ -161,15 +161,15 @@ import java.io.*
 
 @OptIn(DelicateCoroutinesApi::class)
 fun main() = runBlocking {
-//sampleStart
+//<span class="code-comment">sampleStart</span>
     val handler = CoroutineExceptionHandler { _, exception -&gt;
         println("CoroutineExceptionHandler got $exception")
     }
     val job = GlobalScope.launch(handler) {
-        val innerJob = launch { // all this stack of coroutines will get cancelled
+        val innerJob = launch { // <span class="code-comment">all this stack of coroutines will get cancelled</span>
             launch {
                 launch {
-                    throw IOException() // the original exception
+                    throw IOException() // <span class="code-comment">the original exception</span>
                 }
             }
         }
@@ -177,11 +177,11 @@ fun main() = runBlocking {
             innerJob.join()
         } catch (e: CancellationException) {
             println("Rethrowing CancellationException with original cause")
-            throw e // cancellation exception is rethrown, yet the original IOException gets to the handler  
+            throw e // <span class="code-comment">cancellation exception is rethrown, yet the original IOException gets to the handler</span>&#32;&#32;
         }
     }
     job.join()
-//sampleEnd    
+//<span class="code-comment">sampleEnd</span>&#32;&#32;&#32;&#32;
 }</code></pre>
 <aside class="prompt" data-type="note" id="-3i3drl_98"><p id="-3i3drl_104">You can get the full code <a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-exceptions-06.kt" id="-3i3drl_105">here</a>.</p></aside><p id="-3i3drl_99">The output of this code is:</p>
 <pre><code class="language-none">Rethrowing CancellationException with original cause
@@ -194,33 +194,33 @@ CoroutineExceptionHandler got java.io.IOException</code></pre></section><section
 <pre><code class="language-kotlin">import kotlinx.coroutines.*
 
 fun main() = runBlocking {
-//sampleStart
+//<span class="code-comment">sampleStart</span>
     val supervisor = SupervisorJob()
     with(CoroutineScope(coroutineContext + supervisor)) {
-        // launch the first child -- its exception is ignored for this example (don't do this in practice!)
+        // <span class="code-comment">launch the first child -- its exception is ignored for this example (don't do this in practice!)</span>
         val firstChild = launch(CoroutineExceptionHandler { _, _ -&gt;  }) {
             println("The first child is failing")
             throw AssertionError("The first child is cancelled")
         }
-        // launch the second child
+        // <span class="code-comment">launch the second child</span>
         val secondChild = launch {
             firstChild.join()
-            // Cancellation of the first child is not propagated to the second child
+            // <span class="code-comment">Cancellation of the first child is not propagated to the second child</span>
             println("The first child is cancelled: ${firstChild.isCancelled}, but the second one is still active")
             try {
                 delay(Long.MAX_VALUE)
             } finally {
-                // But cancellation of the supervisor is propagated
+                // <span class="code-comment">But cancellation of the supervisor is propagated</span>
                 println("The second child is cancelled because the supervisor was cancelled")
             }
         }
-        // wait until the first child fails &amp; completes
+        // <span class="code-comment">wait until the first child fails &amp; completes</span>
         firstChild.join()
         println("Cancelling the supervisor")
         supervisor.cancel()
         secondChild.join()
     }
-//sampleEnd
+//<span class="code-comment">sampleEnd</span>
 }</code></pre>
 <aside class="prompt" data-type="note" id="-3i3drl_114"><p id="-3i3drl_119">You can get the full code <a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-supervision-01.kt" id="-3i3drl_120">here</a>.</p></aside><p id="-3i3drl_115">The output of this code is:</p>
 <pre><code class="language-none">The first child is failing
@@ -232,7 +232,7 @@ The second child is cancelled because the supervisor was cancelled</code></pre><
 import kotlinx.coroutines.*
 
 fun main() = runBlocking {
-//sampleStart
+//<span class="code-comment">sampleStart</span>
     try {
         supervisorScope {
             val child = launch {
@@ -243,7 +243,7 @@ fun main() = runBlocking {
                     println("The child is cancelled")
                 }
             }
-            // Give our child a chance to execute and print using yield 
+            // <span class="code-comment">Give our child a chance to execute and print using yield</span>&#32;
             yield()
             println("Throwing an exception from the scope")
             throw AssertionError()
@@ -251,7 +251,7 @@ fun main() = runBlocking {
     } catch(e: AssertionError) {
         println("Caught an assertion error")
     }
-//sampleEnd
+//<span class="code-comment">sampleEnd</span>
 }</code></pre>
 <aside class="prompt" data-type="note" id="-3i3drl_123"><p id="-3i3drl_131">You can get the full code <a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-supervision-02.kt" id="-3i3drl_132">here</a>.</p></aside><p id="-3i3drl_124">The output of this code is:</p>
 <pre><code class="language-none">The child is sleeping
@@ -264,9 +264,9 @@ Caught an assertion error</code></pre>
 import kotlinx.coroutines.*
 
 fun main() = runBlocking {
-//sampleStart
-    val handler = CoroutineExceptionHandler { _, exception -&gt; 
-        println("CoroutineExceptionHandler got $exception") 
+//<span class="code-comment">sampleStart</span>
+    val handler = CoroutineExceptionHandler { _, exception -&gt;&#32;
+        println("CoroutineExceptionHandler got $exception")&#32;
     }
     supervisorScope {
         val child = launch(handler) {
@@ -276,12 +276,12 @@ fun main() = runBlocking {
         println("The scope is completing")
     }
     println("The scope is completed")
-//sampleEnd
+//<span class="code-comment">sampleEnd</span>
 }</code></pre>
 <aside class="prompt" data-type="note" id="-3i3drl_135"><p id="-3i3drl_142">You can get the full code <a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-supervision-03.kt" id="-3i3drl_143">here</a>.</p></aside><p id="-3i3drl_136">The output of this code is:</p>
 <pre><code class="language-none">The scope is completing
 The child throws an exception
 CoroutineExceptionHandler got java.lang.AssertionError
 The scope is completed</code></pre></section></section></section></article>
-<nav class="chapter-switcher" aria-label="章节导航"><a href="../channels/english.html">← Channels</a><a class="course-home" href="../english.html">Contents</a><a href="../shared-mutable-state-and-concurrency/english.html">Shared mutable state and concurrency →</a></nav><footer class="source-credit"><p>原文由 JetBrains 与 Kotlin 贡献者维护。RIN III 于 2026 年 11 月 18 日翻译、润色并补充导读与自测；代码、输出及图中界面保留原貌。</p><p><a href="https://kotlinlang.org/docs/exception-handling.html">Kotlin 官方原文</a> · <a href="../LICENSE-2.0.txt">Apache License 2.0</a></p></footer></main>
+<nav class="chapter-switcher" aria-label="章节导航"><a href="../channels/english.html">← Channels</a><a class="course-home" href="../english.html">Contents</a><a href="../shared-mutable-state-and-concurrency/english.html">Shared mutable state and concurrency →</a></nav><footer class="source-credit"><p>English source by JetBrains and Kotlin contributors.</p><p><a href="https://kotlinlang.org/docs/exception-handling.html">Kotlin 官方原文</a> · <a href="../LICENSE-2.0.txt">Apache License 2.0</a></p></footer></main>
 </body></html>

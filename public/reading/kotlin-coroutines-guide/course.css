@@ -44,3 +44,41 @@
   cursor: pointer;
   color: var(--accent);
 }
+
+.version-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .4rem 1rem;
+}
+
+.version-links [aria-current="page"] {
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: .3em;
+}
+
+.guide-contents {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+  gap: .6rem;
+  padding: 0;
+  list-style: none;
+}
+
+.guide-contents :is(li, p) { margin: 0; }
+
+.guide-contents .chapter-card {
+  display: block;
+  min-height: 0;
+  height: 100%;
+  padding: .7rem 1rem;
+}
+
+.code-comment {
+  color: #b5cbbb;
+  white-space: pre-wrap;
+}
+
+@media (max-width: 550px) {
+  .site-nav { flex-wrap: wrap; gap: .55rem; }
+}

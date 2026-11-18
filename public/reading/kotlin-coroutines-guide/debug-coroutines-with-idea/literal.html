@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="zh-CN" data-reader-family="kotlin-coroutines-guide">
+<head>
+<meta charset="utf-8"><script src="../../../theme.js"></script>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>教程：使用 IntelliJ IDEA 调试协程｜RIN III</title>
+<meta name="description" content="教程：使用 IntelliJ IDEA 调试协程 · 严格译稿">
+<link rel="manifest" href="../../../manifest.webmanifest">
+<link rel="stylesheet" href="../../../reading/reader.css">
+<link rel="stylesheet" href="../../../theme.css">
+<link rel="stylesheet" href="../../../reading/_shared/theme-readers.css">
+<link rel="stylesheet" href="../../../reading/kotlin-coroutines-guide/course.css">
+</head><body><div class="reader-theme-control" data-theme-control></div>
+<nav class="site-nav"><a href="../literal.html">← 全部章节</a><div class="version-links" aria-label="版本"><a href="index.html">中文润色稿</a><a href="literal.html" aria-current="page">严格译稿</a><a href="english.html">English</a></div></nav><main class="reader project-reader"><header class="chapter-header"><span class="chapter-kicker">11 / 12 · 严格译稿</span><h1 id="debug-coroutines-with-idea.md">教程：使用 IntelliJ IDEA 调试协程</h1></header><nav class="chapter-switcher" aria-label="章节导航"><a href="../select-expression/literal.html">← select 表达式（实验性）</a><a class="course-home" href="../literal.html">全部章节</a><a href="../debug-flow-with-idea/literal.html">教程：使用 IntelliJ IDEA 调试 Kotlin Flow →</a></nav><details class="source-details chapter-toc"><summary>本章目录</summary><ul><li><a href="#create-coroutines">创建协程</a></li><li><a href="#debug-coroutines">调试协程</a></li></ul></details><article class="translated-article"><p id="dvbbjg_3">本教程演示如何创建 Kotlin 协程，并用 IntelliJ IDEA 调试它们。</p>
+<p id="dvbbjg_4">教程假定读者已经了解<a href="../literal.html">协程</a>的基本概念。</p>
+<section class="chapter"><h2 id="create-coroutines">创建协程</h2>
+<ol class="list _decimal" id="dvbbjg_8" type="1">
+<li class="list__item" id="dvbbjg_9"><p id="dvbbjg_14">在 IntelliJ IDEA 中打开 Kotlin 项目。如果还没有项目，先<a href="https://kotlinlang.org/docs/jvm-get-started.html#create-a-project">创建一个</a>。</p></li>
+<li class="list__item" id="dvbbjg_10">
+<p id="dvbbjg_16">在 Gradle 项目中使用 <code>kotlinx.coroutines</code>，请在 <code>build.gradle(.kts)</code> 添加下列依赖。</p>
+<div class="tabs" id="dvbbjg_17">
+<div class="tabs__content" id="dvbbjg_21">
+<p class="source-tab-title">Kotlin</p>
+<pre><code class="language-kotlin">dependencies {
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.11.0")
+}</code></pre>
+</div>
+<div class="tabs__content" id="dvbbjg_22">
+<p class="source-tab-title">Groovy</p>
+<pre><code class="language-groovy">dependencies {
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-core:1.11.0'
+}</code></pre>
+</div>
+</div>
+<p id="dvbbjg_18">其他构建系统的说明见 <a href="https://github.com/Kotlin/kotlinx.coroutines#using-in-your-projects">kotlinx.coroutines README</a>。</p>
+</li>
+<li class="list__item" id="dvbbjg_11">
+<p id="dvbbjg_27">打开 <code>src/main/kotlin</code> 目录中的 <code>Main.kt</code>。</p>
+<p id="dvbbjg_28"><code>src</code> 目录包含 Kotlin 源文件和资源。<code>Main.kt</code> 中的示例代码会打印 <code>Hello World!</code>。</p>
+</li>
+<li class="list__item" id="dvbbjg_12">
+<p id="dvbbjg_34">修改 <code>main()</code> 函数中的代码。</p>
+<ul class="list _bullet" id="dvbbjg_35">
+<li class="list__item" id="dvbbjg_38"><p id="dvbbjg_42">用 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/run-blocking.html">runBlocking()</a> 块包住协程代码。</p></li>
+<li class="list__item" id="dvbbjg_39"><p id="dvbbjg_45">用 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/async.html">async()</a> 创建两个协程，分别计算由 Deferred 表示的 <code>a</code> 和 <code>b</code>。</p></li>
+<li class="list__item" id="dvbbjg_40"><p id="dvbbjg_50">用 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-deferred/await.html">await()</a> 等待计算结果。</p></li>
+<li class="list__item" id="dvbbjg_41"><p id="dvbbjg_53">用 <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.io/println.html">println()</a> 输出计算状态和乘积。</p></li>
+</ul>
+<pre><code class="language-kotlin">import kotlinx.coroutines.*
+
+fun main() = runBlocking&lt;Unit&gt; {
+    val a = async {
+        println("I'm computing part of the answer")
+        6
+    }
+    val b = async {
+        println("I'm computing another part of the answer")
+        7
+    }
+    println("The answer is ${a.await() * b.await()}")
+}</code></pre>
+</li>
+<li class="list__item" id="dvbbjg_13">
+<p id="dvbbjg_56">点击 Build Project 构建代码。</p>
+<figure id="dvbbjg_57"><img alt="从 IDEA 的构建操作编译示例" src="../assets/flow-build-project.png" width="984" height="308" loading="lazy"></figure>
+</li>
+</ol></section><section class="chapter"><h2 id="debug-coroutines">调试协程</h2>
+<ol class="list _decimal" id="dvbbjg_59" type="1">
+<li class="list__item" id="dvbbjg_62">
+<p id="dvbbjg_66">在调用 <code>println()</code> 的行上设置断点，如图所示。</p>
+<figure id="dvbbjg_67"><img alt="在 IDEA 工具栏构建控制台程序" src="../assets/coroutine-breakpoint.png" width="1312" height="668" loading="lazy"></figure>
+</li>
+<li class="list__item" id="dvbbjg_63">
+<p id="dvbbjg_69">点击窗口顶部运行配置旁的 Debug，以调试模式运行代码。</p>
+<figure id="dvbbjg_70"><img alt="在 IDEA 工具栏构建控制台程序" src="../assets/flow-debug-project.png" width="1158" height="342" loading="lazy"></figure><p id="dvbbjg_71">Debug 工具窗口会出现。</p>
+<ul class="list _bullet" id="dvbbjg_72">
+<li class="list__item" id="dvbbjg_76"><p id="dvbbjg_79">Frames 标签页显示调用栈。</p></li>
+<li class="list__item" id="dvbbjg_77"><p id="dvbbjg_81">Variables 标签页显示当前上下文中的变量。</p></li>
+<li class="list__item" id="dvbbjg_78"><p id="dvbbjg_83">Coroutines 标签页显示正在运行或挂起的协程。图中有三个协程，第一个状态为 RUNNING，另外两个为 CREATED。</p></li>
+</ul>
+<figure id="dvbbjg_73"><img alt="IDEA 调试窗口中的断点、协程状态与变量" src="../assets/coroutine-debug-1.png" width="2408" height="658" loading="lazy"></figure>
+</li>
+<li class="list__item" id="dvbbjg_64">
+<p id="dvbbjg_87">在 Debug 工具窗口点击 Resume Program 继续执行。</p>
+<figure id="dvbbjg_88"><img alt="IDEA 调试窗口中的断点、协程状态与变量" src="../assets/coroutine-debug-2.png" width="2408" height="658" loading="lazy"></figure><p id="dvbbjg_89">此时 Coroutines 标签页显示下列状态。</p>
+<ul class="list _bullet" id="dvbbjg_90">
+<li class="list__item" id="dvbbjg_94"><p id="dvbbjg_97">第一个协程为 SUSPENDED，正在等待两个值，以便将它们相乘。</p></li>
+<li class="list__item" id="dvbbjg_95"><p id="dvbbjg_99">第二个协程正在计算 <code>a</code> 的值，状态为 RUNNING。</p></li>
+<li class="list__item" id="dvbbjg_96"><p id="dvbbjg_102">第三个协程为 CREATED，还未开始计算 <code>b</code>。</p></li>
+</ul>
+</li>
+<li class="list__item" id="dvbbjg_65">
+<p id="dvbbjg_105">在 Debug 工具窗口中再次点击 Resume Program，继续执行。</p>
+<figure id="dvbbjg_106"><img alt="在 IDEA 工具栏构建控制台程序" src="../assets/coroutine-debug-3.png" width="2408" height="658" loading="lazy"></figure><p id="dvbbjg_107">现在 Coroutines 标签页显示下列状态。</p>
+<ul class="list _bullet" id="dvbbjg_108">
+<li class="list__item" id="dvbbjg_112"><p id="dvbbjg_115">第一个协程仍为 SUSPENDED，正在等待相乘所需的值。</p></li>
+<li class="list__item" id="dvbbjg_113"><p id="dvbbjg_117">第二个协程已算出结果，从列表中消失。</p></li>
+<li class="list__item" id="dvbbjg_114"><p id="dvbbjg_118">第三个协程正在计算 <code>b</code>，状态为 RUNNING。</p></li>
+</ul>
+</li>
+</ol>
+<p id="dvbbjg_60">可以在 IntelliJ IDEA 调试器中深入查看每个协程以调试代码。</p>
+<section class="chapter"><h3 id="optimized-out-variables">被优化掉的变量</h3>
+<p id="dvbbjg_121">使用挂起函数时，调试器有时会在变量名旁显示 was optimized out。</p>
+<figure id="dvbbjg_122"><img alt="调试器提示变量 a 已被优化" src="../assets/variable-optimised-out.png" width="480" height="291" loading="lazy"></figure><p id="dvbbjg_123">这意味着变量的存活期被缩短，此时变量已经不存在。由于看不到变量值，调试会变得困难。可以用编译器选项 <code>-Xdebug</code> 关闭这种优化。</p>
+<aside class="prompt" data-type="warning" id="dvbbjg_124"><p id="dvbbjg_127">不要在生产环境中使用该选项，<code>-Xdebug</code> 可能造成<a href="https://youtrack.jetbrains.com/issue/KT-48678/Coroutine-debugger-disable-was-optimised-out-compiler-feature#focus=Comments-27-6015585.0-0">内存泄漏</a>。</p></aside></section></section></article>
+<nav class="chapter-switcher" aria-label="章节导航"><a href="../select-expression/literal.html">← select 表达式（实验性）</a><a class="course-home" href="../literal.html">全部章节</a><a href="../debug-flow-with-idea/literal.html">教程：使用 IntelliJ IDEA 调试 Kotlin Flow →</a></nav><footer class="source-credit"><p>原文由 JetBrains 与 Kotlin 贡献者维护。中文译稿修订于 2026 年 11 月 19 日。示例代码的说明性注释已译为中文，输出文字与截图沿用原文。</p><p><a href="https://kotlinlang.org/docs/debug-coroutines-with-idea.html">Kotlin 官方原文</a> · <a href="../LICENSE-2.0.txt">Apache License 2.0</a></p></footer></main>
+</body></html>

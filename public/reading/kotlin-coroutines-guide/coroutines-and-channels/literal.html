@@ -1,0 +1,937 @@
+<!doctype html>
+<html lang="zh-CN" data-reader-family="kotlin-coroutines-guide">
+<head>
+<meta charset="utf-8"><script src="../../../theme.js"></script>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>协程与通道教程｜RIN III</title>
+<meta name="description" content="协程与通道教程 · 严格译稿">
+<link rel="manifest" href="../../../manifest.webmanifest">
+<link rel="stylesheet" href="../../../reading/reader.css">
+<link rel="stylesheet" href="../../../theme.css">
+<link rel="stylesheet" href="../../../reading/_shared/theme-readers.css">
+<link rel="stylesheet" href="../../../reading/kotlin-coroutines-guide/course.css">
+</head><body><div class="reader-theme-control" data-theme-control></div>
+<nav class="site-nav"><a href="../literal.html">← 全部章节</a><div class="version-links" aria-label="版本"><a href="index.html">中文润色稿</a><a href="literal.html" aria-current="page">严格译稿</a><a href="english.html">English</a></div></nav><main class="reader project-reader"><header class="chapter-header"><span class="chapter-kicker">4 / 12 · 严格译稿</span><h1 id="coroutines-and-channels.md">协程与通道教程</h1></header><nav class="chapter-switcher" aria-label="章节导航"><a href="../coroutines-flow/literal.html">← Flow</a><a class="course-home" href="../literal.html">全部章节</a><a href="../composing-suspending-functions/literal.html">组合挂起函数 →</a></nav><details class="source-details chapter-toc"><summary>本章目录</summary><ul><li><a href="#before-you-start">开始前的准备</a></li><li><a href="#blocking-requests">阻塞式请求</a></li><li><a href="#callbacks">回调</a></li><li><a href="#suspending-functions">使用挂起函数</a></li><li><a href="#coroutines">协程</a></li><li><a href="#concurrency">并发</a></li><li><a href="#structured-concurrency">结构化并发</a></li><li><a href="#showing-progress">逐步显示进度</a></li><li><a href="#channels">通道</a></li><li><a href="#testing-coroutines">测试协程</a></li><li><a href="#what-s-next">继续学习</a></li></ul></details><article class="translated-article"><aside class="prompt" data-type="note" id="-svzko0_3"><p id="-svzko0_21">本教程将在之后的更新中修订。在此之前，如需了解目前推荐的协程入门方式，请阅读《<a href="../coroutines-basics/literal.html">协程基础</a>》。</p></aside><p id="-svzko0_4">本教程将介绍如何在 IntelliJ IDEA 中使用协程发起网络请求。你可以让底层线程继续执行其他工作，也无须编写回调。</p>
+<aside class="prompt" data-type="tip" id="-svzko0_5"><p id="-svzko0_23">无须预先了解协程，但需要熟悉 Kotlin 的基本语法。</p></aside><p id="-svzko0_6">你将学到以下内容。</p>
+<ul class="list _bullet" id="-svzko0_7">
+<li class="list__item" id="-svzko0_24"><p id="-svzko0_27">为什么要用挂起函数执行网络请求，以及具体该怎么做。</p></li>
+<li class="list__item" id="-svzko0_25"><p id="-svzko0_28">如何用协程并发发送请求。</p></li>
+<li class="list__item" id="-svzko0_26"><p id="-svzko0_29">如何用通道在不同协程之间传递信息。</p></li>
+</ul>
+<p id="-svzko0_8">网络请求使用 <a href="https://lysine.dev/retrofit/">Retrofit</a> 库。对于其他支持协程的库，本教程的方法同样适用。</p>
+<aside class="prompt" data-type="tip" id="-svzko0_9"><p id="-svzko0_31"><a href="http://github.com/kotlin-hands-on/intro-coroutines">项目仓库</a>的 <code>solutions</code> 分支提供了全部任务的参考实现。</p></aside><section class="chapter"><h2 id="before-you-start">开始前的准备</h2>
+<ol class="list _decimal" id="-svzko0_34" type="1">
+<li class="list__item" id="-svzko0_37"><p id="-svzko0_39">下载并安装最新版 <a href="https://www.jetbrains.com/idea/download/index.html">IntelliJ IDEA</a>。</p></li>
+<li class="list__item" id="-svzko0_38">
+<p id="-svzko0_41">在欢迎页选择 Get from VCS，或在菜单中选择 File → New → Project from Version Control，克隆示例项目。 <sup class="source-refs"><a href="http://github.com/kotlin-hands-on/intro-coroutines">[1]</a></sup></p>
+<p id="-svzko0_42">也可以用下面的命令取得项目。</p>
+<pre><code class="language-bash">git clone https://github.com/kotlin-hands-on/intro-coroutines</code></pre>
+</li>
+</ol>
+<section class="chapter"><h3 id="generate-a-github-developer-token">生成 GitHub 开发者令牌</h3>
+<p id="-svzko0_47">项目将使用 GitHub API。要访问该 API，请提供 GitHub 账户名，并使用密码或令牌进行认证。如果已启用双重身份验证，使用令牌即可。</p>
+<aside class="learning-note"><strong>编者注</strong><p>照着运行时，请在示例窗口输入 GitHub 用户名和个人访问令牌。原教程同时提到的账户登录密码如今不能用于这个 REST API。<a href="https://docs.github.com/en/rest/authentication/authenticating-to-the-rest-api">GitHub 的认证说明</a></p></aside><p id="-svzko0_48">为自己的<a href="https://github.com/settings/tokens/new">账户</a>生成一个供本练习使用的 GitHub 令牌。</p>
+<ol class="list _decimal" id="-svzko0_49" type="1">
+<li class="list__item" id="-svzko0_51">
+<p id="-svzko0_54">给令牌起一个容易辨认的名字，例如 <code>coroutines-tutorial</code>。</p>
+<figure id="-svzko0_55"><img alt="为读取公开数据的示例配置 GitHub 令牌" src="../assets/generating-token.png" width="700" height="261" loading="lazy"></figure>
+</li>
+<li class="list__item" id="-svzko0_52"><p id="-svzko0_57">保持所有权限范围（scope）均未勾选，点击页面底部的 Generate token。</p></li>
+<li class="list__item" id="-svzko0_53"><p id="-svzko0_59">复制生成的令牌。</p></li>
+</ol></section><section class="chapter"><h3 id="run-the-code">启动程序</h3>
+<p id="-svzko0_60">应用先加载某个组织的所有仓库及其贡献者，默认组织是 kotlin。稍后要把同一个人在不同仓库的贡献次数相加，再按总数排序。</p>
+<ol class="list _decimal" id="-svzko0_61" type="1">
+<li class="list__item" id="-svzko0_63">
+<p id="-svzko0_68">打开 <code>src/contributors/main.kt</code>，运行 <code>main()</code>，会出现下图所示的窗口。</p>
+<figure id="-svzko0_69"><img alt="贡献者示例的组织、加载方式与操作按钮" src="../assets/initial-window.png" width="500" height="454" loading="lazy"></figure><p id="-svzko0_70">如果字体太小，可调整 <code>main()</code> 里的 <code>setDefaultFontSize(18f)</code>。</p>
+</li>
+<li class="list__item" id="-svzko0_64"><p id="-svzko0_75">在对应输入框里填入 GitHub 用户名和令牌（或密码）。</p></li>
+<li class="list__item" id="-svzko0_65"><p id="-svzko0_76">在 Variant 下拉框中选择 BLOCKING。</p></li>
+<li class="list__item" id="-svzko0_66"><p id="-svzko0_79">点击 Load contributors。界面会暂时停止响应，随后显示贡献者列表。</p></li>
+<li class="list__item" id="-svzko0_67"><p id="-svzko0_81">打开程序输出，确认数据已经加载。每次请求成功后，程序都会记录贡献者列表。</p></li>
+</ol>
+<p id="-svzko0_62">这段逻辑既可以用<a href="#blocking-requests">阻塞式请求</a>实现，也可以用<a href="#callbacks">回调</a>实现。接下来将把这两种做法与<a href="#coroutines">协程</a>实现进行比较，并了解如何用<a href="#channels">通道</a>在协程之间传递信息。</p></section></section><section class="chapter"><h2 id="blocking-requests">阻塞式请求</h2>
+<p id="-svzko0_86"><a href="https://lysine.dev/retrofit/">Retrofit</a> 把 GitHub 的两个 HTTP 接口包装成 Kotlin 方法，一个查询组织下的仓库，另一个查询指定仓库的贡献者。</p>
+<pre><code class="language-kotlin">interface GitHubService {
+    @GET("orgs/{org}/repos?per_page=100")
+    fun getOrgReposCall(
+        @Path("org") org: String
+    ): Call&lt;List&lt;Repo&gt;&gt;
+
+    @GET("repos/{owner}/{repo}/contributors?per_page=100")
+    fun getRepoContributorsCall(
+        @Path("owner") owner: String,
+        @Path("repo") repo: String
+    ): Call&lt;List&lt;User&gt;&gt;
+}</code></pre>
+<p id="-svzko0_88"><code>loadContributorsBlocking()</code> 用这些接口取回组织的贡献者列表。</p>
+<ol class="list _decimal" id="-svzko0_89" type="1">
+<li class="list__item" id="-svzko0_93">
+<p id="-svzko0_97">打开 <code>src/tasks/Request1Blocking.kt</code> 查看实现。</p>
+<pre><code class="language-kotlin">fun loadContributorsBlocking(
+    service: GitHubService,
+    req: RequestData
+): List&lt;User&gt; {
+    val repos = service
+        .getOrgReposCall(req.org)   // <span class="code-comment">#1</span>
+        .execute()                  // <span class="code-comment">#2</span>
+        .also { logRepos(req, it) } // <span class="code-comment">#3</span>
+        .body() ?: emptyList()      // <span class="code-comment">#4</span>
+
+    return repos.flatMap { repo -&gt;
+        service
+            .getRepoContributorsCall(req.org, repo.name) // <span class="code-comment">#1</span>
+            .execute()                                   // <span class="code-comment">#2</span>
+            .also { logUsers(repo, it) }                 // <span class="code-comment">#3</span>
+            .bodyList()                                  // <span class="code-comment">#4</span>
+    }.aggregate()
+}</code></pre>
+<ul class="list _bullet" id="-svzko0_99">
+<li class="list__item" id="-svzko0_101"><p id="-svzko0_106">首先把仓库列表存入 <code>repos</code>。然后逐个查询仓库，将每个仓库返回的贡献者列表合并起来。</p></li>
+<li class="list__item" id="-svzko0_102"><p id="-svzko0_108">在 <code>#1</code> 处，<code>getOrgReposCall()</code> 和 <code>getRepoContributorsCall()</code> 都返回一个 Call 对象，此时还没有发出请求。</p></li>
+<li class="list__item" id="-svzko0_103"><p id="-svzko0_113">在标记 2，调用 Call.<code>execute()</code> 才开始请求。它会同步等待，期间占用调用线程。</p></li>
+<li class="list__item" id="-svzko0_104"><p id="-svzko0_117">收到响应后，分别调用 <code>logRepos()</code> 和 <code>logUsers()</code> 记录结果（<code>#3</code>）。如果 HTTP 响应包含错误，错误也会记录在这里。</p></li>
+<li class="list__item" id="-svzko0_105"><p id="-svzko0_121">最后取出响应体，其中包含所需数据。本教程在出错时使用空列表作为结果，并记录相应错误（<code>#4</code>）。</p></li>
+</ul>
+</li>
+<li class="list__item" id="-svzko0_94">
+<p id="-svzko0_123">用扩展函数 <code>bodyList()</code> 封装重复出现的 <code>.body() ?: emptyList()</code>。</p>
+<pre><code class="language-kotlin">fun &lt;T&gt; Response&lt;List&lt;T&gt;&gt;.bodyList(): List&lt;T&gt; {
+    return body() ?: emptyList()
+}</code></pre>
+</li>
+<li class="list__item" id="-svzko0_95">
+<p id="-svzko0_127">再次运行程序，查看 IntelliJ IDEA 的运行输出，与下面的日志比较。</p>
+<pre><code class="language-none">1770 [AWT-EventQueue-0] INFO  Contributors - kotlin: loaded 40 repos
+2025 [AWT-EventQueue-0] INFO  Contributors - kotlin-examples: loaded 23 contributors
+2229 [AWT-EventQueue-0] INFO  Contributors - kotlin-koans: loaded 45 contributors
+...</code></pre>
+<ul class="list _bullet" id="-svzko0_129">
+<li class="list__item" id="-svzko0_133"><p id="-svzko0_135">每行开头是程序启动后经过的毫秒数，方括号内是线程名，据此可查出加载代码从哪条线程发起。</p></li>
+<li class="list__item" id="-svzko0_134"><p id="-svzko0_136">行末才是消息本身，说明加载了多少仓库或贡献者。</p></li>
+</ul>
+<p id="-svzko0_130">日志表明，所有结果都记录在主线程上。选择 BLOCKING 运行时，窗口会冻结，直到加载结束才能响应输入。所有请求都在调用 <code>loadContributorsBlocking()</code> 的线程上执行，也就是主 UI 线程。在 Swing 中，这条线程叫作 AWT 事件分发线程。它在等待请求时被阻塞，所以界面也就停住了。</p>
+<figure id="-svzko0_131"><img alt="同步网络请求占用主线程的时间线" src="../assets/blocking.png" width="700" height="58" loading="lazy"></figure><p id="-svzko0_132">全部列表加载完之后，界面才更新。</p>
+</li>
+<li class="list__item" id="-svzko0_96">
+<p id="-svzko0_139">打开 <code>src/contributors/Contributors.kt</code>。找到负责选择加载方式的 <code>loadContributors()</code>，看它怎样调用 <code>loadContributorsBlocking()</code>。</p>
+<pre><code class="language-kotlin">when (getSelectedVariant()) {
+    BLOCKING -&gt; { // <span class="code-comment">阻塞 UI 线程</span>
+        val users = loadContributorsBlocking(service, req)
+        updateResults(users, startTime)
+    }
+}</code></pre>
+<ul class="list _bullet" id="-svzko0_141">
+<li class="list__item" id="-svzko0_145"><p id="-svzko0_148"><code>updateResults()</code> 紧接在 <code>loadContributorsBlocking()</code> 后执行。</p></li>
+<li class="list__item" id="-svzko0_146"><p id="-svzko0_151"><code>updateResults()</code> 会更新界面，因此每次都必须在 UI 线程上调用。</p></li>
+<li class="list__item" id="-svzko0_147"><p id="-svzko0_153"><code>loadContributorsBlocking()</code> 也在 UI 线程上调用，所以它一旦阻塞，整个窗口就停止响应。</p></li>
+</ul>
+</li>
+</ol>
+<section class="chapter"><h3 id="task-1">任务 1</h3>
+<p id="-svzko0_155">先把数据处理正确。同一位用户每参与一个仓库就多出现一行。实现 <code>aggregate()</code>，让每个用户只出现一次，<code>User.contributions</code> 保存其跨仓库总数，列表按总贡献数降序排列。</p>
+<p id="-svzko0_156">打开 <code>src/tasks/Aggregation.kt</code>，实现 <code>List&lt;User&gt;.aggregate()</code>。按每位用户的总贡献数从高到低排序。</p>
+<p id="-svzko0_157"><code>test/tasks/AggregationKtTest.kt</code> 给出了输入及预期结果，可用来检查去重和排序。</p>
+<aside class="prompt" data-type="tip" id="-svzko0_158"><p id="-svzko0_168">在 IDEA 中，可用 <a href="https://www.jetbrains.com/help/idea/create-tests.html#test-code-navigation">Ctrl+Shift+T</a>（macOS 为 ⇧⌘T）在实现与测试之间切换。</p></aside><p id="-svzko0_159">完成本题后，kotlin 组织的结果列表应与下图相近。</p>
+<figure id="-svzko0_160"><img alt="按总贡献次数排序的 kotlin 组织贡献者示例" src="../assets/aggregate.png" width="500" height="453" loading="lazy"></figure><section class="chapter"><details class="source-details"><summary id="solution-for-task-1">任务 1 参考解法</summary><ol class="list _decimal" id="-svzko0_172" type="1">
+<li class="list__item" id="-svzko0_174"><p id="-svzko0_177">按 login 执行 <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/group-by.html">groupBy()</a>。得到的映射里，每个登录名对应同一用户在不同仓库出现的记录。</p></li>
+<li class="list__item" id="-svzko0_175"><p id="-svzko0_180">遍历每组，累加 contributions，用登录名和总数构造一个新的 <code>User</code>。</p></li>
+<li class="list__item" id="-svzko0_176">
+<p id="-svzko0_182">将结果按贡献数从高到低排序。</p>
+<pre><code class="language-kotlin">fun List&lt;User&gt;.aggregate(): List&lt;User&gt; =
+    groupBy { it.login }
+        .map { (login, group) -&gt; User(login, group.sumOf { it.contributions }) }
+        .sortedByDescending { it.contributions }</code></pre>
+</li>
+</ol>
+<p id="-svzko0_173">除了 <code>groupBy()</code>，也可以用 <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/grouping-by.html">groupingBy()</a> 实现分组。</p></details></section></section></section><section class="chapter"><h2 id="callbacks">回调</h2>
+<p id="-svzko0_187">前一种实现能得到结果，但它会阻塞线程，导致界面冻结。传统的解决方式是使用回调。</p>
+<p id="-svzko0_188">将后续逻辑提取成函数（常写成 lambda），交给发起操作的一方，等操作结束再调用。</p>
+<p id="-svzko0_189">可以把整个计算移到另一条线程，也可以让 Retrofit 异步发起请求，在回调中接收响应。我们分别试一次。</p>
+<section class="chapter"><h3 id="use-a-background-thread">把加载移到后台线程</h3>
+<ol class="list _decimal" id="-svzko0_195" type="1">
+<li class="list__item" id="-svzko0_197">
+<p id="-svzko0_200">打开 <code>src/tasks/Request2Background.kt</code>。<code>thread()</code> 启动一条新线程，整个加载过程转到那里。</p>
+<pre><code class="language-kotlin">thread {
+    loadContributorsBlocking(service, req)
+}</code></pre>
+<p id="-svzko0_202">所有加载工作都转移到单独的线程后，主线程就可以执行其他任务。</p>
+<figure id="-svzko0_203"><img alt="后台线程接管加载后主线程恢复响应" src="../assets/background.png" width="700" height="95" loading="lazy"></figure>
+</li>
+<li class="list__item" id="-svzko0_198">
+<p id="-svzko0_206"><code>loadContributorsBackground()</code> 的函数签名随之改变。最后一个参数是回调 <code>updateResults()</code>，等全部数据加载完毕再调用。</p>
+<pre><code class="language-kotlin">fun loadContributorsBackground(
+    service: GitHubService, req: RequestData,
+    updateResults: (List&lt;User&gt;) -&gt; Unit
+)</code></pre>
+</li>
+<li class="list__item" id="-svzko0_199">
+<p id="-svzko0_210">调用 <code>loadContributorsBackground()</code> 时，更新结果的操作现在写在回调中。先前的写法是在函数调用返回后立即执行 <code>updateResults()</code>。</p>
+<pre><code class="language-kotlin">loadContributorsBackground(service, req) { users -&gt;
+    SwingUtilities.invokeLater {
+        updateResults(users, startTime)
+    }
+}</code></pre>
+<p id="-svzko0_212"><code>SwingUtilities.invokeLater</code> 会把 <code>updateResults()</code> 安排在主 UI 线程（AWT 事件分发线程）上执行，这样就能在正确的线程更新结果。</p>
+</li>
+</ol>
+<p id="-svzko0_196">不过，选 <code>BACKGROUND</code> 加载贡献者时，你会发现列表数据已经更新，界面却没有变化。</p></section><section class="chapter"><h3 id="task-2">任务 2</h3>
+<p id="-svzko0_218">修复 <code>src/tasks/Request2Background.kt</code> 里的 <code>loadContributorsBackground()</code>，让窗口显示计算后的列表。</p>
+<section class="chapter"><details class="source-details"><summary id="solution-for-task-2">任务 2 参考解法</summary><p id="-svzko0_222">尝试加载后可以从日志中看到，数据已加载，界面却没有显示结果。把最终的用户列表传给 <code>updateResults()</code>，并调用它，就能修复这个问题。</p>
+<pre><code class="language-kotlin">thread {
+    updateResults(loadContributorsBlocking(service, req))
+}</code></pre>
+<p id="-svzko0_224">传入 lambda 只代表准备好了后续动作，必须在完成处真正调用它。</p></details></section></section><section class="chapter"><h3 id="use-the-retrofit-callback-api">使用 Retrofit 的异步回调</h3>
+<p id="-svzko0_226">上一个方案把整个加载过程移到后台线程，但未充分利用资源。请求仍逐个执行，等待结果期间线程一直被阻塞。它原本可以做其他事，例如开始下一个请求，让完整结果更早就绪。</p>
+<p id="-svzko0_227">现在把每个请求拆成「发起加载」和「处理响应」两段，用回调执行第二段。</p>
+<p id="-svzko0_228">在收到前一个仓库的结果、执行相应的回调之前，就可以开始加载下一个仓库。</p>
+<figure id="-svzko0_229"><img alt="多个请求的响应通过回调交付" src="../assets/callbacks.png" width="700" height="121" loading="lazy"></figure><p id="-svzko0_230">Retrofit 的 <code>Call.enqueue()</code> 启动 HTTP 请求，并接受回调，用来描述请求完成后的处理。</p>
+<p id="-svzko0_231">打开 <code>src/tasks/Request3Callbacks.kt</code>，查看 <code>loadContributorsCallbacks()</code> 如何使用这个接口。</p>
+<pre><code class="language-kotlin">fun loadContributorsCallbacks(
+    service: GitHubService, req: RequestData,
+    updateResults: (List&lt;User&gt;) -&gt; Unit
+) {
+    service.getOrgReposCall(req.org).onResponse { responseRepos -&gt;  // <span class="code-comment">#1</span>
+        logRepos(req, responseRepos)
+        val repos = responseRepos.bodyList()
+
+        val allUsers = mutableListOf&lt;User&gt;()
+        for (repo in repos) {
+            service.getRepoContributorsCall(req.org, repo.name)
+                .onResponse { responseUsers -&gt;  // <span class="code-comment">#2</span>
+                    logUsers(repo, responseUsers)
+                    val users = responseUsers.bodyList()
+                    allUsers += users
+                }
+            }
+        }
+        // <span class="code-comment">待解决：这段代码为什么不能正常工作？怎样修复？</span>
+        updateResults(allUsers.aggregate())
+    }</code></pre>
+<ul class="list _bullet" id="-svzko0_233">
+<li class="list__item" id="-svzko0_240"><p id="-svzko0_242">同一文件里的 <code>onResponse()</code> 扩展接收 lambda，省去写匿名对象的步骤。</p></li>
+<li class="list__item" id="-svzko0_241"><p id="-svzko0_244">标记 1、2 是两个回调的开头，分别处理仓库响应和贡献者响应。</p></li>
+</ul>
+<p id="-svzko0_234">目前的解法还不能正常工作。选择 CALLBACKS 加载贡献者，界面什么也不显示，<code>Request3CallbacksKtTest</code> 中的测试却马上结束并报告通过。</p>
+<p id="-svzko0_235">试着找出原因并修复代码，也可以查看下面的解法。</p></section><section class="chapter"><h3 id="task-3-optional">任务 3（选做）</h3>
+<p id="-svzko0_249">修改 <code>src/tasks/Request3Callbacks.kt</code>，使加载到的贡献者确实显示在界面上。</p>
+<section class="chapter"><details class="source-details"><summary id="the-first-attempted-solution-for-task-3">任务 3 的第一次尝试</summary><p id="-svzko0_254">并发请求缩短了潜在等待时间，但当前代码刚发完请求就调用 <code>updateResults()</code>，响应还没填进 <code>allUsers</code>。</p>
+<p id="-svzko0_255">可以先尝试把更新逻辑移进回调。</p>
+<pre><code class="language-kotlin">val allUsers = mutableListOf&lt;User&gt;()
+for ((index, repo) in repos.withIndex()) {   // <span class="code-comment">#1</span>
+    service.getRepoContributorsCall(req.org, repo.name)
+        .onResponse { responseUsers -&gt;
+            logUsers(repo, responseUsers)
+            val users = responseUsers.bodyList()
+            allUsers += users
+            if (index == repos.lastIndex) {    // <span class="code-comment">#2</span>
+                updateResults(allUsers.aggregate())
+            }
+        }
+}</code></pre>
+<ul class="list _bullet" id="-svzko0_257">
+<li class="list__item" id="-svzko0_261"><p id="-svzko0_264">标记 1 用索引遍历 repos。</p></li>
+<li class="list__item" id="-svzko0_262"><p id="-svzko0_266">标记 2 在每个回调里检查自己是否对应列表中的最后一个仓库。</p></li>
+<li class="list__item" id="-svzko0_263"><p id="-svzko0_268">如果是最后一个索引，就更新结果。</p></li>
+</ul>
+<p id="-svzko0_258">这段代码仍未达到目标。可以先自己找原因，再看下面的解法。</p></details></section><section class="chapter"><details class="source-details"><summary id="the-second-attempted-solution-for-task-3">任务 3 的第二次尝试</summary><p id="-svzko0_269">请求是并发启动的，结果可能以任意顺序返回。最后一个仓库的请求未必最后完成。</p>
+<p id="-svzko0_270">因此，把当前索引等于 <code>lastIndex</code> 当作完成条件，可能漏掉某些仓库的结果。</p>
+<p id="-svzko0_271">一旦最后一个仓库先返回，晚到的仓库就赶不上这次界面更新。</p>
+<p id="-svzko0_272">可以另外计数，每完成一个仓库加一，等计数达到仓库总数再更新。</p>
+<pre><code class="language-kotlin">val allUsers = Collections.synchronizedList(mutableListOf&lt;User&gt;())
+val numberOfProcessed = AtomicInteger()
+for (repo in repos) {
+    service.getRepoContributorsCall(req.org, repo.name)
+        .onResponse { responseUsers -&gt;
+            logUsers(repo, responseUsers)
+            val users = responseUsers.bodyList()
+            allUsers += users
+            if (numberOfProcessed.incrementAndGet() == repos.size) {
+                updateResults(allUsers.aggregate())
+            }
+        }
+}</code></pre>
+<p id="-svzko0_274">处理 <code>getRepoContributors()</code> 请求的不同回调未必在同一条线程上执行，所以示例用支持同步访问的列表保存结果，并用 AtomicInteger 更新计数。</p></details></section><section class="chapter"><details class="source-details"><summary id="the-third-attempted-solution-for-task-3">任务 3 的第三次尝试</summary><p id="-svzko0_278">更好的办法是使用 <code>CountDownLatch</code>。把它的计数初始化为仓库数，每处理完一个仓库就减一。等到计数归零，再更新结果。</p>
+<pre><code class="language-kotlin">val countDownLatch = CountDownLatch(repos.size)
+for (repo in repos) {
+    service.getRepoContributorsCall(req.org, repo.name)
+        .onResponse { responseUsers -&gt;
+            // <span class="code-comment">正在处理仓库</span>
+            countDownLatch.countDown()
+        }
+}
+countDownLatch.await()
+updateResults(allUsers.aggregate())</code></pre>
+<p id="-svzko0_280">随后在主线程更新结果。这样比把这段逻辑委托给子线程更直接。</p>
+<p id="-svzko0_281">从这三次尝试可以看出，用回调写出正确的代码并不容易，尤其是涉及多个底层线程、需要同步的时候。</p>
+<aside class="prompt" data-type="tip" id="-svzko0_282"><p id="-svzko0_284">作为额外练习，可以用 RxJava 的响应式写法实现相同逻辑。单独的 <code>rx</code> 分支提供了所需的依赖和解法。也可以先完成本教程，再自己实现或查看 Rx 版本，以便比较。</p></aside></details></section></section></section><section class="chapter"><h2 id="suspending-functions">使用挂起函数</h2>
+<p id="-svzko0_286">Retrofit 还支持直接把接口声明成<a href="../composing-suspending-functions/literal.html">挂起函数</a>，无须先返回 <code>Call&lt;List&lt;Repo&gt;&gt;</code> 让外部执行。</p>
+<pre><code class="language-kotlin">interface GitHubService {
+    @GET("orgs/{org}/repos?per_page=100")
+    suspend fun getOrgRepos(
+        @Path("org") org: String
+    ): List&lt;Repo&gt;
+}</code></pre>
+<ul class="list _bullet" id="-svzko0_288">
+<li class="list__item" id="-svzko0_295"><p id="-svzko0_297"><code>getOrgRepos()</code> 声明为 <code>suspend</code> 函数。用挂起函数发请求时，底层线程不会被阻塞。后面的章节将说明其工作方式。</p></li>
+<li class="list__item" id="-svzko0_296"><p id="-svzko0_300"><code>getOrgRepos()</code> 直接返回结果。使用这种写法，不必先取得 <code>Call</code> 对象。请求不成功时会抛出异常。</p></li>
+</ul>
+<p id="-svzko0_289">也可以声明为返回 <code>Response</code>，让业务代码自行检查 HTTP 状态和响应体。本教程使用这种形式。</p>
+<p id="-svzko0_290">在 <code>src/contributors/GitHubService.kt</code> 的 <code>GitHubService</code> 接口中加入下面的声明。</p>
+<pre><code class="language-kotlin">interface GitHubService {
+    // <span class="code-comment">getOrgReposCall 和 getRepoContributorsCall 的声明</span>
+
+    @GET("orgs/{org}/repos?per_page=100")
+    suspend fun getOrgRepos(
+        @Path("org") org: String
+    ): Response&lt;List&lt;Repo&gt;&gt;
+
+    @GET("repos/{owner}/{repo}/contributors?per_page=100")
+    suspend fun getRepoContributors(
+        @Path("owner") owner: String,
+        @Path("repo") repo: String
+    ): Response&lt;List&lt;User&gt;&gt;
+}</code></pre>
+<section class="chapter"><h3 id="task-4">任务 4</h3>
+<p id="-svzko0_307">修改加载逻辑，改用 <code>getOrgRepos()</code> 与 <code>getRepoContributors()</code>。调用它们的 <code>loadContributorsSuspend()</code> 也需要标为 <code>suspend</code>。</p>
+<aside class="prompt" data-type="note" id="-svzko0_308"><p id="-svzko0_315">挂起函数只能在特定位置调用。在 <code>loadContributorsBlocking()</code> 中调用会收到编译错误「Suspend function 'getOrgRepos' should be called only from a coroutine or another suspend function」，即 getOrgRepos 只能从协程或另一个挂起函数调用。</p></aside><ol class="list _decimal" id="-svzko0_309" type="1">
+<li class="list__item" id="-svzko0_317"><p id="-svzko0_320">从 <code>src/tasks/Request1Blocking.kt</code> 复制 <code>loadContributorsBlocking()</code> 的实现，放进 <code>src/tasks/Request4Suspend.kt</code> 中的 <code>loadContributorsSuspend()</code>。</p></li>
+<li class="list__item" id="-svzko0_318"><p id="-svzko0_325">把返回 <code>Call</code> 的方法换成新的挂起接口。</p></li>
+<li class="list__item" id="-svzko0_319"><p id="-svzko0_327">选 SUSPEND 运行。请求进行时操作窗口，检查它是否仍能响应。</p></li>
+</ol>
+<section class="chapter"><details class="source-details"><summary id="solution-for-task-4">任务 4 参考解法</summary><p id="-svzko0_329">把 <code>.getOrgReposCall(req.org).execute()</code> 改成 <code>.getOrgRepos(req.org)</code>，再同样替换查询贡献者的调用。</p>
+<pre><code class="language-kotlin">suspend fun loadContributorsSuspend(service: GitHubService, req: RequestData): List&lt;User&gt; {
+    val repos = service
+        .getOrgRepos(req.org)
+        .also { logRepos(req, it) }
+        .bodyList()
+
+    return repos.flatMap { repo -&gt;
+        service.getRepoContributors(req.org, repo.name)
+            .also { logUsers(repo, it) }
+            .bodyList()
+    }.aggregate()
+}</code></pre>
+<ul class="list _bullet" id="-svzko0_331">
+<li class="list__item" id="-svzko0_334"><p id="-svzko0_336">给 <code>loadContributorsSuspend()</code> 加上 <code>suspend</code> 修饰符。</p></li>
+<li class="list__item" id="-svzko0_335"><p id="-svzko0_339">先前要调用 <code>execute</code> 才能得到 <code>Response</code>，现在 API 函数直接返回 <code>Response</code>。这是 Retrofit 的具体做法。其他库的 API 会有所不同，但原理相同。</p></li>
+</ul></details></section></section></section><section class="chapter"><h2 id="coroutines">协程</h2>
+<p id="-svzko0_343">使用挂起函数的代码看起来与阻塞版本相似。主要区别在等待期间：阻塞版本会阻塞线程，挂起版本会挂起协程。</p>
+<pre><code class="language-none">block -&gt; suspend
+thread -&gt; coroutine</code></pre>
+<aside class="prompt" data-type="note" id="-svzko0_345"><p id="-svzko0_347">协程常被称为轻量级线程，因为代码既能在线程上运行，也能在协程中运行。过去必须避免的阻塞操作，如今可以改用能够挂起协程的操作。</p></aside><section class="chapter"><h3 id="starting-a-new-coroutine">启动一个协程</h3>
+<p id="-svzko0_348">回到 <code>src/contributors/Contributors.kt</code>。<code>loadContributorsSuspend()</code> 在 <code>launch</code> 的 lambda 中调用，<code>launch</code> 是协程库提供的函数。</p>
+<pre><code class="language-kotlin">launch {
+    val users = loadContributorsSuspend(req)
+    updateResults(users, startTime)
+}</code></pre>
+<p id="-svzko0_350">这次 <code>launch</code> 启动「加载并显示」这项计算。网络请求等待时暂停计算并释放线程，响应回来后接着往下执行。</p>
+<p id="-svzko0_351">这样一段可以挂起再继续的计算就是协程。在这里，它负责从加载数据一直走到显示结果。</p>
+<p id="-svzko0_352">协程仍然在线程上执行。挂起时，下一步从哪里继续以及需要的局部状态保存在内存中，线程可以先执行其他任务。</p>
+<figure id="-svzko0_353" width="700"><img alt="协程从线程上挂起并在稍后恢复的过程" class="js-gif article__bordered-element" width="700" src="../assets/suspension-process.gif" loading="lazy"></figure><p id="-svzko0_354">计算准备好继续时，会重新回到线程上运行，恢复时所用的线程可能与之前不同。</p>
+<p id="-svzko0_355">在 <code>loadContributorsSuspend()</code> 里，每次先发送一个贡献者请求，然后整个加载协程在等待响应的位置挂起。</p>
+<p id="-svzko0_356">相应的响应到达后，再继续处理该仓库。</p>
+<figure id="-svzko0_357"><img alt="网络挂起期间 UI 线程继续处理事件" src="../assets/suspend-requests.png" width="700" height="144" loading="lazy"></figure><p id="-svzko0_358">于是请求从 UI 线程发起，等待期间 UI 仍能响应。下面的时间线画出了线程空出来的时段。</p>
+<ol class="list _decimal" id="-svzko0_359" type="1">
+<li class="list__item" id="-svzko0_372">
+<p id="-svzko0_374">选择 SUSPEND，日志可以验证请求都是从 UI 线程发起的。</p>
+<pre><code class="language-none">2538 [AWT-EventQueue-0 @coroutine#1] INFO  Contributors - kotlin: loaded 30 repos
+2729 [AWT-EventQueue-0 @coroutine#1] INFO  Contributors - ts2kt: loaded 11 contributors
+3029 [AWT-EventQueue-0 @coroutine#1] INFO  Contributors - kotlin-koans: loaded 45 contributors
+...
+11252 [AWT-EventQueue-0 @coroutine#1] INFO  Contributors - kotlin-coroutines-workshop: loaded 1 contributors</code></pre>
+</li>
+<li class="list__item" id="-svzko0_373">
+<p id="-svzko0_377">选择 Run → Edit Configurations，把 <code>-Dkotlinx.coroutines.debug</code> 加入 JVM 的 VM options，让日志也显示协程标识。</p>
+<figure id="-svzko0_378"><img alt="在运行配置中添加协程调试参数" src="../assets/run-configuration.png" width="500" height="356" loading="lazy"></figure><p id="-svzko0_379">运行 <code>main()</code> 时，线程名会带上协程名。需要反复实验时，也可以把这一选项加入 Kotlin 运行配置模板。</p>
+</li>
+</ol>
+<p id="-svzko0_360">这里始终是同一个加载协程，例如 <code>@coroutine#1</code>。代码按顺序执行，要等前一个响应回来才发下一个请求。这段等待期间，UI 线程可以处理其他事情。</p>
+<p id="-svzko0_361">挂起函数在等待时会让出线程。不过，到目前为止，这段代码还没有引入并发。</p></section></section><section class="chapter"><h2 id="concurrency">并发</h2>
+<p id="-svzko0_384">相比新建一条操作系统线程，启动协程所需的资源少得多。独立的异步计算可以各自交给一个协程。</p>
+<p id="-svzko0_385">常见的协程构建器有 <code>launch</code>、<code>async</code> 和 <code>runBlocking</code>。其他库也可以提供专用构建器。</p>
+<p id="-svzko0_386"><code>async</code> 启动新协程，并返回 <code>Deferred</code> 对象。它与其他地方称为 <code>Future</code> 或 <code>Promise</code> 的概念相似，代表一项已经开始的计算，其最终结果将在未来某个时刻取得。</p>
+<p id="-svzko0_387"><code>async</code> 与 <code>launch</code> 的主要区别在于，<code>launch</code> 用于启动无须返回特定结果的计算。它返回一个代表该协程的 <code>Job</code>，调用 <code>Job</code>.join() 可以等待它完成。</p>
+<p id="-svzko0_388"><code>Deferred</code> 也实现了 <code>Job</code>，并带有结果类型。lambda 的最后一个表达式决定结果是 <code>Deferred</code>&lt;Int&gt; 还是 <code>Deferred</code>&lt;CustomType&gt; 等。</p>
+<p id="-svzko0_389">调用 <code>Deferred</code>.<code>await()</code> 取得结果。结果还没准备好时，挂起的是正在等待的调用协程。</p>
+<pre><code class="language-kotlin">import kotlinx.coroutines.*
+
+fun main() = runBlocking {
+    val deferred: Deferred&lt;Int&gt; = async {
+        loadData()
+    }
+    println("waiting...")
+    println(deferred.await())
+}
+
+suspend fun loadData(): Int {
+    println("loading...")
+    delay(1000L)
+    println("loaded!")
+    return 42
+}</code></pre>
+<p id="-svzko0_391"><code>runBlocking</code> 连接普通函数与挂起函数，也就是连接阻塞与非阻塞代码。它可以用来启动最外层的主协程，主要用于 <code>main()</code> 函数和测试。</p>
+<aside class="prompt" data-type="tip" id="-svzko0_392"><p id="-svzko0_427">原教程附有协程演示<a href="https://www.youtube.com/watch?v=zEZc5AmHQhk">视频</a>，可配合前面的执行过程观看。</p></aside><p id="-svzko0_393">如果手里是一组 Deferred，可以用 <code>awaitAll()</code> 等待整组结果。</p>
+<pre><code class="language-kotlin">import kotlinx.coroutines.*
+
+fun main() = runBlocking {
+    val deferreds: List&lt;Deferred&lt;Int&gt;&gt; = (1..3).map {
+        async {
+            delay(1000L * it)
+            println("Loading $it")
+            it
+        }
+    }
+    val sum = deferreds.awaitAll().sum()
+    println("$sum")
+}</code></pre>
+<p id="-svzko0_395">让每个仓库的请求各在一个子协程里运行，前一个仓库还在等待，后一个请求就能发出去。</p>
+<figure id="-svzko0_396"><img alt="请求分别在不同协程中推进的时间线" src="../assets/concurrency.png" width="700" height="153" loading="lazy"></figure><p id="-svzko0_397">总加载时间与 CALLBACKS 版本大致相同，无须编写回调。代码中的 <code>async</code> 也明确指出了哪些部分可以并发运行。</p>
+<section class="chapter"><h3 id="task-5">任务 5</h3>
+<p id="-svzko0_432">在 <code>Request5Concurrent.kt</code> 中以已有的 <code>loadContributorsSuspend()</code> 为起点，实现 <code>loadContributorsConcurrent()</code>。</p>
+<section class="chapter"><details class="source-details"><summary id="tip-for-task-5">任务 5 提示</summary><p id="-svzko0_438">启动新协程需要协程作用域。把 <code>loadContributorsSuspend()</code> 的内容复制到 <code>coroutineScope</code> 的代码块里，这样就可以在其中调用 <code>async</code>。</p>
+<pre><code class="language-kotlin">suspend fun loadContributorsConcurrent(
+    service: GitHubService,
+    req: RequestData
+): List&lt;User&gt; = coroutineScope {
+    // ...
+}</code></pre>
+<p id="-svzko0_440">可以按下面的结构组织列表和等待步骤。</p>
+<pre><code class="language-kotlin">val deferreds: List&lt;Deferred&lt;List&lt;User&gt;&gt;&gt; = repos.map { repo -&gt;
+    async {
+        // <span class="code-comment">为每个仓库加载贡献者</span>
+    }
+}
+deferreds.awaitAll() // <span class="code-comment">List&lt;List&lt;User&gt;&gt;</span></code></pre></details></section><section class="chapter"><details class="source-details"><summary id="solution-for-task-5">任务 5 参考解法</summary><p id="-svzko0_445">用 <code>async</code> 包住每个查询贡献者的请求，每个仓库就有一个对应的协程。<code>async</code> 返回 <code>Deferred&lt;List&lt;User&gt;&gt;</code>。创建协程消耗的资源较少，因此这里可以按需要创建。</p>
+<ol class="list _decimal" id="-svzko0_446" type="1">
+<li class="list__item" id="-svzko0_452">
+<p id="-svzko0_457">映射后的元素现在是 <code>Deferred</code>，不能沿用原先的 <code>flatMap</code>。先 <code>awaitAll()</code> 取得 <code>List&lt;List&lt;User&gt;&gt;</code>，再用 <code>flatten().aggregate()</code> 展平并汇总。</p>
+<pre><code class="language-kotlin">suspend fun loadContributorsConcurrent(
+    service: GitHubService,&#32;
+    req: RequestData
+): List&lt;User&gt; = coroutineScope {
+    val repos = service
+        .getOrgRepos(req.org)
+        .also { logRepos(req, it) }
+        .bodyList()
+
+    val deferreds: List&lt;Deferred&lt;List&lt;User&gt;&gt;&gt; = repos.map { repo -&gt;
+        async {
+            service.getRepoContributors(req.org, repo.name)
+                .also { logUsers(repo, it) }
+                .bodyList()
+        }
+    }
+    deferreds.awaitAll().flatten().aggregate()
+}</code></pre>
+</li>
+<li class="list__item" id="-svzko0_453"><p id="-svzko0_465">运行并查看日志。即使这些协程都在主 UI 线程上执行，请求的等待时间也已经能重叠。</p></li>
+<li class="list__item" id="-svzko0_454">
+<p id="-svzko0_466">若要观察多个线程执行，在 <code>async</code> 参数里显式传入 <code>Dispatchers.Default</code>。</p>
+<pre><code class="language-kotlin">async(Dispatchers.Default) { }</code></pre>
+<ul class="list _bullet" id="-svzko0_468">
+<li class="list__item" id="-svzko0_471"><p id="-svzko0_473"><code>CoroutineDispatcher</code> 决定调度到哪些线程。未显式指定时，<code>async</code> 会继承外层作用域的调度器。</p></li>
+<li class="list__item" id="-svzko0_472"><p id="-svzko0_476">在 JVM 上，<code>Dispatchers.Default</code> 使用共享线程池，支持并行执行。线程数与可用 CPU 核心数相同，只有一个核心时仍会使用两个线程。</p></li>
+</ul>
+</li>
+<li class="list__item" id="-svzko0_455">
+<p id="-svzko0_478">修改 <code>loadContributorsConcurrent()</code> 的调度器，并在发送请求前加一条日志。</p>
+<pre><code class="language-kotlin">async(Dispatchers.Default) {
+    log("starting loading for ${repo.name}")
+    service.getRepoContributors(req.org, repo.name)
+        .also { logUsers(repo, it) }
+        .bodyList()
+}</code></pre>
+</li>
+<li class="list__item" id="-svzko0_456">
+<p id="-svzko0_481">再次运行，比较每个协程启动和恢复时的线程名。</p>
+<pre><code class="language-none">1946 [DefaultDispatcher-worker-2 @coroutine#4] INFO  Contributors - starting loading for kotlin-koans
+1946 [DefaultDispatcher-worker-3 @coroutine#5] INFO  Contributors - starting loading for dokka
+1946 [DefaultDispatcher-worker-1 @coroutine#3] INFO  Contributors - starting loading for ts2kt
+...
+2178 [DefaultDispatcher-worker-1 @coroutine#4] INFO  Contributors - kotlin-koans: loaded 45 contributors
+2569 [DefaultDispatcher-worker-1 @coroutine#5] INFO  Contributors - dokka: loaded 36 contributors
+2821 [DefaultDispatcher-worker-2 @coroutine#3] INFO  Contributors - ts2kt: loaded 11 contributors</code></pre>
+<p id="-svzko0_483">在给出的日志中，<code>coroutine#4</code> 在 <code>worker-2</code> 启动，在 <code>worker-1</code> 继续。</p>
+</li>
+</ol>
+<p id="-svzko0_447">回到 <code>src/contributors/Contributors.kt</code>，找出 CONCURRENT 选项的调用位置。</p>
+<ol class="list _decimal" id="-svzko0_448" type="1">
+<li class="list__item" id="-svzko0_489">
+<p id="-svzko0_492">如果要求在主 UI 线程执行，可指定 <code>Dispatchers.Main</code>。</p>
+<pre><code class="language-kotlin">launch(Dispatchers.Main) {
+    updateResults()
+}</code></pre>
+<ul class="list _bullet" id="-svzko0_494">
+<li class="list__item" id="-svzko0_496"><p id="-svzko0_499">如果主线程正忙，新启动的协程会挂起，排队等候主线程执行。主线程空闲时它才会恢复。</p></li>
+<li class="list__item" id="-svzko0_497"><p id="-svzko0_500">通常可以沿用外层作用域的调度器。定义 <code>loadContributorsConcurrent()</code> 时如果没有给每个请求指定 <code>Dispatchers.Default</code>，调用方就可以按需选用默认调度器、主 UI 线程或自定义调度器。</p></li>
+<li class="list__item" id="-svzko0_498"><p id="-svzko0_504">后面测试 <code>loadContributorsConcurrent()</code> 时，就能在带有 <code>TestDispatcher</code> 的上下文中调用它。这样的设计更灵活，测试也更简单。</p></li>
+</ul>
+</li>
+<li class="list__item" id="-svzko0_490">
+<p id="-svzko0_507">按下面的方式在调用方选择上下文，保留 <code>loadContributorsConcurrent</code>() 内部的继承关系。</p>
+<pre><code class="language-kotlin">launch(Dispatchers.Default) {
+    val users = loadContributorsConcurrent(service, req)
+    withContext(Dispatchers.Main) {
+        updateResults(users, startTime)
+    }
+}</code></pre>
+<ul class="list _bullet" id="-svzko0_509">
+<li class="list__item" id="-svzko0_511"><p id="-svzko0_513"><code>updateResults()</code> 操作窗口，要切回 <code>Dispatchers.Main</code>。</p></li>
+<li class="list__item" id="-svzko0_512"><p id="-svzko0_516"><code>withContext()</code> 在指定的协程上下文中执行代码，调用方挂起等待代码完成，然后取得结果。这里也可以启动新协程，再显式挂起等待它结束，写成 <code>launch(context) { ... }.join()</code>，只是更繁琐。</p></li>
+</ul>
+</li>
+<li class="list__item" id="-svzko0_491"><p id="-svzko0_519">再运行一次，核对请求是否在共享线程池上执行。</p></li>
+</ol></details></section></section></section><section class="chapter"><h2 id="structured-concurrency">结构化并发</h2>
+<ul class="list _bullet" id="-svzko0_520">
+<li class="list__item" id="-svzko0_535"><p id="-svzko0_537">协程作用域负责组织不同协程之间的结构和父子关系。通常需要在某个作用域内启动新协程。</p></li>
+<li class="list__item" id="-svzko0_536"><p id="-svzko0_539">上下文保存执行这项工作所用的信息，例如协程名和调度器。</p></li>
+</ul>
+<p id="-svzko0_521">用 <code>launch</code>、<code>async</code> 或 <code>runBlocking</code> 启动协程时，也会自动创建相应的作用域。这些函数都接受带接收者的 lambda，其隐式接收者的类型是 <code>CoroutineScope</code>。</p>
+<pre><code class="language-kotlin">launch { /* <span class="code-comment">这里的 this 是 CoroutineScope</span> */ }</code></pre>
+<ul class="list _bullet" id="-svzko0_523">
+<li class="list__item" id="-svzko0_545"><p id="-svzko0_548">启动一个新协程需要作用域。</p></li>
+<li class="list__item" id="-svzko0_546"><p id="-svzko0_549"><code>launch</code> 与 <code>async</code> 是 <code>CoroutineScope</code> 的扩展函数，调用时要有显式或隐式接收者。</p></li>
+<li class="list__item" id="-svzko0_547"><p id="-svzko0_553"><code>runBlocking</code> 启动的协程是一个例外，因为 <code>runBlocking</code> 是顶层函数。它会阻塞当前线程，因而主要用于 <code>main()</code> 函数和测试，衔接普通代码与挂起代码。</p></li>
+</ul>
+<p id="-svzko0_524">在 <code>runBlocking</code>、<code>launch</code> 或 <code>async</code> 的块中，可以直接启动属于它的子任务。</p>
+<pre><code class="language-kotlin">import kotlinx.coroutines.*
+
+fun main() = runBlocking { /* <span class="code-comment">这里的 this 是 CoroutineScope</span> */
+    launch { /* ... */ }
+    // <span class="code-comment">等价写法如下</span>&#32;&#32;&#32;
+    this.launch { /* ... */ }
+}</code></pre>
+<p id="-svzko0_526">在 <code>runBlocking</code> 里调用 <code>launch</code>，实际是对类型为 <code>CoroutineScope</code> 的隐式接收者调用扩展函数。把接收者写出来，就是 this.<code>launch</code>。</p>
+<p id="-svzko0_527">于是内层 <code>launch</code> 成为外层 <code>runBlocking</code> 的子任务。父子关系来自实际用来启动任务的作用域。</p>
+<p id="-svzko0_528"><code>coroutineScope</code> 可以创建新的作用域，而无需另行启动协程。挂起函数里如果不能直接使用外层作用域，又想有组织地启动子协程，就可以这样创建作用域。新作用域会自动成为调用该挂起函数的外层作用域的子作用域。<code>loadContributorsConcurrent()</code> 就是这样的例子。</p>
+<p id="-svzko0_529">也可以特意使用 <code>GlobalScope.async</code> 或 <code>GlobalScope.launch</code>。这样创建的是独立的顶层任务。</p>
+<p id="-svzko0_530">这种组织协程的机制称为结构化并发。与全局作用域相比，它有以下好处。</p>
+<ul class="list _bullet" id="-svzko0_531">
+<li class="list__item" id="-svzko0_573"><p id="-svzko0_576">子任务的生命周期受到其所属作用域管理。</p></li>
+<li class="list__item" id="-svzko0_574"><p id="-svzko0_577">用户放弃操作或任务失败时，作用域能按传播规则取消相关子任务。</p></li>
+<li class="list__item" id="-svzko0_575"><p id="-svzko0_578">作用域会等待所有子任务结束。父协程即使已经运行完自己的最后一行，也要等子协程完成。</p></li>
+</ul>
+<p id="-svzko0_532"><code>GlobalScope.async</code> 没有把这些任务接到本次加载上，它们可以活到应用结束。你可以保存每个句柄，手动等待或取消，但这些操作不会随本次加载自动发生。</p>
+<section class="chapter"><h3 id="canceling-the-loading-of-contributors">取消贡献者加载</h3>
+<p id="-svzko0_580">做两个版本。一个在 <code>coroutineScope</code> 里启动子协程，另一个用 <code>GlobalScope</code>。取消外层加载，对照两份日志。</p>
+<ol class="list _decimal" id="-svzko0_581" type="1">
+<li class="list__item" id="-svzko0_589">
+<p id="-svzko0_596">在 <code>Request5Concurrent.kt</code> 的 <code>loadContributorsConcurrent()</code> 中加入三秒延迟。</p>
+<pre><code class="language-kotlin">suspend fun loadContributorsConcurrent(
+    service: GitHubService,&#32;
+    req: RequestData
+): List&lt;User&gt; = coroutineScope {
+    // ...
+    async {
+        log("starting loading for ${repo.name}")
+        delay(3000)
+        // <span class="code-comment">加载这个仓库的贡献者</span>
+    }
+    // ...
+}</code></pre>
+<p id="-svzko0_598">让请求协程先启动，再等三秒才真正发请求。这样留出了点击取消的时间。</p>
+</li>
+<li class="list__item" id="-svzko0_590"><p id="-svzko0_601">复制 <code>loadContributorsConcurrent()</code> 的实现，放进 <code>Request5NotCancellable.kt</code> 的 <code>loadContributorsNotCancellable()</code>，然后删去创建 <code>coroutineScope</code> 的那一层。</p></li>
+<li class="list__item" id="-svzko0_591">
+<p id="-svzko0_606">此时原来的 <code>async</code> 找不到作用域，特意改为 GlobalScope.<code>async</code>，作为对照。</p>
+<pre><code class="language-kotlin">suspend fun loadContributorsNotCancellable(
+    service: GitHubService,
+    req: RequestData
+): List&lt;User&gt; {   // <span class="code-comment">#1</span>
+    // ...
+    GlobalScope.async {   // <span class="code-comment">#2</span>
+        log("starting loading for ${repo.name}")
+        // <span class="code-comment">加载这个仓库的贡献者</span>
+    }
+    // ...
+    return deferreds.awaitAll().flatten().aggregate()  // <span class="code-comment">#3</span>
+}</code></pre>
+<ul class="list _bullet" id="-svzko0_608">
+<li class="list__item" id="-svzko0_611"><p id="-svzko0_613">标记 1、3 改为由函数直接返回结果，原来则由 lambda 的末尾表达式返回。</p></li>
+<li class="list__item" id="-svzko0_612"><p id="-svzko0_616">所有加载贡献者的协程都在 <code>GlobalScope</code> 中启动，不再是原协程作用域的子协程（<code>#2</code>）。</p></li>
+</ul>
+</li>
+<li class="list__item" id="-svzko0_592"><p id="-svzko0_619">启动程序，选 CONCURRENT 后加载。</p></li>
+<li class="list__item" id="-svzko0_593">
+<p id="-svzko0_621">等请求协程都已启动，点击 Cancel。观察后续日志，待发请求随父任务一起取消。</p>
+<pre><code class="language-none">2896 [AWT-EventQueue-0 @coroutine#1] INFO  Contributors - kotlin: loaded 40 repos
+2901 [DefaultDispatcher-worker-2 @coroutine#4] INFO  Contributors - starting loading for kotlin-koans
+...
+2909 [DefaultDispatcher-worker-5 @coroutine#36] INFO  Contributors - starting loading for mpp-example
+/* <span class="code-comment">点击取消</span> */
+/* <span class="code-comment">没有发出请求</span> */</code></pre>
+</li>
+<li class="list__item" id="-svzko0_594">
+<p id="-svzko0_624">再选 <code>NOT_CANCELLABLE</code>，重复相同操作。</p>
+<pre><code class="language-none">2570 [AWT-EventQueue-0 @coroutine#1] INFO  Contributors - kotlin: loaded 30 repos
+2579 [DefaultDispatcher-worker-1 @coroutine#4] INFO  Contributors - starting loading for kotlin-koans
+...
+2586 [DefaultDispatcher-worker-6 @coroutine#36] INFO  Contributors - starting loading for mpp-example
+/* <span class="code-comment">点击取消</span> */
+/* <span class="code-comment">但所有请求仍然会发出</span> */
+6402 [DefaultDispatcher-worker-5 @coroutine#4] INFO  Contributors - kotlin-koans: loaded 45 contributors
+...
+9555 [DefaultDispatcher-worker-8 @coroutine#36] INFO  Contributors - mpp-example: loaded 8 contributors</code></pre>
+<p id="-svzko0_626">此时那些独立启动的请求协程还在，三秒后仍会发送请求。</p>
+</li>
+<li class="list__item" id="-svzko0_595">
+<p id="-svzko0_628">查看 Cancel 按钮的实现。它只显式取消外层加载 Job，正常父子关系会让取消自动向下传播。</p>
+<pre><code class="language-kotlin">interface Contributors {
+
+    fun loadContributors() {
+        // ...
+        when (getSelectedVariant()) {
+            CONCURRENT -&gt; {
+                launch {
+                    val users = loadContributorsConcurrent(service, req)
+                    updateResults(users, startTime)
+                }.setUpCancellation()      // <span class="code-comment">#1</span>
+            }
+        }
+    }
+
+    private fun Job.setUpCancellation() {
+        val loadingJob = this              // <span class="code-comment">#2</span>
+
+        // <span class="code-comment">点击取消按钮时，取消加载任务</span>
+        val listener = ActionListener {
+            loadingJob.cancel()            // <span class="code-comment">#3</span>
+            updateLoadingStatus(CANCELED)
+        }
+        // <span class="code-comment">为取消按钮添加监听器</span>
+        addCancelListener(listener)
+
+        // <span class="code-comment">更新状态并移除监听器</span>
+        // <span class="code-comment">在加载任务完成后</span>
+    }
+}   </code></pre>
+</li>
+</ol>
+<p id="-svzko0_582"><code>launch</code> 返回代表整次加载与显示工作的 <code>Job</code>。标记 1 以它为接收者，调用扩展函数 <code>setUpCancellation()</code>。</p>
+<p id="-svzko0_583">也可以显式保留 Job，写成下面的两步。</p>
+<pre><code class="language-kotlin">val job = launch { }
+job.setUpCancellation()</code></pre>
+<ul class="list _bullet" id="-svzko0_585">
+<li class="list__item" id="-svzko0_637"><p id="-svzko0_639">在 <code>setUpCancellation()</code> 内部，可以把接收者赋给一个名为 <code>loadingJob</code> 的变量，后面读起来更清楚（<code>#2</code>）。</p></li>
+<li class="list__item" id="-svzko0_638"><p id="-svzko0_643">标记 3 为 Cancel 按钮添加监听器，点击时取消 <code>loadingJob</code>。</p></li>
+</ul>
+<p id="-svzko0_586">使用结构化并发时，取消父协程就会自动把取消请求传给它的所有子协程。</p></section><section class="chapter"><h3 id="using-the-outer-scope-s-context">继承外层上下文</h3>
+<p id="-svzko0_647">将相关协程放在同一作用域里，可以统一设置执行环境，需要替换时也只改一处。</p>
+<p id="-svzko0_648">下面来看外层作用域的调度器如何生效。<code>coroutineScope</code> 或协程构建器创建的新作用域继承外层作用域的上下文。在本例中，外层指调用挂起函数 loadContributorsConcurrent() 的作用域。</p>
+<pre><code class="language-kotlin">launch(Dispatchers.Default) {  // <span class="code-comment">外层作用域</span>
+    val users = loadContributorsConcurrent(service, req)
+    // ...
+}</code></pre>
+<p id="-svzko0_650">调度器是上下文元素，因此外层选用 Default 后，内层未另行指定的 <code>async</code> 也由它调度。</p>
+<pre><code class="language-kotlin">suspend fun loadContributorsConcurrent(
+    service: GitHubService, req: RequestData
+): List&lt;User&gt; = coroutineScope {
+    // <span class="code-comment">这个作用域继承外层作用域的上下文</span>
+    // ...
+    async {   // <span class="code-comment">用继承的上下文启动嵌套协程</span>
+        // ...
+    }
+    // ...
+}</code></pre>
+<p id="-svzko0_652">在顶层选好主要上下文元素，让子协程继承；确实需要不同执行位置时，再局部覆盖。</p>
+<aside class="prompt" data-type="tip" id="-svzko0_653"><p id="-svzko0_657">使用协程编写 Android 等 UI 应用时，通常让顶层协程使用主线程调度器（原文写作 <code>CoroutineDispatchers.Main</code>）。需要在其他线程运行某段代码时，再为它显式指定调度器。</p></aside></section></section><section class="chapter"><h2 id="showing-progress">逐步显示进度</h2>
+<p id="-svzko0_659">有些仓库早就返回了，当前界面却要等全部完成才显示列表。转圈图标只说明还在加载，无法告诉用户已经拿到了哪些贡献者。</p>
+<p id="-svzko0_660">可以每收到一个仓库的响应，就显示一份截至此刻的汇总结果。</p>
+<figure id="-svzko0_661" width="500"><img alt="加载期间贡献者列表随响应逐步更新" class="js-gif article__bordered-element" width="500" src="../assets/loading.gif" loading="lazy"></figure><p id="-svzko0_662">在 <code>src/tasks/Request6Progress.kt</code> 里把更新界面的逻辑作为回调传入，每次有中间结果就调用。</p>
+<pre><code class="language-kotlin">suspend fun loadContributorsProgress(
+    service: GitHubService,
+    req: RequestData,
+    updateResults: suspend (List&lt;User&gt;, completed: Boolean) -&gt; Unit
+) {
+    // <span class="code-comment">正在加载数据</span>
+    // <span class="code-comment">每次得到中间结果都调用 updateResults()</span>
+}</code></pre>
+<p id="-svzko0_664">在 <code>Contributors.kt</code> 的 PROGRESS 分支，调用方传入一个回调，通过 <code>Main</code> 调度器在主线程上更新结果。</p>
+<pre><code class="language-kotlin">launch(Dispatchers.Default) {
+    loadContributorsProgress(service, req) { users, completed -&gt;
+        withContext(Dispatchers.Main) {
+            updateResults(users, startTime, completed)
+        }
+    }
+}</code></pre>
+<ul class="list _bullet" id="-svzko0_666">
+<li class="list__item" id="-svzko0_672"><p id="-svzko0_674"><code>loadContributorsProgress()</code> 的 updateResults 参数是挂起函数类型，因为传入的 lambda 里需要调用 <code>withContext</code>。</p></li>
+<li class="list__item" id="-svzko0_673"><p id="-svzko0_680"><code>updateResults()</code> 回调多接收一个 Boolean 参数，用来说明加载是否完成、这一次给出的是否为最终结果。</p></li>
+</ul>
+<section class="chapter"><h3 id="task-6">任务 6</h3>
+<p id="-svzko0_682">在 <code>Request6Progress.kt</code> 中实现 <code>loadContributorsProgress()</code>，显示加载的中间进度。以 <code>Request4Suspend.kt</code> 中的 <code>loadContributorsSuspend()</code> 为基础。</p>
+<ul class="list _bullet" id="-svzko0_683">
+<li class="list__item" id="-svzko0_690"><p id="-svzko0_693">先确保顺序请求时能正确显示进度，下一节再加并发。</p></li>
+<li class="list__item" id="-svzko0_691"><p id="-svzko0_694">每次呈现的是到目前为止的汇总列表，不能只显示最新仓库的那一份。</p></li>
+<li class="list__item" id="-svzko0_692"><p id="-svzko0_695">当同一用户又出现在新仓库时，他在屏幕上的总贡献数也应累加。</p></li>
+</ul>
+<section class="chapter"><details class="source-details"><summary id="solution-for-task-6">任务 6 参考解法</summary><p id="-svzko0_696">定义 <code>allUsers</code> 保存已加载并完成汇总的贡献者列表，每加载好一个仓库的贡献者就更新它。</p>
+<pre><code class="language-kotlin">suspend fun loadContributorsProgress(
+    service: GitHubService,
+    req: RequestData,
+    updateResults: suspend (List&lt;User&gt;, completed: Boolean) -&gt; Unit
+) {
+    val repos = service
+        .getOrgRepos(req.org)
+        .also { logRepos(req, it) }
+        .bodyList()
+
+    var allUsers = emptyList&lt;User&gt;()
+    for ((index, repo) in repos.withIndex()) {
+        val users = service.getRepoContributors(req.org, repo.name)
+            .also { logUsers(repo, it) }
+            .bodyList()
+
+        allUsers = (allUsers + users).aggregate()
+        updateResults(allUsers, index == repos.lastIndex)
+    }
+}</code></pre></details></section><section class="chapter"><h4 id="consecutive-vs-concurrent">顺序请求与并发请求</h4>
+<p id="-svzko0_699">每完成一个请求，就调用一次 <code>updateResults()</code>。</p>
+<figure id="-svzko0_700"><img alt="顺序加载时每次响应后显示一批进度" src="../assets/progress.png" width="700" height="208" loading="lazy"></figure><p id="-svzko0_701">这个版本按顺序读写汇总数据，因此这段更新无须额外同步。</p>
+<p id="-svzko0_702">下一步希望兼得两项效果：并发发出请求，每个响应到达后立即更新一次。</p>
+<figure id="-svzko0_703"><img alt="多个仓库请求与界面更新交错的时间线" src="../assets/progress-and-concurrency.png" width="700" height="212" loading="lazy"></figure><p id="-svzko0_704">要加入并发，可以使用通道。</p></section></section></section><section class="chapter"><h2 id="channels">通道</h2>
+<p id="-svzko0_707">编写使用共享可变状态的代码相当困难，也容易出错，回调的解法就是一例。更简单的方式是通过通信共享信息。不同协程可以使用通道互相通信。</p>
+<p id="-svzko0_708">通道提供发送端和接收端。一个协程发送一份结果，另一个从通道接收它。</p>
+<figure id="-svzko0_709"><img alt="生产协程通过通道向消费协程发送结果" src="../assets/using-channel.png" width="1920" height="238" loading="lazy"></figure><p id="-svzko0_710">发送者称为生产者，接收者称为消费者。两边都可以有多个协程。</p>
+<figure id="-svzko0_711"><img alt="多个生产者与消费者连接同一个通道" src="../assets/using-channel-many-coroutines.png" width="1920" height="463" loading="lazy"></figure><p id="-svzko0_712">多个消费者共享同一通道时，一个元素只会交给其中一个。接收后，该元素就从通道中移出。</p>
+<p id="-svzko0_713">通道像一个队列，一端加入，另一端取走。它还可以挂起等待：空通道上 receive 等待新值；有容量上限的缓冲区装满时，按默认策略，send 等待空位。</p>
+<p id="-svzko0_714">这里涉及三个接口，即 <code>SendChannel</code>、<code>ReceiveChannel</code> 和 <code>Channel</code>，最后一个继承前两个。通常先创建通道，把 <code>SendChannel</code> 交给生产者，让它只能发送，再把 <code>ReceiveChannel</code> 交给消费者，让它只能接收。<code>send</code> 和 <code>receive</code> 都声明为 <code>suspend</code>。</p>
+<pre><code class="language-kotlin">interface SendChannel&lt;in E&gt; {
+    suspend fun send(element: E)
+    fun close(): Boolean
+}
+
+interface ReceiveChannel&lt;out E&gt; {
+    suspend fun receive(): E
+}
+
+interface Channel&lt;E&gt; : SendChannel&lt;E&gt;, ReceiveChannel&lt;E&gt;</code></pre>
+<p id="-svzko0_716">生产者可以关闭通道，表示以后没有更多元素。</p>
+<p id="-svzko0_717">库里的几类通道在两方面有所不同：能暂存几个元素，以及 <code>send()</code> 是否会挂起。对于仍然开放的通道，<code>receive()</code> 的行为相同，有值就取，空了就挂起等待。</p>
+<dl id="-svzko0_718">
+<dt id="unlimited-channel">无界通道</dt>
+<dd>
+<p id="-svzko0_747">无界通道没有配置容量上限，send 不会因为缓冲区满而挂起。积压的数据会持续占用内存，严重时触发 <code>OutOfMemoryException</code>。消费者发现通道为空时仍会挂起等待。</p>
+<figure id="-svzko0_748"><img alt="无界通道积累等待消费的元素" src="../assets/unlimited-channel.png" width="500" height="44" loading="lazy"></figure>
+</dd>
+<dt id="buffered-channel">有界缓冲通道</dt>
+<dd>
+<p id="-svzko0_751">有界缓冲通道只保存指定数量的元素。缓冲区装满后，下一次 send 要等消费者取走一个元素，才能继续交付。</p>
+<figure id="-svzko0_752"><img alt="缓冲通道暂存已发送的元素" src="../assets/buffered-channel.png" width="500" height="51" loading="lazy"></figure>
+</dd>
+<dt id="rendezvous-channel">会合通道</dt>
+<dd>
+<p id="-svzko0_754">会合通道没有缓冲区，等同于容量为零的缓冲通道。<code>send()</code> 和 <code>receive()</code> 需要配对，先到的一方会挂起等另一方。</p>
+<p id="-svzko0_755">没有接收者准备好时，send 会等待；没有发送者可配对时，receive 也会等待。</p>
+<p id="-svzko0_756">Rendezvous 意为「在约定的时间和地点会面」。这里要会面的是 <code>send()</code> 和 <code>receive()</code>：两边都准备好，元素才能交接。</p>
+<figure id="-svzko0_757"><img alt="无缓冲通道要求发送方和接收方会合" src="../assets/rendezvous-channel.png" width="500" height="51" loading="lazy"></figure>
+</dd>
+<dt id="conflated-channel">合并通道</dt>
+<dd>
+<p id="-svzko0_768">合并通道保留最新的待取元素。新值会覆盖尚未取走的旧值，send 不会因等待空位而挂起。</p>
+<figure id="-svzko0_769" width="500"><img alt="合并通道用新值覆盖尚未取走的旧值" class="js-gif article__bordered-element" width="500" src="../assets/conflated-channel.gif" loading="lazy"></figure>
+</dd>
+</dl>
+<p id="-svzko0_719">创建 Channel 时，用容量或相应常量指定通道类型。</p>
+<pre><code class="language-kotlin">val rendezvousChannel = Channel&lt;String&gt;()
+val bufferedChannel = Channel&lt;String&gt;(10)
+val conflatedChannel = Channel&lt;String&gt;(CONFLATED)
+val unlimitedChannel = Channel&lt;String&gt;(UNLIMITED)</code></pre>
+<p id="-svzko0_721">默认创建无缓冲的会合通道。</p>
+<p id="-svzko0_722">在接下来的任务中，你将创建一个会合通道、两个生产者协程和一个消费者协程。</p>
+<pre><code class="language-kotlin">import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.*
+
+fun main() = runBlocking&lt;Unit&gt; {
+    val channel = Channel&lt;String&gt;()
+    launch {
+        channel.send("A1")
+        channel.send("A2")
+        log("A done")
+    }
+    launch {
+        channel.send("B1")
+        log("B done")
+    }
+    launch {
+        repeat(3) {
+            val x = channel.receive()
+            log(x)
+        }
+    }
+}
+
+fun log(message: Any?) {
+    println("[${Thread.currentThread().name}] $message")
+}</code></pre>
+<aside class="prompt" data-type="tip" id="-svzko0_724"><p id="-svzko0_771">原教程的通道演示<a href="https://www.youtube.com/watch?v=HpWQUoVURWQ">视频</a>给出了动态示范。</p></aside><section class="chapter"><h3 id="task-7">任务 7</h3>
+<p id="-svzko0_773">在 <code>src/tasks/Request7Channels.kt</code> 实现 <code>loadContributorsChannels()</code>，并发加载各个仓库，同时持续呈现中间结果。</p>
+<p id="-svzko0_774">使用前面写过的两个函数，即 <code>Request5Concurrent.kt</code> 中的 <code>loadContributorsConcurrent()</code> 和 <code>Request6Progress.kt</code> 中的 <code>loadContributorsProgress()</code>。</p>
+<section class="chapter"><details class="source-details"><summary id="tip-for-task-7">任务 7 提示</summary><p id="-svzko0_783">每个请求协程拿到自己仓库的贡献者后，都向同一个通道发送这份列表。</p>
+<pre><code class="language-kotlin">val channel = Channel&lt;List&lt;User&gt;&gt;()
+for (repo in repos) {
+    launch {
+        val users = TODO()
+        // ...
+        channel.send(users)
+    }
+}</code></pre>
+<p id="-svzko0_785">另一个协程顺序接收通道里的列表，每收到一份就处理一次。</p>
+<pre><code class="language-kotlin">repeat(repos.size) {
+    val users = channel.receive()
+    // ...
+}</code></pre>
+<p id="-svzko0_787"><code>receive()</code> 按顺序调用，因此不需要额外的同步机制。</p></details></section><section class="chapter"><details class="source-details"><summary id="solution-for-task-7">任务 7 参考解法</summary><p id="-svzko0_789">沿用 <code>loadContributorsProgress()</code> 的做法，用 <code>allUsers</code> 保存贡献者列表的中间状态。每从通道接收到一份列表，就合入已有用户，重新汇总，再用 <code>updateResults</code> 回调更新界面。</p>
+<pre><code class="language-kotlin">suspend fun loadContributorsChannels(
+    service: GitHubService,
+    req: RequestData,
+    updateResults: suspend (List&lt;User&gt;, completed: Boolean) -&gt; Unit
+) = coroutineScope {
+
+    val repos = service
+        .getOrgRepos(req.org)
+        .also { logRepos(req, it) }
+        .bodyList()
+
+    val channel = Channel&lt;List&lt;User&gt;&gt;()
+    for (repo in repos) {
+        launch {
+            val users = service.getRepoContributors(req.org, repo.name)
+                .also { logUsers(repo, it) }
+                .bodyList()
+            channel.send(users)
+        }
+    }
+    var allUsers = emptyList&lt;User&gt;()
+    repeat(repos.size) {
+        val users = channel.receive()
+        allUsers = (allUsers + users).aggregate()
+        updateResults(allUsers, it == repos.lastIndex)
+    }
+}</code></pre>
+<ul class="list _bullet" id="-svzko0_791">
+<li class="list__item" id="-svzko0_797"><p id="-svzko0_799">各仓库谁先准备好谁先交付。请求刚发出、通道还空着时，receive 会挂起负责汇总的加载协程。</p></li>
+<li class="list__item" id="-svzko0_798"><p id="-svzko0_801">第一个生产者交来列表后，加载协程恢复，receive 返回这份列表，界面马上得到第一批结果。</p></li>
+</ul>
+<p id="-svzko0_792">选择 CHANNELS 运行，观察用户列表怎样逐批出现。</p>
+<p id="-svzko0_793">协程和通道都无法完全消除并发本身的复杂性，但能让代码的执行过程更容易理解。</p></details></section></section></section><section class="chapter"><h2 id="testing-coroutines">测试协程</h2>
+<p id="-svzko0_804">现在来测试各个解法，检查并发协程版是否比顺序挂起函数版更快，以及通道版是否比简单的进度显示版更快。</p>
+<p id="-svzko0_805">用模拟 GitHub 服务代替真实网络，为每个响应指定固定延迟，再比较总时间。</p>
+<pre><code class="language-none">repos request - returns an answer within 1000 ms delay
+repo-1 - 1000 ms delay
+repo-2 - 1200 ms delay
+repo-3 - 800 ms delay</code></pre>
+<p id="-svzko0_807">先取仓库列表用 1000 毫秒，三个仓库再分别用 1000、1200 和 800 毫秒。顺序总计 4000 毫秒；并发只等最慢的那一个，总计 2200 毫秒。</p>
+<p id="-svzko0_808">对显示进度的版本，还可以同时断言每一批数据的内容和它出现的时刻。</p>
+<p id="-svzko0_809">测试数据在 <code>test/contributors/testData.kt</code>。<code>Request4SuspendKtTest</code>、<code>Request7ChannelsKtTest</code> 等文件提供使用模拟服务的测试。</p>
+<p id="-svzko0_810">直接测真实经过时间有两个问题。</p>
+<ul class="list _bullet" id="-svzko0_811">
+<li class="list__item" id="-svzko0_835"><p id="-svzko0_837">每个测试要等两到四秒，反复运行整组测试会很慢。</p></li>
+<li class="list__item" id="-svzko0_836"><p id="-svzko0_838">机器和调度也会引入耗时。若增加固定容差，模拟延迟还得足够大才看得出差异。例如容差半秒时，十分之一秒的延迟很难可靠区分。</p></li>
+</ul>
+<p id="-svzko0_812">另一种更可靠的计时方式是用专门的框架反复运行同一段代码。不过这会进一步延长总耗时，而且框架的学习和配置也比较复杂。</p>
+<p id="-svzko0_813">为了解决这些问题，并验证在给定延迟下哪个解法更快，可以配合专用测试调度器使用虚拟时间。调度器记录从测试开始经过的虚拟时间，在现实中立即执行工作。在这个调度器上运行协程时，<code>delay</code> 会立即返回，同时推进虚拟时间。</p>
+<p id="-svzko0_814">测试在现实中很快结束，却仍能精确核对虚拟时钟走到某一刻时发生了什么。</p>
+<figure id="-svzko0_815"><img alt="顺序与并发加载在真实和虚拟时间中的耗时对照" src="../assets/time-comparison.png" width="700" height="99" loading="lazy"></figure><p id="-svzko0_816">把 <code>runBlocking</code> 换成 <code>runTest</code>。测试块的接收者是 <code>TestScope</code>，在共享测试调度器上执行的 <code>delay</code> 会推进虚拟时间。</p>
+<pre><code class="language-kotlin">@Test
+fun testDelayInSuspend() = runTest {
+    val realStartTime = System.currentTimeMillis()&#32;
+    val virtualStartTime = currentTime
+&#32;&#32;&#32;&#32;&#32;&#32;&#32;&#32;
+    foo()
+    println("${System.currentTimeMillis() - realStartTime} ms") // <span class="code-comment">约 6 毫秒</span>
+    println("${currentTime - virtualStartTime} ms")             // <span class="code-comment">1000 毫秒</span>
+}
+
+suspend fun foo() {
+    delay(1000)    // <span class="code-comment">自动推进虚拟时间，无须实际等待</span>
+    println("foo") // <span class="code-comment">一调用 foo() 就开始执行</span>
+}</code></pre>
+<p id="-svzko0_818">用 <code>TestScope</code> 的 <code>currentTime</code> 属性读取当前虚拟时间。</p>
+<p id="-svzko0_819">下例的真实耗时可能只有几毫秒，虚拟时间却已推进 1000 毫秒。</p>
+<p id="-svzko0_820">要让子协程里的延迟也使用虚拟时间，所有子协程都要在 <code>TestDispatcher</code> 上启动。没有显式指定其他调度器时，子协程会自动继承 <code>TestScope</code> 的测试调度器。</p>
+<pre><code class="language-kotlin">@Test
+fun testDelayInLaunch() = runTest {
+    val realStartTime = System.currentTimeMillis()
+    val virtualStartTime = currentTime
+
+    bar()
+
+    println("${System.currentTimeMillis() - realStartTime} ms") // <span class="code-comment">约 11 毫秒</span>
+    println("${currentTime - virtualStartTime} ms")             // <span class="code-comment">1000 毫秒</span>
+}
+
+suspend fun bar() = coroutineScope {
+    launch {
+        delay(1000)    // <span class="code-comment">自动推进虚拟时间，无须实际等待</span>
+        println("bar") // <span class="code-comment">一调用 bar() 就开始执行</span>
+    }
+}</code></pre>
+<p id="-svzko0_822">如果上例的 <code>launch</code> 显式使用 <code>Dispatchers.Default</code>，测试会失败，并抛出异常，提示任务尚未完成。</p>
+<p id="-svzko0_823">因此 <code>loadContributorsConcurrent()</code> 内部应继承上下文。若把 <code>Dispatchers.Default</code> 写死在子任务里，就无法用同一个测试时钟验证这段逻辑。</p>
+<p id="-svzko0_824">把调度器留给调用方决定，生产代码与测试就能复用同一个函数。</p>
+<aside class="prompt" data-type="warning" id="-svzko0_825"><p id="-svzko0_859">支持虚拟时间的测试 API 是<a href="https://kotlinlang.org/docs/components-stability.html">实验性</a>的，今后可能改变。</p></aside><p id="-svzko0_826">默认情况下，使用实验性测试 API 时编译器会给出警告。可以在测试函数或整个测试类上标注 <code>@OptIn(ExperimentalCoroutinesApi::class)</code> 来消除警告。也可以添加下面的编译器参数，表明项目选择使用实验性 API。</p>
+<pre><code class="language-kotlin">compileTestKotlin {
+    kotlinOptions {
+        freeCompilerArgs += "-Xuse-experimental=kotlin.Experimental"
+    }
+}</code></pre>
+<p id="-svzko0_828">教程配套项目已经在 Gradle 脚本中设置了相应编译选项。</p>
+<section class="chapter"><h3 id="task-8">任务 8</h3>
+<p id="-svzko0_862">重构 <code>tests/tasks/</code> 中的以下测试，使用虚拟时间代替真实时间。</p>
+<ul class="list _bullet" id="-svzko0_863">
+<li class="list__item" id="-svzko0_868"><p id="-svzko0_872"><code>Request4SuspendKtTest.kt</code></p></li>
+<li class="list__item" id="-svzko0_869"><p id="-svzko0_874"><code>Request5ConcurrentKtTest.kt</code></p></li>
+<li class="list__item" id="-svzko0_870"><p id="-svzko0_876"><code>Request6ProgressKtTest.kt</code></p></li>
+<li class="list__item" id="-svzko0_871"><p id="-svzko0_878"><code>Request7ChannelsKtTest.kt</code></p></li>
+</ul>
+<p id="-svzko0_864">比较改写前后整组测试在真实世界里的运行时间。</p>
+<section class="chapter"><details class="source-details"><summary id="tip-for-task-8">任务 8 提示</summary><ol class="list _decimal" id="-svzko0_880" type="1">
+<li class="list__item" id="-svzko0_881">
+<p id="-svzko0_884">将 <code>runBlocking</code> 换成 <code>runTest</code>，将 <code>System.currentTimeMillis()</code> 换成 <code>currentTime</code>。</p>
+<pre><code class="language-kotlin">@Test
+fun test() = runTest {
+    val startTime = currentTime
+    // <span class="code-comment">要重复执行的操作</span>
+    val totalTime = currentTime - startTime
+    // <span class="code-comment">测试结果</span>
+}</code></pre>
+</li>
+<li class="list__item" id="-svzko0_882"><p id="-svzko0_890">恢复那些检查精确虚拟时间的断言。</p></li>
+<li class="list__item" id="-svzko0_883"><p id="-svzko0_891">记得添加 <code>@UseExperimental(ExperimentalCoroutinesApi::class)</code>。</p></li>
+</ol></details></section><section class="chapter"><details class="source-details"><summary id="solution-for-task-8">任务 8 参考解法</summary><p id="-svzko0_893">下面给出并发版与通道版的测试写法。</p>
+<pre><code class="language-kotlin">fun testConcurrent() = runTest {
+    val startTime = currentTime
+    val result = loadContributorsConcurrent(MockGithubService, testRequestData)
+    Assert.assertEquals("Wrong result for 'loadContributorsConcurrent'", expectedConcurrentResults.users, result)
+    val totalTime = currentTime - startTime
+
+    Assert.assertEquals(
+        "The calls run concurrently, so the total virtual time should be 2200 ms: " +
+                "1000 for repos request plus max(1000, 1200, 800) = 1200 for concurrent contributors requests)",
+        expectedConcurrentResults.timeFromStart, totalTime
+    )
+}</code></pre>
+<p id="-svzko0_895">先断言结果出现的虚拟时刻，再断言结果本身。</p>
+<pre><code class="language-kotlin">fun testChannels() = runTest {
+    val startTime = currentTime
+    var index = 0
+    loadContributorsChannels(MockGithubService, testRequestData) { users, _ -&gt;
+        val expected = concurrentProgressResults[index++]
+        val time = currentTime - startTime
+        Assert.assertEquals(
+            "Expected intermediate results after ${expected.timeFromStart} ms:",
+            expected.timeFromStart, time
+        )
+        Assert.assertEquals("Wrong intermediate results after $time:", expected.users, users)
+    }
+}</code></pre>
+<p id="-svzko0_897">对照两组测试可以看到，通道版第一批结果比顺序进度版更早出现。</p>
+<aside class="prompt" data-type="tip" id="-svzko0_898"><p id="-svzko0_899">挂起版与顺序进度版的测试写法相近，完整实现见项目的 <code>solutions</code> 分支。</p></aside></details></section></section></section><section class="chapter"><h2 id="what-s-next">继续学习</h2>
+<ul class="list _bullet" id="-svzko0_901">
+<li class="list__item" id="-svzko0_902"><p id="-svzko0_904">可以继续观看 KotlinConf 的 <a href="https://kotlinconf.com/workshops/">Asynchronous Programming with Kotlin</a> 工作坊。</p></li>
+<li class="list__item" id="-svzko0_903"><p id="-svzko0_906">进一步了解<a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-test/">虚拟时间</a>和实验性测试包的用法。</p></li>
+</ul></section></article>
+<nav class="chapter-switcher" aria-label="章节导航"><a href="../coroutines-flow/literal.html">← Flow</a><a class="course-home" href="../literal.html">全部章节</a><a href="../composing-suspending-functions/literal.html">组合挂起函数 →</a></nav><footer class="source-credit"><p>原文由 JetBrains 与 Kotlin 贡献者维护。中文译稿修订于 2026 年 11 月 19 日。示例代码的说明性注释已译为中文，输出文字与截图沿用原文。</p><p><a href="https://kotlinlang.org/docs/coroutines-and-channels.html">Kotlin 官方原文</a> · <a href="../LICENSE-2.0.txt">Apache License 2.0</a></p></footer></main>
+</body></html>

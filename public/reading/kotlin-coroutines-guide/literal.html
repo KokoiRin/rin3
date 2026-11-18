@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="zh-CN" data-reader-family="kotlin-coroutines-guide">
+<head>
+<meta charset="utf-8"><script src="../../theme.js"></script>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>协程指南｜RIN III</title>
+<meta name="description" content="协程指南 · 严格译稿">
+<link rel="manifest" href="../../manifest.webmanifest">
+<link rel="stylesheet" href="../../reading/reader.css">
+<link rel="stylesheet" href="../../theme.css">
+<link rel="stylesheet" href="../../reading/_shared/theme-readers.css">
+<link rel="stylesheet" href="../../reading/kotlin-coroutines-guide/course.css">
+</head><body><div class="reader-theme-control" data-theme-control></div>
+<nav class="site-nav"><a href="../../computer-science/kotlin-coroutines-guide/">← RIN III</a><div class="version-links" aria-label="版本"><a href="index.html">中文润色稿</a><a href="literal.html" aria-current="page">严格译稿</a><a href="english.html">English</a></div></nav><main class="reader project-reader"><header class="chapter-header"><span class="chapter-kicker">严格译稿</span><h1 id="coroutines-guide.md">协程指南</h1></header><article class="translated-article"><p id="mimzt4_3">Kotlin 标准库只提供最基本的底层 API，供其他库实现协程功能。与许多具有类似能力的语言不同，在 Kotlin 中，<code>async</code> 和 <code>await</code> 既不是关键字，也不属于标准库。此外，相比 future 和 promise，Kotlin 的挂起函数为异步操作提供了更安全、更不易出错的抽象方式。</p>
+<p id="mimzt4_4"><code>kotlinx.coroutines</code> 是 JetBrains 开发的协程库，功能丰富，提供了本指南介绍的多种高层协程原语，包括 <code>launch</code> 和 <code>async</code>。</p>
+<p id="mimzt4_5">本指南分主题介绍 <code>kotlinx.coroutines</code> 的核心功能，并配有一系列示例。</p>
+<p id="mimzt4_6">要使用协程并运行这些示例，需要按<a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/README.md#using-in-your-projects">项目 README</a> 的说明，添加 <code>kotlinx-coroutines-core</code> 模块依赖。</p>
+<section class="chapter"><h2 id="table-of-contents">目录</h2>
+<ul class="list _bullet" id="mimzt4_18">
+<li class="list__item" id="mimzt4_19"><p id="mimzt4_31"><a href="coroutines-basics/literal.html">协程基础</a></p></li>
+<li class="list__item" id="mimzt4_20"><p id="mimzt4_33"><a href="coroutines-cancellation/literal.html">取消与超时</a></p></li>
+<li class="list__item" id="mimzt4_21"><p id="mimzt4_35"><a href="coroutines-flow/literal.html">Flow</a></p></li>
+<li class="list__item" id="mimzt4_22"><p id="mimzt4_37"><a href="coroutines-and-channels/literal.html">教程：协程与通道入门</a></p></li>
+<li class="list__item" id="mimzt4_23"><p id="mimzt4_39"><a href="composing-suspending-functions/literal.html">组合挂起函数</a></p></li>
+<li class="list__item" id="mimzt4_24"><p id="mimzt4_41"><a href="coroutine-context-and-dispatchers/literal.html">协程上下文与调度器</a></p></li>
+<li class="list__item" id="mimzt4_25"><p id="mimzt4_43"><a href="channels/literal.html">通道</a></p></li>
+<li class="list__item" id="mimzt4_26"><p id="mimzt4_45"><a href="exception-handling/literal.html">协程异常处理</a></p></li>
+<li class="list__item" id="mimzt4_27"><p id="mimzt4_47"><a href="shared-mutable-state-and-concurrency/literal.html">共享可变状态与并发</a></p></li>
+<li class="list__item" id="mimzt4_28"><p id="mimzt4_49"><a href="select-expression/literal.html">select 表达式（实验性）</a></p></li>
+<li class="list__item" id="mimzt4_29"><p id="mimzt4_51"><a href="debug-coroutines-with-idea/literal.html">教程：使用 IntelliJ IDEA 调试协程</a></p></li>
+<li class="list__item" id="mimzt4_30"><p id="mimzt4_53"><a href="debug-flow-with-idea/literal.html">教程：使用 IntelliJ IDEA 调试 Kotlin Flow</a></p></li>
+</ul></section><section class="chapter"><h2 id="additional-references">更多参考资料</h2>
+<ul class="list _bullet" id="mimzt4_55">
+<li class="list__item" id="mimzt4_56"><p id="mimzt4_61"><a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/ui/coroutines-guide-ui.md">用协程编写 UI 程序的指南</a></p></li>
+<li class="list__item" id="mimzt4_57"><p id="mimzt4_63"><a href="https://github.com/Kotlin/KEEP/blob/master/proposals/coroutines.md">协程设计文档（KEEP）</a></p></li>
+<li class="list__item" id="mimzt4_58"><p id="mimzt4_65"><a href="https://kotlinlang.org/api/kotlinx.coroutines/">完整的 kotlinx.coroutines API 参考</a></p></li>
+<li class="list__item" id="mimzt4_59"><p id="mimzt4_67"><a href="https://developer.android.com/kotlin/coroutines/coroutines-best-practices">Android 协程最佳实践</a></p></li>
+<li class="list__item" id="mimzt4_60"><p id="mimzt4_69"><a href="https://developer.android.com/kotlin/coroutines/additional-resources">Android 上使用 Kotlin 协程与 Flow 的更多资源</a></p></li>
+</ul></section></article>
+<footer class="source-credit"><p>原文由 JetBrains 与 Kotlin 贡献者维护。中文译稿修订于 2026 年 11 月 19 日。示例代码的说明性注释已译为中文，输出文字与截图沿用原文。</p><p><a href="https://kotlinlang.org/docs/coroutines-guide.html">Kotlin 官方原文</a> · <a href="LICENSE-2.0.txt">Apache License 2.0</a></p></footer></main>
+</body></html>

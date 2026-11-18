@@ -3,32 +3,32 @@
 <head>
 <meta charset="utf-8"><script src="../../../theme.js"></script>
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>协程怎样处理异常｜RIN III</title>
-<meta name="description" content="一个子任务失败后，先发生取消、清理还是错误报告？对照普通任务树与监督作用域，跟踪同一个异常。">
+<title>协程异常处理｜RIN III</title>
+<meta name="description" content="协程异常处理 · 中文润色稿">
 <link rel="manifest" href="../../../manifest.webmanifest">
 <link rel="stylesheet" href="../../../reading/reader.css">
 <link rel="stylesheet" href="../../../theme.css">
 <link rel="stylesheet" href="../../../reading/_shared/theme-readers.css">
 <link rel="stylesheet" href="../../../reading/kotlin-coroutines-guide/course.css">
 </head><body><div class="reader-theme-control" data-theme-control></div>
-<nav class="site-nav"><a href="../index.html">← Kotlin 协程指南</a><a href="english.html">English</a><a href="https://kotlinlang.org/docs/exception-handling.html">Kotlin 原文 ↗</a></nav><main class="reader project-reader"><header class="chapter-header"><span class="chapter-kicker">Kotlin 协程指南 · 08 / 12</span><h1>协程怎样处理异常</h1><p class="lead">一个子任务失败后，先发生取消、清理还是错误报告？对照普通任务树与监督作用域，跟踪同一个异常。</p></header><nav class="chapter-switcher" aria-label="章节导航"><a href="../channels/index.html">← 通道</a><a class="course-home" href="../index.html">全部章节</a><a href="../shared-mutable-state-and-concurrency/index.html">共享可变状态与并发 →</a></nav><details class="source-details chapter-toc"><summary>本章目录</summary><ul><li><a href="#exception-propagation">异常向哪里传播</a></li><li><a href="#coroutineexceptionhandler">未捕获异常的最后处理处</a></li><li><a href="#cancellation-and-exceptions">取消与异常如何相遇</a></li><li><a href="#exceptions-aggregation">多个异常如何汇总</a></li><li><a href="#supervision">监督子任务</a></li></ul></details><article class="translated-article"><p id="-3i3drl_3">协程用 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-cancellation-exception/index.html">CancellationException</a> 表示正常取消。接下来看看两种更复杂的情况：清理时又出错，以及多个子协程先后出错。</p>
-<section class="chapter"><h2 id="exception-propagation">异常向哪里传播</h2>
-<p id="-3i3drl_10">先看没有父任务的根协程。根 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/launch.html">launch</a> 会报告未捕获异常，类似 JVM 线程的未捕获异常处理器。根 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/async.html">async</a> 把失败保存在 Deferred 中，调用 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-deferred/await.html">await</a> 时可见；<a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.channels/produce.html">produce</a> 则可以通过<a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/docs/channels.md">通道</a>的接收操作向消费者交付失败。 <small class="source-refs"><a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.channels/-receive-channel/receive.html">receive</a></small></p>
-<p id="-3i3drl_11">下面特意在 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-global-scope/index.html">GlobalScope</a> 中创建根协程，比较两种构建器。</p>
-<aside class="prompt" data-type="note" id="-3i3drl_12"><p id="-3i3drl_30"><a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-global-scope/index.html">GlobalScope</a> 属于需要显式选择加入的 API。只有任务确实与整个应用同寿命等少数情况才适合使用，示例通过 <code>@OptIn(DelicateCoroutinesApi::class)</code> 表明这一点。</p></aside><pre><code class="language-kotlin">import kotlinx.coroutines.*
+<nav class="site-nav"><a href="../index.html">← 全部章节</a><div class="version-links" aria-label="版本"><a href="index.html" aria-current="page">中文润色稿</a><a href="literal.html">严格译稿</a><a href="english.html">English</a></div></nav><main class="reader project-reader"><header class="chapter-header"><span class="chapter-kicker">8 / 12 · 中文润色稿</span><h1 id="exception-handling.md">协程异常处理</h1></header><nav class="chapter-switcher" aria-label="章节导航"><a href="../channels/index.html">← 通道</a><a class="course-home" href="../index.html">全部章节</a><a href="../shared-mutable-state-and-concurrency/index.html">共享可变状态与并发 →</a></nav><details class="source-details chapter-toc"><summary>本章目录</summary><ul><li><a href="#exception-propagation">异常传播</a></li><li><a href="#coroutineexceptionhandler">CoroutineExceptionHandler</a></li><li><a href="#cancellation-and-exceptions">取消与异常</a></li><li><a href="#exceptions-aggregation">汇总多个异常</a></li><li><a href="#supervision">监督</a></li></ul></details><article class="translated-article"><p id="-3i3drl_3">协程取消后，会在可取消的挂起点抛出 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-cancellation-exception/index.html">CancellationException</a>。协程机制把这看作正常取消。本章接着看两个问题：如果取消过程中又抛出别的异常，会怎样？如果同一父任务下有多个子任务抛出异常，最终会报告哪一个？</p>
+<section class="chapter"><h2 id="exception-propagation">异常传播</h2>
+<p id="-3i3drl_10">先看没有父协程的任务，也就是根协程。用 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/launch.html">launch</a> 启动它时，未处理的异常会自动传播，类似 Java 的 <code>Thread.uncaughtExceptionHandler</code> 处理未捕获异常。用 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/async.html">async</a> 或 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.channels/produce.html">produce</a> 启动它时，调用方需要分别通过 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-deferred/await.html">await</a> 或 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.channels/-receive-channel/receive.html">receive</a> 取得结果，此时也会得到异常。<a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.channels/produce.html">produce</a> 和 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.channels/-receive-channel/receive.html">receive</a> 的用法见《<a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/docs/channels.md">通道</a>》。</p>
+<p id="-3i3drl_11">下面用 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-global-scope/index.html">GlobalScope</a> 创建根协程，演示这一区别。</p>
+<aside class="learning-note"><strong>编者注</strong><p>根协程是没有父协程的协程。先记住这个条件，后面读到“子协程出错会通知父任务”时，就能看出两段代码为何表现不同。</p></aside><aside class="prompt" data-type="note" id="-3i3drl_12"><p id="-3i3drl_30"><a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-global-scope/index.html">GlobalScope</a> 是需要谨慎使用的 API，可能带来不易察觉的问题。为整个应用创建根协程是它少数合理用途之一。使用时需显式声明 <code>@OptIn(DelicateCoroutinesApi::class)</code>。</p></aside><pre><code class="language-kotlin">import kotlinx.coroutines.*
 
-//sampleStart
+//<span class="code-comment">sampleStart</span>
 @OptIn(DelicateCoroutinesApi::class)
 fun main() = runBlocking {
-    val job = GlobalScope.launch { // root coroutine with launch
+    val job = GlobalScope.launch { // <span class="code-comment">用 launch 创建的根协程</span>
         println("Throwing exception from launch")
-        throw IndexOutOfBoundsException() // Will be printed to the console by Thread.defaultUncaughtExceptionHandler
+        throw IndexOutOfBoundsException() // <span class="code-comment">异常将由 Thread.defaultUncaughtExceptionHandler 打印到控制台</span>
     }
     job.join()
     println("Joined failed job")
-    val deferred = GlobalScope.async { // root coroutine with async
+    val deferred = GlobalScope.async { // <span class="code-comment">用 async 创建的根协程</span>
         println("Throwing exception from async")
-        throw ArithmeticException() // Nothing is printed, relying on user to call await
+        throw ArithmeticException() // <span class="code-comment">这里没有输出；调用方要通过 await 取得结果或异常</span>
     }
     try {
         deferred.await()
@@ -37,39 +37,39 @@ fun main() = runBlocking {
         println("Caught ArithmeticException")
     }
 }
-//sampleEnd</code></pre>
-<aside class="prompt" data-type="note" id="-3i3drl_14"><p id="-3i3drl_35"><a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-exceptions-01.kt">查看完整示例</a>。</p></aside><p id="-3i3drl_15">开启协程调试后，可以看到下面的输出。 <small class="source-refs"><a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/docs/coroutine-context-and-dispatchers.md#debugging-coroutines-and-threads">debug</a></small></p>
+//<span class="code-comment">sampleEnd</span></code></pre>
+<aside class="prompt" data-type="note" id="-3i3drl_14"><p id="-3i3drl_35">查看<a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-exceptions-01.kt">完整代码</a>。</p></aside><p id="-3i3drl_15">开启<a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/docs/coroutine-context-and-dispatchers.md#debugging-coroutines-and-threads">调试</a>时，程序会产生以下输出。</p>
 <pre><code class="language-none">Throwing exception from launch
 Exception in thread "DefaultDispatcher-worker-1 @coroutine#2" java.lang.IndexOutOfBoundsException
 Joined failed job
 Throwing exception from async
-Caught ArithmeticException</code></pre></section><section class="chapter"><h2 id="coroutineexceptionhandler">未捕获异常的最后处理处</h2>
-<p id="-3i3drl_38">可以在根协程的上下文里安装 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-coroutine-exception-handler/index.html">CoroutineExceptionHandler</a>，统一记录从任务树传来的未捕获异常。它的角色类似 <a href="https://docs.oracle.com/javase/8/docs/api/java/lang/Thread.html#setUncaughtExceptionHandler-java.lang.Thread.UncaughtExceptionHandler-">Thread.uncaughtExceptionHandler</a>。运行到这里，协程已经失败，通常只能写日志、显示错误，或让应用终止或重启。</p>
-<p id="-3i3drl_39">处理器只接收尚未由其他途径处理的异常。普通子协程把失败交给父协程，逐层传至根，因此装在普通子协程上的处理器不会接管失败。<a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/async.html">async</a> 会把异常保存在 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-deferred/index.html">Deferred</a> 中，装在 async 上的处理器也不起这个作用。 <small class="source-refs"><a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-job/index.html">Job</a></small></p>
-<aside class="prompt" data-type="note" id="-3i3drl_40"><p id="-3i3drl_60">直接由监督作用域管理的子任务具有不同的传播规则，下文会展开。 <small class="source-refs"><a href="#supervision">Supervision</a></small></p></aside><pre><code class="language-kotlin">import kotlinx.coroutines.*
+Caught ArithmeticException</code></pre></section><section class="chapter"><h2 id="coroutineexceptionhandler">CoroutineExceptionHandler</h2>
+<p id="-3i3drl_38">根协程遇到未捕获异常时，默认会把它打印到控制台。想统一记录或显示根协程及其子任务最终未处理的错误，可以在根协程的上下文中安装 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-coroutine-exception-handler/index.html">CoroutineExceptionHandler</a>。它类似 <a href="https://docs.oracle.com/javase/8/docs/api/java/lang/Thread.html#setUncaughtExceptionHandler-java.lang.Thread.UncaughtExceptionHandler-">Thread.uncaughtExceptionHandler</a>。处理器运行时，出错的协程已经结束，此处可记录日志、显示错误、终止或重启应用，已经无法让它从失败处继续执行。</p>
+<p id="-3i3drl_39">只有未通过其他方式处理的异常才会交给 <code>CoroutineExceptionHandler</code>。普通子协程，即在另一个 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-job/index.html">Job</a> 的上下文中建立的协程，会将异常处理交给父协程，逐级传到根。因此，装在这些子协程上的处理器不会用于处理该错误。<a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/async.html">async</a> 总是将异常保存在结果 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-deferred/index.html">Deferred</a> 中，装在 async 上的处理器同样没有效果。</p>
+<aside class="prompt" data-type="note" id="-3i3drl_40"><p id="-3i3drl_60">直接受<a href="#supervision">监督</a>作用域管理的协程不会将失败传给父任务，是这项规则的例外，详见「监督」。</p></aside><pre><code class="language-kotlin">import kotlinx.coroutines.*
 
 @OptIn(DelicateCoroutinesApi::class)
 fun main() = runBlocking {
-//sampleStart
-    val handler = CoroutineExceptionHandler { _, exception -&gt; 
-        println("CoroutineExceptionHandler got $exception") 
+//<span class="code-comment">sampleStart</span>
+    val handler = CoroutineExceptionHandler { _, exception -&gt;&#32;
+        println("CoroutineExceptionHandler got $exception")&#32;
     }
-    val job = GlobalScope.launch(handler) { // root coroutine, running in GlobalScope
+    val job = GlobalScope.launch(handler) { // <span class="code-comment">在 GlobalScope 中运行的根协程</span>
         throw AssertionError()
     }
-    val deferred = GlobalScope.async(handler) { // also root, but async instead of launch
-        throw ArithmeticException() // Nothing will be printed, relying on user to call deferred.await()
+    val deferred = GlobalScope.async(handler) { // <span class="code-comment">同样是根协程，这次用 async 启动</span>
+        throw ArithmeticException() // <span class="code-comment">这里没有输出；调用方要通过 deferred.await() 取得结果或异常</span>
     }
     joinAll(job, deferred)
-//sampleEnd    
+//<span class="code-comment">sampleEnd</span>&#32;&#32;&#32;&#32;
 }</code></pre>
-<aside class="prompt" data-type="note" id="-3i3drl_42"><p id="-3i3drl_62"><a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-exceptions-02.kt">查看完整示例</a>。</p></aside><p id="-3i3drl_43">一次运行的输出如下。</p>
-<pre><code class="language-none">CoroutineExceptionHandler got java.lang.AssertionError</code></pre></section><section class="chapter"><h2 id="cancellation-and-exceptions">取消与异常如何相遇</h2>
-<p id="-3i3drl_64"><a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/cancel.html">Job.cancel</a> 请求取消时，协程内部用 <code>CancellationException</code> 传达信号。未捕获异常处理器通常忽略它，必要时可以在 <code>catch</code> 中取得调试线索。单独取消一个子任务不会取消父任务。</p>
+<aside class="prompt" data-type="note" id="-3i3drl_42"><p id="-3i3drl_62">查看<a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-exceptions-02.kt">完整代码</a>。</p></aside><p id="-3i3drl_43">输出如下。</p>
+<pre><code class="language-none">CoroutineExceptionHandler got java.lang.AssertionError</code></pre></section><section class="chapter"><h2 id="cancellation-and-exceptions">取消与异常</h2>
+<p id="-3i3drl_64">协程内部用 <code>CancellationException</code> 表示取消，异常处理器忽略这类异常。需要调试时可以在 <code>catch</code> 块中取得其他信息。用 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/cancel.html">Job.cancel</a> 取消一个协程会使它终止，但不会因此取消它的父任务。</p>
 <pre><code class="language-kotlin">import kotlinx.coroutines.*
 
 fun main() = runBlocking {
-//sampleStart
+//<span class="code-comment">sampleStart</span>
     val job = launch {
         val child = launch {
             try {
@@ -86,24 +86,24 @@ fun main() = runBlocking {
         println("Parent is not cancelled")
     }
     job.join()
-//sampleEnd    
+//<span class="code-comment">sampleEnd</span>&#32;&#32;&#32;&#32;
 }</code></pre>
-<aside class="prompt" data-type="note" id="-3i3drl_66"><p id="-3i3drl_79"><a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-exceptions-03.kt">查看完整示例</a>。</p></aside><p id="-3i3drl_67">一次运行的输出如下。</p>
+<aside class="prompt" data-type="note" id="-3i3drl_66"><p id="-3i3drl_79">查看<a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-exceptions-03.kt">完整代码</a>。</p></aside><p id="-3i3drl_67">输出如下。</p>
 <pre><code class="language-none">Cancelling child
 Child is cancelled
 Parent is not cancelled</code></pre>
-<p id="-3i3drl_69">在普通父子关系中，如果子协程抛出 <code>CancellationException</code> 以外的异常，它会让父协程随之失败。这条规则保证同一项工作一起收尾，在子协程里安装处理器也改变不了它。 <small class="source-refs"><a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/docs/composing-suspending-functions.md#structured-concurrency-with-async">structured concurrency</a> · <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-coroutine-exception-handler/index.html">CoroutineExceptionHandler</a></small></p>
-<aside class="prompt" data-type="note" id="-3i3drl_70"><p id="-3i3drl_84">示例把处理器安装在 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-global-scope/index.html">GlobalScope</a> 创建的根协程上。如果把它安装到 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/run-blocking.html">runBlocking</a> 的普通子任务，子任务失败仍会取消外层 runBlocking。 <small class="source-refs"><a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-coroutine-exception-handler/index.html">CoroutineExceptionHandler</a></small></p></aside><p id="-3i3drl_71">父协程要等所有子任务结束，才会处理最初的异常。观察下面例子中清理日志与处理器日志的顺序。</p>
+<p id="-3i3drl_69">在普通父子关系中，子协程遇到 <code>CancellationException</code> 以外的异常时，会携带这个异常取消父协程。这种行为不可覆盖，以保证<a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/docs/composing-suspending-functions.md#structured-concurrency-with-async">结构化并发</a>中的层级关系稳定。普通子协程上的 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-coroutine-exception-handler/index.html">CoroutineExceptionHandler</a> 不会接管它。</p>
+<aside class="prompt" data-type="note" id="-3i3drl_70"><p id="-3i3drl_84">这些例子把处理器装在用 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-global-scope/index.html">GlobalScope</a> 创建的协程上。若装在 main 的 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/run-blocking.html">runBlocking</a> 作用域中的普通子协程上，子协程因异常结束时，主协程仍然会被取消。 <sup class="source-refs"><a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-coroutine-exception-handler/index.html">[1]</a></sup></p></aside><p id="-3i3drl_71">一个子任务失败后，父协程会先等所有子任务结束。等其余子任务也完成收尾，父协程才处理最初的异常。留意下面日志中几行消息出现的顺序。</p>
 <pre><code class="language-kotlin">import kotlinx.coroutines.*
 
 @OptIn(DelicateCoroutinesApi::class)
 fun main() = runBlocking {
-//sampleStart
-    val handler = CoroutineExceptionHandler { _, exception -&gt; 
-        println("CoroutineExceptionHandler got $exception") 
+//<span class="code-comment">sampleStart</span>
+    val handler = CoroutineExceptionHandler { _, exception -&gt;&#32;
+        println("CoroutineExceptionHandler got $exception")&#32;
     }
     val job = GlobalScope.launch(handler) {
-        launch { // the first child
+        launch { // <span class="code-comment">第一个子任务</span>
             try {
                 delay(Long.MAX_VALUE)
             } finally {
@@ -114,21 +114,21 @@ fun main() = runBlocking {
                 }
             }
         }
-        launch { // the second child
+        launch { // <span class="code-comment">第二个子任务</span>
             delay(10)
             println("Second child throws an exception")
             throw ArithmeticException()
         }
     }
     job.join()
-//sampleEnd 
+//<span class="code-comment">sampleEnd</span>&#32;
 }</code></pre>
-<aside class="prompt" data-type="note" id="-3i3drl_73"><p id="-3i3drl_88"><a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-exceptions-04.kt">查看完整示例</a>。</p></aside><p id="-3i3drl_74">一次运行的输出如下。</p>
+<aside class="prompt" data-type="note" id="-3i3drl_73"><p id="-3i3drl_88">查看<a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-exceptions-04.kt">完整代码</a>。</p></aside><p id="-3i3drl_74">输出如下。</p>
 <pre><code class="language-none">Second child throws an exception
 Children are cancelled, but exception is not handled until all children terminate
 The first child finished its non cancellable block
-CoroutineExceptionHandler got java.lang.ArithmeticException</code></pre></section><section class="chapter"><h2 id="exceptions-aggregation">多个异常如何汇总</h2>
-<p id="-3i3drl_90">一般是第一个失败决定最终报告的异常。此后出现的其他异常，会以 suppressed 异常附在第一个异常上，便于一起排查。</p>
+CoroutineExceptionHandler got java.lang.ArithmeticException</code></pre></section><section class="chapter"><h2 id="exceptions-aggregation">汇总多个异常</h2>
+<p id="-3i3drl_90">如果多个子任务先后失败，通常以第一个异常为主。随后出现的异常会附在第一个异常的 suppressed 列表里，所以查看主异常时也能找到它们。</p>
 <pre><code class="language-kotlin">import kotlinx.coroutines.*
 import java.io.*
 
@@ -140,36 +140,36 @@ fun main() = runBlocking {
     val job = GlobalScope.launch(handler) {
         launch {
             try {
-                delay(Long.MAX_VALUE) // it gets cancelled when another sibling fails with IOException
+                delay(Long.MAX_VALUE) // <span class="code-comment">另一个子任务因 IOException 失败时，这个任务会被取消</span>
             } finally {
-                throw ArithmeticException() // the second exception
+                throw ArithmeticException() // <span class="code-comment">第二个异常</span>
             }
         }
         launch {
             delay(100)
-            throw IOException() // the first exception
+            throw IOException() // <span class="code-comment">第一个异常</span>
         }
         delay(Long.MAX_VALUE)
     }
-    job.join()  
+    job.join()&#32;&#32;
 }</code></pre>
-<aside class="prompt" data-type="note" id="-3i3drl_92"><p id="-3i3drl_101"><a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-exceptions-05.kt">查看完整示例</a>。</p></aside><p id="-3i3drl_93">一次运行的输出如下。</p>
+<aside class="prompt" data-type="note" id="-3i3drl_92"><p id="-3i3drl_101">查看<a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-exceptions-05.kt">完整代码</a>。</p></aside><p id="-3i3drl_93">输出如下。</p>
 <pre><code class="language-none">CoroutineExceptionHandler got java.io.IOException with suppressed [java.lang.ArithmeticException]</code></pre>
-<aside class="prompt" data-type="note" id="-3i3drl_95"><p id="-3i3drl_103">原文注明该示例的 suppressed 异常聚合机制适用于 Java 1.7 及以上，JS 和 Native 的支持情况需按目标平台核对。</p></aside><p id="-3i3drl_96">取消异常在传播中具有透明性。观察嵌套任务被取消后，最外层处理器最后拿到的原始失败。</p>
+<aside class="prompt" data-type="note" id="-3i3drl_95"><p id="-3i3drl_103">原文注明，这种机制目前只能在 Java 1.7 及以上版本使用，JS 和 Native 上的限制是暂时的，计划今后解除。</p></aside><p id="-3i3drl_96">取消异常是透明的，默认会解包，让原始异常出现在处理器中。</p>
 <pre><code class="language-kotlin">import kotlinx.coroutines.*
 import java.io.*
 
 @OptIn(DelicateCoroutinesApi::class)
 fun main() = runBlocking {
-//sampleStart
+//<span class="code-comment">sampleStart</span>
     val handler = CoroutineExceptionHandler { _, exception -&gt;
         println("CoroutineExceptionHandler got $exception")
     }
     val job = GlobalScope.launch(handler) {
-        val innerJob = launch { // all this stack of coroutines will get cancelled
+        val innerJob = launch { // <span class="code-comment">这一串嵌套协程都会被取消</span>
             launch {
                 launch {
-                    throw IOException() // the original exception
+                    throw IOException() // <span class="code-comment">最初的异常</span>
                 }
             }
         }
@@ -177,62 +177,62 @@ fun main() = runBlocking {
             innerJob.join()
         } catch (e: CancellationException) {
             println("Rethrowing CancellationException with original cause")
-            throw e // cancellation exception is rethrown, yet the original IOException gets to the handler  
+            throw e // <span class="code-comment">这里重新抛出取消异常，处理器收到的仍是最初的 IOException</span>&#32;&#32;
         }
     }
     job.join()
-//sampleEnd    
+//<span class="code-comment">sampleEnd</span>&#32;&#32;&#32;&#32;
 }</code></pre>
-<aside class="prompt" data-type="note" id="-3i3drl_98"><p id="-3i3drl_104"><a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-exceptions-06.kt">查看完整示例</a>。</p></aside><p id="-3i3drl_99">一次运行的输出如下。</p>
+<aside class="prompt" data-type="note" id="-3i3drl_98"><p id="-3i3drl_104">查看<a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-exceptions-06.kt">完整代码</a>。</p></aside><p id="-3i3drl_99">输出如下。</p>
 <pre><code class="language-none">Rethrowing CancellationException with original cause
-CoroutineExceptionHandler got java.io.IOException</code></pre></section><section class="chapter"><h2 id="supervision">监督子任务</h2>
-<p id="-3i3drl_106">普通任务树里，子任务失败会向上影响父任务，父任务取消又会向下传播。有时需要把这两个方向分开处理。</p>
-<p id="-3i3drl_107">例如一个页面同时加载几个区域，其中一个失败时，其余区域仍可以显示。页面关闭后，所有子任务都应停止，因为它们的结果已经没有接收者。</p>
-<p id="-3i3drl_108">服务端也可能需要分别观察各个任务，只重启失败的那个。</p>
-<section class="chapter"><h3 id="supervision-job">使用 SupervisorJob</h3>
-<p id="-3i3drl_112"><a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-supervisor-job.html">SupervisorJob</a> 像普通 Job 一样管理子任务，但一个直接子任务的失败或取消不会传给监督者和兄弟任务。看下面的例子，分别观察子任务失败与监督者取消的结果。</p>
+CoroutineExceptionHandler got java.io.IOException</code></pre></section><section class="chapter"><h2 id="supervision">监督</h2>
+<p id="-3i3drl_106">在普通任务树中，失败会影响父任务，取消又会向下传给其他任务，作用由此遍及层级。下面看需要单向传播的场景。</p>
+<p id="-3i3drl_107">例如，UI 组件的作用域有自己的 Job。一个界面子任务失败时，未必需要取消整个组件；但组件被销毁、其 Job 被取消时，就应取消所有子任务，因为它们的结果已没有用途。</p>
+<p id="-3i3drl_108">再如，服务器进程派生多个子任务，需要监督其执行、追踪故障并只重启那些失败的任务。</p>
+<section class="chapter"><h3 id="supervision-job">监督任务</h3>
+<p id="-3i3drl_112">在需要单向传递取消的地方，可以使用 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-supervisor-job.html">SupervisorJob</a>。子任务失败或被取消时，其他直接子任务可以继续运行；如果取消 Supervisor<a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-job.html">Job</a> 本身，它管理的子任务仍都会被取消。</p>
 <pre><code class="language-kotlin">import kotlinx.coroutines.*
 
 fun main() = runBlocking {
-//sampleStart
+//<span class="code-comment">sampleStart</span>
     val supervisor = SupervisorJob()
     with(CoroutineScope(coroutineContext + supervisor)) {
-        // launch the first child -- its exception is ignored for this example (don't do this in practice!)
+        // <span class="code-comment">启动第一个子任务；仅本例忽略它的异常，实际应用应处理异常</span>
         val firstChild = launch(CoroutineExceptionHandler { _, _ -&gt;  }) {
             println("The first child is failing")
             throw AssertionError("The first child is cancelled")
         }
-        // launch the second child
+        // <span class="code-comment">启动第二个子任务</span>
         val secondChild = launch {
             firstChild.join()
-            // Cancellation of the first child is not propagated to the second child
+            // <span class="code-comment">第一个子任务被取消不会导致第二个子任务也被取消</span>
             println("The first child is cancelled: ${firstChild.isCancelled}, but the second one is still active")
             try {
                 delay(Long.MAX_VALUE)
             } finally {
-                // But cancellation of the supervisor is propagated
+                // <span class="code-comment">取消监督者时，取消请求会向下传播</span>
                 println("The second child is cancelled because the supervisor was cancelled")
             }
         }
-        // wait until the first child fails &amp; completes
+        // <span class="code-comment">等第一个子任务失败并结束</span>
         firstChild.join()
         println("Cancelling the supervisor")
         supervisor.cancel()
         secondChild.join()
     }
-//sampleEnd
+//<span class="code-comment">sampleEnd</span>
 }</code></pre>
-<aside class="prompt" data-type="note" id="-3i3drl_114"><p id="-3i3drl_119"><a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-supervision-01.kt">查看完整示例</a>。</p></aside><p id="-3i3drl_115">一次运行的输出如下。</p>
+<aside class="prompt" data-type="note" id="-3i3drl_114"><p id="-3i3drl_119">查看<a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-supervision-01.kt">完整代码</a>。</p></aside><p id="-3i3drl_115">输出如下。</p>
 <pre><code class="language-none">The first child is failing
 The first child is cancelled: true, but the second one is still active
 Cancelling the supervisor
-The second child is cancelled because the supervisor was cancelled</code></pre></section><section class="chapter"><h3 id="supervision-scope">使用 supervisorScope</h3>
-<p id="-3i3drl_121"><a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/supervisor-scope.html">supervisorScope</a> 把同样的行为限制在一个代码块里。直接子任务各自失败，作用域自身失败或被取消时则会取消所有子任务。和 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/coroutine-scope.html">coroutineScope</a> 一样，它会等子任务结束才返回。</p>
+The second child is cancelled because the supervisor was cancelled</code></pre></section><section class="chapter"><h3 id="supervision-scope">监督作用域</h3>
+<p id="-3i3drl_121">可以用 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/supervisor-scope.html">supervisorScope</a> 替代 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/coroutine-scope.html">coroutineScope</a> 来组织局部并发。取消在这里单向传播：只有作用域自身失败或被取消时，才取消所有子任务。与 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/coroutine-scope.html">coroutineScope</a> 相同，它要等所有子任务完成才会结束。</p>
 <pre><code class="language-kotlin">import kotlin.coroutines.*
 import kotlinx.coroutines.*
 
 fun main() = runBlocking {
-//sampleStart
+//<span class="code-comment">sampleStart</span>
     try {
         supervisorScope {
             val child = launch {
@@ -243,7 +243,7 @@ fun main() = runBlocking {
                     println("The child is cancelled")
                 }
             }
-            // Give our child a chance to execute and print using yield 
+            // <span class="code-comment">调用 yield，让子协程有机会运行并打印</span>&#32;
             yield()
             println("Throwing an exception from the scope")
             throw AssertionError()
@@ -251,22 +251,22 @@ fun main() = runBlocking {
     } catch(e: AssertionError) {
         println("Caught an assertion error")
     }
-//sampleEnd
+//<span class="code-comment">sampleEnd</span>
 }</code></pre>
-<aside class="prompt" data-type="note" id="-3i3drl_123"><p id="-3i3drl_131"><a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-supervision-02.kt">查看完整示例</a>。</p></aside><p id="-3i3drl_124">一次运行的输出如下。</p>
+<aside class="prompt" data-type="note" id="-3i3drl_123"><p id="-3i3drl_131">查看<a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-supervision-02.kt">完整代码</a>。</p></aside><p id="-3i3drl_124">输出如下。</p>
 <pre><code class="language-none">The child is sleeping
 Throwing an exception from the scope
 The child is cancelled
 Caught an assertion error</code></pre>
-<section class="chapter"><h4 id="exceptions-in-supervised-coroutines">谁负责监督下的异常</h4>
-<p id="-3i3drl_133">监督者隔开了子任务的失败，所以每个直接子任务都需要自己的异常处理方式。直接在 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/supervisor-scope.html">supervisorScope</a> 中 launch 的协程可以像根 launch 一样，使用上下文中的 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-coroutine-exception-handler/index.html">CoroutineExceptionHandler</a> 报告未处理的异常。</p>
+<section class="chapter"><h4 id="exceptions-in-supervised-coroutines">受监督协程中的异常</h4>
+<p id="-3i3drl_133">普通任务和监督任务在异常处理上还有一项重要区别。由于直接子任务的失败不传播给监督者，每个子任务需按自身的异常处理机制处理异常。直接在 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/supervisor-scope.html">supervisorScope</a> 内 launch 的协程可以像根协程一样使用其上下文中安装的 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-coroutine-exception-handler/index.html">CoroutineExceptionHandler</a>，详见前面的处理器一节。 <sup class="source-refs"><a href="#coroutineexceptionhandler">[1]</a></sup></p>
 <pre><code class="language-kotlin">import kotlin.coroutines.*
 import kotlinx.coroutines.*
 
 fun main() = runBlocking {
-//sampleStart
-    val handler = CoroutineExceptionHandler { _, exception -&gt; 
-        println("CoroutineExceptionHandler got $exception") 
+//<span class="code-comment">sampleStart</span>
+    val handler = CoroutineExceptionHandler { _, exception -&gt;&#32;
+        println("CoroutineExceptionHandler got $exception")&#32;
     }
     supervisorScope {
         val child = launch(handler) {
@@ -276,12 +276,12 @@ fun main() = runBlocking {
         println("The scope is completing")
     }
     println("The scope is completed")
-//sampleEnd
+//<span class="code-comment">sampleEnd</span>
 }</code></pre>
-<aside class="prompt" data-type="note" id="-3i3drl_135"><p id="-3i3drl_142"><a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-supervision-03.kt">查看完整示例</a>。</p></aside><p id="-3i3drl_136">一次运行的输出如下。</p>
+<aside class="prompt" data-type="note" id="-3i3drl_135"><p id="-3i3drl_142">查看<a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-supervision-03.kt">完整代码</a>。</p></aside><p id="-3i3drl_136">输出如下。</p>
 <pre><code class="language-none">The scope is completing
 The child throws an exception
 CoroutineExceptionHandler got java.lang.AssertionError
 The scope is completed</code></pre></section></section></section></article>
-<section class="recall"><h2>读完试一题</h2><p>在普通 coroutineScope 的子 async 里抛出异常，一直不调 await，能让它的兄弟任务继续吗？</p><details><summary>展开参考答案</summary><p>不能。异常虽也记录在 Deferred 里，子任务的非取消异常仍会使普通父作用域失败，进而取消兄弟任务。监督作用域才会隔离直接子任务的失败。</p></details></section><nav class="chapter-switcher" aria-label="章节导航"><a href="../channels/index.html">← 通道</a><a class="course-home" href="../index.html">全部章节</a><a href="../shared-mutable-state-and-concurrency/index.html">共享可变状态与并发 →</a></nav><footer class="source-credit"><p>原文由 JetBrains 与 Kotlin 贡献者维护。RIN III 于 2026 年 11 月 18 日翻译、润色并补充导读与自测；代码、输出及图中界面保留原貌。</p><p><a href="https://kotlinlang.org/docs/exception-handling.html">Kotlin 官方原文</a> · <a href="../LICENSE-2.0.txt">Apache License 2.0</a></p></footer></main>
+<section class="recall"><h2>编者自测</h2><p>日志中，子协程开始在 finally 中清理时，为什么父协程的异常处理器还没有报告最初的错误？</p><details><summary>查看答案</summary><p>父协程要先等所有子任务结束。其他子任务收到取消后可能还要清理资源，等它们完成，处理器才收到导致失败的异常。</p></details></section><nav class="chapter-switcher" aria-label="章节导航"><a href="../channels/index.html">← 通道</a><a class="course-home" href="../index.html">全部章节</a><a href="../shared-mutable-state-and-concurrency/index.html">共享可变状态与并发 →</a></nav><footer class="source-credit"><p>原文由 JetBrains 与 Kotlin 贡献者维护。中文译稿修订于 2026 年 11 月 19 日。示例代码的说明性注释已译为中文，输出文字与截图沿用原文。</p><p><a href="https://kotlinlang.org/docs/exception-handling.html">Kotlin 官方原文</a> · <a href="../LICENSE-2.0.txt">Apache License 2.0</a></p></footer></main>
 </body></html>

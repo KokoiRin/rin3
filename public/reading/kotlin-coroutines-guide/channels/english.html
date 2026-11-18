@@ -4,31 +4,31 @@
 <meta charset="utf-8"><script src="../../../theme.js"></script>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Channels｜RIN III</title>
-<meta name="description" content="Deferred values provide a convenient way to transfer a single value between coroutines. Channels provide a way to transfer a stream of values.">
+<meta name="description" content="Channels · English">
 <link rel="manifest" href="../../../manifest.webmanifest">
 <link rel="stylesheet" href="../../../reading/reader.css">
 <link rel="stylesheet" href="../../../theme.css">
 <link rel="stylesheet" href="../../../reading/_shared/theme-readers.css">
 <link rel="stylesheet" href="../../../reading/kotlin-coroutines-guide/course.css">
 </head><body><div class="reader-theme-control" data-theme-control></div>
-<nav class="site-nav"><a href="../index.html">← Kotlin 协程指南</a><a href="index.html">中文译文</a><a href="https://kotlinlang.org/docs/channels.html">Kotlin 原文 ↗</a></nav><main class="reader project-reader"><header class="chapter-header"><span class="chapter-kicker">Kotlin 协程指南 · 07 / 12</span><h1>Channels</h1></header><nav class="chapter-switcher" aria-label="章节导航"><a href="../coroutine-context-and-dispatchers/english.html">← Coroutine context and dispatchers</a><a class="course-home" href="../english.html">Contents</a><a href="../exception-handling/english.html">Coroutine exceptions handling →</a></nav><details class="source-details chapter-toc"><summary>On this page</summary><ul><li><a href="#channel-basics">Channel basics</a></li><li><a href="#closing-and-iteration-over-channels">Closing and iteration over channels</a></li><li><a href="#building-channel-producers">Building channel producers</a></li><li><a href="#pipelines">Pipelines</a></li><li><a href="#prime-numbers-with-pipeline">Prime numbers with pipeline</a></li><li><a href="#fan-out">Fan-out</a></li><li><a href="#fan-in">Fan-in</a></li><li><a href="#buffered-channels">Buffered channels</a></li><li><a href="#channels-are-fair">Channels are fair</a></li><li><a href="#ticker-channels">Ticker channels</a></li></ul></details><article class="translated-article"><p id="z7dygzm_3">Deferred values provide a convenient way to transfer a single value between coroutines. Channels provide a way to transfer a stream of values.</p>
+<nav class="site-nav"><a href="../english.html">← Contents</a><div class="version-links" aria-label="版本"><a href="index.html">中文润色稿</a><a href="literal.html">严格译稿</a><a href="english.html" aria-current="page">English</a></div></nav><main class="reader project-reader"><header class="chapter-header"><span class="chapter-kicker">7 / 12 · English</span><h1 id="channels.md">Channels</h1></header><nav class="chapter-switcher" aria-label="章节导航"><a href="../coroutine-context-and-dispatchers/english.html">← Coroutine context and dispatchers</a><a class="course-home" href="../english.html">Contents</a><a href="../exception-handling/english.html">Coroutine exceptions handling →</a></nav><details class="source-details chapter-toc"><summary>On this page</summary><ul><li><a href="#channel-basics">Channel basics</a></li><li><a href="#closing-and-iteration-over-channels">Closing and iteration over channels</a></li><li><a href="#building-channel-producers">Building channel producers</a></li><li><a href="#pipelines">Pipelines</a></li><li><a href="#prime-numbers-with-pipeline">Prime numbers with pipeline</a></li><li><a href="#fan-out">Fan-out</a></li><li><a href="#fan-in">Fan-in</a></li><li><a href="#buffered-channels">Buffered channels</a></li><li><a href="#channels-are-fair">Channels are fair</a></li><li><a href="#ticker-channels">Ticker channels</a></li></ul></details><article class="translated-article"><p id="z7dygzm_3">Deferred values provide a convenient way to transfer a single value between coroutines. Channels provide a way to transfer a stream of values.</p>
 <section class="chapter"><h2 id="channel-basics">Channel basics</h2>
 <p id="z7dygzm_14">A <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.channels/-channel/index.html" id="z7dygzm_19">Channel</a> is conceptually very similar to <code class="code" id="z7dygzm_20">BlockingQueue</code>. One key difference is that instead of a blocking <code class="code" id="z7dygzm_21">put</code> operation it has a suspending <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.channels/-send-channel/send.html" id="z7dygzm_22">send</a>, and instead of a blocking <code class="code" id="z7dygzm_23">take</code> operation it has a suspending <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.channels/-receive-channel/receive.html" id="z7dygzm_24">receive</a>.</p>
 <pre><code class="language-kotlin">import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.*
 
 fun main() = runBlocking {
-//sampleStart
+//<span class="code-comment">sampleStart</span>
     val channel = Channel&lt;Int&gt;()
     launch {
-        // this might be heavy CPU-consuming computation or async logic, 
-        // we'll just send five squares
+        // <span class="code-comment">this might be heavy CPU-consuming computation or async logic,</span>&#32;
+        // <span class="code-comment">we'll just send five squares</span>
         for (x in 1..5) channel.send(x * x)
     }
-    // here we print five received integers:
+    // <span class="code-comment">here we print five received integers:</span>
     repeat(5) { println(channel.receive()) }
     println("Done!")
-//sampleEnd
+//<span class="code-comment">sampleEnd</span>
 }</code></pre>
 <aside class="prompt" data-type="note" id="z7dygzm_16"><p id="z7dygzm_25">You can get the full code <a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-channel-01.kt" id="z7dygzm_26">here</a>.</p></aside><p id="z7dygzm_17">The output of this code is:</p>
 <pre><code class="language-none">1
@@ -43,16 +43,16 @@ Done!</code></pre></section><section class="chapter"><h2 id="closing-and-iterati
 import kotlinx.coroutines.channels.*
 
 fun main() = runBlocking {
-//sampleStart
+//<span class="code-comment">sampleStart</span>
     val channel = Channel&lt;Int&gt;()
     launch {
         for (x in 1..5) channel.send(x * x)
-        channel.close() // we're done sending
+        channel.close() // <span class="code-comment">we're done sending</span>
     }
-    // here we print received values using `for` loop (until the channel is closed)
+    // <span class="code-comment">here we print received values using `for` loop (until the channel is closed)</span>
     for (y in channel) println(y)
     println("Done!")
-//sampleEnd
+//<span class="code-comment">sampleEnd</span>
 }</code></pre>
 <aside class="prompt" data-type="note" id="z7dygzm_30"><p id="z7dygzm_33">You can get the full code <a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-channel-02.kt" id="z7dygzm_34">here</a>.</p></aside></section><section class="chapter"><h2 id="building-channel-producers">Building channel producers</h2>
 <p id="z7dygzm_35">The pattern where a coroutine is producing a sequence of elements is quite common. This is a part of <span class="emphasis" id="z7dygzm_39">producer-consumer</span> pattern that is often found in concurrent code. You could abstract such a producer into a function that takes channel as its parameter, but this goes contrary to common sense that results must be returned from functions.</p>
@@ -60,7 +60,7 @@ fun main() = runBlocking {
 <pre><code class="language-kotlin">import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.*
 
-//sampleStart
+//<span class="code-comment">sampleStart</span>
 fun CoroutineScope.produceSquares(): ReceiveChannel&lt;Int&gt; = produce {
     for (x in 1..5) send(x * x)
 }
@@ -69,13 +69,13 @@ fun main() = runBlocking {
     val squares = produceSquares()
     squares.consumeEach { println(it) }
     println("Done!")
-//sampleEnd
+//<span class="code-comment">sampleEnd</span>
 }</code></pre>
 <aside class="prompt" data-type="note" id="z7dygzm_38"><p id="z7dygzm_43">You can get the full code <a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-channel-03.kt" id="z7dygzm_44">here</a>.</p></aside></section><section class="chapter"><h2 id="pipelines">Pipelines</h2>
 <p id="z7dygzm_45">A pipeline is a pattern where one coroutine is producing, possibly infinite, stream of values:</p>
 <pre><code class="language-kotlin">fun CoroutineScope.produceNumbers() = produce&lt;Int&gt; {
     var x = 1
-    while (true) send(x++) // infinite stream of integers starting from 1
+    while (true) send(x++) // <span class="code-comment">infinite stream of integers starting from 1</span>
 }</code></pre>
 <p id="z7dygzm_47">And another coroutine or coroutines are consuming that stream, doing some processing, and producing some other results. In the example below, the numbers are just squared:</p>
 <pre><code class="language-kotlin">fun CoroutineScope.square(numbers: ReceiveChannel&lt;Int&gt;): ReceiveChannel&lt;Int&gt; = produce {
@@ -86,20 +86,20 @@ fun main() = runBlocking {
 import kotlinx.coroutines.channels.*
 
 fun main() = runBlocking {
-//sampleStart
-    val numbers = produceNumbers() // produces integers from 1 and on
-    val squares = square(numbers) // squares integers
+//<span class="code-comment">sampleStart</span>
+    val numbers = produceNumbers() // <span class="code-comment">produces integers from 1 and on</span>
+    val squares = square(numbers) // <span class="code-comment">squares integers</span>
     repeat(5) {
-        println(squares.receive()) // print first five
+        println(squares.receive()) // <span class="code-comment">print first five</span>
     }
-    println("Done!") // we are done
-    coroutineContext.cancelChildren() // cancel children coroutines
-//sampleEnd
+    println("Done!") // <span class="code-comment">we are done</span>
+    coroutineContext.cancelChildren() // <span class="code-comment">cancel children coroutines</span>
+//<span class="code-comment">sampleEnd</span>
 }
 
 fun CoroutineScope.produceNumbers() = produce&lt;Int&gt; {
     var x = 1
-    while (true) send(x++) // infinite stream of integers starting from 1
+    while (true) send(x++) // <span class="code-comment">infinite stream of integers starting from 1</span>
 }
 
 fun CoroutineScope.square(numbers: ReceiveChannel&lt;Int&gt;): ReceiveChannel&lt;Int&gt; = produce {
@@ -109,7 +109,7 @@ fun CoroutineScope.square(numbers: ReceiveChannel&lt;Int&gt;): ReceiveChannel&lt
 <p id="z7dygzm_58">Let's take pipelines to the extreme with an example that generates prime numbers using a pipeline of coroutines. We start with an infinite sequence of numbers.</p>
 <pre><code class="language-kotlin">fun CoroutineScope.numbersFrom(start: Int) = produce&lt;Int&gt; {
     var x = start
-    while (true) send(x++) // infinite stream of integers from start
+    while (true) send(x++) // <span class="code-comment">infinite stream of integers from start</span>
 }</code></pre>
 <p id="z7dygzm_60">The following pipeline stage filters an incoming stream of numbers, removing all the numbers that are divisible by the given prime number:</p>
 <pre><code class="language-kotlin">fun CoroutineScope.filter(numbers: ReceiveChannel&lt;Int&gt;, prime: Int) = produce&lt;Int&gt; {
@@ -122,20 +122,20 @@ fun CoroutineScope.square(numbers: ReceiveChannel&lt;Int&gt;): ReceiveChannel&lt
 import kotlinx.coroutines.channels.*
 
 fun main() = runBlocking {
-//sampleStart
+//<span class="code-comment">sampleStart</span>
     var cur = numbersFrom(2)
     repeat(10) {
         val prime = cur.receive()
         println(prime)
         cur = filter(cur, prime)
     }
-    coroutineContext.cancelChildren() // cancel all children to let main finish
-//sampleEnd    
+    coroutineContext.cancelChildren() // <span class="code-comment">cancel all children to let main finish</span>
+//<span class="code-comment">sampleEnd</span>&#32;&#32;&#32;&#32;
 }
 
 fun CoroutineScope.numbersFrom(start: Int) = produce&lt;Int&gt; {
     var x = start
-    while (true) send(x++) // infinite stream of integers from start
+    while (true) send(x++) // <span class="code-comment">infinite stream of integers from start</span>
 }
 
 fun CoroutineScope.filter(numbers: ReceiveChannel&lt;Int&gt;, prime: Int) = produce&lt;Int&gt; {
@@ -156,43 +156,43 @@ fun CoroutineScope.filter(numbers: ReceiveChannel&lt;Int&gt;, prime: Int) = prod
 <p id="z7dygzm_70">Anyway, this is an extremely impractical way to find prime numbers. In practice, pipelines do involve some other suspending invocations (like asynchronous calls to remote services) and these pipelines cannot be built using <code class="code" id="z7dygzm_87">sequence</code>/<code class="code" id="z7dygzm_88">iterator</code>, because they do not allow arbitrary suspension, unlike <code class="code" id="z7dygzm_89">produce</code>, which is fully asynchronous.</p></section><section class="chapter"><h2 id="fan-out">Fan-out</h2>
 <p id="z7dygzm_90">Multiple coroutines may receive from the same channel, distributing work between themselves. Let us start with a producer coroutine that is periodically producing integers (ten numbers per second):</p>
 <pre><code class="language-kotlin">fun CoroutineScope.produceNumbers() = produce&lt;Int&gt; {
-    var x = 1 // start from 1
+    var x = 1 // <span class="code-comment">start from 1</span>
     while (true) {
-        send(x++) // produce next
-        delay(100) // wait 0.1s
+        send(x++) // <span class="code-comment">produce next</span>
+        delay(100) // <span class="code-comment">wait 0.1s</span>
     }
 }</code></pre>
 <p id="z7dygzm_92">Then we can have several processor coroutines. In this example, they just print their id and received number:</p>
 <pre><code class="language-kotlin">fun CoroutineScope.launchProcessor(id: Int, channel: ReceiveChannel&lt;Int&gt;) = launch {
     for (msg in channel) {
         println("Processor #$id received $msg")
-    }    
+    }&#32;&#32;&#32;&#32;
 }</code></pre>
 <p id="z7dygzm_94">Now let us launch five processors and let them work for almost a second. See what happens:</p>
 <pre><code class="language-kotlin">import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.*
 
 fun main() = runBlocking&lt;Unit&gt; {
-//sampleStart
+//<span class="code-comment">sampleStart</span>
     val producer = produceNumbers()
     repeat(5) { launchProcessor(it, producer) }
     delay(950)
-    producer.cancel() // cancel producer coroutine and thus kill them all
-//sampleEnd
+    producer.cancel() // <span class="code-comment">cancel producer coroutine and thus kill them all</span>
+//<span class="code-comment">sampleEnd</span>
 }
 
 fun CoroutineScope.produceNumbers() = produce&lt;Int&gt; {
-    var x = 1 // start from 1
+    var x = 1 // <span class="code-comment">start from 1</span>
     while (true) {
-        send(x++) // produce next
-        delay(100) // wait 0.1s
+        send(x++) // <span class="code-comment">produce next</span>
+        delay(100) // <span class="code-comment">wait 0.1s</span>
     }
 }
 
 fun CoroutineScope.launchProcessor(id: Int, channel: ReceiveChannel&lt;Int&gt;) = launch {
     for (msg in channel) {
         println("Processor #$id received $msg")
-    }    
+    }&#32;&#32;&#32;&#32;
 }</code></pre>
 <aside class="prompt" data-type="note" id="z7dygzm_96"><p id="z7dygzm_101">You can get the full code <a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-channel-06.kt" id="z7dygzm_102">here</a>.</p></aside><p id="z7dygzm_97">The output will be similar to the following one, albeit the processor ids that receive each specific integer may be different:</p>
 <pre><code class="language-none">Processor #2 received 1
@@ -219,15 +219,15 @@ Processor #3 received 10</code></pre>
 import kotlinx.coroutines.channels.*
 
 fun main() = runBlocking {
-//sampleStart
+//<span class="code-comment">sampleStart</span>
     val channel = Channel&lt;String&gt;()
     launch { sendString(channel, "foo", 200L) }
     launch { sendString(channel, "BAR!", 500L) }
-    repeat(6) { // receive first six
+    repeat(6) { // <span class="code-comment">receive first six</span>
         println(channel.receive())
     }
-    coroutineContext.cancelChildren() // cancel all children to let main finish
-//sampleEnd
+    coroutineContext.cancelChildren() // <span class="code-comment">cancel all children to let main finish</span>
+//<span class="code-comment">sampleEnd</span>
 }
 
 suspend fun sendString(channel: SendChannel&lt;String&gt;, s: String, time: Long) {
@@ -250,18 +250,18 @@ BAR!</code></pre></section><section class="chapter"><h2 id="buffered-channels">B
 import kotlinx.coroutines.channels.*
 
 fun main() = runBlocking&lt;Unit&gt; {
-//sampleStart
-    val channel = Channel&lt;Int&gt;(4) // create buffered channel
-    val sender = launch { // launch sender coroutine
+//<span class="code-comment">sampleStart</span>
+    val channel = Channel&lt;Int&gt;(4) // <span class="code-comment">create buffered channel</span>
+    val sender = launch { // <span class="code-comment">launch sender coroutine</span>
         repeat(10) {
-            println("Sending $it") // print before sending each element
-            channel.send(it) // will suspend when buffer is full
+            println("Sending $it") // <span class="code-comment">print before sending each element</span>
+            channel.send(it) // <span class="code-comment">will suspend when buffer is full</span>
         }
     }
-    // don't receive anything... just wait....
+    // <span class="code-comment">don't receive anything... just wait....</span>
     delay(1000)
-    sender.cancel() // cancel sender coroutine
-//sampleEnd    
+    sender.cancel() // <span class="code-comment">cancel sender coroutine</span>
+//<span class="code-comment">sampleEnd</span>&#32;&#32;&#32;&#32;
 }</code></pre>
 <aside class="prompt" data-type="note" id="z7dygzm_121"><p id="z7dygzm_130">You can get the full code <a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-channel-08.kt" id="z7dygzm_131">here</a>.</p></aside><p id="z7dygzm_122">It prints "sending" <span class="emphasis" id="z7dygzm_132">five</span> times using a buffered channel with capacity of <span class="emphasis" id="z7dygzm_133">four</span>:</p>
 <pre><code class="language-none">Sending 0
@@ -274,27 +274,27 @@ Sending 4</code></pre>
 <pre><code class="language-kotlin">import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.*
 
-//sampleStart
+//<span class="code-comment">sampleStart</span>
 data class Ball(var hits: Int)
 
 fun main() = runBlocking {
-    val table = Channel&lt;Ball&gt;() // a shared table
+    val table = Channel&lt;Ball&gt;() // <span class="code-comment">a shared table</span>
     launch { player("ping", table) }
     launch { player("pong", table) }
-    table.send(Ball(0)) // serve the ball
-    delay(1000) // delay 1 second
-    coroutineContext.cancelChildren() // game over, cancel them
+    table.send(Ball(0)) // <span class="code-comment">serve the ball</span>
+    delay(1000) // <span class="code-comment">delay 1 second</span>
+    coroutineContext.cancelChildren() // <span class="code-comment">game over, cancel them</span>
 }
 
 suspend fun player(name: String, table: Channel&lt;Ball&gt;) {
-    for (ball in table) { // receive the ball in a loop
+    for (ball in table) { // <span class="code-comment">receive the ball in a loop</span>
         ball.hits++
         println("$name $ball")
-        delay(300) // wait a bit
-        table.send(ball) // send the ball back
+        delay(300) // <span class="code-comment">wait a bit</span>
+        table.send(ball) // <span class="code-comment">send the ball back</span>
     }
 }
-//sampleEnd</code></pre>
+//<span class="code-comment">sampleEnd</span></code></pre>
 <aside class="prompt" data-type="note" id="z7dygzm_136"><p id="z7dygzm_142">You can get the full code <a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-channel-09.kt" id="z7dygzm_143">here</a>.</p></aside><p id="z7dygzm_137">The "ping" coroutine is started first, so it is the first one to receive the ball. Even though "ping" coroutine immediately starts receiving the ball again after sending it back to the table, the ball gets received by the "pong" coroutine, because it was already waiting for it:</p>
 <pre><code class="language-none">ping Ball(hits=1)
 pong Ball(hits=2)
@@ -307,31 +307,31 @@ pong Ball(hits=4)</code></pre>
 <pre><code class="language-kotlin">import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.*
 
-//sampleStart
+//<span class="code-comment">sampleStart</span>
 fun main() = runBlocking&lt;Unit&gt; {
-    val tickerChannel = ticker(delayMillis = 200, initialDelayMillis = 0) // create a ticker channel
+    val tickerChannel = ticker(delayMillis = 200, initialDelayMillis = 0) // <span class="code-comment">create a ticker channel</span>
     var nextElement = withTimeoutOrNull(1) { tickerChannel.receive() }
-    println("Initial element is available immediately: $nextElement") // no initial delay
+    println("Initial element is available immediately: $nextElement") // <span class="code-comment">no initial delay</span>
 
-    nextElement = withTimeoutOrNull(100) { tickerChannel.receive() } // all subsequent elements have 200ms delay
+    nextElement = withTimeoutOrNull(100) { tickerChannel.receive() } // <span class="code-comment">all subsequent elements have 200ms delay</span>
     println("Next element is not ready in 100 ms: $nextElement")
 
     nextElement = withTimeoutOrNull(120) { tickerChannel.receive() }
     println("Next element is ready in 200 ms: $nextElement")
 
-    // Emulate large consumption delays
+    // <span class="code-comment">Emulate large consumption delays</span>
     println("Consumer pauses for 300ms")
     delay(300)
-    // Next element is available immediately
+    // <span class="code-comment">Next element is available immediately</span>
     nextElement = withTimeoutOrNull(1) { tickerChannel.receive() }
     println("Next element is available immediately after large consumer delay: $nextElement")
-    // Note that the pause between `receive` calls is taken into account and next element arrives faster
+    // <span class="code-comment">Note that the pause between `receive` calls is taken into account and next element arrives faster</span>
     nextElement = withTimeoutOrNull(120) { tickerChannel.receive() }
     println("Next element is ready in 100ms after consumer pause in 300ms: $nextElement")
 
-    tickerChannel.cancel() // indicate that no more elements are needed
+    tickerChannel.cancel() // <span class="code-comment">indicate that no more elements are needed</span>
 }
-//sampleEnd</code></pre>
+//<span class="code-comment">sampleEnd</span></code></pre>
 <aside class="prompt" data-type="note" id="z7dygzm_149"><p id="z7dygzm_159">You can get the full code <a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-channel-10.kt" id="z7dygzm_160">here</a>.</p></aside><p id="z7dygzm_150">It prints following lines:</p>
 <pre><code class="language-none">Initial element is available immediately: kotlin.Unit
 Next element is not ready in 100 ms: null
@@ -341,5 +341,5 @@ Next element is available immediately after large consumer delay: kotlin.Unit
 Next element is ready in 100ms after consumer pause in 300ms: kotlin.Unit</code></pre>
 <p id="z7dygzm_152">Note that <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.channels/ticker.html" id="z7dygzm_161">ticker</a> is aware of possible consumer pauses and, by default, adjusts next produced element delay if a pause occurs, trying to maintain a fixed rate of produced elements.</p>
 <p id="z7dygzm_153">Optionally, a <code class="code" id="z7dygzm_162">mode</code> parameter equal to <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.channels/-ticker-mode/-f-i-x-e-d_-d-e-l-a-y/index.html" id="z7dygzm_163">TickerMode.FIXED_DELAY</a> can be specified to maintain a fixed delay between elements.</p></section></article>
-<nav class="chapter-switcher" aria-label="章节导航"><a href="../coroutine-context-and-dispatchers/english.html">← Coroutine context and dispatchers</a><a class="course-home" href="../english.html">Contents</a><a href="../exception-handling/english.html">Coroutine exceptions handling →</a></nav><footer class="source-credit"><p>原文由 JetBrains 与 Kotlin 贡献者维护。RIN III 于 2026 年 11 月 18 日翻译、润色并补充导读与自测；代码、输出及图中界面保留原貌。</p><p><a href="https://kotlinlang.org/docs/channels.html">Kotlin 官方原文</a> · <a href="../LICENSE-2.0.txt">Apache License 2.0</a></p></footer></main>
+<nav class="chapter-switcher" aria-label="章节导航"><a href="../coroutine-context-and-dispatchers/english.html">← Coroutine context and dispatchers</a><a class="course-home" href="../english.html">Contents</a><a href="../exception-handling/english.html">Coroutine exceptions handling →</a></nav><footer class="source-credit"><p>English source by JetBrains and Kotlin contributors.</p><p><a href="https://kotlinlang.org/docs/channels.html">Kotlin 官方原文</a> · <a href="../LICENSE-2.0.txt">Apache License 2.0</a></p></footer></main>
 </body></html>

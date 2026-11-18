@@ -3,88 +3,88 @@
 <head>
 <meta charset="utf-8"><script src="../../../theme.js"></script>
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Flow：连续到来的值｜RIN III</title>
-<meta name="description" content="下载进度会从 0 走到 100。用同一条数据管道比较重新生产、广播事件和保存当前状态三种行为。">
+<title>Flow｜RIN III</title>
+<meta name="description" content="Flow · 中文润色稿">
 <link rel="manifest" href="../../../manifest.webmanifest">
 <link rel="stylesheet" href="../../../reading/reader.css">
 <link rel="stylesheet" href="../../../theme.css">
 <link rel="stylesheet" href="../../../reading/_shared/theme-readers.css">
 <link rel="stylesheet" href="../../../reading/kotlin-coroutines-guide/course.css">
 </head><body><div class="reader-theme-control" data-theme-control></div>
-<nav class="site-nav"><a href="../index.html">← Kotlin 协程指南</a><a href="english.html">English</a><a href="https://kotlinlang.org/docs/coroutines-flow.html">Kotlin 原文 ↗</a></nav><main class="reader project-reader"><header class="chapter-header"><span class="chapter-kicker">Kotlin 协程指南 · 03 / 12</span><h1>Flow：连续到来的值</h1><p class="lead">下载进度会从 0 走到 100。用同一条数据管道比较重新生产、广播事件和保存当前状态三种行为。</p></header><nav class="chapter-switcher" aria-label="章节导航"><a href="../coroutines-cancellation/index.html">← 取消与超时</a><a class="course-home" href="../index.html">全部章节</a><a href="../coroutines-and-channels/index.html">实战：用协程和通道加载 GitHub 贡献者 →</a></nav><details class="source-details chapter-toc"><summary>本章目录</summary><ul><li><a href="#cold-flows">冷流</a></li><li><a href="#hot-flows">热流</a></li></ul></details><article class="translated-article"><p id="waoewo_3">挂起函数适合表达一次调用拿到一个结果。搜索建议、下载进度、聊天消息都会陆续到来，适合用 Flow 表达一串随时间产生的值。</p>
-<p id="waoewo_4">把流的生产、转换与收集接起来，就能逐步加载数据、响应事件，或实现订阅式接口。</p>
-<p id="waoewo_5">一条管道中有三个角色。</p>
+<nav class="site-nav"><a href="../index.html">← 全部章节</a><div class="version-links" aria-label="版本"><a href="index.html" aria-current="page">中文润色稿</a><a href="literal.html">严格译稿</a><a href="english.html">English</a></div></nav><main class="reader project-reader"><header class="chapter-header"><span class="chapter-kicker">3 / 12 · 中文润色稿</span><h1 id="coroutines-flow.md">Flow</h1></header><nav class="chapter-switcher" aria-label="章节导航"><a href="../coroutines-cancellation/index.html">← 取消与超时</a><a class="course-home" href="../index.html">全部章节</a><a href="../coroutines-and-channels/index.html">实战教程：用协程和通道加载贡献者 →</a></nav><details class="source-details chapter-toc"><summary>本章目录</summary><ul><li><a href="#cold-flows">冷流</a></li><li><a href="#hot-flows">热流</a></li></ul></details><article class="translated-article"><p id="waoewo_3">有的操作只需要返回一个结果，有的却会陆续产生好几个结果。挂起函数可以返回前一种结果；对于后一种，可以用 Flow 表示一串按顺序到来的值。每个值都可以等准备好了再发出。</p>
+<p id="waoewo_4">把 Flow 的操作串起来，可以逐步加载数据、响应一连串事件，或实现允许调用方订阅更新的 API。</p>
+<p id="waoewo_5">沿着一个值走一遍，看看在一条 Flow 处理链中，谁产生它、谁转换它、最后交给谁。</p>
 <ul class="list _bullet" id="waoewo_6">
-<li class="list__item" id="waoewo_17"><p id="waoewo_20">发射方负责产生并发出值。</p></li>
-<li class="list__item" id="waoewo_18"><p id="waoewo_22">中间操作符按需出现，接收上游的值，加工后返回一条新流。</p></li>
-<li class="list__item" id="waoewo_19"><p id="waoewo_24">收集方接收值并使用它。</p></li>
+<li class="list__item" id="waoewo_17"><p id="waoewo_20">发射者负责产生值，并把它发出去。</p></li>
+<li class="list__item" id="waoewo_18"><p id="waoewo_22">中间操作符可以省略。它接收上游的 Flow，处理其中的值，再返回一个新的 Flow。</p></li>
+<li class="list__item" id="waoewo_19"><p id="waoewo_24">收集者接收并使用传到末端的值。</p></li>
 </ul>
-<p id="waoewo_7">在下面的例子中，找出谁生产数字、谁改变数字、谁打印结果。</p>
-<pre><code class="language-kotlin">import kotlinx.coroutines.flow.*
+<p id="waoewo_7">以下是一个简单示例，展示了这些管道角色如何协同工作：</p>
+<aside class="learning-note"><strong>编者注</strong><p>先看下面第一个值怎样走完全程。0x4B 是十六进制的 75；toChar() 把它转成字符 K，collect 再把 K 填进输出字符串。后面的数走同样的三步。</p></aside><pre><code class="language-kotlin">import kotlinx.coroutines.flow.*
 
-//sampleStart
+//<span class="code-comment">sampleStart</span>
 suspend fun main() {
-    // The emitter produces values
+    // <span class="code-comment">发射方产生值</span>
     flowOf(0x4B, 0x6F, 0x74, 0x6C, 0x69, 0x6E)
-        // The intermediate operator consumes values,
-        // applies an operation, and returns another flow
+        // <span class="code-comment">中间操作符接收这些值，</span>
+        // <span class="code-comment">执行转换，并返回一条新流</span>
         .map { value -&gt; value.toChar() }
-        // The collector consumes the transformed values
+        // <span class="code-comment">收集者接收转换后的值</span>
         .collect { updatedValue -&gt;
             println("Say '$updatedValue'!")
         }
 }
-//sampleEnd</code></pre>
-<p id="waoewo_9">值从上游流向下游。一个中间操作符先收集上游的值，再将处理后的结果交给下游。上下游是相对位置，同一个操作符两头都连着别人。</p>
-<figure id="waoewo_10"><img alt="数据从发射方出发，经中间操作符流向收集方" src="../assets/flow-upstream-downstream.svg" width="700" height="194" loading="lazy"></figure><p id="waoewo_11">从「谁触发生产」看，Flow 可分两类。</p>
+//<span class="code-comment">sampleEnd</span></code></pre>
+<p id="waoewo_9">值从发射者一路走到收集者，这个方向叫作从上游到下游。站在一个中间操作符的位置看，它从上游收集值，处理后生成下游 Flow。这条新流又可以作为下一位收集者的上游。</p>
+<figure id="waoewo_10"><img alt="数据从发射方出发，经中间操作符流向收集方" src="../assets/flow-upstream-downstream.svg" width="700" height="194" loading="lazy"></figure><p id="waoewo_11">Kotlin 提供了以下 Flow 类型：</p>
 <ul class="list _bullet" id="waoewo_12">
-<li class="list__item" id="waoewo_28"><p id="waoewo_30"><a href="#cold-flows">冷流</a>在被收集时才开始工作，每个收集者都会独立运行一次上游。</p></li>
-<li class="list__item" id="waoewo_29"><p id="waoewo_33"><a href="#hot-flows">热流</a>让多个订阅者观察同一个来源，生产者与某一个订阅者的生命周期可以分开。</p></li>
+<li class="list__item" id="waoewo_28"><p id="waoewo_30"><a href="#cold-flows">冷流</a>在被收集时才开始产生值。同一个冷流如果有两个收集者，就会从头独立运行两次。</p></li>
+<li class="list__item" id="waoewo_29"><p id="waoewo_33"><a href="#hot-flows">热流</a>自己产生值。多个收集者接入后，收到的是同一个来源发出的值。</p></li>
 </ul>
-<aside class="prompt" data-type="tip" id="waoewo_13"><p id="waoewo_36">单元测试可使用 Turbine 收集 Flow，并断言它发出了哪些值、是否结束或失败。 <small class="source-refs"><a href="https://github.com/cashapp/turbine">Turbine library</a></small></p></aside><section class="chapter"><h2 id="cold-flows">冷流</h2>
-<p id="waoewo_38">冷流和序列一样，会把真正的工作推迟到有人需要结果时。 <small class="source-refs"><a href="https://kotlinlang.org/docs/sequences.html">sequences</a></small></p>
-<p id="waoewo_39">只构造冷流不会运行它的代码块。每新增一个收集者，这段代码就从头运行一次。</p>
-<section class="chapter"><h3 id="create-a-cold-flow">创建冷流</h3>
-<p id="waoewo_47">用 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/flow.html">flow()</a> 描述生产过程，在块内用 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-flow-collector/emit.html">emit()</a> 把值交给收集者。</p>
+<aside class="prompt" data-type="tip" id="waoewo_13"><p id="waoewo_36">可以用 <a href="https://github.com/cashapp/turbine">Turbine</a> 库测试 Kotlin Flow。它简化了单元测试中的收集与断言，包括检查发出的值、正常结束和失败。</p></aside><section class="chapter"><h2 id="cold-flows">冷流</h2>
+<p id="waoewo_38">与 <a href="https://kotlinlang.org/docs/sequences.html">Sequence</a> 一样，冷流也是惰性的。</p>
+<p id="waoewo_39">创建冷流时，写在构建器里的代码块还没运行。等有人来收集，代码块才会执行；再有一个收集者，就再执行一次。</p>
+<section class="chapter"><h3 id="create-a-cold-flow">创建一个冷流</h3>
+<p id="waoewo_47">要创建一个冷流，请使用 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/flow.html">flow()</a> 构建器。在其代码块内，使用 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-flow-collector/emit.html">emit()</a> 函数向收集者发出值：</p>
 <pre><code class="language-kotlin">import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 
-//sampleStart
+//<span class="code-comment">sampleStart</span>
 fun main() {
-    // Creates a flow
+    // <span class="code-comment">创建一条流</span>
     val pageFlow = flow {
         for (page in 1..3) {
             println("Loading page $page...")
 
-            // Emits each page as it is loaded
+            // <span class="code-comment">每加载一页，就发出这一页</span>
             emit("Page $page")
         }
     }
     println("Creating a cold flow doesn't run it!")
 }
-//sampleEnd</code></pre>
-<p id="waoewo_49">调用 <code>flow()</code> 得到 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-flow/">Flow&lt;T&gt;</a> 时，手里只有「怎样生产这些值」的定义。第一次收集才真正执行块内代码。 <small class="source-refs"><a href="#collect-a-cold-flow">collect it</a></small></p>
-<p id="waoewo_50">对于已经准备好的数据，还有更短的创建方式。</p>
+//<span class="code-comment">sampleEnd</span></code></pre>
+<p id="waoewo_49"><code>flow()</code> 返回 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-flow/">Flow&lt;T&gt;</a>，此时还没有执行传入的代码块。冷流像一份配方，规定了怎样生成值，真正开始<a href="#collect-a-cold-flow">收集</a>时才照着做。</p>
+<p id="waoewo_50">你还可以使用以下函数创建冷流：</p>
 <ul class="list _bullet" id="waoewo_51">
-<li class="list__item" id="waoewo_62"><p id="waoewo_64"><a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/flow-of.html">flowOf()</a> 根据给定的一组值创建流。</p></li>
-<li class="list__item" id="waoewo_63"><p id="waoewo_67">asFlow() 把整数区间等可迭代对象转换为流。 <small class="source-refs"><a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/as-flow.html">.asFlow()</a></small></p></li>
+<li class="list__item" id="waoewo_62"><p id="waoewo_64"><a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/flow-of.html">flowOf()</a>：根据提供的值创建一个 Flow。</p></li>
+<li class="list__item" id="waoewo_63"><p id="waoewo_67"><a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/as-flow.html">.asFlow()</a>：将现有的可迭代对象（如范围）转换为 Flow。</p></li>
 </ul>
-<p id="waoewo_52">看下面的例子。</p>
+<p id="waoewo_52">例如：</p>
 <pre><code class="language-kotlin">import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 
 fun main() {
-    // Creates a flow from provided values
+    // <span class="code-comment">用给定的值创建一条流</span>
     val predefinedPageFlow = flowOf("Page 1", "Page 2", "Page 3")
-    // Creates a flow from a range
+    // <span class="code-comment">从区间创建一条流</span>
     val generatedPageFlow = (1..3).asFlow()
 }</code></pre></section><section class="chapter"><h3 id="collect-a-cold-flow">收集冷流</h3>
-<p id="waoewo_70"><a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/collect.html">collect()</a> 触发上游执行。传入的 lambda 每次收到一个新值就运行一次。</p>
+<p id="waoewo_70">对冷流调用 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/collect.html">collect()</a>，上游才开始发出值。传给 <code>collect()</code> 的 lambda 会逐个收到这些值，你可以在里面处理它们。</p>
 <pre><code class="language-kotlin">import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import kotlin.time.Duration.Companion.milliseconds
 
-//sampleStart
+//<span class="code-comment">sampleStart</span>
 suspend fun main() {
     withContext(Dispatchers.Default) {
         val pageFlow = flow {
@@ -93,7 +93,7 @@ suspend fun main() {
                 emit("Page $page")
             }
         }
-        // Collects the flow with a lambda that receives each emitted page
+        // <span class="code-comment">收集这条流；每发出一页，就调用一次下面的 lambda</span>
         pageFlow.collect { page -&gt;
             println("Processing $page...")
             delay(100.milliseconds)
@@ -101,16 +101,16 @@ suspend fun main() {
         }
     }
 }
-//sampleEnd</code></pre>
-<p id="waoewo_72">同一条冷流被 <code>collect()</code> 两次，就会独立运行两遍。试着从输出中分辨哪几行属于同一轮。</p>
+//<span class="code-comment">sampleEnd</span></code></pre>
+<p id="waoewo_72">每次调用 <code>collect()</code> 都会从头运行整个冷流。即使多个收集者收集的是同一个冷流，每个人也会触发一次独立的执行。</p>
 <pre><code class="language-kotlin">import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import kotlin.time.Duration.Companion.milliseconds
 
-//sampleStart
+//<span class="code-comment">sampleStart</span>
 suspend fun main() {
     val pageFlow = flow {
-        // Reads the name of the current coroutine
+        // <span class="code-comment">读取当前协程的名称</span>
         val coroutineName = currentCoroutineContext()[CoroutineName]?.name
 
         println("Starting emissions in $coroutineName")
@@ -122,7 +122,7 @@ suspend fun main() {
     }
 
     withContext(Dispatchers.Default) {
-        // Launches a collector that processes each page slowly
+        // <span class="code-comment">启动一个缓慢处理每一页的收集者</span>
         launch(CoroutineName("a slow coroutine")) {
             pageFlow.collect {
                 println("Processing $it slowly")
@@ -131,7 +131,7 @@ suspend fun main() {
             }
         }
 
-        // Launches a collector that processes each page quickly
+        // <span class="code-comment">启动一个快速处理每一页的收集者</span>
         launch(CoroutineName("a fast coroutine")) {
             pageFlow.collect {
                 println("Processing $it quickly")
@@ -141,37 +141,37 @@ suspend fun main() {
         }
     }
 }
-//sampleEnd</code></pre>
-<p id="waoewo_74">例子用 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-coroutine-name/">CoroutineName</a> 标记两个收集协程，这样就能看出是哪一位收集者触发了哪一轮生产。 <small class="source-refs"><a href="../coroutine-context-and-dispatchers/index.html#naming-coroutines-for-debugging">debugging</a></small></p></section><section class="chapter"><h3 id="intermediate-flow-operators">在中间转换数据</h3>
-<p id="waoewo_83">中间操作符把上游变成一条新的下游流。一般的中间转换是冷的：即使上游是热流，这段转换也要等下游被收集后才开始处理。</p>
-<p id="waoewo_84"><a href="https://github.com/Kotlin/kotlinx.coroutines">kotlinx.coroutines</a> 提供了许多转换和筛选操作。若现成的操作不够用，也可以自己封装。 <small class="source-refs"><a href="https://kotlinlang.org/docs/coroutines-flow-operators.html">wide range of intermediate flow operators</a></small></p>
-<p id="waoewo_85">下面实现简化版 map：收集每个上游值，转换后再发给下游。 <small class="source-refs"><a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/map.html">.map()</a></small></p>
+//<span class="code-comment">sampleEnd</span></code></pre>
+<p id="waoewo_74">示例用 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-coroutine-name/">CoroutineName</a> 给每个协程命名。它通常用于<a href="../coroutine-context-and-dispatchers/index.html#naming-coroutines-for-debugging">调试</a>，在这里可以从输出辨认每一次收集是哪个协程发起的。</p></section><section class="chapter"><h3 id="intermediate-flow-operators">中间流操作符</h3>
+<p id="waoewo_83">中间操作符返回一条新的冷流。即使它接的是热流，在有人收集新流之前，这个操作符也不会开始处理上游的数据。</p>
+<p id="waoewo_84"><a href="https://github.com/Kotlin/kotlinx.coroutines">kotlinx.coroutines</a> 库提供了种类丰富的<a href="https://kotlinlang.org/docs/coroutines-flow-operators.html">中间 Flow 操作符</a>，用于转换和处理 Flow。当内置操作符无法提供所需行为时，你还可以自行定义操作符。</p>
+<p id="waoewo_85">以下是一个简化的自定义 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/map.html">.map()</a> 操作符示例，它会对每个发出的值应用转换：</p>
 <pre><code class="language-kotlin">import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 
-//sampleStart
-// A simplified custom implementation of the default .map() operator
+//<span class="code-comment">sampleStart</span>
+// <span class="code-comment">内置 map 操作符的一种简化实现</span>
 fun &lt;T, R&gt; Flow&lt;T&gt;.myMap(transform: suspend (value: T) -&gt; R): Flow&lt;R&gt; = flow {
-    // Collects values from the upstream flow
+    // <span class="code-comment">从上游收集值</span>
     this@myMap.collect { value -&gt;
-        // Transforms each collected value and emits the result
+        // <span class="code-comment">转换收集到的每个值，再发出转换结果</span>
         emit(transform(value))
     }
 }
 
 suspend fun main() {
-    // Creates a flow, applies the custom map operator, and collects the transformed values
+    // <span class="code-comment">创建流，应用自定义 map，再收集转换后的值</span>
     flowOf(1, 2, 3).myMap { 2 * it }.collect {
         println("Collecting $it")
     }
 }
-//sampleEnd</code></pre>
-<section class="chapter"><h4 id="call-suspending-functions-inside-a-flow-builder">在 flow 块中调用挂起函数</h4>
-<p id="waoewo_93"><code>flow()</code> 块允许调用一般的挂起函数，例如等待下一项数据。</p>
+//<span class="code-comment">sampleEnd</span></code></pre>
+<section class="chapter"><h4 id="call-suspending-functions-inside-a-flow-builder">在 Flow 构建器内部调用挂起函数</h4>
+<p id="waoewo_93">与 Sequence 不同，你可以在 <code>flow()</code> 构建器内部调用挂起函数：</p>
 <pre><code class="language-kotlin">import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 
-//sampleStart
+//<span class="code-comment">sampleStart</span>
 suspend fun loadPage(): Int {
     delay(100)
     return 3
@@ -182,131 +182,131 @@ suspend fun main() {
         emit(loadPage())
     }.collect {
         println(it)
-        // 3
+        // <span class="code-comment">3</span>
     }
 }
-//sampleEnd</code></pre>
-<p id="waoewo_95">它要求 <code>emit()</code> 发生在这个块相同的协程上下文中。另起协程，或在 <code>withContext()</code> 切换到另一上下文后直接 emit，都会违反这项约束。</p>
+//<span class="code-comment">sampleEnd</span></code></pre>
+<p id="waoewo_95"><code>flow()</code> 要求 <code>emit()</code> 在运行代码块的那个协程上下文中调用。别在块内另起一个协程发值，也别先用 <code>withContext()</code> 切换上下文再发值。</p>
 <pre><code class="language-kotlin">import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 
-//sampleStart
+//<span class="code-comment">sampleStart</span>
 suspend fun main() {
-    // This fails with an exception!
+    // <span class="code-comment">这里会抛出异常！</span>
     flow {
-        // Changes the coroutine context with withContext()
+        // <span class="code-comment">用 withContext() 切换协程上下文</span>
         withContext(Dispatchers.IO) {
             emit('a')
         }
-    }.collect { 
+    }.collect {&#32;
         println("This never prints")
     }
 }
-//sampleEnd</code></pre>
-<p id="waoewo_97">这是 <code>flow()</code> 构建器的约定。</p>
-<p id="waoewo_98">想换一个上下文运行上游，用 flowOn()。 <small class="source-refs"><a href="#change-the-coroutine-context-of-a-cold-flow-with-flowon">change it with the .flowOn() operator</a></small></p>
-<p id="waoewo_99">想从多个协程并发发送值，用 <a href="#emit-values-concurrently-with-channelflow">channelFlow()</a>。</p></section><section class="chapter"><h4 id="change-the-coroutine-context-of-a-cold-flow-with-flowon">用 flowOn() 移动上游</h4>
-<p id="waoewo_110">默认情况下，冷流在收集者的上下文中运行。</p>
-<p id="waoewo_111">flowOn() 改变它前面的上游上下文，下游仍在调用方的上下文中执行。沿着管道寻找 flowOn 的位置，就能判断它影响哪部分代码。 <small class="source-refs"><a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/flow-on.html">.flowOn()</a></small></p>
-<p id="waoewo_112">下面用日志对照发射与收集的位置。</p>
+//<span class="code-comment">sampleEnd</span></code></pre>
+<p id="waoewo_97">此限制适用于 <code>flow()</code> 构建器。</p>
+<p id="waoewo_98">如果需要让上游 Flow 在不同的协程上下文中运行，可以使用 <a href="#change-the-coroutine-context-of-a-cold-flow-with-flowon">.flowOn()</a> 操作符更改上下文。</p>
+<p id="waoewo_99">或者，你可以使用 <a href="#emit-values-concurrently-with-channelflow">channelFlow()</a> 从多个协程中发出值。</p></section><section class="chapter"><h4 id="change-the-coroutine-context-of-a-cold-flow-with-flowon">使用 <code>.flowOn()</code> 更改冷流的协程上下文</h4>
+<p id="waoewo_110">默认情况下，冷流与收集者在同一协程上下文中运行。</p>
+<p id="waoewo_111">想换个上下文来生成值，可以用 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/flow-on.html">.flowOn()</a>。看它写在哪个位置：它只把前面的上游操作移到指定上下文，后面的下游操作仍在调用者的上下文运行。</p>
+<p id="waoewo_112">以下是一个冷流的示例，它在某个协程上下文中发射值，并在另一个协程上下文中收集这些值：</p>
 <pre><code class="language-kotlin">import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 
-//sampleStart
+//<span class="code-comment">sampleStart</span>
 suspend fun main() {
     withContext(Dispatchers.Default + CoroutineName("downstream")) {
         flow {
             val coroutineName = currentCoroutineContext()[CoroutineName]?.name
 
-            // Emits in the coroutine context applied with .flowOn()
+            // <span class="code-comment">在 flowOn() 指定的上下文中发射</span>
             println("Emitting '1' in $coroutineName")
-            // Emitting '1' in upstream
+            // <span class="code-comment">上游正在发出 1</span>
             emit(1)
 
-        // Changes the coroutine context of the upstream flow
+        // <span class="code-comment">改变上游流的协程上下文</span>
         }.flowOn(Dispatchers.IO + CoroutineName("upstream"))
             .collect {
             val coroutineName = currentCoroutineContext()[CoroutineName]?.name
 
-            // Collects in the caller's coroutine context
+            // <span class="code-comment">在调用者的协程上下文中收集</span>
             println("Collecting '$it' in $coroutineName")
-            // Collecting '1' in downstream
+            // <span class="code-comment">下游正在收集 1</span>
         }
     }
 }
-//sampleEnd</code></pre></section></section><section class="chapter"><h3 id="handle-exceptions-in-flows">Flow 中的异常</h3>
-<p id="waoewo_118">发射端和收集端都可能抛异常。</p>
-<p id="waoewo_119">若没有处理，收集过程中的异常最终会从 <code>collect()</code> 调用处抛出。同步交付一个值时，下游的失败也可能从上游的 emit() 返回。</p>
-<p id="waoewo_120">可以用 try/catch 观察这种传播过程。</p>
+//<span class="code-comment">sampleEnd</span></code></pre></section></section><section class="chapter"><h3 id="handle-exceptions-in-flows">在 Flow 中处理异常</h3>
+<p id="waoewo_118">发射者和收集者都可能抛出异常。</p>
+<p id="waoewo_119">收集 Flow 时，如果异常没有得到处理，它会从收集者沿上游传回，最终抛给调用 <code>collect()</code> 的代码。</p>
+<p id="waoewo_120">你可以通过将 <code>collect()</code> 函数包裹在 <code>try-catch</code> 代码块中来处理此类异常，例如：</p>
 <pre><code class="language-kotlin">import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 
 class MyFlowException(message: String) : Exception(message)
 
-//sampleStart
+//<span class="code-comment">sampleStart</span>
 suspend fun main() {
     val myFlow = flow {
         try {
-            // The emit() function calls the lambda passed to collect()
+            // <span class="code-comment">emit() 会调用传给 collect() 的 lambda</span>
             emit('a')
         } catch (e: MyFlowException) {
             println("Collector threw $e")
 
-            // Rethrows the downstream exception
+            // <span class="code-comment">重新抛出下游异常</span>
             throw e
         }
     }
-    // Wraps flow collection in try-catch
+    // <span class="code-comment">用 try/catch 包住流的收集过程</span>
     try {
         myFlow.collect {
-            // Throws an exception from the collect() lambda
+            // <span class="code-comment">从 collect() 的 lambda 中抛出异常</span>
             throw MyFlowException("Can't process '$it'!")
         }
     } catch (e: MyFlowException) {
         println("Flow collection failed with $e")
-        // Rethrows the exception to the caller
+        // <span class="code-comment">把异常重新抛给调用者</span>
         throw e
     }
 }
-//sampleEnd</code></pre>
-<p id="waoewo_122">例子里的收集者刚收到值就失败，于是 flow 块在调用 emit 的地方接到了下游异常。</p>
-<p id="waoewo_123">在构建器里捕获这种异常时，应重新抛出，保留异常透明性，让调用 <code>collect()</code> 的一方有机会处理它。</p>
-<section class="chapter"><h4 id="use-the-catch-operator-to-handle-upstream-exceptions">用 catch() 处理上游失败</h4>
-<p id="waoewo_133">如果希望异常到达收集者前已经得到处理，可以在流上添加 catch()。 <small class="source-refs"><a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/catch.html">.catch()</a></small></p>
-<p id="waoewo_134">它可以处理自己上游的异常，例如用 <code>emit()</code> 发送一个可用的替代值。</p>
+//<span class="code-comment">sampleEnd</span></code></pre>
+<p id="waoewo_122">本例中，当收集者从 <code>emit()</code> 函数接收值时会抛出异常。<code>flow()</code> 构建器捕获了此下游异常。</p>
+<p id="waoewo_123">如果 flow 构建器捕获了收集者抛出的异常，应把它重新抛出，让调用 <code>collect()</code> 的代码有机会处理。流保留了下游失败的原貌，这叫作异常透明性。</p>
+<section class="chapter"><h4 id="use-the-catch-operator-to-handle-upstream-exceptions">使用 <code>.catch()</code> 操作符处理上游异常</h4>
+<p id="waoewo_133">要处理在异常到达收集者之前的异常，请使用 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/catch.html">.catch()</a> 操作符。</p>
+<p id="waoewo_134">你可以使用 <code>.catch()</code> 操作符来处理来自上游 Flow 的异常，例如通过 <code>emit()</code> 函数向下游发出备用值：</p>
 <pre><code class="language-kotlin">import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 
-//sampleStart
+//<span class="code-comment">sampleStart</span>
 suspend fun main() {
     flow {
         emit("a")
         emit("b")
 
-        // Throws an exception from the upstream flow
+        // <span class="code-comment">从上游流抛出异常</span>
         throw UnsupportedOperationException(
             "I am tired of listing letters"
         )
     }.catch { upstreamException -&gt;
         println("Upstream completed with $upstreamException!")
 
-        // Emits a fallback value downstream
+        // <span class="code-comment">向下游发出一个备用值</span>
         emit("Upstream terminated with an exception!")
     }.collect {
         println("Got '$it'")
     }
 }
-//sampleEnd</code></pre>
-<p id="waoewo_136">例子先发出几个正常值，再抛异常。catch() 随后发出字符串 Upstream terminated with an exception!，下游可以收到这最后一个值。</p>
-<p id="waoewo_137">只处理预期且可恢复的异常，对意外失败应继续抛出。</p>
-<p id="waoewo_138">下面让同一条流报告数据加载的进度与结果。</p>
+//<span class="code-comment">sampleEnd</span></code></pre>
+<p id="waoewo_136">本例中，上游 Flow 在抛出异常之前会先发出一些值。<code>.catch()</code> 操作符会处理该异常，并发出 <code>"Upstream terminated with an exception!"</code> 作为备用值。</p>
+<p id="waoewo_137">当预计某个 Flow 在正常运行过程中会抛出某些异常时，应在 <code>.catch()</code> 中处理可恢复的异常，并将任何意外异常重新抛出。</p>
+<p id="waoewo_138">以下是一个 Flow 加载数据并报告其进度的示例：</p>
 <pre><code class="language-kotlin">import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import kotlin.random.*
 import java.io.IOException
 import kotlin.time.Duration.Companion.milliseconds
 
-//sampleStart
+//<span class="code-comment">sampleStart</span>
 sealed interface LoadingState {
     sealed interface Terminal: LoadingState
     object Started: LoadingState
@@ -330,10 +330,10 @@ fun loadBlob(url: String) = flow {
 }.catch { e -&gt;
     println("Loading data failed with $e")
     if (e is IOException) {
-        // Handles an expected exception
+        // <span class="code-comment">处理预期内的异常</span>
         emit(LoadingState.Failed)
     } else {
-        // Rethrows unexpected exceptions, so the collect() fails with them
+        // <span class="code-comment">重新抛出意料之外的异常，让 collect() 将失败传给调用者</span>
         throw e
     }
 }
@@ -343,9 +343,9 @@ suspend fun main() {
         println("Got '$it'")
     }
 }
-//sampleEnd</code></pre>
-<p id="waoewo_140">对预期的加载失败，catch() 发出表示失败的替代状态；其余异常重新抛出，由调用 <code>collect()</code> 的一方决定怎么处理。</p>
-<p id="waoewo_141">catch() 看不到它下游的收集者所抛的异常。如果 collect 的 lambda 出错，可在 <code>collect()</code> 调用外包一层 try/catch。</p>
+//<span class="code-comment">sampleEnd</span></code></pre>
+<p id="waoewo_140">本例中，如果加载因预期异常而失败，<code>.catch()</code> 操作符会使用 <code>emit()</code> 函数发出一个备用状态。对于意外异常，请在 <code>.catch()</code> 操作符中重新抛出它们。这样，<code>collect()</code> 函数的调用者就能接收到 Flow 未处理的异常。</p>
+<p id="waoewo_141"><code>.catch()</code> 操作符不处理由收集者抛出的异常。如果传递给 <code>collect()</code> 的 lambda 表达式抛出异常，请在 <code>collect()</code> 函数外使用 <code>try-catch</code> 代码块进行处理：</p>
 <pre><code class="language-kotlin">import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 
@@ -357,12 +357,12 @@ suspend fun main() {
             } catch (e: IllegalArgumentException) {
                 println("Collector doesn't support character '$char': $e")
 
-                // Rethrows the downstream exception
+                // <span class="code-comment">重新抛出下游异常</span>
                 throw e
             }
         }
     }.catch { e -&gt;
-        // Doesn't run because the exception happens downstream
+        // <span class="code-comment">异常发生在下游，因此这里不会执行</span>
         println("Upstream threw an exception: $e")
     }
 
@@ -371,13 +371,13 @@ suspend fun main() {
             require(!it.isDigit()) { "Digits are not allowed!" }
         }
     } catch (e: IllegalArgumentException) {
-        // Handles the exception from the collect() lambda
+        // <span class="code-comment">处理 collect() 的 lambda 抛出的异常</span>
         println("Flow collection failed with $e")
     }
 }</code></pre>
-<p id="waoewo_143">如果想让逐项处理中的失败由 catch() 接管，把这段处理移到它前面的 onEach()。 <small class="source-refs"><a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/on-each.html">.onEach()</a></small></p>
-<p id="waoewo_144">onEach() 先处理值，再把值交给下游。它若失败，后面的 catch() 可以处理，随后这一轮流结束，原序列不会从下一项继续。</p>
-<p id="waoewo_145">看下面的例子。</p>
+<p id="waoewo_143">注意 <code>.catch()</code> 在哪一侧。直接写在 <code>collect()</code> 里的处理逻辑位于它的下游，抛错时它接不到。若要让 <code>.catch()</code> 处理这段逐值执行的逻辑，可以把逻辑移到 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/on-each.html">.onEach()</a>，并把 .onEach() 写在 <code>.catch()</code> 前面。</p>
+<p id="waoewo_144"><code>.onEach()</code> 操作符会在每个值被向下游输出之前执行传入的 lambda。如果 <code>.catch()</code> 处理了来自 <code>.onEach()</code> 的异常，则 Flow 将完成执行且不会输出下一个值：</p>
+<p id="waoewo_145">例如：</p>
 <pre><code class="language-kotlin">import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import kotlin.random.*
@@ -386,7 +386,7 @@ import kotlin.time.Duration.Companion.milliseconds
 
 suspend fun main() {
     flowOf('a', 'o', '5', 'c')
-        // Runs before each value is emitted downstream
+        // <span class="code-comment">每个值向下游发出前都会执行</span>
         .onEach {
             require(!it.isDigit()) { "Digits are not allowed!" }
             println("Got '$it'")
@@ -396,11 +396,11 @@ suspend fun main() {
         }
         .collect()
 }</code></pre>
-<p id="waoewo_147">当 <code>require()</code> 检查到 5 并失败时，onEach() 位于 catch() 上游，因此异常会被它捕获。</p></section><section class="chapter"><h4 id="restart-the-upstream-flow-after-an-exception">失败后重新收集</h4>
-<p id="waoewo_178">网络短暂断开等故障可能恢复。retry() 可以在失败后让上游重新开始。 <small class="source-refs"><a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/retry.html">.retry()</a></small></p>
-<p id="waoewo_179">retry() 的判断函数查看异常，返回 <code>true</code> 才重试，并受次数上限约束。retry(3) 表示首次失败后最多再试三次。</p>
-<p id="waoewo_180">判断返回 <code>false</code> 时，停止重试并继续抛出异常。</p>
-<aside class="prompt" data-type="note" id="waoewo_181"><p id="waoewo_191">retryWhen() 还可以查看尝试次数，并在重试前向下游发出状态。 <small class="source-refs"><a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/retry-when.html">.retryWhen()</a></small></p></aside><p id="waoewo_182">下面的例子只对 <code>IOException</code> 进行重试，最多三次。</p>
+<p id="waoewo_147">示例把 <code>.onEach()</code> 放在 <code>.catch()</code> 的上游。因此，当 <code>require()</code> 对字符 <code>'5'</code> 的检查失败时，异常会交给 <code>.catch()</code> 处理。</p></section><section class="chapter"><h4 id="restart-the-upstream-flow-after-an-exception">异常发生后重启上游流程</h4>
+<p id="waoewo_178">某些操作可能会暂时失败，例如网络请求因连接中断而失败。对于这些情况，你可以使用 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/retry.html">.retry()</a> 操作符在异常发生后重启上游 Flow。</p>
+<p id="waoewo_179"><code>.retry()</code> 收到异常后会检查传入的 lambda。返回 <code>true</code>，就从头再收集一次上游，直到达到指定的重试次数。例如 <code>.retry(3)</code> 允许首次失败后最多再试三次。</p>
+<p id="waoewo_180">如果 lambda 返回 <code>false</code>，<code>.retry()</code> 将停止重试并重新抛出异常。</p>
+<aside class="prompt" data-type="note" id="waoewo_181"><p id="waoewo_191">若需更精细地控制重试逻辑，请使用 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/retry-when.html">.retryWhen()</a> 操作符。与 <code>.retry()</code> 类似，它会接收异常，但还会接收当前重试次数，并且可以在重试前发出值。</p></aside><p id="waoewo_182">下例在发生 <code>IOException</code> 后重新尝试加载，最多重试三次。</p>
 <pre><code class="language-kotlin">import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import kotlin.random.*
@@ -408,7 +408,7 @@ import java.io.IOException
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
-//sampleStart
+//<span class="code-comment">sampleStart</span>
 sealed interface LoadingState {
     sealed interface Terminal: LoadingState
     object Started: LoadingState
@@ -431,12 +431,12 @@ fun loadBlob(url: String) = flow {
     emit(LoadingState.Done)
 }.retry(3) { e -&gt;
     if (e is IOException) {
-        // This is an expected error
-        // Waits for one second before retrying
+        // <span class="code-comment">这里预期会报错</span>
+        // <span class="code-comment">等一秒后再重试</span>
         delay(1.seconds)
         true
     } else {
-        // Stops retrying and rethrows unexpected exceptions
+        // <span class="code-comment">遇到意料之外的异常，停止重试并重新抛出</span>
         false
     }
 }
@@ -446,17 +446,17 @@ suspend fun main() {
         println("Got $it")
     }
 }
-//sampleEnd</code></pre></section></section><section class="chapter"><h3 id="flow-cancellation">停止收集</h3>
-<p id="waoewo_196">当请求超时或结果已用不上，就可以停止收集。</p>
-<p id="waoewo_197">冷流的这次收集归调用 <code>collect()</code> 的协程管理。取消这个协程，它驱动的收集过程以及相应上游工作也会停止。</p>
-<p id="waoewo_198">可以通过收集协程的 <code>Job</code> 调用 <code>cancel()</code>。</p>
+//<span class="code-comment">sampleEnd</span></code></pre></section></section><section class="chapter"><h3 id="flow-cancellation">Flow 取消</h3>
+<p id="waoewo_196">一旦不再需要结果，例如请求已超时，就可以用取消来结束收集。</p>
+<p id="waoewo_197">收集 Flow 的工作属于调用 <code>collect()</code> 的那个协程。取消这个协程，收集就会停止，上游 Flow 也会被取消。</p>
+<p id="waoewo_198">要停止收集，在收集协程的 <code>Job</code> 上调用 <code>cancel()</code>。</p>
 <pre><code class="language-kotlin">import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import kotlin.random.*
 import java.io.IOException
 import kotlin.time.Duration.Companion.milliseconds
 
-//sampleStart
+//<span class="code-comment">sampleStart</span>
 val myFlow = flow {
     var i = 0
     try {
@@ -488,22 +488,22 @@ suspend fun main() {
         }
         delay(100.milliseconds)
 
-        // Cancels the coroutine that collects the flow
+        // <span class="code-comment">取消收集这条流的协程</span>
         job.cancel()
     }
 }
-//sampleEnd</code></pre>
-<p id="waoewo_200">也可以只结束这次上游收集：在收集逻辑中抛出专用的 <code>CancellationException</code>，并在本次操作边界处理它，使外层协程能继续工作。</p>
-<p id="waoewo_201">take() 利用类似机制取够就停。例如 take(3) 只向下游交付前三个值。 <small class="source-refs"><a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/take.html">.take()</a></small></p>
-<p id="waoewo_202">下面给出 take 的简化实现。</p>
+//<span class="code-comment">sampleEnd</span></code></pre>
+<p id="waoewo_200">收集者还可以在收集协程保持活动状态时取消上游 Flow。要实现这一点，只需从收集者抛出一个 <code>CancellationException</code>。</p>
+<p id="waoewo_201"><a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/take.html">.take()</a> 操作符利用这一行为，在收集到固定数量的值后停止收集。例如，<code>.take(3)</code> 仅从上游 Flow 中收集前三个值，然后取消该 Flow。</p>
+<p id="waoewo_202">以下是一个使用简化版 <code>.take()</code> 操作符的示例：</p>
 <pre><code class="language-kotlin">import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import kotlin.random.*
 import java.io.IOException
 import kotlin.time.Duration.Companion.milliseconds
 
-//sampleStart
-// Defines a simplified version of the default .take() operator
+//<span class="code-comment">sampleStart</span>
+// <span class="code-comment">实现内置 take 操作符的简化版本</span>
 fun &lt;T&gt; Flow&lt;T&gt;.myTake(count: Int): Flow&lt;T&gt; = flow {
     require(count &gt; 0)
     val cancellationException = CancellationException()
@@ -513,16 +513,16 @@ fun &lt;T&gt; Flow&lt;T&gt;.myTake(count: Int): Flow&lt;T&gt; = flow {
             emit(it)
             --elementsRemaining
             if (elementsRemaining == 0) {
-                // Cancels the upstream flow after the requested number of values
+                // <span class="code-comment">取得指定数量的值后，停止收集上游</span>
                 throw cancellationException
             }
         }
     } catch (e: Throwable) {
         if (e === cancellationException) {
-            // Handles the CancellationException used to cancel the upstream flow
-            // Completes the flow after the set number of values in .myTake()
+            // <span class="code-comment">处理用于停止上游收集的 CancellationException</span>
+            // <span class="code-comment">myTake() 取足指定数量的值后结束这次收集</span>
         } else {
-            // Rethrows unexpected exceptions
+            // <span class="code-comment">重新抛出意料之外的异常</span>
             throw e
         }
     }
@@ -533,32 +533,32 @@ suspend fun main() {
         println("Got $it")
     }
 }
-//sampleEnd</code></pre>
-<p id="waoewo_204">myTake() 逐个发出值，达到目标数量后用取消异常终止上游。观察异常在哪里被处理，就能区分「截断流」和「取消整个协程」。</p></section><section class="chapter"><h3 id="emit-values-concurrently-with-channelflow">用 <code>channelFlow()</code> 并发生产</h3>
-<p id="waoewo_216">如果只有一个协程发射，<code>flow()</code> 简洁高效。要同时从多个来源加载并逐步交付结果，则可选用 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/channel-flow.html">channelFlow()</a>。</p>
-<p id="waoewo_217"><code>channelFlow()</code> 创建的仍是冷流，但内部用通道接收多个协程的值。生产端改用 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.channels/-send-channel/send.html">send()</a>。</p>
-<p id="waoewo_218">下面的简化版 merge 启动两个收集协程，各自把收到的值送进同一条下游流。 <small class="source-refs"><a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/merge.html">.merge()</a></small></p>
+//<span class="code-comment">sampleEnd</span></code></pre>
+<p id="waoewo_204">本例中，<code>.myTake()</code> 函数会从上游 Flow 发出值，直到所有请求的值都被发出为止。然后它抛出一个 <code>CancellationException</code> 来取消上游 Flow。</p></section><section class="chapter"><h3 id="emit-values-concurrently-with-channelflow">使用 <code>channelFlow()</code> 并发地发出值</h3>
+<p id="waoewo_216">只有一个协程负责发值时，<code>flow()</code> 简单而高效。多个协程需要同时向同一个 Flow 交付结果时，可以改用 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/channel-flow.html">channelFlow()</a>。例如，同时从几个来源加载数据，哪个先完成就先报告哪个。</p>
+<p id="waoewo_217"><a href="../channels/index.html">channel</a>Flow() 构建器会创建一个冷流，该 Flow 使用通道从多个协程发送值。在构建器内部，请使用 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.channels/-send-channel/send.html">send()</a> 函数代替 <code>emit()</code> 函数来生成值。</p>
+<p id="waoewo_218">下例实现了简化版 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/merge.html">.merge()</a>。它用 <code>channelFlow()</code> 并发收集两个 Flow，再把收到的值发出去。</p>
 <pre><code class="language-kotlin">import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import kotlin.random.*
 import java.io.IOException
 import kotlin.time.Duration.Companion.milliseconds
 
-//sampleStart
-// Defines a simplified version of the default .merge() operator
+//<span class="code-comment">sampleStart</span>
+// <span class="code-comment">实现内置 merge 操作符的简化版本</span>
 fun &lt;T&gt; Flow&lt;T&gt;.myMerge(other: Flow&lt;T&gt;): Flow&lt;T&gt; = channelFlow {
-    // CoroutineScope and SendChannel are available as receivers here
-    // Launches a coroutine that collects the receiver flow
+    // <span class="code-comment">此处可使用 CoroutineScope 和 SendChannel 两个接收者</span>
+    // <span class="code-comment">启动协程，收集接收者所代表的流</span>
     launch {
-        // Collects the receiver flow
+        // <span class="code-comment">收集作为接收者的那条流</span>
         this@myMerge.collect {
             send(it)
         }
     }
     launch {
-        // Launches a coroutine that collects the other flow
+        // <span class="code-comment">启动协程，收集另一条流</span>
         other.collect {
-            // Calls SendChannel.send
+            // <span class="code-comment">调用 SendChannel.send</span>
             send(it)
         }
     }
@@ -569,17 +569,17 @@ suspend fun main() {
     val flow2 = (6..9).asFlow().onEach { delay(50.milliseconds) }
     flow1.myMerge(flow2).collect { println(it) }
 }
-//sampleEnd</code></pre>
-<p id="waoewo_220"><code>channelFlow()</code> 默认有缓冲区，生产者可以先于收集者发送一批值；默认容量通常为 64。满了以后，send() 会挂起，等收集者腾出空位。</p>
-<p id="waoewo_221">用 buffer() 调整容量。例如 buffer(12) 最多可预存十二个值；buffer(0) 表示没有缓冲，每次交付都需要有接收者接手。 <small class="source-refs"><a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/buffer.html">.buffer()</a></small></p>
-<p id="waoewo_222">看下面的例子。</p>
+//<span class="code-comment">sampleEnd</span></code></pre>
+<p id="waoewo_220"><code>channelFlow()</code> 内部有一条带缓冲的通道。收集者还没处理完，生产者可以先把后面的值发进缓冲区。默认最多容纳 64 个值。缓冲区满后，发送会挂起，等有空位时再继续。</p>
+<p id="waoewo_221">你可以使用 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/buffer.html">.buffer()</a> 操作符更改缓冲区容量。例如，<code>.buffer(12)</code> 允许生产者向收集者提前发送最多 12 个值，而 <code>.buffer(0)</code> 则移除了缓冲区，因此每个值仅在收集者能够接收时才会被发送。</p>
+<p id="waoewo_222">例如：</p>
 <pre><code class="language-kotlin">import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import kotlin.random.*
 import java.io.IOException
 import kotlin.time.Duration.Companion.milliseconds
 
-//sampleStart
+//<span class="code-comment">sampleStart</span>
 suspend fun main() {
     val oneHundredNumbers = channelFlow {
         repeat(100) {
@@ -588,36 +588,36 @@ suspend fun main() {
         }
     }
 
-    // Uses the default buffer capacity
+    // <span class="code-comment">使用默认缓冲容量</span>
     oneHundredNumbers.collect {
         println("Processing $it")
         delay(10.milliseconds)
     }
-  
-    // Removes the buffer so sending and processing interleave from the start
+&#32;&#32;
+    // <span class="code-comment">移除缓冲，让发送和处理从一开始就交替进行</span>
     oneHundredNumbers.buffer(0).collect {
         println("Processing $it")
         delay(10.milliseconds)
     }
 }
-//sampleEnd</code></pre>
-<p id="waoewo_224">例子分别收集使用默认容量的 <code>oneHundredNumbers</code>，以及经 buffer(0) 配置的同一条流。</p>
-<p id="waoewo_225">使用默认缓冲时，开始会连续看到 <code>Sending</code>，缓冲区满后，发送和 <code>Processing</code> 日志才逐渐交错。</p>
-<p id="waoewo_226">改成 buffer(0) 后，每次发送都得等接收方接手，交错会更早出现。</p></section></section><section class="chapter"><h2 id="hot-flows">热流</h2>
-<p id="waoewo_253">热流让多个订阅者接入同一个来源，每加入一个人无需重新运行一次生产逻辑。是否在没有订阅者时继续生产，取决于生产者和共享策略。</p>
-<p id="waoewo_254">热流的收集者也称为订阅者。</p>
-<p id="waoewo_255">聊天消息、用户操作、界面状态等更新，往往需要多个组件同时观察，适合用热流共享。</p>
-<p id="waoewo_256">Kotlin 提供两种常见热流。</p>
+//<span class="code-comment">sampleEnd</span></code></pre>
+<p id="waoewo_224">本例中，<code>oneHundredNumbers</code> Flow 使用默认缓冲区容量，而 <code>oneHundredNumbers</code>.buffer(0) Flow 则没有缓冲区。</p>
+<p id="waoewo_225">在默认缓冲区容量的情况下，生产者会快速发送值，直到缓冲区已满。之后，<code>send()</code> 会暂停，直到缓冲区有空闲空间，因此 <code>Sending</code> 和 <code>Processing</code> 消息开始交错。</p>
+<p id="waoewo_226">在 <code>.buffer(0)</code> 的情况下，每次 <code>send()</code> 调用都会等待直到收集者能够接收该值，因此 <code>Sending</code> 和 <code>Processing</code> 从一开始就交错出现。</p></section></section><section class="chapter"><h2 id="hot-flows">热流</h2>
+<p id="waoewo_253">热流是共享流，其值输出与收集者无关。即使没有活跃的收集者，它们也会持续发出值；多个收集者可以从已活跃的流中收集相同的输出，而无需启动新的执行。</p>
+<p id="waoewo_254">热流的收集者被称为订阅者（subscriber）。</p>
+<p id="waoewo_255">当应用程序的多个部分需要响应同一条更新流（例如传入的聊天消息、用户操作或 UI 状态变化）时，可以使用热流。</p>
+<p id="waoewo_256">Kotlin 提供了两种热流类型：</p>
 <ul class="list _bullet" id="waoewo_257">
-<li class="list__item" id="waoewo_264"><p id="waoewo_266"><a href="#create-a-sharedflow">SharedFlow</a> 把事件广播给多个订阅者，适合消息和通知。</p></li>
-<li class="list__item" id="waoewo_265"><p id="waoewo_269"><a href="#create-a-stateflow">StateFlow</a> 是始终保存当前值的特殊 <code>SharedFlow</code>，适合表示随时间变化的状态。</p></li>
+<li class="list__item" id="waoewo_264"><p id="waoewo_266"><a href="#create-a-sharedflow">SharedFlow</a> 向多个订阅者广播值。当需要广播随时间发生的事件（例如消息或通知）时，请使用它。</p></li>
+<li class="list__item" id="waoewo_265"><p id="waoewo_269"><a href="#create-a-stateflow">StateFlow</a> 是一种特殊的 <code>SharedFlow</code>，它始终保持最新的状态值。当需要表示随时间变化的状态（例如 UI 状态）时，请使用它。</p></li>
 </ul>
-<section class="chapter"><h3 id="create-a-sharedflow">创建 <code>SharedFlow</code>
+<section class="chapter"><h3 id="create-a-sharedflow">创建一个 <code>SharedFlow</code>
 </h3>
-<p id="waoewo_274"><a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-shared-flow/">SharedFlow</a> 用于把陆续产生的值交给订阅者。</p>
-<p id="waoewo_275">使用 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-mutable-shared-flow.html">MutableSharedFlow()</a> 创建可写的共享流。</p>
-<p id="waoewo_276">如果把 <code>MutableSharedFlow</code> 直接公开，外部拿到它也可以向里面发值。</p>
-<p id="waoewo_277">将可写流存在私有属性里，用 asSharedFlow() 向外暴露只读视图。内部仍然用 <code>emit()</code> 发出新值。 <small class="source-refs"><a href="https://kotlinlang.org/docs/properties.html#backing-properties">backing property</a> · <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/as-shared-flow.html">.asSharedFlow()</a></small></p>
+<p id="waoewo_274"><a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-shared-flow/">SharedFlow</a> 是一种热流，它会向其订阅者广播随时间推移而发出的值。</p>
+<p id="waoewo_275">你可以使用 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-mutable-shared-flow.html">MutableSharedFlow()</a> 函数创建一个 <code>SharedFlow</code>。</p>
+<p id="waoewo_276">一个 <code>MutableSharedFlow</code> 提供了用于发布值的函数。如果直接将其暴露出来，类外的代码就可以向 Flow 中发布值。</p>
+<p id="waoewo_277">把可变的 Flow 放在<a href="https://kotlinlang.org/docs/properties.html#backing-properties">私有属性</a>中，用 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/as-shared-flow.html">.asSharedFlow()</a> 对外提供只读的 <code>SharedFlow</code>。需要向订阅者发布值时，在私有的 <code>MutableSharedFlow</code> 上调用 <code>emit()</code>。</p>
 <pre><code class="language-kotlin">data class Message(
     val senderId: Int,
     val time: Instant,
@@ -625,28 +625,28 @@ suspend fun main() {
 )
 
 class Chatroom {
-    // Stores the SharedFlow in a private backing property
+    // <span class="code-comment">把 SharedFlow 保存在私有属性里</span>
     private val _messages = MutableSharedFlow&lt;Message&gt;()
 
-    // Exposes a read-only SharedFlow to subscribers
+    // <span class="code-comment">向订阅者公开只读的 SharedFlow</span>
     val messages: SharedFlow&lt;Message&gt;
         get() = _messages.asSharedFlow()
 
     suspend fun sendMessageToEveryone(message: Message) {
-        // Emits the message to subscribers
+        // <span class="code-comment">向订阅者发出消息</span>
         _messages.emit(message)
     }
 }</code></pre>
-<p id="waoewo_279">订阅者仍调用 <code>collect()</code> 来接收值。</p>
-<p id="waoewo_280">可以配置重放缓存，为后来加入的订阅者保留若干条最近的事件。</p>
-<p id="waoewo_281">在 <code>MutableSharedFlow()</code> 上用 <code>replay</code> 参数设置重放数量。</p>
-<pre><code class="language-kotlin">// Sets the number of already emitted messages new subscribers receive on subscription
+<p id="waoewo_279">与冷流一样，你可以使用 <code>collect()</code> 函数从 <code>SharedFlow</code> 中收集值。</p>
+<p id="waoewo_280">还可以让新订阅者一加入就收到最近几条旧消息。<code>SharedFlow</code> 会为此保留固定数量的历史值，这块空间称为重放缓存。</p>
+<p id="waoewo_281">要设置新订阅者接收的先前发出的值数量，请在 <code>MutableSharedFlow()</code> 中使用 <code>replay</code> 参数：</p>
+<pre><code class="language-kotlin">// <span class="code-comment">设置新订阅者能重放的历史消息数</span>
 const val MESSAGES_TO_REMEMBER = 10
 
 class Chatroom {
     private val _messages = MutableSharedFlow&lt;Message&gt;(
 
-        // Replays the set amount of last emitted messages to new subscribers
+        // <span class="code-comment">按配置的数量向新订阅者重放最近的消息</span>
         replay = MESSAGES_TO_REMEMBER
     )
 
@@ -654,12 +654,12 @@ class Chatroom {
         get() = _messages.asSharedFlow()
 
     suspend fun sendMessageToEveryone(message: Message) {
-        // Emits the message to subscribers of the messages flow 
+        // <span class="code-comment">向 messages 流的订阅者发出消息</span>&#32;
         _messages.emit(message)
     }
 }</code></pre>
-<p id="waoewo_283">热流的订阅不会自然结束，不再需要时要停止收集。 <small class="source-refs"><a href="#cancel-hot-flows">cancel the collecting coroutines</a></small></p>
-<aside class="prompt" data-type="note" id="waoewo_284"><p id="waoewo_309">SharedFlow 本身没有 close 或 cancel 操作。取消某个收集者只会停止这份订阅；要停止新数据的来源，需要管理生产者的协程或作用域。</p></aside><p id="waoewo_285">在聊天室例子里，当前在线的订阅者接收新消息，后来加入的人也能收到缓存中最近的消息。</p>
+<p id="waoewo_283">收集热流不会自动完成，因此当你不再需要它们时，必须<a href="#cancel-hot-flows">取消收集协程</a>。</p>
+<aside class="prompt" data-type="note" id="waoewo_284"><p id="waoewo_309">热流没有关闭或取消操作。取消收集仅会阻止相应的订阅者继续收集。若要停止新的发布，请取消为该热流生成值的协程或作用域。</p></aside><p id="waoewo_285">让我们看一个使用 <code>SharedFlow</code> 来模拟聊天室的示例，该聊天室会将每条新消息发送给活跃的订阅者，并将最近的消息重播给后来加入的订阅者：</p>
 <pre><code class="language-kotlin">import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import kotlin.random.*
@@ -673,23 +673,23 @@ data class Message(
     val text: String,
 )
 
-// Sets the number of already emitted messages that new subscribers receive on subscription
+// <span class="code-comment">设置新订阅者能重放的历史消息数</span>
 const val MESSAGES_TO_REMEMBER = 10
 
 class Chatroom {
-    // Stores the SharedFlow in a private backing property
+    // <span class="code-comment">把 SharedFlow 保存在私有属性里</span>
     private val _messages = MutableSharedFlow&lt;Message&gt;(
 
-        // Replays the set amount of last emitted messages to new subscribers
+        // <span class="code-comment">按配置的数量向新订阅者重放最近的消息</span>
         replay = MESSAGES_TO_REMEMBER
     )
 
-    // Exposes a read-only SharedFlow to subscribers
+    // <span class="code-comment">向订阅者公开只读的 SharedFlow</span>
     val messages: SharedFlow&lt;Message&gt;
         get() = _messages.asSharedFlow()
 
 
-    // Emits the message to subscribers
+    // <span class="code-comment">向订阅者发出消息</span>
     suspend fun sendMessageToEveryone(message: Message) {
         _messages.emit(message)
     }
@@ -699,16 +699,16 @@ suspend fun main() {
     val nUsers = 3
     val chatroom = Chatroom()
     withContext(Dispatchers.Default) {
-        // Starts a message reader for each user
+        // <span class="code-comment">为每位用户启动一个读取消息的协程</span>
         val messageReaders = List(nUsers) { userId -&gt;
-            // Starts collection before messages are emitted
+            // <span class="code-comment">在发出消息前开始收集</span>
             launch(start = CoroutineStart.UNDISPATCHED) {
                 chatroom.messages.collect { message -&gt;
                     println("User $userId received $message")
                 }
             }
         }
-        // Sends a greeting from each user
+        // <span class="code-comment">每位用户各发一条问候</span>
         repeat(nUsers) { userId -&gt;
             chatroom.sendMessageToEveryone(
                 Message(
@@ -718,26 +718,26 @@ suspend fun main() {
                 )
             )
         }
-        // Delays to make sure people have enough time to chat
+        // <span class="code-comment">等待片刻，让各用户有时间聊天</span>
         delay(100.milliseconds)
-        // Cancels readers because SharedFlow collection doesn't finish by itself
+        // <span class="code-comment">SharedFlow 的收集不会自行结束，因此要取消这些读取消息的协程</span>
         messageReaders.forEach { it.cancel() }
     }
 
 }</code></pre>
-<p id="waoewo_287">例子用 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-coroutine-start/-u-n-d-i-s-p-a-t-c-h-e-d/">CoroutineStart.UNDISPATCHED</a> 让每个收集协程立即执行到第一次挂起。</p>
-<p id="waoewo_288">这样在 <code>sendMessageToEveryone()</code> 发消息前，收集者已经进入 collect 并完成订阅。否则订阅者可能启动得较晚，重放缓存太小时就会错过早期消息。</p>
-<section class="chapter"><h4 id="use-explicit-backing-fields-to-expose-hot-flows">用显式支持字段公开热流</h4>
-<p id="waoewo_317">也可以使用 Kotlin 的显式支持字段，在类内保留可写实现，对外只公开 <code>SharedFlow</code> 类型。 <small class="source-refs"><a href="https://kotlinlang.org/docs/whatsnew23.html#explicit-backing-fields">explicit backing fields</a></small></p>
-<p id="waoewo_318">在 <code>field</code> 声明中写出更具体的实现类型，类内可以利用智能转换调用 <code>emit()</code>，省去单独声明私有属性。</p>
-<aside class="prompt" data-type="warning" id="waoewo_319"><p id="waoewo_326">这种方式不会创建 asSharedFlow() 提供的只读包装。如果调用者可能向下转型取得可写对象，要把这一点纳入选择。</p></aside><p id="waoewo_320">看下面的例子。</p>
+<p id="waoewo_287">本例中，<a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-coroutine-start/-u-n-d-i-s-p-a-t-c-h-e-d/">CoroutineStart.UNDISPATCHED</a> 会立即启动每个收集协程。</p>
+<p id="waoewo_288">这样，每个协程都会先执行到 <code>collect()</code>，订阅 <code>messages</code>，然后挂起。等这些订阅都建立好，<code>sendMessageToEveryone()</code> 才发消息。否则，启动稍晚的收集者就只能依靠重放缓存，缓存太小就会错过较早的消息。</p>
+<section class="chapter"><h4 id="use-explicit-backing-fields-to-expose-hot-flows">使用显式支持字段来暴露热流</h4>
+<p id="waoewo_317">你可以使用<a href="https://kotlinlang.org/docs/whatsnew23.html#explicit-backing-fields">显式支持字段</a>来暴露一个只读的 <code>SharedFlow</code>，同时在类内部保留一个可变的支持字段。</p>
+<p id="waoewo_318">显式支持字段会在 <code>field</code> 声明中定义实现类型。在类内部，编译器会将该属性智能转换为支持字段的类型，因此你可以直接调用 <code>emit()</code> 函数，而无需单独定义私有的支持属性。</p>
+<aside class="prompt" data-type="warning" id="waoewo_319"><p id="waoewo_326">显式支持字段不会生成 <code>.asSharedFlow()</code> 提供的只读封装器。仅当向下转换暴露的 Flow 不是问题时，才应使用此模式。</p></aside><p id="waoewo_320">例如：</p>
 <pre><code class="language-kotlin">import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import kotlin.time.Clock
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.ExperimentalTime
 import kotlin.time.Instant
-        
+&#32;&#32;&#32;&#32;&#32;&#32;&#32;&#32;
 data class Message(
     val senderId: Int,
     val time: Instant,
@@ -746,20 +746,20 @@ data class Message(
 
 const val MESSAGES_TO_REMEMBER = 10
 
-//sampleStart
+//<span class="code-comment">sampleStart</span>
 class Chatroom {
-    // Exposes a read-only SharedFlow with a mutable backing field
+    // <span class="code-comment">对外公开只读 SharedFlow，内部保留可写字段</span>
     val messages: SharedFlow&lt;Message&gt;
         field = MutableSharedFlow&lt;Message&gt;(
             replay = MESSAGES_TO_REMEMBER
         )
 
     suspend fun sendMessageToEveryone(message: Message) {
-        // Emits through the mutable backing field inside Chatroom
+        // <span class="code-comment">通过 Chatroom 内部可写的支持字段发射消息</span>
         messages.emit(message)
     }
 }
-//sampleEnd
+//<span class="code-comment">sampleEnd</span>
 
 suspend fun main() {
     val nUsers = 3
@@ -787,35 +787,35 @@ suspend fun main() {
         delay(100.milliseconds)
         messageReaders.forEach { it.cancel() }
     }
-}</code></pre></section></section><section class="chapter"><h3 id="create-a-stateflow">创建 <code>StateFlow</code>
+}</code></pre></section></section><section class="chapter"><h3 id="create-a-stateflow">创建一个 <code>StateFlow</code>
 </h3>
-<p id="waoewo_329"><a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-state-flow/">StateFlow</a> 总有一个当前值。新订阅者一来就能取得当前状态，之后继续观察更新；消费较慢时可能跳过中间状态。</p>
-<p id="waoewo_330">下载进度、UI 状态或对象的当前状态，都适合这样表达。</p>
-<p id="waoewo_331">创建 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-mutable-state-flow.html">MutableStateFlow()</a> 时传入初始值。</p>
-<pre><code class="language-kotlin">// Creates a MutableStateFlow with LoadingState.Started as the initial value
+<p id="waoewo_329"><a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-state-flow/">StateFlow</a> 始终保存一个当前值。刚开始订阅就能立刻读到它；之后当前值发生变化，订阅者就能收到更新。</p>
+<p id="waoewo_330">你可以使用 <code>StateFlow</code> 来表示随时间变化的状态，例如加载进度、UI 状态或某个对象的状态。</p>
+<p id="waoewo_331">要创建一个 <code>StateFlow</code>，请使用 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-mutable-state-flow.html">MutableStateFlow()</a> 函数并传入初始值：</p>
+<pre><code class="language-kotlin">// <span class="code-comment">创建 MutableStateFlow，初始值为 LoadingState.Started</span>
 val result = MutableStateFlow&lt;LoadingState&gt;(LoadingState.Started)</code></pre>
-<p id="waoewo_333">读写 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-mutable-state-flow/value.html">value</a> 属性即可取得或替换当前状态。</p>
+<p id="waoewo_333">要设置当前状态，请使用 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-mutable-state-flow/value.html">value</a> 属性：</p>
 <pre><code class="language-kotlin">fun loadBlob(url: String): StateFlow&lt;LoadingState&gt; {
     val result = MutableStateFlow&lt;LoadingState&gt;(LoadingState.Started)
 
     DownloadManager.startLoading(
         url,
         onPercentageLoaded = { percentage -&gt;
-            // Replaces the current state with the latest progress
+            // <span class="code-comment">用最新进度更新当前状态</span>
             result.value = LoadingState.Percentage(percentage)
         },
         onCompletion = {
-            // Replaces the current state with the completion state
+            // <span class="code-comment">把当前状态替换为已完成</span>
             result.value = LoadingState.Done
         },
         onFailure = {
-            // Replaces the current state with the failure state
+            // <span class="code-comment">把当前状态替换为失败</span>
             result.value = LoadingState.Failed
         }
     )
 }</code></pre>
-<aside class="prompt" data-type="note" id="waoewo_335"><p id="waoewo_360">单次设置 <code>value</code> 是线程安全的，但「先读旧值，再根据旧值写回」是复合操作。如果新值依赖旧值，应使用 update()。</p></aside><p id="waoewo_336"><code>MutableStateFlow</code> 也提供写接口。即使把同一个实例声明为只读类型返回，外部代码仍可能尝试转回可写类型。</p>
-<p id="waoewo_337">用 asStateFlow() 公开只读视图，可以把更新权限保留在类内部。 <small class="source-refs"><a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/as-state-flow.html">.asStateFlow()</a></small></p>
+<aside class="prompt" data-type="note" id="waoewo_335"><p id="waoewo_360">直接给 <code>value</code> 赋值是线程安全的。但先读出旧值、据此计算、再写回新值，这几步合起来未必安全。如果新状态取决于旧状态，就用 <code>.update()</code> 把它们合成一次原子更新。</p></aside><p id="waoewo_336">与 <code>MutableSharedFlow</code> 类似，<code>MutableStateFlow</code> 提供了用于发布更新的 API。若直接暴露该值，任何接收它的代码均可通过将其向下转换为 <code>MutableStateFlow</code> 来更新状态。</p>
+<p id="waoewo_337">为防止这种情况，请通过 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/as-state-flow.html">.asStateFlow()</a> 函数将可变的 Flow 作为只读的 <code>StateFlow</code> 进行暴露：</p>
 <pre><code class="language-kotlin">fun loadBlob(url: String): StateFlow&lt;LoadingState&gt; {
     val result = MutableStateFlow&lt;LoadingState&gt;(LoadingState.Started)
 
@@ -832,10 +832,10 @@ val result = MutableStateFlow&lt;LoadingState&gt;(LoadingState.Started)</code></
         }
     )
 
-    // Exposes the loading state as a read-only StateFlow
+    // <span class="code-comment">通过只读 StateFlow 对外提供加载状态</span>
     return result.asStateFlow()
 }</code></pre>
-<p id="waoewo_339">下面把一个基于回调的加载 API 转换成可以观察的进度状态。</p>
+<p id="waoewo_339">以下是一个示例，它使用 <code>StateFlow</code> 来报告基于回调的 API 的加载进度：</p>
 <pre><code class="language-kotlin">import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import kotlin.time.*
@@ -845,7 +845,7 @@ import kotlin.io.encoding.*
 import java.io.IOException
 import kotlin.random.Random
 
-//sampleStart
+//<span class="code-comment">sampleStart</span>
 sealed interface LoadingState {
     sealed interface Terminal: LoadingState
     object Started: LoadingState
@@ -855,38 +855,38 @@ sealed interface LoadingState {
 }
 
 fun loadBlob(url: String): StateFlow&lt;LoadingState&gt; {
-    // Creates a mutable StateFlow with the initial loading state
+    // <span class="code-comment">用初始加载状态创建可更新的 StateFlow</span>
     val result = MutableStateFlow&lt;LoadingState&gt;(LoadingState.Started)
     DownloadManager.startLoading(
         url,
         onPercentageLoaded = { percentage -&gt;
-            // Replaces the current state with the latest progress
+            // <span class="code-comment">用最新进度更新当前状态</span>
             result.value = LoadingState.Percentage(percentage)
         },
         onCompletion = {
-            // Replaces the current state with the completion state
+            // <span class="code-comment">把当前状态替换为已完成</span>
             result.value = LoadingState.Done
         },
         onFailure = {
-            // Replaces the current state with the failure state
+            // <span class="code-comment">把当前状态替换为失败</span>
             result.value = LoadingState.Failed
         }
     )
-    // Exposes the loading state as a read-only StateFlow
+    // <span class="code-comment">通过只读 StateFlow 对外提供加载状态</span>
     return result.asStateFlow()
 }
 
-// Defines a callback-based API that downloads data asynchronously
+// <span class="code-comment">定义一个以回调交付下载结果的异步接口</span>
 object DownloadManager {
-    // Starts loading the url asynchronously
+    // <span class="code-comment">开始异步加载该网址</span>
     fun startLoading(
         url: String,
         onPercentageLoaded: (Int) -&gt; Unit,
         onCompletion: () -&gt; Unit,
         onFailure: (Throwable) -&gt; Unit
     ) {
-        // Uses GlobalScope for illustrative purposes only,
-        // to keep this example self-contained
+        // <span class="code-comment">这里使用 GlobalScope 只是为了演示，</span>
+        // <span class="code-comment">以便这个示例能独立运行</span>
         GlobalScope.launch {
             val failureChancePerStep = 1 - java.lang.Math.pow(0.99, 10.0)
 
@@ -907,7 +907,7 @@ suspend fun main() {
     loadBlob("https://example.com/").onEach { state -&gt;
         when (state) {
             is LoadingState.Started -&gt; {
-                // Waits for progress updates
+                // <span class="code-comment">等待进度更新</span>
             }
             is LoadingState.Percentage -&gt;
                 println("Loaded ${state.percents}...")
@@ -918,11 +918,11 @@ suspend fun main() {
         }
     }.takeWhile { it !is LoadingState.Terminal }.collect()
 }
-//sampleEnd</code></pre>
-<aside class="prompt" data-type="note" id="waoewo_341"><p id="waoewo_371">为缩短示例，模拟加载使用了 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-global-scope/">GlobalScope</a>。实际应用可把 <code>CoroutineScope</code> 传入 <code>startLoading()</code>，让调用方在不再需要时取消工作。</p></aside><p id="waoewo_342"><code>StateFlow</code> 不会自行完成。这个例子用 takeWhile() 在加载进入终态时停止本次收集。</p>
-<p id="waoewo_343">新值和当前值按相等性比较后确实不同，<code>StateFlow</code> 才会通知订阅者。</p>
-<aside class="prompt" data-type="warning" id="waoewo_344"><p id="waoewo_379">如果把可变对象放进去后原地修改，对象引用指向的仍是同一个值，收集者可能收不到更新。</p></aside><p id="waoewo_345">需要根据旧状态计算新状态时，用 update() 原子地替换。多个协程同时修改同一个 <code>MutableStateFlow</code> 时，这一点尤为重要。 <small class="source-refs"><a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/update.html">.update()</a></small></p>
-<aside class="prompt" data-type="note" id="waoewo_346"><p id="waoewo_386">只需要并发更新而无须持续观察时，可以采用 Kotlin 的 <a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.concurrent.atomics/-atomic-int/">AtomicInt</a> 或 <a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.concurrent.atomics/-atomic-reference/">AtomicReference</a> 等原子类型。</p></aside><p id="waoewo_347">下面用一个 <code>StateFlow</code> 表示点赞总数，每一次点击都基于当前计数计算新值。</p>
+//<span class="code-comment">sampleEnd</span></code></pre>
+<aside class="prompt" data-type="note" id="waoewo_341"><p id="waoewo_371">本示例仅使用 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-global-scope/">GlobalScope</a> 是为了简化基于回调的 API。在你的实际应用中，请将 <code>CoroutineScope</code> 传递给启动该任务的函数（例如本示例中的 <code>startLoading()</code>），并在该作用域内启动协程，以便调用方在不再需要该任务时能够取消它。</p></aside><p id="waoewo_342"><code>StateFlow</code> 是热流，收集不会自动结束。示例使用 <code>.takeWhile()</code>，在加载进入终止状态时结束收集。</p>
+<p id="waoewo_343"><code>StateFlow</code> 仅在新值与当前值不同时才会发出更新。</p>
+<aside class="prompt" data-type="warning" id="waoewo_344"><p id="waoewo_379">避免在 <code>StateFlow</code> 中存储可变对象。修改对象本身并不会替换当前值，因此收集者无法收到更新。</p></aside><p id="waoewo_345">你还可以通过根据当前状态计算新状态来更新 <code>StateFlow</code>。请使用 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/update.html">.update()</a> 函数进行此类更新。<code>.update()</code> 函数会以原子方式更新值，这在多个协程更新同一个 <code>MutableStateFlow</code> 时非常有用。</p>
+<aside class="prompt" data-type="note" id="waoewo_346"><p id="waoewo_386">如果你只需更新共享值，且无需观察随时间变化的状态，请使用 Kotlin Atomics API，例如 <a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.concurrent.atomics/-atomic-int/">AtomicInt</a> 或 <a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.concurrent.atomics/-atomic-reference/">AtomicReference</a>。</p></aside><p id="waoewo_347">以下示例中，点赞数存储在 <code>StateFlow</code> 中，每个新状态都是根据上一个状态计算得出的：</p>
 <pre><code class="language-kotlin">import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import kotlin.time.*
@@ -932,28 +932,28 @@ import kotlin.io.encoding.*
 import java.io.IOException
 import kotlin.random.Random
 
-//sampleStart
+//<span class="code-comment">sampleStart</span>
 class Post(val id: Long) {
-    // Stores the current number of likes as a StateFlow
+    // <span class="code-comment">用 StateFlow 保存当前点赞数</span>
     private val _numberOfLikes = MutableStateFlow&lt;Int&gt;(
-        // Sets the initial number of likes
+        // <span class="code-comment">设置初始点赞数</span>
         0
     )
 
-    // Exposes a read-only StateFlow with the current number of likes
+    // <span class="code-comment">通过只读 StateFlow 对外提供当前点赞数</span>
     val numberOfLikes: StateFlow&lt;Int&gt;
         get() = _numberOfLikes.asStateFlow()
 
 
-    // Adds a like
+    // <span class="code-comment">增加一个赞</span>
     fun like() {
-        // Increments the number of likes atomically for concurrent and multithreaded calls
+        // <span class="code-comment">原子地增加点赞数，并发或多线程调用时也能正确累加</span>
         _numberOfLikes.update { it + 1 }
     }
 }
 
 suspend fun drawUpdatedNumberOfLikes(likes: Int) {
-    // Displays the latest number of likes
+    // <span class="code-comment">显示最新的点赞数</span>
     println("${Clock.System.now()}: the number of likes is $likes")
 }
 
@@ -965,7 +965,7 @@ suspend fun main() {
                 drawUpdatedNumberOfLikes(it)
             }
         }
-        // Simulates users who like the post
+        // <span class="code-comment">模拟用户给帖子点赞</span>
         coroutineScope {
             repeat(10) {
                 launch {
@@ -974,17 +974,17 @@ suspend fun main() {
                 }
             }
         }
-        // Cancels collection after all simulated users finish
+        // <span class="code-comment">所有模拟用户完成操作后，取消收集</span>
         notifyingJob.cancelAndJoin()
     }
 }
-//sampleEnd</code></pre>
-<p id="waoewo_349">多个协程同时调用 <code>like()</code> 时，update() 会原子增加计数，避免两次点赞互相覆盖。</p>
-<section class="chapter"><h4 id="store-accumulated-state-in-a-stateflow">让当前状态包含全部历史</h4>
-<p id="waoewo_395">有时新订阅者想立即看到「截至目前的完整结果」。</p>
-<p id="waoewo_396">例如新加入聊天室时，先显示已有消息，再随着新消息到来更新整个聊天记录。</p>
-<p id="waoewo_397">可以把这样的累计结果建模为 <code>StateFlow</code>。</p>
-<p id="waoewo_398">让 <code>StateFlow&lt;List&lt;Message&gt;&gt;</code> 的值代表整份历史。若要表达单条消息事件，则可以使用 <code>SharedFlow&lt;Message&gt;</code>。</p>
+//<span class="code-comment">sampleEnd</span></code></pre>
+<p id="waoewo_349">本例中，<code>.update()</code> 函数会原子地递增点赞数。这可防止当多个协程同时调用 <code>like()</code> 函数时出现更新丢失的情况。</p>
+<section class="chapter"><h4 id="store-accumulated-state-in-a-stateflow">将累积的状态存储在 <code>StateFlow</code> 中</h4>
+<p id="waoewo_395">有时，你可能希望订阅者接收所有先前发出的结果，而不仅仅是最新发出的值。</p>
+<p id="waoewo_396">例如，一个聊天室可以将消息历史记录作为单一状态值保存。当新用户加入聊天室时，他们会首先收到当前的消息历史记录。随后，当有新消息到达时，他们将继续接收更新。</p>
+<p id="waoewo_397">你可以使用 <code>StateFlow</code> 来建模这种行为。</p>
+<p id="waoewo_398">聊天室可以把整份聊天记录作为 <code>StateFlow&lt;List&lt;Message&gt;&gt;</code> 的当前值。这样新订阅者一来就拿到整份记录。如果改用 <code>SharedFlow&lt;Message&gt;</code> 逐条广播，每条消息代表的只是一次独立事件。</p>
 <pre><code class="language-kotlin">import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import kotlin.time.*
@@ -994,7 +994,7 @@ import kotlin.io.encoding.*
 import java.io.IOException
 import kotlin.random.Random
 
-//sampleStart
+//<span class="code-comment">sampleStart</span>
 data class Message(
     val senderId: Int,
     val time: Instant,
@@ -1002,16 +1002,16 @@ data class Message(
 )
 
 class Chatroom {
-    // Stores the full message history
+    // <span class="code-comment">保存完整的消息历史</span>
     private val _messageHistory = MutableStateFlow&lt;List&lt;Message&gt;&gt;(emptyList())
 
-    // Exposes a read-only StateFlow with the current message history
+    // <span class="code-comment">通过只读 StateFlow 对外提供当前聊天记录</span>
     val messageHistory: StateFlow&lt;List&lt;Message&gt;&gt;
         get() = _messageHistory.asStateFlow()
 
-    // Sends a message to all subscribers of the messageHistory flow
+    // <span class="code-comment">向 messageHistory 流的所有订阅者发送消息</span>
     suspend fun sendMessageToEveryone(message: Message) {
-        // Adds the new message to the current history atomically
+        // <span class="code-comment">以原子操作将新消息追加到当前聊天记录</span>
         _messageHistory.update {
             it + message
         }
@@ -1022,7 +1022,7 @@ suspend fun main() {
     val nUsers = 3
     val chatroom = Chatroom()
     withContext(Dispatchers.Default) {
-        // Starts a message reader for each user
+        // <span class="code-comment">为每位用户启动一个读取消息的协程</span>
         val messageReaders = List(nUsers) { userId -&gt;
             launch(start = CoroutineStart.UNDISPATCHED) {
                 chatroom.messageHistory.collect { currentHistory -&gt;
@@ -1030,7 +1030,7 @@ suspend fun main() {
                 }
             }
         }
-        // Sends a greeting from each user
+        // <span class="code-comment">每位用户各发一条问候</span>
         repeat(nUsers) { userId -&gt;
             chatroom.sendMessageToEveryone(
                 Message(
@@ -1040,17 +1040,17 @@ suspend fun main() {
                 )
             )
         }
-        // Delays to make sure users have enough time to receive updates
+        // <span class="code-comment">等待片刻，让用户有时间收到更新</span>
         delay(100.milliseconds)
-        // Cancels readers because StateFlow collection doesn't finish by itself
+        // <span class="code-comment">StateFlow 的收集不会自行结束，因此要取消这些读取消息的协程</span>
         messageReaders.forEach { it.cancel() }
     }
 }
-//sampleEnd</code></pre>
-<p id="waoewo_400"><code>messageHistory</code> 保存已有消息列表。每条新消息到来时，update() 基于旧列表创建新列表，原子地更新状态。</p>
-<aside class="prompt" data-type="tip" id="waoewo_401"><p id="waoewo_409">通过复制整个集合来保持不可变，数据越多开销越大。实验性的 <a href="https://github.com/Kotlin/kotlinx.collections.immutable">kotlinx.collections.immutable</a> 库提供持久化集合，可以更高效地共享已有结构。 <small class="source-refs"><a href="https://kotlinlang.org/docs/components-stability.html#stability-levels-explained">Experimental</a></small></p></aside><p id="waoewo_402">新订阅者先收到当前完整历史，随后随着状态改变，收到反映新历史的列表。</p></section></section><section class="chapter"><h3 id="convert-cold-flows-to-hot-flows">把冷流转换成热流</h3>
-<p id="waoewo_415">如果多位收集者只需要同一份上游结果，可以共享一次收集，避免每个人都重新执行生产逻辑。</p>
-<p id="waoewo_416">简化版 shareIn() 示范了原理：只收集一次冷流，把值转发给 <code>MutableSharedFlow</code>，对外提供只读视图。</p>
+//<span class="code-comment">sampleEnd</span></code></pre>
+<p id="waoewo_400">本例中，<code>messageHistory</code> 将先前消息的完整列表存储为当前状态。当发送新消息时，<code>.update()</code> 函数会根据先前历史记录创建一个新列表，并以原子方式将新消息添加进去。</p>
+<aside class="prompt" data-type="tip" id="waoewo_401"><p id="waoewo_409">随着集合规模的扩大，通过创建新集合来更新不可变集合可能会耗费更多时间。你可以使用<a href="https://kotlinlang.org/docs/components-stability.html#stability-levels-explained">实验性</a>功能 <a href="https://github.com/Kotlin/kotlinx.collections.immutable">kotlinx.collections.immutable</a> 库创建持久化集合，以提高不可变集合更新的效率。</p></aside><p id="waoewo_402">由于 <code>messageHistory</code> 是一个 <code>StateFlow</code>，订阅者在开始收集时会收到当前的消息历史记录。此后，每当发送一条消息时，他们都会收到一个新列表，该列表会更新聊天历史记录。</p></section></section><section class="chapter"><h3 id="convert-cold-flows-to-hot-flows">将冷流转换为热流</h3>
+<p id="waoewo_415">冷流会为每位收集者单独执行上游操作。若多个订阅者需要同一次上游执行产生的数据，可以把冷流转换成热流，让订阅者共享这一轮收集的结果。</p>
+<p id="waoewo_416">下面的简化版 <code>.shareIn()</code> 演示了做法：启动一次对冷流的收集，把收到的每个值发给 <code>MutableSharedFlow</code>，再以只读的 <code>SharedFlow</code> 对外提供它。</p>
 <pre><code class="language-kotlin">import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.*
 
@@ -1064,20 +1064,20 @@ fun &lt;T&gt; Flow&lt;T&gt;.simpleShareIn(scope: CoroutineScope): SharedFlow&lt;
     return sharedFlow.asSharedFlow()
 }
 
-suspend fun main() { 
-    
+suspend fun main() {&#32;
+&#32;&#32;&#32;&#32;
 }</code></pre>
-<p id="waoewo_418"><code>simpleShareIn()</code> 会在传入的作用域启动一个协程。取消该作用域，就能停止对上游的收集。 <small class="source-refs"><a href="#cancel-hot-flows">cancel the scope</a></small></p>
-<p id="waoewo_419">上游异常会让共享协程失败。在共享之前放置 catch() 或 retry()，能让故障在进入共享边界前得到处理。 <small class="source-refs"><a href="#handle-exceptions-in-hot-flows">handle upstream exceptions</a></small></p>
-<p id="waoewo_420">内置 shareIn() 封装了这套做法，也让你选择开始、停止和重放的策略。 <small class="source-refs"><a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/share-in.html">.shareIn()</a></small></p>
-<p id="waoewo_421">调用 shareIn() 时，要确定以下参数。</p>
+<p id="waoewo_418"><code>simpleShareIn()</code> 会在传入的作用域里启动一个协程，专门收集上游。以后想停止这份工作，取消这个作用域即可。 <sup class="source-refs"><a href="#cancel-hot-flows">[1]</a></sup></p>
+<p id="waoewo_419">上游流如果抛出异常，收集协程就会失败。在共享流之前，先用 <code>.catch()</code> 或 <code>.retry()</code> 等操作符<a href="#handle-exceptions-in-hot-flows">处理上游异常</a>。</p>
+<p id="waoewo_420">内置的 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/share-in.html">.shareIn()</a> 封装了这种做法，无须自己创建 <code>MutableSharedFlow</code>。它还允许指定何时开始或停止收集上游，以及给新订阅者重放多少个历史值。</p>
+<p id="waoewo_421">要使用内置的 <code>.shareIn()</code> 函数，请提供以下参数：</p>
 <ul class="list _bullet" id="waoewo_422">
-<li class="list__item" id="waoewo_444"><p id="waoewo_447">哪个 CoroutineScope 负责运行共享的上游收集。</p></li>
-<li class="list__item" id="waoewo_445"><p id="waoewo_448">用哪种 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-sharing-started/">SharingStarted</a> 策略控制启停。例如 Eagerly 会立即开始，无须等订阅者出现。 <small class="source-refs"><a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-sharing-started/-companion/-eagerly.html">SharingStarted.Eagerly</a></small></p></li>
-<li class="list__item" id="waoewo_446"><p id="waoewo_453">可选的 <code>replay</code>，决定为新订阅者保留几个已发出的值。</p></li>
+<li class="list__item" id="waoewo_444"><p id="waoewo_447">用于收集上游流的协程作用域。</p></li>
+<li class="list__item" id="waoewo_445"><p id="waoewo_448">控制上游何时开始和停止收集的 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-sharing-started/">SharingStarted</a> 策略。例如，<a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-sharing-started/-companion/-eagerly.html">SharingStarted.Eagerly</a> 会立即在给定作用域中开始收集，即使还没有订阅者。</p></li>
+<li class="list__item" id="waoewo_446"><p id="waoewo_453">可选的 <code>replay</code> 参数，决定给新订阅者重放多少个已经发出的值。</p></li>
 </ul>
-<p id="waoewo_423">shareIn() 在指定作用域中只收集一次上游，再将这次收集的值广播给订阅者。</p>
-<p id="waoewo_424">下面的例子共享序列化后的聊天消息。</p>
+<p id="waoewo_423"><code>.shareIn()</code> 在指定作用域中收集上游 Flow，把上游发出的值广播给订阅者。</p>
+<p id="waoewo_424">以下是一个示例，其中 <code>.shareIn()</code> 将一个冷流转换为热流，该热流会与多个订阅者共享序列化的聊天消息：</p>
 <pre><code class="language-kotlin">import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import kotlin.time.*
@@ -1087,7 +1087,7 @@ import kotlin.io.encoding.*
 import java.io.IOException
 import kotlin.random.Random
 
-//sampleStart
+//<span class="code-comment">sampleStart</span>
 data class Message(
     val senderId: Int,
     val time: Instant,
@@ -1095,15 +1095,15 @@ data class Message(
 )
 
 class Chatroom {
-    // Stores the message flow
+    // <span class="code-comment">保存消息流</span>
     private val _messages = MutableSharedFlow&lt;Message&gt;()
 
-    // Exposes a read-only SharedFlow with emitted messages
-    // New subscribers don't receive already emitted messages
+    // <span class="code-comment">通过只读 SharedFlow 对外提供消息</span>
+    // <span class="code-comment">新订阅者不会收到订阅之前发出的消息</span>
     val messages: SharedFlow&lt;Message&gt;
         get() = _messages.asSharedFlow()
-  
-    // Sends a message to all subscribers of the messages flow
+&#32;&#32;
+    // <span class="code-comment">向 messages 流的所有订阅者发送消息</span>
     suspend fun sendMessageToEveryone(message: Message) {
         _messages.emit(message)
     }
@@ -1113,33 +1113,33 @@ suspend fun main() {
     val nUsers = 3
     val chatroom = Chatroom()
     withContext(Dispatchers.Default) {
-        // Creates a child scope of the currently running coroutine
+        // <span class="code-comment">在当前协程下建立子作用域</span>
         val derivedFlowsScope = CoroutineScope(
             currentCoroutineContext() + Job(currentCoroutineContext()[Job])
         )
-        // Shares serialized messages between subscribers
+        // <span class="code-comment">让订阅者共享序列化后的消息</span>
         val serializedMessages: SharedFlow&lt;String&gt; =
             chatroom
                 .messages
                 .map {
-                    // Serializes each message once for the shared flow
+                    // <span class="code-comment">为共享流序列化消息，每条只处理一次</span>
                     "senderId: ${it.senderId}, time: ${it.time}, text: " +
                         Base64.Default.encode(it.text.encodeToByteArray())
                 }
                 .shareIn(
-                    // Starts the sharing coroutine in this scope.
-                    // The upstream flow, including .map(), runs in that coroutine
+                    // <span class="code-comment">在这个作用域中启动共享协程</span>
+                    // <span class="code-comment">上游流及其中的 map() 都在该协程中运行</span>
                     derivedFlowsScope,
 
-                    // Starts collecting the upstream flow immediately,
-                    // before the first subscriber appears
+                    // <span class="code-comment">立即开始收集上游，</span>
+                    // <span class="code-comment">第一位订阅者出现之前就开始工作</span>
                     SharingStarted.Eagerly,
 
-                    // Doesn't replay previous serialized messages to new subscribers
+                    // <span class="code-comment">新订阅者不会收到先前已序列化的消息</span>
                     replay = 0,
                 )
 
-        // Starts a message reader for each user
+        // <span class="code-comment">为每位用户启动一个读取消息的协程</span>
         val messageReaders = List(nUsers) { userId -&gt;
             launch(start = CoroutineStart.UNDISPATCHED) {
                 serializedMessages.collect { serializedMessage -&gt;
@@ -1147,7 +1147,7 @@ suspend fun main() {
                 }
             }
         }
-        // Sends a greeting from each user
+        // <span class="code-comment">每位用户各发一条问候</span>
         repeat(nUsers) { userId -&gt;
             chatroom.sendMessageToEveryone(
                 Message(
@@ -1157,40 +1157,40 @@ suspend fun main() {
                 )
             )
         }
-        // Delays to make sure users have enough time to receive updates
+        // <span class="code-comment">等待片刻，让用户有时间收到更新</span>
         delay(100.milliseconds)
-        // Cancels readers because SharedFlow collection doesn't finish by itself
+        // <span class="code-comment">SharedFlow 的收集不会自行结束，因此要取消这些读取消息的协程</span>
         messageReaders.forEach { it.cancel() }
-        // Cancels the scope that runs the derived hot flow
+        // <span class="code-comment">取消运行派生热流的作用域</span>
         derivedFlowsScope.cancel()
     }
 }
-//sampleEnd</code></pre>
-<p id="waoewo_426">map() 产生一条冷流，用来序列化每条消息。若每个人单独收集，这个转换会重复执行。shareIn() 把转换结果共享后，一条消息只需序列化一次。 <small class="source-refs"><a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/map.html">.map()</a></small></p>
-<p id="waoewo_427">因为选择 <code>SharingStarted.Eagerly</code>，调用 shareIn() 时就会开始收集 <code>chatroom.messages</code>。</p>
-<p id="waoewo_428">类似地，可以用 stateIn() 把冷流共享为 <code>StateFlow</code>。 <small class="source-refs"><a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/state-in.html">.stateIn()</a></small></p>
-<p id="waoewo_429">这里展示的 stateIn() 重载还要传入初始值，以满足 <code>StateFlow</code> 随时可读的约定。</p>
-<p id="waoewo_430">看下面的例子。</p>
+//<span class="code-comment">sampleEnd</span></code></pre>
+<p id="waoewo_426">看例子里的 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/map.html">.map()</a>：它负责把消息序列化。直接收集它返回的冷流，有几位收集者，每条消息就要转换几次。加上 <code>.shareIn()</code> 后，上游只收集一次，每条消息也只转换一次，转换结果可以发给所有订阅者。</p>
+<p id="waoewo_427"><code>SharingStarted.Eagerly</code> 会立即开始收集上游。因此，调用 <code>.shareIn()</code> 时，派生的热流便开始收集 <code>chatroom.messages</code>。</p>
+<p id="waoewo_428">同样地，要将一个冷流转换为 <code>StateFlow</code>，请使用 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/state-in.html">.stateIn()</a> 函数。</p>
+<p id="waoewo_429">与 <code>.shareIn()</code> 不同，<code>.stateIn()</code> 需要一个初始值，因为 <code>StateFlow</code> 必须始终具有当前值。</p>
+<p id="waoewo_430">例如：</p>
 <pre><code class="language-kotlin">val lastUpdateFlow: StateFlow&lt;Instant?&gt; =
     chatroom
         .messageHistory
         .map { currentHistory -&gt; currentHistory.lastOrNull()?.time }
         .stateIn(
-            // Starts the sharing coroutine in this scope
-            // The upstream flow, including .map(), runs in that coroutine
+            // <span class="code-comment">在这个作用域中启动共享协程</span>
+            // <span class="code-comment">上游流及其中的 map() 都在该协程中运行</span>
             derivedFlowsScope,
 
-            // Starts collecting when the first subscriber appears
-            // and stops when the last subscriber disappears
+            // <span class="code-comment">第一位订阅者出现时开始收集</span>
+            // <span class="code-comment">最后一位订阅者离开时停止</span>
             SharingStarted.WhileSubscribed(),
-            // Sets the initial state before the first upstream emission
+            // <span class="code-comment">设置上游第一次发射之前的初始状态</span>
             null,
-        )</code></pre></section><section class="chapter"><h3 id="cancel-hot-flows">停止热流的上游</h3>
-<p id="waoewo_470">取消一位订阅者，一般不会直接停止整个热流。</p>
-<p id="waoewo_471">这次取消只结束对应的收集协程。其他订阅者和生产者仍可能继续运行。</p>
-<p id="waoewo_472">热流对象没有单独的取消方法。要停止生产，需要取消负责生产的任务或作用域。</p>
-<p id="waoewo_473">shareIn() 和 stateIn() 由共享协程收集上游。取消它所属的作用域会结束这项工作。</p>
-<aside class="prompt" data-type="tip" id="waoewo_474"><p id="waoewo_481">用 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-sharing-started/-companion/-while-subscribed.html">SharingStarted.WhileSubscribed()</a> 则可以在没有订阅者时按策略自动停止收集上游。</p></aside><p id="waoewo_475">下面专门取消传给 stateIn() 的作用域，观察派生状态是否还会更新。</p>
+        )</code></pre></section><section class="chapter"><h3 id="cancel-hot-flows">取消热流</h3>
+<p id="waoewo_470">当订阅者被取消时，热流不会停止。</p>
+<p id="waoewo_471">当你取消收集热流的协程时，仅会取消该订阅者。热流仍可向其他订阅者发出值，且生成这些值的协程仍可继续运行。</p>
+<p id="waoewo_472">热流本身没有取消操作。要取消一个热流，请取消为其生成值的协程或作用域。</p>
+<p id="waoewo_473">使用 <code>.shareIn()</code> 或 <code>.stateIn()</code> 扩展函数创建的热流会继续收集上游流，直到共享协程被取消为止。若要停止从上游流收集数据，请取消运行该共享协程的作用域。</p>
+<aside class="prompt" data-type="tip" id="waoewo_474"><p id="waoewo_481">也可以使用 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-sharing-started/-companion/-while-subscribed.html">SharingStarted.WhileSubscribed()</a>。当没有订阅者时，它会自动停止收集上游。</p></aside><p id="waoewo_475">以下是一个示例，其中取消传递给 <code>.stateIn()</code> 的作用域会阻止派生热流收集新值：</p>
 <pre><code class="language-kotlin">import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import kotlin.time.*
@@ -1207,14 +1207,14 @@ data class Message(
 )
 
 class Chatroom {
-    // Stores the message history
+    // <span class="code-comment">保存消息历史</span>
     private val _messageHistory = MutableStateFlow&lt;List&lt;Message&gt;&gt;(emptyList())
 
-    // Exposes a read-only StateFlow with the current message history
+    // <span class="code-comment">通过只读 StateFlow 对外提供当前聊天记录</span>
     val messageHistory: StateFlow&lt;List&lt;Message&gt;&gt;
         get() = _messageHistory.asStateFlow()
 
-    // Sends a message to all subscribers of the messageHistory flow
+    // <span class="code-comment">向 messageHistory 流的所有订阅者发送消息</span>
     suspend fun sendMessageToEveryone(message: Message) {
         _messageHistory.update {
             it + message
@@ -1222,11 +1222,11 @@ class Chatroom {
     }
 }
 
-//sampleStart
+//<span class="code-comment">sampleStart</span>
 suspend fun main() {
     val chatroom = Chatroom()
     withContext(Dispatchers.Default) {
-        // Creates a child scope of the currently running coroutine
+        // <span class="code-comment">在当前协程下建立子作用域</span>
         val derivedFlowsScope = CoroutineScope(
             currentCoroutineContext() + Job(currentCoroutineContext()[Job])
         )
@@ -1236,17 +1236,17 @@ suspend fun main() {
             }.onEach {
                 println("There are currently $it messages")
             }.stateIn(
-                // Starts the sharing coroutine in this scope
+                // <span class="code-comment">在这个作用域中启动共享协程</span>
                 derivedFlowsScope
             )
-        // Updates messageHistory
+        // <span class="code-comment">更新 messageHistory</span>
         chatroom.sendMessageToEveryone(
             Message(0, Clock.System.now(), "We are shutting down soon!")
         )
         delay(100.milliseconds)
-        // Cancels the scope that runs the derived hot flow
+        // <span class="code-comment">取消运行派生热流的作用域</span>
         derivedFlowsScope.cancel()
-        // Updates messageHistory, but totalMessages no longer receives the update
+        // <span class="code-comment">更新 messageHistory，但 totalMessages 已收不到此次更新</span>
         chatroom.sendMessageToEveryone(
             Message(0, Clock.System.now(), "We have shut down.")
         )
@@ -1254,16 +1254,16 @@ suspend fun main() {
         println("Actual history size: ${chatroom.messageHistory.value.size}")
     }
 }
-//sampleEnd</code></pre>
-<p id="waoewo_477">调用 <code>derivedFlowsScope.cancel()</code> 后，<code>totalMessages</code> 停止收集 <code>messageHistory</code>。</p>
-<p id="waoewo_478">发送新消息的协程仍在，因此 <code>messageHistory</code> 继续增长。此时 <code>totalMessages.value</code> 保留停收时的数值，<code>chatroom.messageHistory.value.size</code> 才反映最新消息数。</p></section><section class="chapter"><h3 id="handle-exceptions-in-hot-flows">热流中的异常由谁处理</h3>
-<p id="waoewo_492">冷流中未被 catch() 等操作符处理的异常，会传到调用 <code>collect()</code> 的一方。 <small class="source-refs"><a href="#handle-exceptions-in-flows">cold flows</a></small></p>
-<p id="waoewo_493">在热流中，生产者的异常不会作为一个事件自动传给订阅者。生产逻辑出错，在生产协程中处理；订阅者自己的收集逻辑出错，则在收集协程中处理。</p>
-<p id="waoewo_494">shareIn()、stateIn() 启动共享协程来收集上游。上游抛出的未处理异常会终止这个共享协程。</p>
+//<span class="code-comment">sampleEnd</span></code></pre>
+<p id="waoewo_477">本例中，当调用 <code>derivedFlowsScope.cancel()</code> 函数时，<code>totalMessages</code> 会停止从 <code>messageHistory</code> 收集更新。</p>
+<p id="waoewo_478">取消之后，<code>sendMessageToEveryone()</code> 仍能更新 <code>messageHistory</code>，因为发送消息的协程还在运行。此时比较两个数：<code>totalMessages.value</code> 停在最后一次收集到的数量，chatroom.<code>messageHistory</code>.value.size 则给出当前实际的消息数。</p></section><section class="chapter"><h3 id="handle-exceptions-in-hot-flows">在热流中处理异常</h3>
+<p id="waoewo_492">在<a href="#handle-exceptions-in-flows">冷流</a>中，上游异常会传播到 <code>collect()</code> 的调用者，除非你先使用 <code>.catch()</code> 之类的操作符来处理它们。</p>
+<p id="waoewo_493">热流不会将异常从生产者传播到订阅者。如果向 <code>MutableSharedFlow</code> 发出数据或更新 <code>MutableStateFlow</code> 的代码抛出异常，请在运行该代码的协程中进行处理。如果订阅者在收集过程中抛出异常，请在收集协程中进行处理。</p>
+<p id="waoewo_494">使用 <code>.shareIn()</code> 或 <code>.stateIn()</code> 扩展函数创建的热流会在共享协程中从上游 Flow 收集数据。如果上游 Flow 抛出异常，该异常将取消共享协程：</p>
 <pre><code class="language-kotlin">import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.*
 
-//sampleStart
+//<span class="code-comment">sampleStart</span>
 suspend fun main() {
     withContext(Dispatchers.Default) {
         launch {
@@ -1275,13 +1275,13 @@ suspend fun main() {
         }
     }
 }
-//sampleEnd</code></pre>
-<p id="waoewo_496">若希望失败后重新开始，把 retry() 放在 shareIn() 或 stateIn() 之前。 <small class="source-refs"><a href="#restart-the-upstream-flow-after-an-exception">restart upstream collection</a></small></p>
+//<span class="code-comment">sampleEnd</span></code></pre>
+<p id="waoewo_496">如果希望上游失败后<a href="#restart-the-upstream-flow-after-an-exception">重新开始收集</a>，把 <code>.retry()</code> 放在 <code>.shareIn()</code> 或 <code>.stateIn()</code> 之前。</p>
 <pre><code class="language-kotlin">import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import kotlin.time.Duration.Companion.milliseconds
 
-//sampleStart
+//<span class="code-comment">sampleStart</span>
 suspend fun main() {
     coroutineScope {
         launch {
@@ -1298,24 +1298,24 @@ suspend fun main() {
                     emit(10)
                 }
             }
-                // Restarts the upstream flow after recoverable failures
+                // <span class="code-comment">出现可恢复的故障后，重新收集上游</span>
                 .retry(retries = 5)
                 .stateIn(
-                    // Starts the sharing coroutine in this scope
+                    // <span class="code-comment">在这个作用域中启动共享协程</span>
                     this@launch
                 )
 
             stateFlow.collect {
                 println("Observed $it")
 
-                // Cancels collection and the sharing coroutine
+                // <span class="code-comment">取消收集，同时取消共享上游的协程</span>
                 this@launch.cancel()
             }
         }
     }
 }
-//sampleEnd</code></pre>
-<p id="waoewo_498">例子中的上游连续失败五次才发出值。retry() 位于 stateIn() 前面，因而能先处理这些失败，维持后续尝试。</p>
-<p id="waoewo_499">收到 <code>10</code> 后，收集协程取消自己。本例中它也是共享协程的父任务，因此子任务随之停止。</p></section></section></article>
-<section class="recall"><h2>读完试一题</h2><p>两个人先后打开同一聊天室，新来的人需要马上看到完整历史。状态该存在哪里？</p><details><summary>展开参考答案</summary><p>可以让 StateFlow 的当前值就是不可变的消息列表。新订阅者会先得到整份当前历史。单独广播每条消息的 SharedFlow 只能按 replay 设置重放最近的若干项。</p></details></section><nav class="chapter-switcher" aria-label="章节导航"><a href="../coroutines-cancellation/index.html">← 取消与超时</a><a class="course-home" href="../index.html">全部章节</a><a href="../coroutines-and-channels/index.html">实战：用协程和通道加载 GitHub 贡献者 →</a></nav><footer class="source-credit"><p>原文由 JetBrains 与 Kotlin 贡献者维护。RIN III 于 2026 年 11 月 18 日翻译、润色并补充导读与自测；代码、输出及图中界面保留原貌。</p><p><a href="https://kotlinlang.org/docs/coroutines-flow.html">Kotlin 官方原文</a> · <a href="../LICENSE-2.0.txt">Apache License 2.0</a></p></footer></main>
+//<span class="code-comment">sampleEnd</span></code></pre>
+<p id="waoewo_498">本例中，Flow 在发出值之前失败了五次。由于 <code>.retry()</code> 在 <code>.stateIn()</code> 之前运行，因此会在失败传播到共享协程之前处理每次上游失败。</p>
+<p id="waoewo_499">上游 Flow 发出 <code>10</code> 后，收集协程接收该值并取消自身。由于该协程同时也是共享协程的父协程，因此这将停止派生的热流。</p></section></section></article>
+<section class="recall"><h2>编者自测</h2><p>开头的 flowOf 示例里，0x4B 最终会打印成什么？</p><details><summary>查看答案</summary><p>map 用 toChar() 把十六进制 0x4B 转为字符 K。collect 收到的是 K，因此这一行打印 Say &#x27;K&#x27;!。</p></details></section><nav class="chapter-switcher" aria-label="章节导航"><a href="../coroutines-cancellation/index.html">← 取消与超时</a><a class="course-home" href="../index.html">全部章节</a><a href="../coroutines-and-channels/index.html">实战教程：用协程和通道加载贡献者 →</a></nav><footer class="source-credit"><p>原文由 JetBrains 与 Kotlin 贡献者维护。中文译稿修订于 2026 年 11 月 19 日。示例代码的说明性注释已译为中文，输出文字与截图沿用原文。</p><p><a href="https://kotlinlang.org/docs/coroutines-flow.html">Kotlin 官方原文</a> · <a href="../LICENSE-2.0.txt">Apache License 2.0</a></p></footer></main>
 </body></html>

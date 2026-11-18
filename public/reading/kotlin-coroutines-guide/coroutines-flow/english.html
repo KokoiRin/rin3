@@ -4,14 +4,14 @@
 <meta charset="utf-8"><script src="../../../theme.js"></script>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Flows｜RIN III</title>
-<meta name="description" content="A flow represents a sequential stream of values that can be produced asynchronously. Unlike a suspending function, which returns one value, you can use flows to work with multiple sequential values over time.">
+<meta name="description" content="Flows · English">
 <link rel="manifest" href="../../../manifest.webmanifest">
 <link rel="stylesheet" href="../../../reading/reader.css">
 <link rel="stylesheet" href="../../../theme.css">
 <link rel="stylesheet" href="../../../reading/_shared/theme-readers.css">
 <link rel="stylesheet" href="../../../reading/kotlin-coroutines-guide/course.css">
 </head><body><div class="reader-theme-control" data-theme-control></div>
-<nav class="site-nav"><a href="../index.html">← Kotlin 协程指南</a><a href="index.html">中文译文</a><a href="https://kotlinlang.org/docs/coroutines-flow.html">Kotlin 原文 ↗</a></nav><main class="reader project-reader"><header class="chapter-header"><span class="chapter-kicker">Kotlin 协程指南 · 03 / 12</span><h1>Flows</h1></header><nav class="chapter-switcher" aria-label="章节导航"><a href="../coroutines-cancellation/english.html">← Cancellation and timeouts</a><a class="course-home" href="../english.html">Contents</a><a href="../coroutines-and-channels/english.html">Coroutines and channels − tutorial →</a></nav><details class="source-details chapter-toc"><summary>On this page</summary><ul><li><a href="#cold-flows">Cold flows</a></li><li><a href="#hot-flows">Hot flows</a></li></ul></details><article class="translated-article"><p id="waoewo_3">A flow represents a sequential stream of values that can be produced asynchronously. Unlike a suspending function, which returns one value, you can use flows to work with multiple sequential values over time.</p>
+<nav class="site-nav"><a href="../english.html">← Contents</a><div class="version-links" aria-label="版本"><a href="index.html">中文润色稿</a><a href="literal.html">严格译稿</a><a href="english.html" aria-current="page">English</a></div></nav><main class="reader project-reader"><header class="chapter-header"><span class="chapter-kicker">3 / 12 · English</span><h1 id="coroutines-flow.md">Flows</h1></header><nav class="chapter-switcher" aria-label="章节导航"><a href="../coroutines-cancellation/english.html">← Cancellation and timeouts</a><a class="course-home" href="../english.html">Contents</a><a href="../coroutines-and-channels/english.html">Coroutines and channels − tutorial →</a></nav><details class="source-details chapter-toc"><summary>On this page</summary><ul><li><a href="#cold-flows">Cold flows</a></li><li><a href="#hot-flows">Hot flows</a></li></ul></details><article class="translated-article"><p id="waoewo_3">A flow represents a sequential stream of values that can be produced asynchronously. Unlike a suspending function, which returns one value, you can use flows to work with multiple sequential values over time.</p>
 <p id="waoewo_4">You can use flows to create <span class="emphasis" id="waoewo_16">flow pipelines</span> that load data progressively, react to event streams, and model subscription-style APIs.</p>
 <p id="waoewo_5">A flow pipeline is a sequence of operations that involves the following roles:</p>
 <ul class="list _bullet" id="waoewo_6">
@@ -22,19 +22,19 @@
 <p id="waoewo_7">Here's a simple example that shows how these pipeline roles work together:</p>
 <pre><code class="language-kotlin">import kotlinx.coroutines.flow.*
 
-//sampleStart
+//<span class="code-comment">sampleStart</span>
 suspend fun main() {
-    // The emitter produces values
+    // <span class="code-comment">The emitter produces values</span>
     flowOf(0x4B, 0x6F, 0x74, 0x6C, 0x69, 0x6E)
-        // The intermediate operator consumes values,
-        // applies an operation, and returns another flow
+        // <span class="code-comment">The intermediate operator consumes values,</span>
+        // <span class="code-comment">applies an operation, and returns another flow</span>
         .map { value -&gt; value.toChar() }
-        // The collector consumes the transformed values
+        // <span class="code-comment">The collector consumes the transformed values</span>
         .collect { updatedValue -&gt;
             println("Say '$updatedValue'!")
         }
 }
-//sampleEnd</code></pre>
+//<span class="code-comment">sampleEnd</span></code></pre>
 <p id="waoewo_9">In a flow, values move from an emitter toward a collector, from <span class="emphasis" id="waoewo_26">upstream</span> to <span class="emphasis" id="waoewo_27">downstream</span>. Intermediate operators collect an upstream flow, apply an operation to its values, and return a new downstream flow. That downstream flow can become the upstream flow for the next collector.</p>
 <figure id="waoewo_10"><img alt="Parts of a flow: emitter, intermediate operator (optional), collector. Values move from upstream to downstream." src="../assets/flow-upstream-downstream.svg" width="700" height="194" loading="lazy"></figure><p id="waoewo_11">Kotlin provides the following flow types:</p>
 <ul class="list _bullet" id="waoewo_12">
@@ -49,20 +49,20 @@ suspend fun main() {
 <pre><code class="language-kotlin">import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 
-//sampleStart
+//<span class="code-comment">sampleStart</span>
 fun main() {
-    // Creates a flow
+    // <span class="code-comment">Creates a flow</span>
     val pageFlow = flow {
         for (page in 1..3) {
             println("Loading page $page...")
 
-            // Emits each page as it is loaded
+            // <span class="code-comment">Emits each page as it is loaded</span>
             emit("Page $page")
         }
     }
     println("Creating a cold flow doesn't run it!")
 }
-//sampleEnd</code></pre>
+//<span class="code-comment">sampleEnd</span></code></pre>
 <p id="waoewo_49">In this example, the <code class="code" id="waoewo_58">flow()</code> builder function returns a <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-flow/" id="waoewo_59"><code class="code" id="waoewo_61">Flow&lt;T&gt;</code></a>, but it doesn't start executing its block. A cold flow is like a recipe: it defines how to produce values, but it only starts producing values when you <a href="#collect-a-cold-flow" id="waoewo_60">collect it</a>.</p>
 <p id="waoewo_50">You can also create cold flows with the following functions:</p>
 <ul class="list _bullet" id="waoewo_51">
@@ -74,9 +74,9 @@ fun main() {
 import kotlinx.coroutines.flow.*
 
 fun main() {
-    // Creates a flow from provided values
+    // <span class="code-comment">Creates a flow from provided values</span>
     val predefinedPageFlow = flowOf("Page 1", "Page 2", "Page 3")
-    // Creates a flow from a range
+    // <span class="code-comment">Creates a flow from a range</span>
     val generatedPageFlow = (1..3).asFlow()
 }</code></pre></section><section class="chapter"><h3 id="collect-a-cold-flow">Collect a cold flow</h3>
 <p id="waoewo_70">To collect a cold flow, use the <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/collect.html" id="waoewo_75"><code class="code" id="waoewo_77">collect()</code></a> function, which triggers the emissions from the upstream flow. If you pass a lambda to <code class="code" id="waoewo_76">collect()</code>, it receives each emitted value:</p>
@@ -84,7 +84,7 @@ fun main() {
 import kotlinx.coroutines.flow.*
 import kotlin.time.Duration.Companion.milliseconds
 
-//sampleStart
+//<span class="code-comment">sampleStart</span>
 suspend fun main() {
     withContext(Dispatchers.Default) {
         val pageFlow = flow {
@@ -93,7 +93,7 @@ suspend fun main() {
                 emit("Page $page")
             }
         }
-        // Collects the flow with a lambda that receives each emitted page
+        // <span class="code-comment">Collects the flow with a lambda that receives each emitted page</span>
         pageFlow.collect { page -&gt;
             println("Processing $page...")
             delay(100.milliseconds)
@@ -101,16 +101,16 @@ suspend fun main() {
         }
     }
 }
-//sampleEnd</code></pre>
+//<span class="code-comment">sampleEnd</span></code></pre>
 <p id="waoewo_72">Each call to <code class="code" id="waoewo_78">collect()</code> runs the entire cold flow from the beginning. If multiple collectors collect the same cold flow, each collector triggers its own collection:</p>
 <pre><code class="language-kotlin">import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import kotlin.time.Duration.Companion.milliseconds
 
-//sampleStart
+//<span class="code-comment">sampleStart</span>
 suspend fun main() {
     val pageFlow = flow {
-        // Reads the name of the current coroutine
+        // <span class="code-comment">Reads the name of the current coroutine</span>
         val coroutineName = currentCoroutineContext()[CoroutineName]?.name
 
         println("Starting emissions in $coroutineName")
@@ -122,7 +122,7 @@ suspend fun main() {
     }
 
     withContext(Dispatchers.Default) {
-        // Launches a collector that processes each page slowly
+        // <span class="code-comment">Launches a collector that processes each page slowly</span>
         launch(CoroutineName("a slow coroutine")) {
             pageFlow.collect {
                 println("Processing $it slowly")
@@ -131,7 +131,7 @@ suspend fun main() {
             }
         }
 
-        // Launches a collector that processes each page quickly
+        // <span class="code-comment">Launches a collector that processes each page quickly</span>
         launch(CoroutineName("a fast coroutine")) {
             pageFlow.collect {
                 println("Processing $it quickly")
@@ -141,7 +141,7 @@ suspend fun main() {
         }
     }
 }
-//sampleEnd</code></pre>
+//<span class="code-comment">sampleEnd</span></code></pre>
 <p id="waoewo_74">In this example, <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-coroutine-name/" id="waoewo_79"><code class="code" id="waoewo_82">CoroutineName</code></a> adds a name to each coroutine. You can use <code class="code" id="waoewo_80">CoroutineName</code> for <a href="../coroutine-context-and-dispatchers/english.html#naming-coroutines-for-debugging" id="waoewo_81">debugging</a>. Here, it helps show which collector runs each collection.</p></section><section class="chapter"><h3 id="intermediate-flow-operators">Intermediate flow operators</h3>
 <p id="waoewo_83">Intermediate operators apply operations to an upstream flow and return a new downstream flow. They are cold, so the returned flow doesn't start processing values until it's collected, even when the upstream flow is hot.</p>
 <p id="waoewo_84">The <a href="https://github.com/Kotlin/kotlinx.coroutines" id="waoewo_89">kotlinx.coroutines</a> library offers a <a href="https://kotlinlang.org/docs/coroutines-flow-operators.html" id="waoewo_90">wide range of intermediate flow operators</a> for transforming and processing flows. You can also define custom operators yourself when you need behavior that the built-in operators don't provide.</p>
@@ -149,29 +149,29 @@ suspend fun main() {
 <pre><code class="language-kotlin">import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 
-//sampleStart
-// A simplified custom implementation of the default .map() operator
+//<span class="code-comment">sampleStart</span>
+// <span class="code-comment">A simplified custom implementation of the default .map() operator</span>
 fun &lt;T, R&gt; Flow&lt;T&gt;.myMap(transform: suspend (value: T) -&gt; R): Flow&lt;R&gt; = flow {
-    // Collects values from the upstream flow
+    // <span class="code-comment">Collects values from the upstream flow</span>
     this@myMap.collect { value -&gt;
-        // Transforms each collected value and emits the result
+        // <span class="code-comment">Transforms each collected value and emits the result</span>
         emit(transform(value))
     }
 }
 
 suspend fun main() {
-    // Creates a flow, applies the custom map operator, and collects the transformed values
+    // <span class="code-comment">Creates a flow, applies the custom map operator, and collects the transformed values</span>
     flowOf(1, 2, 3).myMap { 2 * it }.collect {
         println("Collecting $it")
     }
 }
-//sampleEnd</code></pre>
+//<span class="code-comment">sampleEnd</span></code></pre>
 <section class="chapter"><h4 id="call-suspending-functions-inside-a-flow-builder">Call suspending functions inside a flow builder</h4>
 <p id="waoewo_93">Unlike in sequences, you can call suspending functions inside a <code class="code" id="waoewo_100">flow()</code> builder function:</p>
 <pre><code class="language-kotlin">import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 
-//sampleStart
+//<span class="code-comment">sampleStart</span>
 suspend fun loadPage(): Int {
     delay(100)
     return 3
@@ -182,27 +182,27 @@ suspend fun main() {
         emit(loadPage())
     }.collect {
         println(it)
-        // 3
+        // <span class="code-comment">3</span>
     }
 }
-//sampleEnd</code></pre>
+//<span class="code-comment">sampleEnd</span></code></pre>
 <p id="waoewo_95">However, a <code class="code" id="waoewo_101">flow()</code> builder function must emit values from the same coroutine context where it runs. You can't start another coroutine that calls <code class="code" id="waoewo_102">emit()</code> in its block, and you can't change the coroutine context with <code class="code" id="waoewo_103">withContext()</code>:</p>
 <pre><code class="language-kotlin">import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 
-//sampleStart
+//<span class="code-comment">sampleStart</span>
 suspend fun main() {
-    // This fails with an exception!
+    // <span class="code-comment">This fails with an exception!</span>
     flow {
-        // Changes the coroutine context with withContext()
+        // <span class="code-comment">Changes the coroutine context with withContext()</span>
         withContext(Dispatchers.IO) {
             emit('a')
         }
-    }.collect { 
+    }.collect {&#32;
         println("This never prints")
     }
 }
-//sampleEnd</code></pre>
+//<span class="code-comment">sampleEnd</span></code></pre>
 <p id="waoewo_97">This restriction applies to the <code class="code" id="waoewo_104">flow()</code> builder function.</p>
 <p id="waoewo_98">If you need the upstream flow to run in a different coroutine context, you can <a href="#change-the-coroutine-context-of-a-cold-flow-with-flowon" id="waoewo_105">change it with the <code class="code" id="waoewo_106">.flowOn()</code> operator</a>.</p>
 <p id="waoewo_99">Alternatively, you can use <a href="#emit-values-concurrently-with-channelflow" id="waoewo_107"><code class="code" id="waoewo_108">channelFlow()</code></a> to emit values from multiple coroutines.</p></section><section class="chapter"><h4 id="change-the-coroutine-context-of-a-cold-flow-with-flowon">Change the coroutine context of a cold flow with <code class="code" id="waoewo_114">.flowOn()</code>
@@ -213,29 +213,29 @@ suspend fun main() {
 <pre><code class="language-kotlin">import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 
-//sampleStart
+//<span class="code-comment">sampleStart</span>
 suspend fun main() {
     withContext(Dispatchers.Default + CoroutineName("downstream")) {
         flow {
             val coroutineName = currentCoroutineContext()[CoroutineName]?.name
 
-            // Emits in the coroutine context applied with .flowOn()
+            // <span class="code-comment">Emits in the coroutine context applied with .flowOn()</span>
             println("Emitting '1' in $coroutineName")
-            // Emitting '1' in upstream
+            // <span class="code-comment">Emitting '1' in upstream</span>
             emit(1)
 
-        // Changes the coroutine context of the upstream flow
+        // <span class="code-comment">Changes the coroutine context of the upstream flow</span>
         }.flowOn(Dispatchers.IO + CoroutineName("upstream"))
             .collect {
             val coroutineName = currentCoroutineContext()[CoroutineName]?.name
 
-            // Collects in the caller's coroutine context
+            // <span class="code-comment">Collects in the caller's coroutine context</span>
             println("Collecting '$it' in $coroutineName")
-            // Collecting '1' in downstream
+            // <span class="code-comment">Collecting '1' in downstream</span>
         }
     }
 }
-//sampleEnd</code></pre></section></section><section class="chapter"><h3 id="handle-exceptions-in-flows">Handle exceptions in flows</h3>
+//<span class="code-comment">sampleEnd</span></code></pre></section></section><section class="chapter"><h3 id="handle-exceptions-in-flows">Handle exceptions in flows</h3>
 <p id="waoewo_118">Both emitters and collectors can throw exceptions.</p>
 <p id="waoewo_119">If you don't handle an exception during flow collection, it propagates upstream from the collector and is thrown to the caller of the <code class="code" id="waoewo_126">collect()</code> function.</p>
 <p id="waoewo_120">You can handle such exceptions by wrapping the <code class="code" id="waoewo_127">collect()</code> function in a <code class="code" id="waoewo_128">try-catch</code> block, for example:</p>
@@ -244,32 +244,32 @@ import kotlinx.coroutines.flow.*
 
 class MyFlowException(message: String) : Exception(message)
 
-//sampleStart
+//<span class="code-comment">sampleStart</span>
 suspend fun main() {
     val myFlow = flow {
         try {
-            // The emit() function calls the lambda passed to collect()
+            // <span class="code-comment">The emit() function calls the lambda passed to collect()</span>
             emit('a')
         } catch (e: MyFlowException) {
             println("Collector threw $e")
 
-            // Rethrows the downstream exception
+            // <span class="code-comment">Rethrows the downstream exception</span>
             throw e
         }
     }
-    // Wraps flow collection in try-catch
+    // <span class="code-comment">Wraps flow collection in try-catch</span>
     try {
         myFlow.collect {
-            // Throws an exception from the collect() lambda
+            // <span class="code-comment">Throws an exception from the collect() lambda</span>
             throw MyFlowException("Can't process '$it'!")
         }
     } catch (e: MyFlowException) {
         println("Flow collection failed with $e")
-        // Rethrows the exception to the caller
+        // <span class="code-comment">Rethrows the exception to the caller</span>
         throw e
     }
 }
-//sampleEnd</code></pre>
+//<span class="code-comment">sampleEnd</span></code></pre>
 <p id="waoewo_122">In this example, the collector throws an exception when it receives a value from the <code class="code" id="waoewo_129">emit()</code> function. The <code class="code" id="waoewo_130">flow()</code> builder function catches this downstream exception.</p>
 <p id="waoewo_123">When you catch an exception thrown by the collector inside a flow builder function, rethrow it. This preserves exception transparency and lets the caller of <code class="code" id="waoewo_131">collect()</code> handle the exception.</p>
 <section class="chapter"><h4 id="use-the-catch-operator-to-handle-upstream-exceptions">Use the <code class="code" id="waoewo_148">.catch()</code> operator to handle upstream exceptions</h4>
@@ -278,26 +278,26 @@ suspend fun main() {
 <pre><code class="language-kotlin">import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 
-//sampleStart
+//<span class="code-comment">sampleStart</span>
 suspend fun main() {
     flow {
         emit("a")
         emit("b")
 
-        // Throws an exception from the upstream flow
+        // <span class="code-comment">Throws an exception from the upstream flow</span>
         throw UnsupportedOperationException(
             "I am tired of listing letters"
         )
     }.catch { upstreamException -&gt;
         println("Upstream completed with $upstreamException!")
 
-        // Emits a fallback value downstream
+        // <span class="code-comment">Emits a fallback value downstream</span>
         emit("Upstream terminated with an exception!")
     }.collect {
         println("Got '$it'")
     }
 }
-//sampleEnd</code></pre>
+//<span class="code-comment">sampleEnd</span></code></pre>
 <p id="waoewo_136">In this example, the upstream flow emits values before throwing an exception. The <code class="code" id="waoewo_153">.catch()</code> operator handles the exception and emits <code class="code" id="waoewo_154">"Upstream terminated with an exception!"</code> as a fallback value.</p>
 <p id="waoewo_137">When a flow is expected to throw some exceptions during normal operation, handle the recoverable exceptions in <code class="code" id="waoewo_155">.catch()</code> and rethrow any unexpected exceptions.</p>
 <p id="waoewo_138">Here's an example where a flow loads data and reports its progress:</p>
@@ -307,7 +307,7 @@ import kotlin.random.*
 import java.io.IOException
 import kotlin.time.Duration.Companion.milliseconds
 
-//sampleStart
+//<span class="code-comment">sampleStart</span>
 sealed interface LoadingState {
     sealed interface Terminal: LoadingState
     object Started: LoadingState
@@ -331,10 +331,10 @@ fun loadBlob(url: String) = flow {
 }.catch { e -&gt;
     println("Loading data failed with $e")
     if (e is IOException) {
-        // Handles an expected exception
+        // <span class="code-comment">Handles an expected exception</span>
         emit(LoadingState.Failed)
     } else {
-        // Rethrows unexpected exceptions, so the collect() fails with them
+        // <span class="code-comment">Rethrows unexpected exceptions, so the collect() fails with them</span>
         throw e
     }
 }
@@ -344,7 +344,7 @@ suspend fun main() {
         println("Got '$it'")
     }
 }
-//sampleEnd</code></pre>
+//<span class="code-comment">sampleEnd</span></code></pre>
 <p id="waoewo_140">In this example, if loading fails with an expected exception, the <code class="code" id="waoewo_156">.catch()</code> operator uses the <code class="code" id="waoewo_157">emit()</code> function to emit a fallback state. For unexpected exceptions, rethrow them in the <code class="code" id="waoewo_158">.catch()</code> operator. This lets the caller of the <code class="code" id="waoewo_159">collect()</code> function receive exceptions that the flow doesn't handle.</p>
 <p id="waoewo_141">The <code class="code" id="waoewo_160">.catch()</code> operator doesn't handle exceptions thrown by the collector. If the lambda passed to <code class="code" id="waoewo_161">collect()</code> throws an exception, handle it with a <code class="code" id="waoewo_162">try-catch</code> block around the <code class="code" id="waoewo_163">collect()</code> function:</p>
 <pre><code class="language-kotlin">import kotlinx.coroutines.*
@@ -358,12 +358,12 @@ suspend fun main() {
             } catch (e: IllegalArgumentException) {
                 println("Collector doesn't support character '$char': $e")
 
-                // Rethrows the downstream exception
+                // <span class="code-comment">Rethrows the downstream exception</span>
                 throw e
             }
         }
     }.catch { e -&gt;
-        // Doesn't run because the exception happens downstream
+        // <span class="code-comment">Doesn't run because the exception happens downstream</span>
         println("Upstream threw an exception: $e")
     }
 
@@ -372,7 +372,7 @@ suspend fun main() {
             require(!it.isDigit()) { "Digits are not allowed!" }
         }
     } catch (e: IllegalArgumentException) {
-        // Handles the exception from the collect() lambda
+        // <span class="code-comment">Handles the exception from the collect() lambda</span>
         println("Flow collection failed with $e")
     }
 }</code></pre>
@@ -387,7 +387,7 @@ import kotlin.time.Duration.Companion.milliseconds
 
 suspend fun main() {
     flowOf('a', 'o', '5', 'c')
-        // Runs before each value is emitted downstream
+        // <span class="code-comment">Runs before each value is emitted downstream</span>
         .onEach {
             require(!it.isDigit()) { "Digits are not allowed!" }
             println("Got '$it'")
@@ -409,7 +409,7 @@ import java.io.IOException
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
-//sampleStart
+//<span class="code-comment">sampleStart</span>
 sealed interface LoadingState {
     sealed interface Terminal: LoadingState
     object Started: LoadingState
@@ -432,12 +432,12 @@ fun loadBlob(url: String) = flow {
     emit(LoadingState.Done)
 }.retry(3) { e -&gt;
     if (e is IOException) {
-        // This is an expected error
-        // Waits for one second before retrying
+        // <span class="code-comment">This is an expected error</span>
+        // <span class="code-comment">Waits for one second before retrying</span>
         delay(1.seconds)
         true
     } else {
-        // Stops retrying and rethrows unexpected exceptions
+        // <span class="code-comment">Stops retrying and rethrows unexpected exceptions</span>
         false
     }
 }
@@ -447,7 +447,7 @@ suspend fun main() {
         println("Got $it")
     }
 }
-//sampleEnd</code></pre></section></section><section class="chapter"><h3 id="flow-cancellation">Flow cancellation</h3>
+//<span class="code-comment">sampleEnd</span></code></pre></section></section><section class="chapter"><h3 id="flow-cancellation">Flow cancellation</h3>
 <p id="waoewo_196">Flow cancellation stops collection when the result is no longer needed, such as when a request times out.</p>
 <p id="waoewo_197">Flow collection is tied to the coroutine that calls the <code class="code" id="waoewo_205">collect()</code> function. When that coroutine is canceled, the collection stops, and the upstream flow is canceled too.</p>
 <p id="waoewo_198">To cancel flow collection, call the <code class="code" id="waoewo_206">cancel()</code> function on the <code class="code" id="waoewo_207">Job</code> of the collecting coroutine:</p>
@@ -457,7 +457,7 @@ import kotlin.random.*
 import java.io.IOException
 import kotlin.time.Duration.Companion.milliseconds
 
-//sampleStart
+//<span class="code-comment">sampleStart</span>
 val myFlow = flow {
     var i = 0
     try {
@@ -489,11 +489,11 @@ suspend fun main() {
         }
         delay(100.milliseconds)
 
-        // Cancels the coroutine that collects the flow
+        // <span class="code-comment">Cancels the coroutine that collects the flow</span>
         job.cancel()
     }
 }
-//sampleEnd</code></pre>
+//<span class="code-comment">sampleEnd</span></code></pre>
 <p id="waoewo_200">The collector can also cancel the upstream flow while the collecting coroutine stays active. To do this, throw a <code class="code" id="waoewo_208">CancellationException</code> from the collector.</p>
 <p id="waoewo_201">The <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/take.html" id="waoewo_209"><code class="code" id="waoewo_211">.take()</code></a> operator uses this behavior to stop collecting after a fixed number of values. For example, <code class="code" id="waoewo_210">.take(3)</code> collects only the first three values from the upstream flow, then cancels it.</p>
 <p id="waoewo_202">Here's an example that uses a simplified version of the <code class="code" id="waoewo_212">.take()</code> operator:</p>
@@ -503,8 +503,8 @@ import kotlin.random.*
 import java.io.IOException
 import kotlin.time.Duration.Companion.milliseconds
 
-//sampleStart
-// Defines a simplified version of the default .take() operator
+//<span class="code-comment">sampleStart</span>
+// <span class="code-comment">Defines a simplified version of the default .take() operator</span>
 fun &lt;T&gt; Flow&lt;T&gt;.myTake(count: Int): Flow&lt;T&gt; = flow {
     require(count &gt; 0)
     val cancellationException = CancellationException()
@@ -514,16 +514,16 @@ fun &lt;T&gt; Flow&lt;T&gt;.myTake(count: Int): Flow&lt;T&gt; = flow {
             emit(it)
             --elementsRemaining
             if (elementsRemaining == 0) {
-                // Cancels the upstream flow after the requested number of values
+                // <span class="code-comment">Cancels the upstream flow after the requested number of values</span>
                 throw cancellationException
             }
         }
     } catch (e: Throwable) {
         if (e === cancellationException) {
-            // Handles the CancellationException used to cancel the upstream flow
-            // Completes the flow after the set number of values in .myTake()
+            // <span class="code-comment">Handles the CancellationException used to cancel the upstream flow</span>
+            // <span class="code-comment">Completes the flow after the set number of values in .myTake()</span>
         } else {
-            // Rethrows unexpected exceptions
+            // <span class="code-comment">Rethrows unexpected exceptions</span>
             throw e
         }
     }
@@ -534,7 +534,7 @@ suspend fun main() {
         println("Got $it")
     }
 }
-//sampleEnd</code></pre>
+//<span class="code-comment">sampleEnd</span></code></pre>
 <p id="waoewo_204">In this example, the <code class="code" id="waoewo_213">.myTake()</code> function emits values from the upstream flow until all requested values are emitted. Then it throws a <code class="code" id="waoewo_214">CancellationException</code> to cancel the upstream flow.</p></section><section class="chapter"><h3 id="emit-values-concurrently-with-channelflow">Emit values concurrently with <code class="code" id="waoewo_227">channelFlow()</code>
 </h3>
 <p id="waoewo_216">The <code class="code" id="waoewo_228">flow()</code> builder function is simple and efficient for flows that emit values from one coroutine. If you want to emit values from multiple coroutines concurrently into the same flow, use the <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/channel-flow.html" id="waoewo_229"><code class="code" id="waoewo_230">channelFlow()</code></a> builder function. You can use it for concurrent work that reports results progressively, such as loading data from multiple sources.</p>
@@ -546,21 +546,21 @@ import kotlin.random.*
 import java.io.IOException
 import kotlin.time.Duration.Companion.milliseconds
 
-//sampleStart
-// Defines a simplified version of the default .merge() operator
+//<span class="code-comment">sampleStart</span>
+// <span class="code-comment">Defines a simplified version of the default .merge() operator</span>
 fun &lt;T&gt; Flow&lt;T&gt;.myMerge(other: Flow&lt;T&gt;): Flow&lt;T&gt; = channelFlow {
-    // CoroutineScope and SendChannel are available as receivers here
-    // Launches a coroutine that collects the receiver flow
+    // <span class="code-comment">CoroutineScope and SendChannel are available as receivers here</span>
+    // <span class="code-comment">Launches a coroutine that collects the receiver flow</span>
     launch {
-        // Collects the receiver flow
+        // <span class="code-comment">Collects the receiver flow</span>
         this@myMerge.collect {
             send(it)
         }
     }
     launch {
-        // Launches a coroutine that collects the other flow
+        // <span class="code-comment">Launches a coroutine that collects the other flow</span>
         other.collect {
-            // Calls SendChannel.send
+            // <span class="code-comment">Calls SendChannel.send</span>
             send(it)
         }
     }
@@ -571,7 +571,7 @@ suspend fun main() {
     val flow2 = (6..9).asFlow().onEach { delay(50.milliseconds) }
     flow1.myMerge(flow2).collect { println(it) }
 }
-//sampleEnd</code></pre>
+//<span class="code-comment">sampleEnd</span></code></pre>
 <p id="waoewo_220">The <code class="code" id="waoewo_239">channelFlow()</code> builder function uses a buffered channel, allowing producers to send values ahead of the collector until the buffer is full. By default, the buffer can hold up to 64 values. When the buffer is full, producers suspend until the buffer has free space.</p>
 <p id="waoewo_221">You can change the buffer capacity with the <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/buffer.html" id="waoewo_240"><code class="code" id="waoewo_243">.buffer()</code></a> operator. For example, <code class="code" id="waoewo_241">.buffer(12)</code> lets producers send up to 12 values ahead of the collector, while <code class="code" id="waoewo_242">.buffer(0)</code> removes the buffer, so each value is sent only when the collector can receive it.</p>
 <p id="waoewo_222">Here's an example:</p>
@@ -581,7 +581,7 @@ import kotlin.random.*
 import java.io.IOException
 import kotlin.time.Duration.Companion.milliseconds
 
-//sampleStart
+//<span class="code-comment">sampleStart</span>
 suspend fun main() {
     val oneHundredNumbers = channelFlow {
         repeat(100) {
@@ -590,19 +590,19 @@ suspend fun main() {
         }
     }
 
-    // Uses the default buffer capacity
+    // <span class="code-comment">Uses the default buffer capacity</span>
     oneHundredNumbers.collect {
         println("Processing $it")
         delay(10.milliseconds)
     }
-  
-    // Removes the buffer so sending and processing interleave from the start
+&#32;&#32;
+    // <span class="code-comment">Removes the buffer so sending and processing interleave from the start</span>
     oneHundredNumbers.buffer(0).collect {
         println("Processing $it")
         delay(10.milliseconds)
     }
 }
-//sampleEnd</code></pre>
+//<span class="code-comment">sampleEnd</span></code></pre>
 <p id="waoewo_224">In this example, <code class="code" id="waoewo_244">oneHundredNumbers</code> flow uses the default buffer capacity, while <code class="code" id="waoewo_245">oneHundredNumbers.buffer(0)</code> flow has no buffer.</p>
 <p id="waoewo_225">With the default buffer capacity, the producer sends values quickly until the buffer becomes full. After that, <code class="code" id="waoewo_246">send()</code> suspends until the buffer has free space, so <code class="code" id="waoewo_247">Sending</code> and <code class="code" id="waoewo_248">Processing</code> messages start to interleave.</p>
 <p id="waoewo_226">With <code class="code" id="waoewo_249">.buffer(0)</code>, each <code class="code" id="waoewo_250">send()</code> call waits until the collector can receive the value, so <code class="code" id="waoewo_251">Sending</code> and <code class="code" id="waoewo_252">Processing</code> interleave from the start.</p></section></section><section class="chapter"><h2 id="hot-flows">Hot flows</h2>
@@ -627,28 +627,28 @@ suspend fun main() {
 )
 
 class Chatroom {
-    // Stores the SharedFlow in a private backing property
+    // <span class="code-comment">Stores the SharedFlow in a private backing property</span>
     private val _messages = MutableSharedFlow&lt;Message&gt;()
 
-    // Exposes a read-only SharedFlow to subscribers
+    // <span class="code-comment">Exposes a read-only SharedFlow to subscribers</span>
     val messages: SharedFlow&lt;Message&gt;
         get() = _messages.asSharedFlow()
 
     suspend fun sendMessageToEveryone(message: Message) {
-        // Emits the message to subscribers
+        // <span class="code-comment">Emits the message to subscribers</span>
         _messages.emit(message)
     }
 }</code></pre>
 <p id="waoewo_279">Just like with cold flows, you can use the <code class="code" id="waoewo_303">collect()</code> function to collect values from a <code class="code" id="waoewo_304">SharedFlow</code>.</p>
 <p id="waoewo_280">You can also configure a <code class="code" id="waoewo_305">SharedFlow</code> to immediately replay already emitted values to new subscribers. The replay cache works like a small history buffer, storing a fixed number of previous emissions.</p>
 <p id="waoewo_281">To set how many previous emissions a new subscriber receives, use the <code class="code" id="waoewo_306">replay</code> parameter in <code class="code" id="waoewo_307">MutableSharedFlow()</code>:</p>
-<pre><code class="language-kotlin">// Sets the number of already emitted messages new subscribers receive on subscription
+<pre><code class="language-kotlin">// <span class="code-comment">Sets the number of already emitted messages new subscribers receive on subscription</span>
 const val MESSAGES_TO_REMEMBER = 10
 
 class Chatroom {
     private val _messages = MutableSharedFlow&lt;Message&gt;(
 
-        // Replays the set amount of last emitted messages to new subscribers
+        // <span class="code-comment">Replays the set amount of last emitted messages to new subscribers</span>
         replay = MESSAGES_TO_REMEMBER
     )
 
@@ -656,7 +656,7 @@ class Chatroom {
         get() = _messages.asSharedFlow()
 
     suspend fun sendMessageToEveryone(message: Message) {
-        // Emits the message to subscribers of the messages flow 
+        // <span class="code-comment">Emits the message to subscribers of the messages flow</span>&#32;
         _messages.emit(message)
     }
 }</code></pre>
@@ -675,23 +675,23 @@ data class Message(
     val text: String,
 )
 
-// Sets the number of already emitted messages that new subscribers receive on subscription
+// <span class="code-comment">Sets the number of already emitted messages that new subscribers receive on subscription</span>
 const val MESSAGES_TO_REMEMBER = 10
 
 class Chatroom {
-    // Stores the SharedFlow in a private backing property
+    // <span class="code-comment">Stores the SharedFlow in a private backing property</span>
     private val _messages = MutableSharedFlow&lt;Message&gt;(
 
-        // Replays the set amount of last emitted messages to new subscribers
+        // <span class="code-comment">Replays the set amount of last emitted messages to new subscribers</span>
         replay = MESSAGES_TO_REMEMBER
     )
 
-    // Exposes a read-only SharedFlow to subscribers
+    // <span class="code-comment">Exposes a read-only SharedFlow to subscribers</span>
     val messages: SharedFlow&lt;Message&gt;
         get() = _messages.asSharedFlow()
 
 
-    // Emits the message to subscribers
+    // <span class="code-comment">Emits the message to subscribers</span>
     suspend fun sendMessageToEveryone(message: Message) {
         _messages.emit(message)
     }
@@ -701,16 +701,16 @@ suspend fun main() {
     val nUsers = 3
     val chatroom = Chatroom()
     withContext(Dispatchers.Default) {
-        // Starts a message reader for each user
+        // <span class="code-comment">Starts a message reader for each user</span>
         val messageReaders = List(nUsers) { userId -&gt;
-            // Starts collection before messages are emitted
+            // <span class="code-comment">Starts collection before messages are emitted</span>
             launch(start = CoroutineStart.UNDISPATCHED) {
                 chatroom.messages.collect { message -&gt;
                     println("User $userId received $message")
                 }
             }
         }
-        // Sends a greeting from each user
+        // <span class="code-comment">Sends a greeting from each user</span>
         repeat(nUsers) { userId -&gt;
             chatroom.sendMessageToEveryone(
                 Message(
@@ -720,9 +720,9 @@ suspend fun main() {
                 )
             )
         }
-        // Delays to make sure people have enough time to chat
+        // <span class="code-comment">Delays to make sure people have enough time to chat</span>
         delay(100.milliseconds)
-        // Cancels readers because SharedFlow collection doesn't finish by itself
+        // <span class="code-comment">Cancels readers because SharedFlow collection doesn't finish by itself</span>
         messageReaders.forEach { it.cancel() }
     }
 
@@ -739,7 +739,7 @@ import kotlin.time.Clock
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.ExperimentalTime
 import kotlin.time.Instant
-        
+&#32;&#32;&#32;&#32;&#32;&#32;&#32;&#32;
 data class Message(
     val senderId: Int,
     val time: Instant,
@@ -748,20 +748,20 @@ data class Message(
 
 const val MESSAGES_TO_REMEMBER = 10
 
-//sampleStart
+//<span class="code-comment">sampleStart</span>
 class Chatroom {
-    // Exposes a read-only SharedFlow with a mutable backing field
+    // <span class="code-comment">Exposes a read-only SharedFlow with a mutable backing field</span>
     val messages: SharedFlow&lt;Message&gt;
         field = MutableSharedFlow&lt;Message&gt;(
             replay = MESSAGES_TO_REMEMBER
         )
 
     suspend fun sendMessageToEveryone(message: Message) {
-        // Emits through the mutable backing field inside Chatroom
+        // <span class="code-comment">Emits through the mutable backing field inside Chatroom</span>
         messages.emit(message)
     }
 }
-//sampleEnd
+//<span class="code-comment">sampleEnd</span>
 
 suspend fun main() {
     val nUsers = 3
@@ -794,7 +794,7 @@ suspend fun main() {
 <p id="waoewo_329"><a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-state-flow/" id="waoewo_352"><code class="code" id="waoewo_353">StateFlow</code></a> is a hot flow that stores a single state value and emits updates when that value is replaced with a new one. New subscribers receive the current value as soon as they start collecting, and then receive new values each time the state updates.</p>
 <p id="waoewo_330">You can use <code class="code" id="waoewo_354">StateFlow</code> to represent state that changes over time, such as loading progress, UI state, or the state of an object.</p>
 <p id="waoewo_331">To create a <code class="code" id="waoewo_355">StateFlow</code>, use the <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-mutable-state-flow.html" id="waoewo_356"><code class="code" id="waoewo_357">MutableStateFlow()</code></a> function with an initial value:</p>
-<pre><code class="language-kotlin">// Creates a MutableStateFlow with LoadingState.Started as the initial value
+<pre><code class="language-kotlin">// <span class="code-comment">Creates a MutableStateFlow with LoadingState.Started as the initial value</span>
 val result = MutableStateFlow&lt;LoadingState&gt;(LoadingState.Started)</code></pre>
 <p id="waoewo_333">To set the current state, use the <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-mutable-state-flow/value.html" id="waoewo_358"><code class="code" id="waoewo_359">value</code></a> property:</p>
 <pre><code class="language-kotlin">fun loadBlob(url: String): StateFlow&lt;LoadingState&gt; {
@@ -803,15 +803,15 @@ val result = MutableStateFlow&lt;LoadingState&gt;(LoadingState.Started)</code></
     DownloadManager.startLoading(
         url,
         onPercentageLoaded = { percentage -&gt;
-            // Replaces the current state with the latest progress
+            // <span class="code-comment">Replaces the current state with the latest progress</span>
             result.value = LoadingState.Percentage(percentage)
         },
         onCompletion = {
-            // Replaces the current state with the completion state
+            // <span class="code-comment">Replaces the current state with the completion state</span>
             result.value = LoadingState.Done
         },
         onFailure = {
-            // Replaces the current state with the failure state
+            // <span class="code-comment">Replaces the current state with the failure state</span>
             result.value = LoadingState.Failed
         }
     )
@@ -834,7 +834,7 @@ val result = MutableStateFlow&lt;LoadingState&gt;(LoadingState.Started)</code></
         }
     )
 
-    // Exposes the loading state as a read-only StateFlow
+    // <span class="code-comment">Exposes the loading state as a read-only StateFlow</span>
     return result.asStateFlow()
 }</code></pre>
 <p id="waoewo_339">Here's an example that uses <code class="code" id="waoewo_370">StateFlow</code> to report loading progress from a callback-based API:</p>
@@ -847,7 +847,7 @@ import kotlin.io.encoding.*
 import java.io.IOException
 import kotlin.random.Random
 
-//sampleStart
+//<span class="code-comment">sampleStart</span>
 sealed interface LoadingState {
     sealed interface Terminal: LoadingState
     object Started: LoadingState
@@ -857,38 +857,38 @@ sealed interface LoadingState {
 }
 
 fun loadBlob(url: String): StateFlow&lt;LoadingState&gt; {
-    // Creates a mutable StateFlow with the initial loading state
+    // <span class="code-comment">Creates a mutable StateFlow with the initial loading state</span>
     val result = MutableStateFlow&lt;LoadingState&gt;(LoadingState.Started)
     DownloadManager.startLoading(
         url,
         onPercentageLoaded = { percentage -&gt;
-            // Replaces the current state with the latest progress
+            // <span class="code-comment">Replaces the current state with the latest progress</span>
             result.value = LoadingState.Percentage(percentage)
         },
         onCompletion = {
-            // Replaces the current state with the completion state
+            // <span class="code-comment">Replaces the current state with the completion state</span>
             result.value = LoadingState.Done
         },
         onFailure = {
-            // Replaces the current state with the failure state
+            // <span class="code-comment">Replaces the current state with the failure state</span>
             result.value = LoadingState.Failed
         }
     )
-    // Exposes the loading state as a read-only StateFlow
+    // <span class="code-comment">Exposes the loading state as a read-only StateFlow</span>
     return result.asStateFlow()
 }
 
-// Defines a callback-based API that downloads data asynchronously
+// <span class="code-comment">Defines a callback-based API that downloads data asynchronously</span>
 object DownloadManager {
-    // Starts loading the url asynchronously
+    // <span class="code-comment">Starts loading the url asynchronously</span>
     fun startLoading(
         url: String,
         onPercentageLoaded: (Int) -&gt; Unit,
         onCompletion: () -&gt; Unit,
         onFailure: (Throwable) -&gt; Unit
     ) {
-        // Uses GlobalScope for illustrative purposes only,
-        // to keep this example self-contained
+        // <span class="code-comment">Uses GlobalScope for illustrative purposes only,</span>
+        // <span class="code-comment">to keep this example self-contained</span>
         GlobalScope.launch {
             val failureChancePerStep = 1 - java.lang.Math.pow(0.99, 10.0)
 
@@ -909,7 +909,7 @@ suspend fun main() {
     loadBlob("https://example.com/").onEach { state -&gt;
         when (state) {
             is LoadingState.Started -&gt; {
-                // Waits for progress updates
+                // <span class="code-comment">Waits for progress updates</span>
             }
             is LoadingState.Percentage -&gt;
                 println("Loaded ${state.percents}...")
@@ -920,7 +920,7 @@ suspend fun main() {
         }
     }.takeWhile { it !is LoadingState.Terminal }.collect()
 }
-//sampleEnd</code></pre>
+//<span class="code-comment">sampleEnd</span></code></pre>
 <aside class="prompt" data-type="note" id="waoewo_341"><p id="waoewo_371">This example uses <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-global-scope/" id="waoewo_372"><code class="code" id="waoewo_375">GlobalScope</code></a> only to keep the callback-based API short. In your own applications, pass a <code class="code" id="waoewo_373">CoroutineScope</code> to the function that starts the work, such as <code class="code" id="waoewo_374">startLoading()</code> in this example, and launch the coroutine in that scope so callers can cancel the work when they no longer need it.</p></aside><p id="waoewo_342">Since <code class="code" id="waoewo_376">StateFlow</code> is a hot flow, collection doesn’t complete on its own. In this example, the <code class="code" id="waoewo_377">.takeWhile()</code> operator stops collection when loading reaches a terminal state.</p>
 <p id="waoewo_343">A <code class="code" id="waoewo_378">StateFlow</code> emits an update only when the new value differs from the current value.</p>
 <aside class="prompt" data-type="warning" id="waoewo_344"><p id="waoewo_379">Avoid storing mutable objects in a <code class="code" id="waoewo_380">StateFlow</code>. Mutating the object itself doesn't replace the current value, so collectors don't receive an update.</p></aside><p id="waoewo_345">You can also update a <code class="code" id="waoewo_381">StateFlow</code> by calculating the new state from the current state. Use the <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/update.html" id="waoewo_382"><code class="code" id="waoewo_385">.update()</code></a> function for these updates. The <code class="code" id="waoewo_383">.update()</code> function updates the value atomically, which helps when multiple coroutines update the same <code class="code" id="waoewo_384">MutableStateFlow</code>.</p>
@@ -934,28 +934,28 @@ import kotlin.io.encoding.*
 import java.io.IOException
 import kotlin.random.Random
 
-//sampleStart
+//<span class="code-comment">sampleStart</span>
 class Post(val id: Long) {
-    // Stores the current number of likes as a StateFlow
+    // <span class="code-comment">Stores the current number of likes as a StateFlow</span>
     private val _numberOfLikes = MutableStateFlow&lt;Int&gt;(
-        // Sets the initial number of likes
+        // <span class="code-comment">Sets the initial number of likes</span>
         0
     )
 
-    // Exposes a read-only StateFlow with the current number of likes
+    // <span class="code-comment">Exposes a read-only StateFlow with the current number of likes</span>
     val numberOfLikes: StateFlow&lt;Int&gt;
         get() = _numberOfLikes.asStateFlow()
 
 
-    // Adds a like
+    // <span class="code-comment">Adds a like</span>
     fun like() {
-        // Increments the number of likes atomically for concurrent and multithreaded calls
+        // <span class="code-comment">Increments the number of likes atomically for concurrent and multithreaded calls</span>
         _numberOfLikes.update { it + 1 }
     }
 }
 
 suspend fun drawUpdatedNumberOfLikes(likes: Int) {
-    // Displays the latest number of likes
+    // <span class="code-comment">Displays the latest number of likes</span>
     println("${Clock.System.now()}: the number of likes is $likes")
 }
 
@@ -967,7 +967,7 @@ suspend fun main() {
                 drawUpdatedNumberOfLikes(it)
             }
         }
-        // Simulates users who like the post
+        // <span class="code-comment">Simulates users who like the post</span>
         coroutineScope {
             repeat(10) {
                 launch {
@@ -976,11 +976,11 @@ suspend fun main() {
                 }
             }
         }
-        // Cancels collection after all simulated users finish
+        // <span class="code-comment">Cancels collection after all simulated users finish</span>
         notifyingJob.cancelAndJoin()
     }
 }
-//sampleEnd</code></pre>
+//<span class="code-comment">sampleEnd</span></code></pre>
 <p id="waoewo_349">In this example, the <code class="code" id="waoewo_392">.update()</code> function increments the number of likes atomically. This prevents lost updates when multiple coroutines call the <code class="code" id="waoewo_393">like()</code> function at the same time.</p>
 <section class="chapter"><h4 id="store-accumulated-state-in-a-stateflow">Store accumulated state in a <code class="code" id="waoewo_403">StateFlow</code>
 </h4>
@@ -997,7 +997,7 @@ import kotlin.io.encoding.*
 import java.io.IOException
 import kotlin.random.Random
 
-//sampleStart
+//<span class="code-comment">sampleStart</span>
 data class Message(
     val senderId: Int,
     val time: Instant,
@@ -1005,16 +1005,16 @@ data class Message(
 )
 
 class Chatroom {
-    // Stores the full message history
+    // <span class="code-comment">Stores the full message history</span>
     private val _messageHistory = MutableStateFlow&lt;List&lt;Message&gt;&gt;(emptyList())
 
-    // Exposes a read-only StateFlow with the current message history
+    // <span class="code-comment">Exposes a read-only StateFlow with the current message history</span>
     val messageHistory: StateFlow&lt;List&lt;Message&gt;&gt;
         get() = _messageHistory.asStateFlow()
 
-    // Sends a message to all subscribers of the messageHistory flow
+    // <span class="code-comment">Sends a message to all subscribers of the messageHistory flow</span>
     suspend fun sendMessageToEveryone(message: Message) {
-        // Adds the new message to the current history atomically
+        // <span class="code-comment">Adds the new message to the current history atomically</span>
         _messageHistory.update {
             it + message
         }
@@ -1025,7 +1025,7 @@ suspend fun main() {
     val nUsers = 3
     val chatroom = Chatroom()
     withContext(Dispatchers.Default) {
-        // Starts a message reader for each user
+        // <span class="code-comment">Starts a message reader for each user</span>
         val messageReaders = List(nUsers) { userId -&gt;
             launch(start = CoroutineStart.UNDISPATCHED) {
                 chatroom.messageHistory.collect { currentHistory -&gt;
@@ -1033,7 +1033,7 @@ suspend fun main() {
                 }
             }
         }
-        // Sends a greeting from each user
+        // <span class="code-comment">Sends a greeting from each user</span>
         repeat(nUsers) { userId -&gt;
             chatroom.sendMessageToEveryone(
                 Message(
@@ -1043,13 +1043,13 @@ suspend fun main() {
                 )
             )
         }
-        // Delays to make sure users have enough time to receive updates
+        // <span class="code-comment">Delays to make sure users have enough time to receive updates</span>
         delay(100.milliseconds)
-        // Cancels readers because StateFlow collection doesn't finish by itself
+        // <span class="code-comment">Cancels readers because StateFlow collection doesn't finish by itself</span>
         messageReaders.forEach { it.cancel() }
     }
 }
-//sampleEnd</code></pre>
+//<span class="code-comment">sampleEnd</span></code></pre>
 <p id="waoewo_400">In this example, <code class="code" id="waoewo_407">messageHistory</code> stores the full list of previous messages as the current state. When a new message is sent, the <code class="code" id="waoewo_408">.update()</code> function creates a new list from the previous history and adds the new message atomically.</p>
 <aside class="prompt" data-type="tip" id="waoewo_401"><p id="waoewo_409">Updating immutable collections by creating a new collection can take more time as the collection grows. You can create persistent collections with the <a href="https://kotlinlang.org/docs/components-stability.html#stability-levels-explained" id="waoewo_410">Experimental</a> <a href="https://github.com/Kotlin/kotlinx.collections.immutable" id="waoewo_411"><code class="code" id="waoewo_412">kotlinx.collections.immutable</code></a> library to make immutable collection updates more efficient.</p></aside><p id="waoewo_402">Since <code class="code" id="waoewo_413">messageHistory</code> is a <code class="code" id="waoewo_414">StateFlow</code>, subscribers receive the current message history when they start collecting. After that, they receive a new list each time a message is sent, which changes the chat history.</p></section></section><section class="chapter"><h3 id="convert-cold-flows-to-hot-flows">Convert cold flows to hot flows</h3>
 <p id="waoewo_415">A cold flow runs its upstream operations separately for each collector. When multiple subscribers need emissions from the same upstream collection, you can convert the cold flow to a hot flow that shares that collection with its subscribers.</p>
@@ -1067,8 +1067,8 @@ fun &lt;T&gt; Flow&lt;T&gt;.simpleShareIn(scope: CoroutineScope): SharedFlow&lt;
     return sharedFlow.asSharedFlow()
 }
 
-suspend fun main() { 
-    
+suspend fun main() {&#32;
+&#32;&#32;&#32;&#32;
 }</code></pre>
 <p id="waoewo_418">In this example, <code class="code" id="waoewo_435">simpleShareIn()</code> starts a new coroutine in the provided scope. To stop collecting from the upstream flow, <a href="#cancel-hot-flows" id="waoewo_436">cancel the scope</a> that runs the collecting coroutine.</p>
 <p id="waoewo_419">If the upstream flow throws an exception, this collecting coroutine fails. Use operators such as <code class="code" id="waoewo_437">.catch()</code> or <code class="code" id="waoewo_438">.retry()</code> before sharing the flow to <a href="#handle-exceptions-in-hot-flows" id="waoewo_439">handle upstream exceptions</a> before the collecting coroutine fails.</p>
@@ -1090,7 +1090,7 @@ import kotlin.io.encoding.*
 import java.io.IOException
 import kotlin.random.Random
 
-//sampleStart
+//<span class="code-comment">sampleStart</span>
 data class Message(
     val senderId: Int,
     val time: Instant,
@@ -1098,15 +1098,15 @@ data class Message(
 )
 
 class Chatroom {
-    // Stores the message flow
+    // <span class="code-comment">Stores the message flow</span>
     private val _messages = MutableSharedFlow&lt;Message&gt;()
 
-    // Exposes a read-only SharedFlow with emitted messages
-    // New subscribers don't receive already emitted messages
+    // <span class="code-comment">Exposes a read-only SharedFlow with emitted messages</span>
+    // <span class="code-comment">New subscribers don't receive already emitted messages</span>
     val messages: SharedFlow&lt;Message&gt;
         get() = _messages.asSharedFlow()
-  
-    // Sends a message to all subscribers of the messages flow
+&#32;&#32;
+    // <span class="code-comment">Sends a message to all subscribers of the messages flow</span>
     suspend fun sendMessageToEveryone(message: Message) {
         _messages.emit(message)
     }
@@ -1116,33 +1116,33 @@ suspend fun main() {
     val nUsers = 3
     val chatroom = Chatroom()
     withContext(Dispatchers.Default) {
-        // Creates a child scope of the currently running coroutine
+        // <span class="code-comment">Creates a child scope of the currently running coroutine</span>
         val derivedFlowsScope = CoroutineScope(
             currentCoroutineContext() + Job(currentCoroutineContext()[Job])
         )
-        // Shares serialized messages between subscribers
+        // <span class="code-comment">Shares serialized messages between subscribers</span>
         val serializedMessages: SharedFlow&lt;String&gt; =
             chatroom
                 .messages
                 .map {
-                    // Serializes each message once for the shared flow
+                    // <span class="code-comment">Serializes each message once for the shared flow</span>
                     "senderId: ${it.senderId}, time: ${it.time}, text: " +
                         Base64.Default.encode(it.text.encodeToByteArray())
                 }
                 .shareIn(
-                    // Starts the sharing coroutine in this scope.
-                    // The upstream flow, including .map(), runs in that coroutine
+                    // <span class="code-comment">Starts the sharing coroutine in this scope.</span>
+                    // <span class="code-comment">The upstream flow, including .map(), runs in that coroutine</span>
                     derivedFlowsScope,
 
-                    // Starts collecting the upstream flow immediately,
-                    // before the first subscriber appears
+                    // <span class="code-comment">Starts collecting the upstream flow immediately,</span>
+                    // <span class="code-comment">before the first subscriber appears</span>
                     SharingStarted.Eagerly,
 
-                    // Doesn't replay previous serialized messages to new subscribers
+                    // <span class="code-comment">Doesn't replay previous serialized messages to new subscribers</span>
                     replay = 0,
                 )
 
-        // Starts a message reader for each user
+        // <span class="code-comment">Starts a message reader for each user</span>
         val messageReaders = List(nUsers) { userId -&gt;
             launch(start = CoroutineStart.UNDISPATCHED) {
                 serializedMessages.collect { serializedMessage -&gt;
@@ -1150,7 +1150,7 @@ suspend fun main() {
                 }
             }
         }
-        // Sends a greeting from each user
+        // <span class="code-comment">Sends a greeting from each user</span>
         repeat(nUsers) { userId -&gt;
             chatroom.sendMessageToEveryone(
                 Message(
@@ -1160,15 +1160,15 @@ suspend fun main() {
                 )
             )
         }
-        // Delays to make sure users have enough time to receive updates
+        // <span class="code-comment">Delays to make sure users have enough time to receive updates</span>
         delay(100.milliseconds)
-        // Cancels readers because SharedFlow collection doesn't finish by itself
+        // <span class="code-comment">Cancels readers because SharedFlow collection doesn't finish by itself</span>
         messageReaders.forEach { it.cancel() }
-        // Cancels the scope that runs the derived hot flow
+        // <span class="code-comment">Cancels the scope that runs the derived hot flow</span>
         derivedFlowsScope.cancel()
     }
 }
-//sampleEnd</code></pre>
+//<span class="code-comment">sampleEnd</span></code></pre>
 <p id="waoewo_426">In this example, the <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/map.html" id="waoewo_457"><code class="code" id="waoewo_460">.map()</code></a> operator creates a cold flow that serializes each message. Without the <code class="code" id="waoewo_458">.shareIn()</code> function, each collector runs that serialization separately. The <code class="code" id="waoewo_459">.shareIn()</code> function shares one upstream collection, so each message is serialized once and then shared with all subscribers.</p>
 <p id="waoewo_427">Because <code class="code" id="waoewo_461">SharingStarted.Eagerly</code> starts upstream collection immediately, the derived hot flow starts collecting <code class="code" id="waoewo_462">chatroom.messages</code> as soon as <code class="code" id="waoewo_463">.shareIn()</code> is called.</p>
 <p id="waoewo_428">Similarly, to convert a cold flow to a <code class="code" id="waoewo_464">StateFlow</code>, use the <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/state-in.html" id="waoewo_465"><code class="code" id="waoewo_466">.stateIn()</code></a> function.</p>
@@ -1179,14 +1179,14 @@ suspend fun main() {
         .messageHistory
         .map { currentHistory -&gt; currentHistory.lastOrNull()?.time }
         .stateIn(
-            // Starts the sharing coroutine in this scope
-            // The upstream flow, including .map(), runs in that coroutine
+            // <span class="code-comment">Starts the sharing coroutine in this scope</span>
+            // <span class="code-comment">The upstream flow, including .map(), runs in that coroutine</span>
             derivedFlowsScope,
 
-            // Starts collecting when the first subscriber appears
-            // and stops when the last subscriber disappears
+            // <span class="code-comment">Starts collecting when the first subscriber appears</span>
+            // <span class="code-comment">and stops when the last subscriber disappears</span>
             SharingStarted.WhileSubscribed(),
-            // Sets the initial state before the first upstream emission
+            // <span class="code-comment">Sets the initial state before the first upstream emission</span>
             null,
         )</code></pre></section><section class="chapter"><h3 id="cancel-hot-flows">Cancel hot flows</h3>
 <p id="waoewo_470">Hot flows don't stop when a subscriber is canceled.</p>
@@ -1210,14 +1210,14 @@ data class Message(
 )
 
 class Chatroom {
-    // Stores the message history
+    // <span class="code-comment">Stores the message history</span>
     private val _messageHistory = MutableStateFlow&lt;List&lt;Message&gt;&gt;(emptyList())
 
-    // Exposes a read-only StateFlow with the current message history
+    // <span class="code-comment">Exposes a read-only StateFlow with the current message history</span>
     val messageHistory: StateFlow&lt;List&lt;Message&gt;&gt;
         get() = _messageHistory.asStateFlow()
 
-    // Sends a message to all subscribers of the messageHistory flow
+    // <span class="code-comment">Sends a message to all subscribers of the messageHistory flow</span>
     suspend fun sendMessageToEveryone(message: Message) {
         _messageHistory.update {
             it + message
@@ -1225,11 +1225,11 @@ class Chatroom {
     }
 }
 
-//sampleStart
+//<span class="code-comment">sampleStart</span>
 suspend fun main() {
     val chatroom = Chatroom()
     withContext(Dispatchers.Default) {
-        // Creates a child scope of the currently running coroutine
+        // <span class="code-comment">Creates a child scope of the currently running coroutine</span>
         val derivedFlowsScope = CoroutineScope(
             currentCoroutineContext() + Job(currentCoroutineContext()[Job])
         )
@@ -1239,17 +1239,17 @@ suspend fun main() {
             }.onEach {
                 println("There are currently $it messages")
             }.stateIn(
-                // Starts the sharing coroutine in this scope
+                // <span class="code-comment">Starts the sharing coroutine in this scope</span>
                 derivedFlowsScope
             )
-        // Updates messageHistory
+        // <span class="code-comment">Updates messageHistory</span>
         chatroom.sendMessageToEveryone(
             Message(0, Clock.System.now(), "We are shutting down soon!")
         )
         delay(100.milliseconds)
-        // Cancels the scope that runs the derived hot flow
+        // <span class="code-comment">Cancels the scope that runs the derived hot flow</span>
         derivedFlowsScope.cancel()
-        // Updates messageHistory, but totalMessages no longer receives the update
+        // <span class="code-comment">Updates messageHistory, but totalMessages no longer receives the update</span>
         chatroom.sendMessageToEveryone(
             Message(0, Clock.System.now(), "We have shut down.")
         )
@@ -1257,7 +1257,7 @@ suspend fun main() {
         println("Actual history size: ${chatroom.messageHistory.value.size}")
     }
 }
-//sampleEnd</code></pre>
+//<span class="code-comment">sampleEnd</span></code></pre>
 <p id="waoewo_477">In this example, when you call the <code class="code" id="waoewo_485">derivedFlowsScope.cancel()</code> function, <code class="code" id="waoewo_486">totalMessages</code> stops collecting updates from <code class="code" id="waoewo_487">messageHistory</code>.</p>
 <p id="waoewo_478">The <code class="code" id="waoewo_488">sendMessageToEveryone()</code> function still updates <code class="code" id="waoewo_489">messageHistory</code> because the coroutine that calls it wasn't canceled. As a result, <code class="code" id="waoewo_490">totalMessages.value</code> keeps the last collected size, while <code class="code" id="waoewo_491">chatroom.messageHistory.value.size</code> shows the actual number of messages.</p></section><section class="chapter"><h3 id="handle-exceptions-in-hot-flows">Handle exceptions in hot flows</h3>
 <p id="waoewo_492">In <a href="#handle-exceptions-in-flows" id="waoewo_500">cold flows</a>, upstream exceptions propagate to the caller of <code class="code" id="waoewo_501">collect()</code> unless you use an operator such as <code class="code" id="waoewo_502">.catch()</code> to handle them first.</p>
@@ -1266,7 +1266,7 @@ suspend fun main() {
 <pre><code class="language-kotlin">import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.*
 
-//sampleStart
+//<span class="code-comment">sampleStart</span>
 suspend fun main() {
     withContext(Dispatchers.Default) {
         launch {
@@ -1278,13 +1278,13 @@ suspend fun main() {
         }
     }
 }
-//sampleEnd</code></pre>
+//<span class="code-comment">sampleEnd</span></code></pre>
 <p id="waoewo_496">You can <a href="#restart-the-upstream-flow-after-an-exception" id="waoewo_507">restart upstream collection</a> after a failure. To do so, place the <code class="code" id="waoewo_508">.retry()</code> operator before <code class="code" id="waoewo_509">.shareIn()</code> or <code class="code" id="waoewo_510">.stateIn()</code>:</p>
 <pre><code class="language-kotlin">import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import kotlin.time.Duration.Companion.milliseconds
 
-//sampleStart
+//<span class="code-comment">sampleStart</span>
 suspend fun main() {
     coroutineScope {
         launch {
@@ -1301,24 +1301,24 @@ suspend fun main() {
                     emit(10)
                 }
             }
-                // Restarts the upstream flow after recoverable failures
+                // <span class="code-comment">Restarts the upstream flow after recoverable failures</span>
                 .retry(retries = 5)
                 .stateIn(
-                    // Starts the sharing coroutine in this scope
+                    // <span class="code-comment">Starts the sharing coroutine in this scope</span>
                     this@launch
                 )
 
             stateFlow.collect {
                 println("Observed $it")
 
-                // Cancels collection and the sharing coroutine
+                // <span class="code-comment">Cancels collection and the sharing coroutine</span>
                 this@launch.cancel()
             }
         }
     }
 }
-//sampleEnd</code></pre>
+//<span class="code-comment">sampleEnd</span></code></pre>
 <p id="waoewo_498">In this example, the flow fails five times before it emits a value. Because <code class="code" id="waoewo_511">.retry()</code> runs before <code class="code" id="waoewo_512">.stateIn()</code>, it handles each upstream failure before the failure reaches the sharing coroutine.</p>
 <p id="waoewo_499">After the upstream flow emits <code class="code" id="waoewo_513">10</code>, the collecting coroutine receives the value and cancels itself. Since the same coroutine is also the parent of the sharing coroutine, this stops the derived hot flow.</p></section></section></article>
-<nav class="chapter-switcher" aria-label="章节导航"><a href="../coroutines-cancellation/english.html">← Cancellation and timeouts</a><a class="course-home" href="../english.html">Contents</a><a href="../coroutines-and-channels/english.html">Coroutines and channels − tutorial →</a></nav><footer class="source-credit"><p>原文由 JetBrains 与 Kotlin 贡献者维护。RIN III 于 2026 年 11 月 18 日翻译、润色并补充导读与自测；代码、输出及图中界面保留原貌。</p><p><a href="https://kotlinlang.org/docs/coroutines-flow.html">Kotlin 官方原文</a> · <a href="../LICENSE-2.0.txt">Apache License 2.0</a></p></footer></main>
+<nav class="chapter-switcher" aria-label="章节导航"><a href="../coroutines-cancellation/english.html">← Cancellation and timeouts</a><a class="course-home" href="../english.html">Contents</a><a href="../coroutines-and-channels/english.html">Coroutines and channels − tutorial →</a></nav><footer class="source-credit"><p>English source by JetBrains and Kotlin contributors.</p><p><a href="https://kotlinlang.org/docs/coroutines-flow.html">Kotlin 官方原文</a> · <a href="../LICENSE-2.0.txt">Apache License 2.0</a></p></footer></main>
 </body></html>

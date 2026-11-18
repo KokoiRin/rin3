@@ -127,19 +127,34 @@ test("[COURSE-READER-001] 学习课程使用指定样式并保持完整导航", 
   assert.deepEqual(await validateCourseReaders(), []);
 });
 
-test("Kotlin 协程指南的双语章节保留原文的示例、输出与配图", async () => {
+test("Kotlin 协程指南提供两轮译稿，示例只翻译注释并保留原图", async () => {
   const root = path.resolve(contentRoot, "../public/reading/kotlin-coroutines-guide");
   const chapters = JSON.parse(await readFile(path.join(root, "coverage.json"), "utf8"));
   assert.equal(chapters.length, 12);
-  for (const { chapter, codeBlocks, figures } of chapters) {
-    const [chinese, english] = await Promise.all(
-      ["index.html", "english.html"].map((file) => readFile(path.join(root, chapter, file), "utf8")),
-    );
-    const examples = (page) => page.match(/<pre><code\b[\s\S]*?<\/code><\/pre>/g) ?? [];
-    const images = (page) => [...page.matchAll(/<img\b[^>]*? src="([^"]+)"/g)].map((match) => match[1]);
-    assert.equal(examples(english).length, codeBlocks, chapter);
-    assert.deepEqual(examples(chinese), examples(english), chapter);
+  const versions = ["index.html", "literal.html", "english.html"];
+  const examples = (page) => page.match(/<pre><code\b[\s\S]*?<\/code><\/pre>/g) ?? [];
+  const comments = /<span class="code-comment">([^<]*)<\/span>/g;
+  const withoutCommentText = (block) => block.replace(comments, '<span class="code-comment"></span>');
+  const images = (page) => [...page.matchAll(/<img\b[^>]*? src="([^"]+)"/g)].map((match) => match[1]);
+
+  for (const { chapter, codeBlocks, figures } of [{ chapter: "", codeBlocks: 0, figures: 0 }, ...chapters]) {
+    const pages = await Promise.all(versions.map((file) => readFile(path.join(root, chapter, file), "utf8")));
+    const [polished, literal, english] = pages;
+    for (const page of pages) {
+      for (const file of versions) assert.ok(page.includes(`href="${file}"`), chapter);
+    }
+    const original = examples(english);
+    assert.equal(original.length, codeBlocks, chapter);
     assert.equal(images(english).length, figures, chapter);
-    assert.deepEqual(images(chinese), images(english), chapter);
+    for (const chinese of [polished, literal]) {
+      assert.deepEqual(examples(chinese).map(withoutCommentText), original.map(withoutCommentText), chapter);
+      assert.deepEqual(images(chinese), images(english), chapter);
+    }
+    assert.deepEqual(examples(polished), examples(literal), chapter);
+    const translated = examples(polished).flatMap((block) => [...block.matchAll(comments)].map((m) => m[1]));
+    const source = original.flatMap((block) => [...block.matchAll(comments)].map((m) => m[1]));
+    source.forEach((value, i) => {
+      if (/\b[A-Za-z]+ [A-Za-z]+\b/.test(value)) assert.match(translated[i], /\p{Script=Han}/u, chapter);
+    });
   }
 });

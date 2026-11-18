@@ -119,6 +119,6 @@ KaTeX 的 `public/reading/_shared/katex/` 是第三方数学排版资源，不�
 
 ## 2026-11-18 · Kotlin 协程指南
 
-新增 `public/reading/kotlin-coroutines-guide/`，含中英文目录、十二章中文正文及对应英文页。站内入口为 `content/computer-science/kotlin-coroutines-guide.md`。正文复用 `public/reading/reader.css` 和全站主题；系列内的 `course.css` 用于长签名换行、参考链接与折叠导航。每章附导读、章末自测和 Kotlin 官方链接，实战章保留八项任务及可展开的提示、解法。
+新增 `public/reading/kotlin-coroutines-guide/`，总览和十二章各有中文润色稿、严格译稿（`literal.html`）和英文原文，共 39 页。站内入口为 `content/computer-science/kotlin-coroutines-guide.md`。正文复用 `public/reading/reader.css` 和全站主题；系列内的 `course.css` 用于长签名换行、参考链接与折叠导航。中文示例中翻译说明性注释，润色稿附编者注、章末自测和 Kotlin 官方链接，实战章保留八项任务及可展开的提示、解法。
 
 `coverage.json` 记录各章官方页面快照哈希及正文单元、代码块和配图数量。系列接入 `check:course-readers`。

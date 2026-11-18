@@ -1,0 +1,339 @@
+<!doctype html>
+<html lang="zh-CN" data-reader-family="kotlin-coroutines-guide">
+<head>
+<meta charset="utf-8"><script src="../../../theme.js"></script>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>协程上下文与调度器｜RIN III</title>
+<meta name="description" content="协程上下文与调度器 · 严格译稿">
+<link rel="manifest" href="../../../manifest.webmanifest">
+<link rel="stylesheet" href="../../../reading/reader.css">
+<link rel="stylesheet" href="../../../theme.css">
+<link rel="stylesheet" href="../../../reading/_shared/theme-readers.css">
+<link rel="stylesheet" href="../../../reading/kotlin-coroutines-guide/course.css">
+</head><body><div class="reader-theme-control" data-theme-control></div>
+<nav class="site-nav"><a href="../literal.html">← 全部章节</a><div class="version-links" aria-label="版本"><a href="index.html">中文润色稿</a><a href="literal.html" aria-current="page">严格译稿</a><a href="english.html">English</a></div></nav><main class="reader project-reader"><header class="chapter-header"><span class="chapter-kicker">6 / 12 · 严格译稿</span><h1 id="coroutine-context-and-dispatchers.md">协程上下文与调度器</h1></header><nav class="chapter-switcher" aria-label="章节导航"><a href="../composing-suspending-functions/literal.html">← 组合挂起函数</a><a class="course-home" href="../literal.html">全部章节</a><a href="../channels/literal.html">通道 →</a></nav><details class="source-details chapter-toc"><summary>本章目录</summary><ul><li><a href="#dispatchers-and-threads">调度器与线程</a></li><li><a href="#unconfined-vs-confined-dispatcher">不限定线程的调度器与限定线程的调度器</a></li><li><a href="#debugging-coroutines-and-threads">调试协程与线程</a></li><li><a href="#jumping-between-threads">在线程间切换</a></li><li><a href="#job-in-the-context">上下文中的 Job</a></li><li><a href="#children-of-a-coroutine">协程的子任务</a></li><li><a href="#parental-responsibilities">父协程的责任</a></li><li><a href="#naming-coroutines-for-debugging">为协程命名以便调试</a></li><li><a href="#combining-context-elements">组合上下文元素</a></li><li><a href="#coroutine-scope">协程作用域</a></li></ul></details><article class="translated-article"><p id="otz1w5_3">协程总是在某个上下文中执行。Kotlin 标准库用 <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.coroutines/-coroutine-context/">CoroutineContext</a> 类型的值表示这个上下文。</p>
+<p id="otz1w5_4">协程上下文是一组元素。其中最主要的是前面介绍过的 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-job/index.html">Job</a>，以及本节讨论的调度器。</p>
+<section class="chapter"><h2 id="dispatchers-and-threads">调度器与线程</h2>
+<p id="otz1w5_17">上下文包含协程调度器 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-coroutine-dispatcher/index.html">CoroutineDispatcher</a>，它决定协程用哪条或哪些线程执行。它可以将执行限制在一条特定线程上，调度到线程池，也可以允许协程不受特定线程的约束。</p>
+<p id="otz1w5_18"><a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/launch.html">launch</a>、<a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/async.html">async</a> 等构建器都接受可选的 <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.coroutines/-coroutine-context/">CoroutineContext</a> 参数，可以借此为新协程显式指定调度器及其他上下文元素。</p>
+<p id="otz1w5_19">试运行下面的示例。</p>
+<pre><code class="language-kotlin">import kotlinx.coroutines.*
+
+//<span class="code-comment">sampleStart</span>
+fun main() = runBlocking&lt;Unit&gt; {
+    launch { // <span class="code-comment">继承父协程的上下文，本例的父协程是 main 中的 runBlocking</span>
+        println("main runBlocking      : I'm working in thread ${Thread.currentThread().name}")
+    }
+    launch(Dispatchers.Unconfined) { // <span class="code-comment">不限定恢复线程，此处从主线程开始执行</span>
+        println("Unconfined            : I'm working in thread ${Thread.currentThread().name}")
+    }
+    launch(Dispatchers.Default) { // <span class="code-comment">交由默认调度器执行</span>&#32;
+        println("Default               : I'm working in thread ${Thread.currentThread().name}")
+    }
+    launch(newSingleThreadContext("MyOwnThread")) { // <span class="code-comment">会拥有一条新的专用线程</span>
+        println("newSingleThreadContext: I'm working in thread ${Thread.currentThread().name}")
+    }
+}
+//<span class="code-comment">sampleEnd</span></code></pre>
+<aside class="prompt" data-type="note" id="otz1w5_21"><p id="otz1w5_33">可以在这里查看<a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-context-01.kt">完整代码</a>。</p></aside><p id="otz1w5_22">输出如下，顺序可能不同。</p>
+<pre><code class="language-none">Unconfined            : I'm working in thread main
+Default               : I'm working in thread DefaultDispatcher-worker-1
+newSingleThreadContext: I'm working in thread MyOwnThread
+main runBlocking      : I'm working in thread main</code></pre>
+<p id="otz1w5_24">不带参数地使用 launch 时，会继承启动它的 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-coroutine-scope/index.html">CoroutineScope</a> 的上下文，因而也继承其调度器。本例继承主线程上运行的 <code>main</code> 中的 <code>runBlocking</code> 协程的上下文。</p>
+<p id="otz1w5_25"><a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-dispatchers/-unconfined.html">Dispatchers.Unconfined</a> 是一种特殊调度器。它看起来也在主线程上运行，但机制不同，下文会解释。</p>
+<p id="otz1w5_26">如果作用域未显式指定其他调度器，就使用默认调度器 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-dispatchers/-default.html">Dispatchers.Default</a>，它在共享的后台线程池上工作。</p>
+<p id="otz1w5_27"><a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/new-single-thread-context.html">newSingleThreadContext</a> 为协程创建一条新线程。专用线程是昂贵的资源。实际应用要么在不再需要时用 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-executor-coroutine-dispatcher/close.html">close</a> 释放，要么保存到顶层变量中供整个应用复用。</p></section><section class="chapter"><h2 id="unconfined-vs-confined-dispatcher">不限定线程的调度器与限定线程的调度器</h2>
+<p id="otz1w5_44"><a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-dispatchers/-unconfined.html">Dispatchers.Unconfined</a> 从调用者线程开始执行协程，直到第一次真正挂起。挂起后，恢复在哪条线程完全取决于刚调用的挂起函数。它适用于几乎不占用 CPU 时间、也不更新限定在特定线程上的共享数据（例如 UI）的协程。</p>
+<p id="otz1w5_45">通常会默认继承外部 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-coroutine-scope/index.html">CoroutineScope</a> 的调度器。特别是，<a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/run-blocking.html">runBlocking</a> 的默认调度器限制在调用线程上。因此继承它的协程也限制在这条线程上，按可预期的先进先出顺序调度。</p>
+<pre><code class="language-kotlin">import kotlinx.coroutines.*
+
+//<span class="code-comment">sampleStart</span>
+fun main() = runBlocking&lt;Unit&gt; {
+    launch(Dispatchers.Unconfined) { // <span class="code-comment">不限定恢复线程，此处从主线程开始执行</span>
+        println("Unconfined      : I'm working in thread ${Thread.currentThread().name}")
+        delay(500)
+        println("Unconfined      : After delay in thread ${Thread.currentThread().name}")
+    }
+    launch { // <span class="code-comment">继承父协程的上下文，本例的父协程是 main 中的 runBlocking</span>
+        println("main runBlocking: I'm working in thread ${Thread.currentThread().name}")
+        delay(1000)
+        println("main runBlocking: After delay in thread ${Thread.currentThread().name}")
+    }
+}
+//<span class="code-comment">sampleEnd</span></code></pre>
+<aside class="prompt" data-type="note" id="otz1w5_47"><p id="otz1w5_55">可以在这里查看<a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-context-02.kt">完整代码</a>。</p></aside><p id="otz1w5_48">输出如下。</p>
+<pre><code class="language-none">Unconfined      : I'm working in thread main
+main runBlocking: I'm working in thread main
+Unconfined      : After delay in thread kotlinx.coroutines.DefaultExecutor
+main runBlocking: After delay in thread main</code></pre>
+<p id="otz1w5_50">所以，继承 runBlocking 上下文的协程仍在主线程中继续执行，而不限定线程的协程则在 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/delay.html">delay</a> 使用的默认执行器线程中恢复。</p>
+<aside class="prompt" data-type="note" id="otz1w5_51"><p id="otz1w5_60">不限定线程的调度器属于高级机制。在某些特殊情形中，协程必须立即执行一项操作，把它排队留待以后执行没有必要或会产生副作用，此时才可能有用。普通代码中不宜使用。</p></aside></section><section class="chapter"><h2 id="debugging-coroutines-and-threads">调试协程与线程</h2>
+<p id="otz1w5_61">协程可以在一条线程上挂起，在另一条线程上恢复。即便调度器只使用一条线程，缺乏专用工具时，也可能很难弄清协程在何时何处执行了什么。</p>
+<section class="chapter"><h3 id="debugging-with-idea">使用 IDEA 调试</h3>
+<p id="otz1w5_64">Kotlin 插件中的协程调试器简化了 IntelliJ IDEA 的协程调试。</p>
+<aside class="prompt" data-type="note" id="otz1w5_65"><p id="otz1w5_72">调试功能适用于 <code>kotlinx-coroutines-core</code> 1.3.8 及以上版本。</p></aside><p id="otz1w5_66">Debug 工具窗口包含 Coroutines 标签页。其中既有正在运行的协程，也有已挂起的协程，并按照各自使用的调度器分组。</p>
+<figure id="otz1w5_67"><img alt="IDEA 按调度器分组显示协程与调用栈" src="../assets/coroutine-idea-debugging-1.png" width="700" height="183" loading="lazy"></figure><p id="otz1w5_68">协程调试器支持以下操作。</p>
+<ul class="list _bullet" id="otz1w5_69">
+<li class="list__item" id="otz1w5_76"><p id="otz1w5_80">检查每个协程的状态。</p></li>
+<li class="list__item" id="otz1w5_77"><p id="otz1w5_81">查看运行中或已挂起协程的局部变量及捕获变量。</p></li>
+<li class="list__item" id="otz1w5_78"><p id="otz1w5_82">查看协程完整的创建栈和内部调用栈。栈中包含带有变量值的各个调用帧，包括普通调试中可能丢失的帧。</p></li>
+<li class="list__item" id="otz1w5_79"><p id="otz1w5_83">取得含有所有协程状态与堆栈的完整报告。在 Coroutines 标签页中右键，选择 Get Coroutines Dump。</p></li>
+</ul>
+<p id="otz1w5_70">设置断点，以调试模式运行应用，即可开始调试。</p>
+<p id="otz1w5_71">在配套<a href="https://kotlinlang.org/docs/tutorials/coroutines/debug-coroutines-with-idea.html">教程</a>中可进一步了解如何调试协程。</p></section><section class="chapter"><h3 id="debugging-using-logging">通过日志调试</h3>
+<p id="otz1w5_87">不使用协程调试器时，另一种调试多线程应用的方法是让每条日志都记录线程名，常见日志框架均支持。使用协程时，只有线程名提供的线索有限，<code>kotlinx.coroutines</code> 因而提供了额外的调试功能。</p>
+<p id="otz1w5_88">为 JVM 加上 <code>-Dkotlinx.coroutines.debug</code> 选项后，运行以下代码。</p>
+<pre><code class="language-kotlin">import kotlinx.coroutines.*
+
+fun log(msg: String) = println("[${Thread.currentThread().name}] $msg")
+
+//<span class="code-comment">sampleStart</span>
+fun main() = runBlocking&lt;Unit&gt; {
+    val a = async {
+        log("I'm computing a piece of the answer")
+        6
+    }
+    val b = async {
+        log("I'm computing another piece of the answer")
+        7
+    }
+    log("The answer is ${a.await() * b.await()}")
+}
+//<span class="code-comment">sampleEnd</span>    </code></pre>
+<aside class="prompt" data-type="note" id="otz1w5_90"><p id="otz1w5_97">可以在这里查看<a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-context-03.kt">完整代码</a>。</p></aside><p id="otz1w5_91">这里共有三个协程：<code>runBlocking</code> 中的主协程（#1），以及分别计算 <code>a</code>（#2）和 <code>b</code>（#3）两个 Deferred 值的协程。它们都在 <code>runBlocking</code> 的上下文中执行，限定在主线程上。输出如下。</p>
+<pre><code class="language-none">[main @coroutine#2] I'm computing a piece of the answer
+[main @coroutine#3] I'm computing another piece of the answer
+[main @coroutine#1] The answer is 42</code></pre>
+<p id="otz1w5_93"><code>log</code> 函数用方括号打印线程名。可以看到主线程名后附有当前执行的协程编号。开启调试模式后，每个新建协程会依次获得一个编号。</p>
+<aside class="prompt" data-type="note" id="otz1w5_94"><p id="otz1w5_105">用 <code>-ea</code> 选项启动 JVM 时也会开启调试模式。有关调试功能的详情见 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-d-e-b-u-g_-p-r-o-p-e-r-t-y_-n-a-m-e.html">DEBUG_PROPERTY_NAME</a> 属性的文档。</p></aside></section></section><section class="chapter"><h2 id="jumping-between-threads">在线程间切换</h2>
+<p id="otz1w5_108">用 JVM 选项 -Dkotlinx.coroutines.<a href="#debugging-coroutines-and-threads">debug</a> 运行以下代码，详见调试说明。</p>
+<pre><code class="language-kotlin">import kotlinx.coroutines.*
+
+fun log(msg: String) = println("[${Thread.currentThread().name}] $msg")
+
+fun main() {
+    newSingleThreadContext("Ctx1").use { ctx1 -&gt;
+        newSingleThreadContext("Ctx2").use { ctx2 -&gt;
+            runBlocking(ctx1) {
+                log("Started in ctx1")
+                withContext(ctx2) {
+                    log("Working in ctx2")
+                }
+                log("Back to ctx1")
+            }
+        }
+    }
+}</code></pre>
+<aside class="prompt" data-type="note" id="otz1w5_110"><p id="otz1w5_118">可以在这里查看<a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-context-04.kt">完整代码</a>。</p></aside><p id="otz1w5_111">此示例演示了两种新的用法。</p>
+<p id="otz1w5_112">第一种是为 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/run-blocking.html">runBlocking</a> 指定上下文。第二种是调用 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/with-context.html">withContext</a>；它可能挂起当前协程，在与原上下文不同的新上下文中执行。如果指定了另一个 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-coroutine-dispatcher/index.html">CoroutineDispatcher</a>，会发生额外调度：代码块被安排到新调度器执行，结束后再回到原调度器。</p>
+<p id="otz1w5_113">因此，上述代码的输出如下。</p>
+<pre><code class="language-none">[Ctx1 @coroutine#1] Started in ctx1
+[Ctx2 @coroutine#1] Working in ctx2
+[Ctx1 @coroutine#1] Back to ctx1</code></pre>
+<p id="otz1w5_115">示例使用 Kotlin 标准库的 <code>use</code> 函数，在不再需要时正确释放由 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/new-single-thread-context.html">newSingleThreadContext</a> 创建的线程资源。</p></section><section class="chapter"><h2 id="job-in-the-context">上下文中的 Job</h2>
+<p id="otz1w5_126">协程的 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-job/index.html">Job</a> 是其上下文的一部分，可以用 <code>coroutineContext[Job]</code> 取得它。</p>
+<pre><code class="language-kotlin">import kotlinx.coroutines.*
+
+fun main() = runBlocking&lt;Unit&gt; {
+//<span class="code-comment">sampleStart</span>
+    println("My job is ${coroutineContext[Job]}")
+//<span class="code-comment">sampleEnd</span>&#32;&#32;&#32;&#32;
+}</code></pre>
+<aside class="prompt" data-type="note" id="otz1w5_128"><p id="otz1w5_134">可以在这里查看<a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-context-05.kt">完整代码</a>。</p></aside><p id="otz1w5_129"><a href="#debugging-coroutines-and-threads">调试模式</a>下的输出类似如下。</p>
+<pre><code class="language-none">My job is "coroutine#1":BlockingCoroutine{Active}@6d311334</code></pre>
+<p id="otz1w5_131">对具有 Job 的 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-coroutine-scope/index.html">CoroutineScope</a>，使用 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/is-active.html">isActive</a> 可以方便地取得 <code>coroutineContext[Job]?.isActive == true</code> 所表示的状态。</p></section><section class="chapter"><h2 id="children-of-a-coroutine">协程的子任务</h2>
+<p id="otz1w5_140">在另一协程的 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-coroutine-scope/index.html">CoroutineScope</a> 中启动协程时，会通过 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-coroutine-scope/coroutine-context.html">CoroutineScope.coroutineContext</a> 继承外层上下文。新协程的 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-job/index.html">Job</a> 成为父 Job 的子任务。取消父协程时，其所有后代也会递归地被取消。</p>
+<p id="otz1w5_141">不过，可以显式用以下两种方式改变这层父子关系。</p>
+<ol class="list _decimal" id="otz1w5_142" type="1">
+<li class="list__item" id="otz1w5_152"><p id="otz1w5_154">启动协程时显式使用其他作用域，例如 <code>GlobalScope.launch</code>，新任务就不会从调用处的父作用域取得 <code>Job</code>。</p></li>
+<li class="list__item" id="otz1w5_153"><p id="otz1w5_157">将另一个 <code>Job</code> 作为新协程的上下文参数传入，会覆盖原先父作用域中的 <code>Job</code>，如下例所示。</p></li>
+</ol>
+<p id="otz1w5_143">这两种情况下，新协程都脱离了调用处所在的作用域，独立运行。</p>
+<pre><code class="language-kotlin">import kotlinx.coroutines.*
+
+fun main() = runBlocking&lt;Unit&gt; {
+//<span class="code-comment">sampleStart</span>
+    // <span class="code-comment">启动一个协程处理传入的请求</span>
+    val request = launch {
+        // <span class="code-comment">它还会启动两个子任务</span>
+        launch(Job()) {&#32;
+            println("job1: I run in my own Job and execute independently!")
+            delay(1000)
+            println("job1: I am not affected by cancellation of the request")
+        }
+        // <span class="code-comment">另一个则继承父协程的上下文</span>
+        launch {
+            delay(100)
+            println("job2: I am a child of the request coroutine")
+            delay(1000)
+            println("job2: I will not execute this line if my parent request is cancelled")
+        }
+    }
+    delay(500)
+    request.cancel() // <span class="code-comment">取消这一次请求的处理</span>
+    println("main: Who has survived request cancellation?")
+    delay(1000) // <span class="code-comment">让主协程等一秒，再观察结果</span>
+//<span class="code-comment">sampleEnd</span>
+}</code></pre>
+<aside class="prompt" data-type="note" id="otz1w5_145"><p id="otz1w5_160">可以在这里查看<a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-context-06.kt">完整代码</a>。</p></aside><p id="otz1w5_146">输出如下。</p>
+<pre><code class="language-none">job1: I run in my own Job and execute independently!
+job2: I am a child of the request coroutine
+main: Who has survived request cancellation?
+job1: I am not affected by cancellation of the request</code></pre></section><section class="chapter"><h2 id="parental-responsibilities">父协程的责任</h2>
+<p id="otz1w5_162">父协程总会等待其全部子协程完成。无须显式记录它启动的所有子任务，也不必在末尾显式调用 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-job/join.html">Job.join</a> 来等待它们。</p>
+<pre><code class="language-kotlin">import kotlinx.coroutines.*
+
+fun main() = runBlocking&lt;Unit&gt; {
+//<span class="code-comment">sampleStart</span>
+    // <span class="code-comment">启动一个协程处理传入的请求</span>
+    val request = launch {
+        repeat(3) { i -&gt; // <span class="code-comment">启动几个子任务</span>
+            launch  {
+                delay((i + 1) * 200L) // <span class="code-comment">延迟依次为 200、400、600 毫秒</span>
+                println("Coroutine $i is done")
+            }
+        }
+        println("request: I'm done and I don't explicitly join my children that are still active")
+    }
+    request.join() // <span class="code-comment">等本次请求及其所有子任务完成</span>
+    println("Now processing of the request is complete")
+//<span class="code-comment">sampleEnd</span>
+}</code></pre>
+<aside class="prompt" data-type="note" id="otz1w5_164"><p id="otz1w5_168">可以在这里查看<a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-context-07.kt">完整代码</a>。</p></aside><p id="otz1w5_165">输出如下。</p>
+<pre><code class="language-none">request: I'm done and I don't explicitly join my children that are still active
+Coroutine 0 is done
+Coroutine 1 is done
+Coroutine 2 is done
+Now processing of the request is complete</code></pre></section><section class="chapter"><h2 id="naming-coroutines-for-debugging">为协程命名以便调试</h2>
+<p id="otz1w5_170">自动编号有助于将同一协程频繁产生的日志串起来。如果协程与特定请求或后台任务有关，为调试显式命名会更好。<a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-coroutine-name/index.html">CoroutineName</a> 上下文元素和线程名的用途相似。<a href="#debugging-coroutines-and-threads">调试模式</a>开启时，它会出现在执行该协程的线程名中。</p>
+<p id="otz1w5_171">以下例子演示这种用法。</p>
+<pre><code class="language-kotlin">import kotlinx.coroutines.*
+
+fun log(msg: String) = println("[${Thread.currentThread().name}] $msg")
+
+fun main() = runBlocking(CoroutineName("main")) {
+//<span class="code-comment">sampleStart</span>
+    log("Started main coroutine")
+    // <span class="code-comment">在后台启动两项有返回值的计算</span>
+    val v1 = async(CoroutineName("v1coroutine")) {
+        delay(500)
+        log("Computing v1")
+        6
+    }
+    val v2 = async(CoroutineName("v2coroutine")) {
+        delay(1000)
+        log("Computing v2")
+        7
+    }
+    log("The answer for v1 * v2 = ${v1.await() * v2.await()}")
+//<span class="code-comment">sampleEnd</span>&#32;&#32;&#32;&#32;
+}</code></pre>
+<aside class="prompt" data-type="note" id="otz1w5_173"><p id="otz1w5_178">可以在这里查看<a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-context-08.kt">完整代码</a>。</p></aside><p id="otz1w5_174">传入 JVM 选项 <code>-Dkotlinx.coroutines.debug</code>，输出类似如下。</p>
+<pre><code class="language-none">[main @main#1] Started main coroutine
+[main @v1coroutine#2] Computing v1
+[main @v2coroutine#3] Computing v2
+[main @main#1] The answer for v1 * v2 = 42</code></pre></section><section class="chapter"><h2 id="combining-context-elements">组合上下文元素</h2>
+<p id="otz1w5_181">用 <code>+</code> 运算符可以为协程上下文组合多个元素。例如，可以在启动时同时显式指定调度器和名称。</p>
+<pre><code class="language-kotlin">import kotlinx.coroutines.*
+
+fun main() = runBlocking&lt;Unit&gt; {
+//<span class="code-comment">sampleStart</span>
+    launch(Dispatchers.Default + CoroutineName("test")) {
+        println("I'm working in thread ${Thread.currentThread().name}")
+    }
+//<span class="code-comment">sampleEnd</span>&#32;&#32;&#32;&#32;
+}</code></pre>
+<aside class="prompt" data-type="note" id="otz1w5_183"><p id="otz1w5_187">可以在这里查看<a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-context-09.kt">完整代码</a>。</p></aside><p id="otz1w5_184">使用 JVM 选项 <code>-Dkotlinx.coroutines.debug</code> 后，输出如下。</p>
+<pre><code class="language-none">I'm working in thread DefaultDispatcher-worker-1 @test#2</code></pre></section><section class="chapter"><h2 id="coroutine-scope">协程作用域</h2>
+<p id="otz1w5_190">把上下文、父子关系和 Job 联系起来考虑。假设应用中有一个具有生命周期的对象，它本身不是协程。例如，Android 应用中的 Activity 启动协程获取或更新数据、执行动画等。Activity 销毁时必须取消这些协程，以免内存泄漏。可以手动管理上下文与 Job 来关联生命周期，但 <code>kotlinx.coroutines</code> 已将这套管理封装成 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-coroutine-scope/index.html">CoroutineScope</a>。它也是前文各个扩展构建器所用的作用域。</p>
+<p id="otz1w5_191">创建一个与 Activity 生命周期相连的 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-coroutine-scope/index.html">CoroutineScope</a> 实例来管理这些协程。可以用 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-coroutine-scope.html">CoroutineScope()</a> 或 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-main-scope.html">MainScope()</a> 工厂函数。前者建立通用作用域，后者适合 UI 应用，默认调度器是 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-dispatchers/-main.html">Dispatchers.Main</a>。</p>
+<pre><code class="language-kotlin">class Activity {
+    private val mainScope = MainScope()
+&#32;&#32;&#32;&#32;
+    fun destroy() {
+        mainScope.cancel()
+    }
+    // <span class="code-comment">下文继续……</span></code></pre>
+<p id="otz1w5_193">现在可以通过 <code>mainScope</code> 在 <code>Activity</code> 的作用域中启动协程。演示中启动十个协程，各自等待不同的时长。</p>
+<pre><code class="language-kotlin">    // <span class="code-comment">Activity 类后续的代码</span>
+    fun doSomething() {
+        // <span class="code-comment">为演示启动十个协程，它们各自运行的时长不同</span>
+        repeat(10) { i -&gt;
+            mainScope.launch {
+                delay((i + 1) * 200L) // <span class="code-comment">延迟依次为 200 毫秒、400 毫秒……</span>
+                println("Coroutine $i is done")
+            }
+        }
+    }
+} // <span class="code-comment">Activity 类定义结束</span></code></pre>
+<p id="otz1w5_195">main 函数先创建 Activity，再调用 <code>doSomething</code>，500 毫秒后销毁 Activity。这将取消由 <code>doSomething</code> 启动的协程；可以看到，销毁后即使再等一段时间也没有更多消息打印。</p>
+<pre><code class="language-kotlin">import kotlinx.coroutines.*
+
+class Activity {
+    private val mainScope = CoroutineScope(Dispatchers.Default) // <span class="code-comment">演示时使用 Dispatchers.Default</span>
+&#32;&#32;&#32;&#32;
+    fun destroy() {
+        mainScope.cancel()
+    }
+
+    fun doSomething() {
+        // <span class="code-comment">为演示启动十个协程，它们各自运行的时长不同</span>
+        repeat(10) { i -&gt;
+            mainScope.launch {
+                delay((i + 1) * 200L) // <span class="code-comment">延迟依次为 200 毫秒、400 毫秒……</span>
+                println("Coroutine $i is done")
+            }
+        }
+    }
+} // <span class="code-comment">Activity 类定义结束</span>
+
+fun main() = runBlocking&lt;Unit&gt; {
+//<span class="code-comment">sampleStart</span>
+    val activity = Activity()
+    activity.doSomething() // <span class="code-comment">运行测试函数</span>
+    println("Launched coroutines")
+    delay(500L) // <span class="code-comment">等待半秒</span>
+    println("Destroying activity!")
+    activity.destroy() // <span class="code-comment">取消所有协程</span>
+    delay(1000) // <span class="code-comment">观察它们确实已经停止运行</span>
+//<span class="code-comment">sampleEnd</span>&#32;&#32;&#32;&#32;
+}</code></pre>
+<aside class="prompt" data-type="note" id="otz1w5_197"><p id="otz1w5_214">可以在这里查看<a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-context-10.kt">完整代码</a>。</p></aside><p id="otz1w5_198">输出如下。</p>
+<pre><code class="language-none">Launched coroutines
+Coroutine 0 is done
+Coroutine 1 is done
+Destroying activity!</code></pre>
+<p id="otz1w5_200">只有前两个协程打印了消息，<code>Activity.destroy()</code> 中的一次 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/cancel.html">mainScope.cancel()</a> 取消了其余协程。</p>
+<aside class="prompt" data-type="note" id="otz1w5_201"><p id="otz1w5_219">对具有生命周期的实体，Android 提供官方协程作用域支持。详见相应<a href="https://developer.android.com/topic/libraries/architecture/coroutines#lifecyclescope">文档</a>。</p></aside><section class="chapter"><h3 id="thread-local-data">线程局部数据</h3>
+<p id="otz1w5_221">有时需要将线程局部数据传入协程，或在协程之间传递。由于协程不绑定特定线程，手动处理通常要写许多重复代码。</p>
+<p id="otz1w5_222"><a href="https://docs.oracle.com/javase/8/docs/api/java/lang/ThreadLocal.html">ThreadLocal</a> 的 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/as-context-element.html">asContextElement</a> 扩展函数会创建一个上下文元素，保存指定的 <code>ThreadLocal</code> 值，并在协程每次切换上下文时恢复该值。</p>
+<p id="otz1w5_223">以下是一个例子。</p>
+<pre><code class="language-kotlin">import kotlinx.coroutines.*
+
+val threadLocal = ThreadLocal&lt;String?&gt;() // <span class="code-comment">声明线程局部变量</span>
+
+fun main() = runBlocking&lt;Unit&gt; {
+//<span class="code-comment">sampleStart</span>
+    threadLocal.set("main")
+    println("Pre-main, current thread: ${Thread.currentThread()}, thread local value: '${threadLocal.get()}'")
+    val job = launch(Dispatchers.Default + threadLocal.asContextElement(value = "launch")) {
+        println("Launch start, current thread: ${Thread.currentThread()}, thread local value: '${threadLocal.get()}'")
+        yield()
+        println("After yield, current thread: ${Thread.currentThread()}, thread local value: '${threadLocal.get()}'")
+    }
+    job.join()
+    println("Post-main, current thread: ${Thread.currentThread()}, thread local value: '${threadLocal.get()}'")
+//<span class="code-comment">sampleEnd</span>&#32;&#32;&#32;&#32;
+}</code></pre>
+<aside class="prompt" data-type="note" id="otz1w5_225"><p id="otz1w5_236">可以在这里查看<a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-context-11.kt">完整代码</a>。</p></aside><p id="otz1w5_226">本例使用 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-dispatchers/-default.html">Dispatchers.Default</a> 在后台线程池启动一个协程。即使它在不同的池线程上执行，仍能读到 <code>threadLocal.asContextElement(value = "launch")</code> 指定的线程局部值。开启<a href="#debugging-coroutines-and-threads">调试</a>后的输出如下。</p>
+<pre><code class="language-none">Pre-main, current thread: Thread[main @coroutine#1,5,main], thread local value: 'main'
+Launch start, current thread: Thread[DefaultDispatcher-worker-1 @coroutine#2,5,main], thread local value: 'launch'
+After yield, current thread: Thread[DefaultDispatcher-worker-2 @coroutine#2,5,main], thread local value: 'launch'
+Post-main, current thread: Thread[main @coroutine#1,5,main], thread local value: 'main'</code></pre>
+<p id="otz1w5_228">若忘记安装相应的上下文元素，当协程换线程时读到的 ThreadLocal 值可能出乎预期。建议使用 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/ensure-present.html">ensurePresent</a>，在用法有误时尽早报错。</p>
+<p id="otz1w5_229"><code>ThreadLocal</code> 得到直接支持，可以和 <code>kotlinx.coroutines</code> 的各种原语配合。但它有一个限制：直接写入线程局部变量后，新值不会传回协程的调用者，因为上下文元素无法跟踪对 <code>ThreadLocal</code> 的每次访问。下次挂起再恢复时，这个更新值也会丢失。需要更新时使用 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/with-context.html">withContext</a>，详见 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/as-context-element.html">asContextElement</a>。</p>
+<p id="otz1w5_230">也可以把值放在可变对象中，例如 <code>class Counter(var i: Int)</code>，再将这个对象保存为线程局部变量。这时若存在并发修改，对对象内部字段的同步完全由使用者负责。</p>
+<p id="otz1w5_231">若需要与日志 MDC、事务上下文或其他内部依靠线程局部变量传递数据的库集成，请参考应实现的 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-thread-context-element/index.html">ThreadContextElement</a> 接口文档。</p></section></section></article>
+<nav class="chapter-switcher" aria-label="章节导航"><a href="../composing-suspending-functions/literal.html">← 组合挂起函数</a><a class="course-home" href="../literal.html">全部章节</a><a href="../channels/literal.html">通道 →</a></nav><footer class="source-credit"><p>原文由 JetBrains 与 Kotlin 贡献者维护。中文译稿修订于 2026 年 11 月 19 日。示例代码的说明性注释已译为中文，输出文字与截图沿用原文。</p><p><a href="https://kotlinlang.org/docs/coroutine-context-and-dispatchers.html">Kotlin 官方原文</a> · <a href="../LICENSE-2.0.txt">Apache License 2.0</a></p></footer></main>
+</body></html>

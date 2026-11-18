@@ -1,0 +1,337 @@
+<!doctype html>
+<html lang="zh-CN" data-reader-family="kotlin-coroutines-guide">
+<head>
+<meta charset="utf-8"><script src="../../../theme.js"></script>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>select 表达式（实验性）｜RIN III</title>
+<meta name="description" content="select 表达式（实验性） · 严格译稿">
+<link rel="manifest" href="../../../manifest.webmanifest">
+<link rel="stylesheet" href="../../../reading/reader.css">
+<link rel="stylesheet" href="../../../theme.css">
+<link rel="stylesheet" href="../../../reading/_shared/theme-readers.css">
+<link rel="stylesheet" href="../../../reading/kotlin-coroutines-guide/course.css">
+</head><body><div class="reader-theme-control" data-theme-control></div>
+<nav class="site-nav"><a href="../literal.html">← 全部章节</a><div class="version-links" aria-label="版本"><a href="index.html">中文润色稿</a><a href="literal.html" aria-current="page">严格译稿</a><a href="english.html">English</a></div></nav><main class="reader project-reader"><header class="chapter-header"><span class="chapter-kicker">10 / 12 · 严格译稿</span><h1 id="select-expression.md">select 表达式（实验性）</h1></header><nav class="chapter-switcher" aria-label="章节导航"><a href="../shared-mutable-state-and-concurrency/literal.html">← 共享可变状态与并发</a><a class="course-home" href="../literal.html">全部章节</a><a href="../debug-coroutines-with-idea/literal.html">教程：使用 IntelliJ IDEA 调试协程 →</a></nav><details class="source-details chapter-toc"><summary>本章目录</summary><ul><li><a href="#selecting-from-channels">从多个通道接收</a></li><li><a href="#selecting-on-close">通道关闭时的选择</a></li><li><a href="#selecting-to-send">选择向哪个通道发送</a></li><li><a href="#selecting-deferred-values">选择 Deferred 的结果</a></li><li><a href="#switch-over-a-channel-of-deferred-values">在通道传来的多个 Deferred 之间切换</a></li></ul></details><article class="translated-article"><p id="z9bbktr_3">select 表达式可以同时等待多个可挂起操作，选择最先就绪的一个。</p>
+<aside class="prompt" data-type="note" id="z9bbktr_4"><p id="z9bbktr_11">select 表达式是 <code>kotlinx.coroutines</code> 的实验性功能。库更新时相关 API 预计还会演进，可能发生不兼容的变化。</p></aside><section class="chapter"><h2 id="selecting-from-channels">从多个通道接收</h2>
+<p id="z9bbktr_14">设有两个字符串生产者 <code>fizz</code> 和 <code>buzz</code>。<code>fizz</code> 每隔 500 毫秒产生字符串 Fizz。</p>
+<pre><code class="language-kotlin">fun CoroutineScope.fizz() = produce&lt;String&gt; {
+    while (true) { // <span class="code-comment">每隔 500 毫秒发送 Fizz</span>
+        delay(500)
+        send("Fizz")
+    }
+}</code></pre>
+<p id="z9bbktr_16"><code>buzz</code> 每隔 1000 毫秒产生字符串 Buzz!。</p>
+<pre><code class="language-kotlin">fun CoroutineScope.buzz() = produce&lt;String&gt; {
+    while (true) { // <span class="code-comment">每隔 1000 毫秒发送 Buzz!</span>
+        delay(1000)
+        send("Buzz!")
+    }
+}</code></pre>
+<p id="z9bbktr_18">调用挂起函数 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.channels/-receive-channel/receive.html">receive</a> 时，一次只能选定一个通道接收。<a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.selects/select.html">select</a> 表达式则可以用 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.channels/-receive-channel/on-receive.html">onReceive</a> 分支同时等待两个通道。</p>
+<pre><code class="language-kotlin">suspend fun selectFizzBuzz(fizz: ReceiveChannel&lt;String&gt;, buzz: ReceiveChannel&lt;String&gt;) {
+    select&lt;Unit&gt; { // <span class="code-comment">&lt;Unit&gt; 表示这个 select 表达式无需返回结果值</span>&#32;
+        fizz.onReceive { value -&gt;  // <span class="code-comment">这是 select 的第一个分支</span>
+            println("fizz -&gt; '$value'")
+        }
+        buzz.onReceive { value -&gt;  // <span class="code-comment">这是 select 的第二个分支</span>
+            println("buzz -&gt; '$value'")
+        }
+    }
+}</code></pre>
+<p id="z9bbktr_20">运行七次选择。</p>
+<pre><code class="language-kotlin">import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.*
+import kotlinx.coroutines.selects.*
+
+fun CoroutineScope.fizz() = produce&lt;String&gt; {
+    while (true) { // <span class="code-comment">每隔 500 毫秒发送 Fizz</span>
+        delay(500)
+        send("Fizz")
+    }
+}
+
+fun CoroutineScope.buzz() = produce&lt;String&gt; {
+    while (true) { // <span class="code-comment">每隔 1000 毫秒发送 Buzz!</span>
+        delay(1000)
+        send("Buzz!")
+    }
+}
+
+suspend fun selectFizzBuzz(fizz: ReceiveChannel&lt;String&gt;, buzz: ReceiveChannel&lt;String&gt;) {
+    select&lt;Unit&gt; { // <span class="code-comment">&lt;Unit&gt; 表示这个 select 表达式无需返回结果值</span>&#32;
+        fizz.onReceive { value -&gt;  // <span class="code-comment">这是 select 的第一个分支</span>
+            println("fizz -&gt; '$value'")
+        }
+        buzz.onReceive { value -&gt;  // <span class="code-comment">这是 select 的第二个分支</span>
+            println("buzz -&gt; '$value'")
+        }
+    }
+}
+
+fun main() = runBlocking&lt;Unit&gt; {
+//<span class="code-comment">sampleStart</span>
+    val fizz = fizz()
+    val buzz = buzz()
+    repeat(7) {
+        selectFizzBuzz(fizz, buzz)
+    }
+    coroutineContext.cancelChildren() // <span class="code-comment">取消 fizz 和 buzz 协程</span>
+//<span class="code-comment">sampleEnd</span>&#32;&#32;&#32;&#32;&#32;&#32;&#32;&#32;
+}</code></pre>
+<aside class="prompt" data-type="note" id="z9bbktr_22"><p id="z9bbktr_34">可以在这里查看<a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-select-01.kt">完整代码</a>。</p></aside><p id="z9bbktr_23">输出如下。</p>
+<pre><code class="language-none">fizz -&gt; 'Fizz'
+buzz -&gt; 'Buzz!'
+fizz -&gt; 'Fizz'
+fizz -&gt; 'Fizz'
+buzz -&gt; 'Buzz!'
+fizz -&gt; 'Fizz'
+fizz -&gt; 'Fizz'</code></pre></section><section class="chapter"><h2 id="selecting-on-close">通道关闭时的选择</h2>
+<p id="z9bbktr_36">如果在已关闭且读空的通道上选中 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.channels/-receive-channel/on-receive.html">onReceive</a>，这次 <code>select</code> 会因异常失败。可用 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.channels/-receive-channel/on-receive-catching.html">onReceiveCatching</a> 在通道关闭时执行特定操作。下面的例子还说明 <code>select</code> 是一个表达式，返回值就是选中分支的执行结果。</p>
+<pre><code class="language-kotlin">suspend fun selectAorB(a: ReceiveChannel&lt;String&gt;, b: ReceiveChannel&lt;String&gt;): String =
+    select&lt;String&gt; {
+        a.onReceiveCatching { it -&gt;
+            val value = it.getOrNull()
+            if (value != null) {
+                "a -&gt; '$value'"
+            } else {
+                "Channel 'a' is closed"
+            }
+        }
+        b.onReceiveCatching { it -&gt;
+            val value = it.getOrNull()
+            if (value != null) {
+                "b -&gt; '$value'"
+            } else {
+                "Channel 'b' is closed"
+            }
+        }
+    }</code></pre>
+<p id="z9bbktr_38">用通道 <code>a</code> 产生四次 Hello，通道 <code>b</code> 产生四次 World。</p>
+<pre><code class="language-kotlin">import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.*
+import kotlinx.coroutines.selects.*
+
+suspend fun selectAorB(a: ReceiveChannel&lt;String&gt;, b: ReceiveChannel&lt;String&gt;): String =
+    select&lt;String&gt; {
+        a.onReceiveCatching { it -&gt;
+            val value = it.getOrNull()
+            if (value != null) {
+                "a -&gt; '$value'"
+            } else {
+                "Channel 'a' is closed"
+            }
+        }
+        b.onReceiveCatching { it -&gt;
+            val value = it.getOrNull()
+            if (value != null) {
+                "b -&gt; '$value'"
+            } else {
+                "Channel 'b' is closed"
+            }
+        }
+    }
+&#32;&#32;&#32;&#32;
+fun main() = runBlocking&lt;Unit&gt; {
+//<span class="code-comment">sampleStart</span>
+    val a = produce&lt;String&gt; {
+        repeat(4) { send("Hello $it") }
+    }
+    val b = produce&lt;String&gt; {
+        repeat(4) { send("World $it") }
+    }
+    repeat(8) { // <span class="code-comment">打印前八个结果</span>
+        println(selectAorB(a, b))
+    }
+    coroutineContext.cancelChildren()&#32;&#32;
+//<span class="code-comment">sampleEnd</span>&#32;&#32;&#32;&#32;&#32;&#32;
+}    </code></pre>
+<aside class="prompt" data-type="note" id="z9bbktr_40"><p id="z9bbktr_53">可以在这里查看<a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-select-02.kt">完整代码</a>。</p></aside><p id="z9bbktr_41">这段代码的结果值得进一步分析。</p>
+<pre><code class="language-none">a -&gt; 'Hello 0'
+a -&gt; 'Hello 1'
+b -&gt; 'World 0'
+a -&gt; 'Hello 2'
+a -&gt; 'Hello 3'
+b -&gt; 'World 1'
+Channel 'a' is closed
+Channel 'a' is closed</code></pre>
+<p id="z9bbktr_43">输出中有两点值得注意。</p>
+<p id="z9bbktr_44"><code>select</code> 偏向排在前面的分支。多个分支同时可选时，会选中排在最前面的一个。这里两个通道一直生成字符串，<code>a</code> 对应的分支写在前面，所以往往获选。但它们没有缓冲，<code>a</code> 不时会在 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.channels/-send-channel/send.html">send</a> 时挂起，于是 <code>b</code> 也有机会发送。</p>
+<p id="z9bbktr_45">另一个现象是，通道已经关闭且读空时，<a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.channels/-receive-channel/on-receive-catching.html">onReceiveCatching</a> 可以立即被选中。</p></section><section class="chapter"><h2 id="selecting-to-send">选择向哪个通道发送</h2>
+<p id="z9bbktr_62">select 表达式有 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.channels/-send-channel/on-send.html">onSend</a> 分支，可以利用前面的分支优先被选中的规则来安排发送。</p>
+<p id="z9bbktr_63">下面的整数生产者优先使用主通道。主通道的消费者跟不上时，它会把值发送到旁路通道。</p>
+<pre><code class="language-kotlin">fun CoroutineScope.produceNumbers(side: SendChannel&lt;Int&gt;) = produce&lt;Int&gt; {
+    for (num in 1..10) { // <span class="code-comment">生成 1 到 10 共十个数</span>
+        delay(100) // <span class="code-comment">每隔 100 毫秒</span>
+        select&lt;Unit&gt; {
+            onSend(num) {} // <span class="code-comment">发送到主通道</span>
+            side.onSend(num) {} // <span class="code-comment">或发送到旁路通道</span>&#32;&#32;&#32;&#32;&#32;
+        }
+    }
+}</code></pre>
+<p id="z9bbktr_65">主通道的消费者较慢，处理每个数字要花 250 毫秒。</p>
+<pre><code class="language-kotlin">import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.*
+import kotlinx.coroutines.selects.*
+
+fun CoroutineScope.produceNumbers(side: SendChannel&lt;Int&gt;) = produce&lt;Int&gt; {
+    for (num in 1..10) { // <span class="code-comment">生成 1 到 10 共十个数</span>
+        delay(100) // <span class="code-comment">每隔 100 毫秒</span>
+        select&lt;Unit&gt; {
+            onSend(num) {} // <span class="code-comment">发送到主通道</span>
+            side.onSend(num) {} // <span class="code-comment">或发送到旁路通道</span>&#32;&#32;&#32;&#32;&#32;
+        }
+    }
+}
+
+fun main() = runBlocking&lt;Unit&gt; {
+//<span class="code-comment">sampleStart</span>
+    val side = Channel&lt;Int&gt;() // <span class="code-comment">创建旁路通道</span>
+    launch { // <span class="code-comment">旁路通道的消费者处理得很快</span>
+        side.consumeEach { println("Side channel has $it") }
+    }
+    produceNumbers(side).consumeEach {&#32;
+        println("Consuming $it")
+        delay(250) // <span class="code-comment">慢慢处理刚收到的数字</span>
+    }
+    println("Done consuming")
+    coroutineContext.cancelChildren()&#32;&#32;
+//<span class="code-comment">sampleEnd</span>&#32;&#32;&#32;&#32;&#32;&#32;
+}</code></pre>
+<aside class="prompt" data-type="note" id="z9bbktr_67"><p id="z9bbktr_72">可以在这里查看<a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-select-03.kt">完整代码</a>。</p></aside><p id="z9bbktr_68">下面看看运行结果。</p>
+<pre><code class="language-none">Consuming 1
+Side channel has 2
+Side channel has 3
+Consuming 4
+Side channel has 5
+Side channel has 6
+Consuming 7
+Side channel has 8
+Side channel has 9
+Consuming 10
+Done consuming</code></pre></section><section class="chapter"><h2 id="selecting-deferred-values">选择 Deferred 的结果</h2>
+<p id="z9bbktr_74">可以用 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-deferred/on-await.html">onAwait</a> 分支选择已经完成的 Deferred。先写一个 async 函数，让它在随机延迟后返回字符串结果。</p>
+<pre><code class="language-kotlin">fun CoroutineScope.asyncString(time: Int) = async {
+    delay(time.toLong())
+    "Waited for $time ms"
+}</code></pre>
+<p id="z9bbktr_76">启动十二个任务，让它们各自等待随机时长。</p>
+<pre><code class="language-kotlin">fun CoroutineScope.asyncStringsList(): List&lt;Deferred&lt;String&gt;&gt; {
+    val random = Random(3)
+    return List(12) { asyncString(random.nextInt(1000)) }
+}</code></pre>
+<p id="z9bbktr_78">主函数等待其中第一个任务完成，并统计尚活跃的 Deferred 数量。<code>select</code> 表达式是 Kotlin DSL，因此可以用任意 Kotlin 代码为它构造分支。这里遍历 Deferred 列表，为每一项添加一个 <code>onAwait</code>。</p>
+<pre><code class="language-kotlin">import kotlinx.coroutines.*
+import kotlinx.coroutines.selects.*
+import java.util.*
+&#32;&#32;&#32;&#32;
+fun CoroutineScope.asyncString(time: Int) = async {
+    delay(time.toLong())
+    "Waited for $time ms"
+}
+
+fun CoroutineScope.asyncStringsList(): List&lt;Deferred&lt;String&gt;&gt; {
+    val random = Random(3)
+    return List(12) { asyncString(random.nextInt(1000)) }
+}
+
+fun main() = runBlocking&lt;Unit&gt; {
+//<span class="code-comment">sampleStart</span>
+    val list = asyncStringsList()
+    val result = select&lt;String&gt; {
+        list.withIndex().forEach { (index, deferred) -&gt;
+            deferred.onAwait { answer -&gt;
+                "Deferred $index produced answer '$answer'"
+            }
+        }
+    }
+    println(result)
+    val countActive = list.count { it.isActive }
+    println("$countActive coroutines are still active")
+//<span class="code-comment">sampleEnd</span>
+}</code></pre>
+<aside class="prompt" data-type="note" id="z9bbktr_80"><p id="z9bbktr_86">可以在这里查看<a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-select-04.kt">完整代码</a>。</p></aside><p id="z9bbktr_81">输出如下。</p>
+<pre><code class="language-none">Deferred 4 produced answer 'Waited for 128 ms'
+11 coroutines are still active</code></pre></section><section class="chapter"><h2 id="switch-over-a-channel-of-deferred-values">在通道传来的多个 Deferred 之间切换</h2>
+<p id="z9bbktr_88">写一个通道生产者，从输入通道取得表示字符串结果的 Deferred。它等待当前结果，直到收到下一个 Deferred 或者输入通道关闭。这个例子将 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.channels/-receive-channel/on-receive-catching.html">onReceiveCatching</a> 和 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-deferred/on-await.html">onAwait</a> 放进同一次 <code>select</code>。</p>
+<pre><code class="language-kotlin">fun CoroutineScope.switchMapDeferreds(input: ReceiveChannel&lt;Deferred&lt;String&gt;&gt;) = produce&lt;String&gt; {
+    var current = input.receive() // <span class="code-comment">从收到的第一个 Deferred 开始</span>
+    while (isActive) { // <span class="code-comment">在被取消或通道关闭前持续循环</span>
+        val next = select&lt;Deferred&lt;String&gt;?&gt; { // <span class="code-comment">从本次 select 返回下一个 Deferred，或返回 null</span>
+            input.onReceiveCatching { update -&gt;
+                update.getOrNull()
+            }
+            current.onAwait { value -&gt;
+                send(value) // <span class="code-comment">发送当前 Deferred 产生的值</span>
+                input.receiveCatching().getOrNull() // <span class="code-comment">改为等待输入通道送来的下一个 Deferred</span>
+            }
+        }
+        if (next == null) {
+            println("Channel was closed")
+            break // <span class="code-comment">已退出循环</span>
+        } else {
+            current = next
+        }
+    }
+}</code></pre>
+<p id="z9bbktr_90">为了测试，使用一个简单的 async 函数，在指定时间后交付给定的字符串。</p>
+<pre><code class="language-kotlin">fun CoroutineScope.asyncString(str: String, time: Long) = async {
+    delay(time)
+    str
+}</code></pre>
+<p id="z9bbktr_92">主函数启动一个协程来打印 <code>switchMapDeferreds</code> 的输出，再向它发送一些测试数据。</p>
+<pre><code class="language-kotlin">import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.*
+import kotlinx.coroutines.selects.*
+&#32;&#32;&#32;&#32;
+fun CoroutineScope.switchMapDeferreds(input: ReceiveChannel&lt;Deferred&lt;String&gt;&gt;) = produce&lt;String&gt; {
+    var current = input.receive() // <span class="code-comment">从收到的第一个 Deferred 开始</span>
+    while (isActive) { // <span class="code-comment">在被取消或通道关闭前持续循环</span>
+        val next = select&lt;Deferred&lt;String&gt;?&gt; { // <span class="code-comment">从本次 select 返回下一个 Deferred，或返回 null</span>
+            input.onReceiveCatching { update -&gt;
+                update.getOrNull()
+            }
+            current.onAwait { value -&gt;
+                send(value) // <span class="code-comment">发送当前 Deferred 产生的值</span>
+                input.receiveCatching().getOrNull() // <span class="code-comment">改为等待输入通道送来的下一个 Deferred</span>
+            }
+        }
+        if (next == null) {
+            println("Channel was closed")
+            break // <span class="code-comment">已退出循环</span>
+        } else {
+            current = next
+        }
+    }
+}
+
+fun CoroutineScope.asyncString(str: String, time: Long) = async {
+    delay(time)
+    str
+}
+
+fun main() = runBlocking&lt;Unit&gt; {
+//<span class="code-comment">sampleStart</span>
+    val chan = Channel&lt;Deferred&lt;String&gt;&gt;() // <span class="code-comment">测试用的通道</span>
+    launch { // <span class="code-comment">启动负责打印的协程</span>
+        for (s in switchMapDeferreds(chan))&#32;
+            println(s) // <span class="code-comment">打印每个收到的字符串</span>
+    }
+    chan.send(asyncString("BEGIN", 100))
+    delay(200) // <span class="code-comment">留出足够时间产生 BEGIN</span>
+    chan.send(asyncString("Slow", 500))
+    delay(100) // <span class="code-comment">时间不足，slow 还没有结果</span>
+    chan.send(asyncString("Replace", 100))
+    delay(500) // <span class="code-comment">在最后一次操作前稍等</span>
+    chan.send(asyncString("END", 500))
+    delay(1000) // <span class="code-comment">留出处理时间</span>
+    chan.close() // <span class="code-comment">关闭通道……</span>&#32;
+    delay(500) // <span class="code-comment">稍等片刻，让它执行完</span>
+//<span class="code-comment">sampleEnd</span>
+}</code></pre>
+<aside class="prompt" data-type="note" id="z9bbktr_94"><p id="z9bbktr_101">可以在这里查看<a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-select-05.kt">完整代码</a>。</p></aside><p id="z9bbktr_95">输出如下。</p>
+<pre><code class="language-none">BEGIN
+Replace
+END
+Channel was closed</code></pre></section></article>
+<nav class="chapter-switcher" aria-label="章节导航"><a href="../shared-mutable-state-and-concurrency/literal.html">← 共享可变状态与并发</a><a class="course-home" href="../literal.html">全部章节</a><a href="../debug-coroutines-with-idea/literal.html">教程：使用 IntelliJ IDEA 调试协程 →</a></nav><footer class="source-credit"><p>原文由 JetBrains 与 Kotlin 贡献者维护。中文译稿修订于 2026 年 11 月 19 日。示例代码的说明性注释已译为中文，输出文字与截图沿用原文。</p><p><a href="https://kotlinlang.org/docs/select-expression.html">Kotlin 官方原文</a> · <a href="../LICENSE-2.0.txt">Apache License 2.0</a></p></footer></main>
+</body></html>

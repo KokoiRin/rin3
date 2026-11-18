@@ -12,6 +12,7 @@
 
 ## 按任务读取
 
+- 翻译官方文档时，按[官方文档翻译流程](.agents/skills/publish-book-learning/SKILL.md#官方文档的两轮译稿)逐篇先严格翻译，再优化中文表达。“用来学习”“写得易懂”是对第二轮表达的要求，原文仍按完整翻译交付。
 - 修改内容解析、渲染或模块依赖前，阅读 [架构约束](docs/architecture.md)。
 - 修改独立阅读器前，阅读 [阅读器与样式清单](docs/reader-inventory.md)，并核对对应系列当前的样式和资源归属；盘点数据以实际文件为准。
 - 编写文章与 Slides 双视图内容前，阅读 [双视图作者说明](docs/slides-authoring.md)。

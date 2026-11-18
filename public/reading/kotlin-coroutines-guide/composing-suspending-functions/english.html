@@ -4,23 +4,23 @@
 <meta charset="utf-8"><script src="../../../theme.js"></script>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Composing suspending functions｜RIN III</title>
-<meta name="description" content="This section covers various approaches to composition of suspending functions.">
+<meta name="description" content="Composing suspending functions · English">
 <link rel="manifest" href="../../../manifest.webmanifest">
 <link rel="stylesheet" href="../../../reading/reader.css">
 <link rel="stylesheet" href="../../../theme.css">
 <link rel="stylesheet" href="../../../reading/_shared/theme-readers.css">
 <link rel="stylesheet" href="../../../reading/kotlin-coroutines-guide/course.css">
 </head><body><div class="reader-theme-control" data-theme-control></div>
-<nav class="site-nav"><a href="../index.html">← Kotlin 协程指南</a><a href="index.html">中文译文</a><a href="https://kotlinlang.org/docs/composing-suspending-functions.html">Kotlin 原文 ↗</a></nav><main class="reader project-reader"><header class="chapter-header"><span class="chapter-kicker">Kotlin 协程指南 · 05 / 12</span><h1>Composing suspending functions</h1></header><nav class="chapter-switcher" aria-label="章节导航"><a href="../coroutines-and-channels/english.html">← Coroutines and channels − tutorial</a><a class="course-home" href="../english.html">Contents</a><a href="../coroutine-context-and-dispatchers/english.html">Coroutine context and dispatchers →</a></nav><details class="source-details chapter-toc"><summary>On this page</summary><ul><li><a href="#sequential-by-default">Sequential by default</a></li><li><a href="#concurrent-using-async">Concurrent using async</a></li><li><a href="#lazily-started-async">Lazily started async</a></li><li><a href="#async-style-functions">Async-style functions</a></li><li><a href="#structured-concurrency-with-async">Structured concurrency with async</a></li></ul></details><article class="translated-article"><p id="-xfvzq8_3">This section covers various approaches to composition of suspending functions.</p>
+<nav class="site-nav"><a href="../english.html">← Contents</a><div class="version-links" aria-label="版本"><a href="index.html">中文润色稿</a><a href="literal.html">严格译稿</a><a href="english.html" aria-current="page">English</a></div></nav><main class="reader project-reader"><header class="chapter-header"><span class="chapter-kicker">5 / 12 · English</span><h1 id="composing-suspending-functions.md">Composing suspending functions</h1></header><nav class="chapter-switcher" aria-label="章节导航"><a href="../coroutines-and-channels/english.html">← Coroutines and channels − tutorial</a><a class="course-home" href="../english.html">Contents</a><a href="../coroutine-context-and-dispatchers/english.html">Coroutine context and dispatchers →</a></nav><details class="source-details chapter-toc"><summary>On this page</summary><ul><li><a href="#sequential-by-default">Sequential by default</a></li><li><a href="#concurrent-using-async">Concurrent using async</a></li><li><a href="#lazily-started-async">Lazily started async</a></li><li><a href="#async-style-functions">Async-style functions</a></li><li><a href="#structured-concurrency-with-async">Structured concurrency with async</a></li></ul></details><article class="translated-article"><p id="-xfvzq8_3">This section covers various approaches to composition of suspending functions.</p>
 <section class="chapter"><h2 id="sequential-by-default">Sequential by default</h2>
 <p id="-xfvzq8_9">Assume that we have two suspending functions defined elsewhere that do something useful like some kind of remote service call or computation. We just pretend they are useful, but actually each one just delays for a second for the purpose of this example:</p>
 <pre><code class="language-kotlin">suspend fun doSomethingUsefulOne(): Int {
-    delay(1000L) // pretend we are doing something useful here
+    delay(1000L) // <span class="code-comment">pretend we are doing something useful here</span>
     return 13
 }
 
 suspend fun doSomethingUsefulTwo(): Int {
-    delay(1000L) // pretend we are doing something useful here, too
+    delay(1000L) // <span class="code-comment">pretend we are doing something useful here, too</span>
     return 29
 }</code></pre>
 <p id="-xfvzq8_11">What do we do if we need them to be invoked <span class="emphasis" id="-xfvzq8_17">sequentially</span> — first <code class="code" id="-xfvzq8_18">doSomethingUsefulOne</code> <span class="emphasis" id="-xfvzq8_19">and then</span> <code class="code" id="-xfvzq8_20">doSomethingUsefulTwo</code>, and compute the sum of their results? In practice, we do this if we use the result of the first function to make a decision on whether we need to invoke the second one or to decide on how to invoke it.</p>
@@ -29,23 +29,23 @@ suspend fun doSomethingUsefulTwo(): Int {
 import kotlin.system.*
 
 fun main() = runBlocking&lt;Unit&gt; {
-//sampleStart
+//<span class="code-comment">sampleStart</span>
     val time = measureTimeMillis {
         val one = doSomethingUsefulOne()
         val two = doSomethingUsefulTwo()
         println("The answer is ${one + two}")
     }
     println("Completed in $time ms")
-//sampleEnd    
+//<span class="code-comment">sampleEnd</span>&#32;&#32;&#32;&#32;
 }
 
 suspend fun doSomethingUsefulOne(): Int {
-    delay(1000L) // pretend we are doing something useful here
+    delay(1000L) // <span class="code-comment">pretend we are doing something useful here</span>
     return 13
 }
 
 suspend fun doSomethingUsefulTwo(): Int {
-    delay(1000L) // pretend we are doing something useful here, too
+    delay(1000L) // <span class="code-comment">pretend we are doing something useful here, too</span>
     return 29
 }</code></pre>
 <aside class="prompt" data-type="note" id="-xfvzq8_14"><p id="-xfvzq8_22">You can get the full code <a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-compose-01.kt" id="-xfvzq8_23">here</a>.</p></aside><p id="-xfvzq8_15">It produces something like this:</p>
@@ -57,23 +57,23 @@ Completed in 2017 ms</code></pre></section><section class="chapter"><h2 id="conc
 import kotlin.system.*
 
 fun main() = runBlocking&lt;Unit&gt; {
-//sampleStart
+//<span class="code-comment">sampleStart</span>
     val time = measureTimeMillis {
         val one = async { doSomethingUsefulOne() }
         val two = async { doSomethingUsefulTwo() }
         println("The answer is ${one.await() + two.await()}")
     }
     println("Completed in $time ms")
-//sampleEnd    
+//<span class="code-comment">sampleEnd</span>&#32;&#32;&#32;&#32;
 }
 
 suspend fun doSomethingUsefulOne(): Int {
-    delay(1000L) // pretend we are doing something useful here
+    delay(1000L) // <span class="code-comment">pretend we are doing something useful here</span>
     return 13
 }
 
 suspend fun doSomethingUsefulTwo(): Int {
-    delay(1000L) // pretend we are doing something useful here, too
+    delay(1000L) // <span class="code-comment">pretend we are doing something useful here, too</span>
     return 29
 }</code></pre>
 <aside class="prompt" data-type="note" id="-xfvzq8_27"><p id="-xfvzq8_44">You can get the full code <a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-compose-02.kt" id="-xfvzq8_45">here</a>.</p></aside><p id="-xfvzq8_28">It produces something like this:</p>
@@ -85,26 +85,26 @@ Completed in 1017 ms</code></pre>
 import kotlin.system.*
 
 fun main() = runBlocking&lt;Unit&gt; {
-//sampleStart
+//<span class="code-comment">sampleStart</span>
     val time = measureTimeMillis {
         val one = async(start = CoroutineStart.LAZY) { doSomethingUsefulOne() }
         val two = async(start = CoroutineStart.LAZY) { doSomethingUsefulTwo() }
-        // some computation
-        one.start() // start the first one
-        two.start() // start the second one
+        // <span class="code-comment">some computation</span>
+        one.start() // <span class="code-comment">start the first one</span>
+        two.start() // <span class="code-comment">start the second one</span>
         println("The answer is ${one.await() + two.await()}")
     }
     println("Completed in $time ms")
-//sampleEnd    
+//<span class="code-comment">sampleEnd</span>&#32;&#32;&#32;&#32;
 }
 
 suspend fun doSomethingUsefulOne(): Int {
-    delay(1000L) // pretend we are doing something useful here
+    delay(1000L) // <span class="code-comment">pretend we are doing something useful here</span>
     return 13
 }
 
 suspend fun doSomethingUsefulTwo(): Int {
-    delay(1000L) // pretend we are doing something useful here, too
+    delay(1000L) // <span class="code-comment">pretend we are doing something useful here, too</span>
     return 29
 }</code></pre>
 <aside class="prompt" data-type="note" id="-xfvzq8_48"><p id="-xfvzq8_59">You can get the full code <a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-compose-03.kt" id="-xfvzq8_60">here</a>.</p></aside><p id="-xfvzq8_49">It produces something like this:</p>
@@ -113,13 +113,13 @@ Completed in 1017 ms</code></pre>
 <p id="-xfvzq8_51">So, here the two coroutines are defined but not executed as in the previous example, but the control is given to the programmer on when exactly to start the execution by calling <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-job/start.html" id="-xfvzq8_61">start</a>. We first start <code class="code" id="-xfvzq8_62">one</code>, then start <code class="code" id="-xfvzq8_63">two</code>, and then await for the individual coroutines to finish.</p>
 <p id="-xfvzq8_52">Note that if we just call <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-deferred/await.html" id="-xfvzq8_64">await</a> in <code class="code" id="-xfvzq8_65">println</code> without first calling <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-job/start.html" id="-xfvzq8_66">start</a> on individual coroutines, this will lead to sequential behavior, since <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-deferred/await.html" id="-xfvzq8_67">await</a> starts the coroutine execution and waits for its finish, which is not the intended use-case for laziness. The use-case for <code class="code" id="-xfvzq8_68">async(start = CoroutineStart.LAZY)</code> is a replacement for the standard <a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/lazy.html" id="-xfvzq8_69">lazy</a> function in cases when computation of the value involves suspending functions.</p></section><section class="chapter"><h2 id="async-style-functions">Async-style functions</h2>
 <aside class="prompt" data-type="note" id="-xfvzq8_70"><p id="-xfvzq8_79">This programming style with async functions is provided here only for illustration, because it is a popular style in other programming languages. Using this style with Kotlin coroutines is <span class="control" id="-xfvzq8_80">strongly discouraged</span> for the reasons explained below.</p></aside><p id="-xfvzq8_71">We can define async-style functions that invoke <code class="code" id="-xfvzq8_81">doSomethingUsefulOne</code> and <code class="code" id="-xfvzq8_82">doSomethingUsefulTwo</code> <span class="emphasis" id="-xfvzq8_83">asynchronously</span> using the <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/async.html" id="-xfvzq8_84">async</a> coroutine builder using a <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-global-scope/index.html" id="-xfvzq8_85">GlobalScope</a> reference to opt-out of the structured concurrency. We name such functions with the "...Async" suffix to highlight the fact that they only start asynchronous computation and one needs to use the resulting deferred value to get the result.</p>
-<aside class="prompt" data-type="note" id="-xfvzq8_72"><p id="-xfvzq8_86"><a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-global-scope/index.html" id="-xfvzq8_87">GlobalScope</a> is a delicate API that can backfire in non-trivial ways, one of which will be explained below, so you must explicitly opt-in into using <code class="code" id="-xfvzq8_88">GlobalScope</code> with <code class="code" id="-xfvzq8_89">@OptIn(DelicateCoroutinesApi::class)</code>.</p></aside><pre><code class="language-kotlin">// The result type of somethingUsefulOneAsync is Deferred&lt;Int&gt;
+<aside class="prompt" data-type="note" id="-xfvzq8_72"><p id="-xfvzq8_86"><a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-global-scope/index.html" id="-xfvzq8_87">GlobalScope</a> is a delicate API that can backfire in non-trivial ways, one of which will be explained below, so you must explicitly opt-in into using <code class="code" id="-xfvzq8_88">GlobalScope</code> with <code class="code" id="-xfvzq8_89">@OptIn(DelicateCoroutinesApi::class)</code>.</p></aside><pre><code class="language-kotlin">// <span class="code-comment">The result type of somethingUsefulOneAsync is Deferred&lt;Int&gt;</span>
 @OptIn(DelicateCoroutinesApi::class)
 fun somethingUsefulOneAsync() = GlobalScope.async {
     doSomethingUsefulOne()
 }
 
-// The result type of somethingUsefulTwoAsync is Deferred&lt;Int&gt;
+// <span class="code-comment">The result type of somethingUsefulTwoAsync is Deferred&lt;Int&gt;</span>
 @OptIn(DelicateCoroutinesApi::class)
 fun somethingUsefulTwoAsync() = GlobalScope.async {
     doSomethingUsefulTwo()
@@ -129,22 +129,22 @@ fun somethingUsefulTwoAsync() = GlobalScope.async {
 <pre><code class="language-kotlin">import kotlinx.coroutines.*
 import kotlin.system.*
 
-//sampleStart
-// note that we don't have `runBlocking` to the right of `main` in this example
+//<span class="code-comment">sampleStart</span>
+// <span class="code-comment">note that we don't have `runBlocking` to the right of `main` in this example</span>
 fun main() {
     val time = measureTimeMillis {
-        // we can initiate async actions outside of a coroutine
+        // <span class="code-comment">we can initiate async actions outside of a coroutine</span>
         val one = somethingUsefulOneAsync()
         val two = somethingUsefulTwoAsync()
-        // but waiting for a result must involve either suspending or blocking.
-        // here we use `runBlocking { ... }` to block the main thread while waiting for the result
+        // <span class="code-comment">but waiting for a result must involve either suspending or blocking.</span>
+        // <span class="code-comment">here we use `runBlocking { ... }` to block the main thread while waiting for the result</span>
         runBlocking {
             println("The answer is ${one.await() + two.await()}")
         }
     }
     println("Completed in $time ms")
 }
-//sampleEnd
+//<span class="code-comment">sampleEnd</span>
 
 @OptIn(DelicateCoroutinesApi::class)
 fun somethingUsefulOneAsync() = GlobalScope.async {
@@ -157,12 +157,12 @@ fun somethingUsefulTwoAsync() = GlobalScope.async {
 }
 
 suspend fun doSomethingUsefulOne(): Int {
-    delay(1000L) // pretend we are doing something useful here
+    delay(1000L) // <span class="code-comment">pretend we are doing something useful here</span>
     return 13
 }
 
 suspend fun doSomethingUsefulTwo(): Int {
-    delay(1000L) // pretend we are doing something useful here, too
+    delay(1000L) // <span class="code-comment">pretend we are doing something useful here, too</span>
     return 29
 }</code></pre>
 <aside class="prompt" data-type="note" id="-xfvzq8_77"><p id="-xfvzq8_94">You can get the full code <a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-compose-04.kt" id="-xfvzq8_95">here</a>.</p></aside><p id="-xfvzq8_78">Consider what happens if between the <code class="code" id="-xfvzq8_96">val one = somethingUsefulOneAsync()</code> line and <code class="code" id="-xfvzq8_97">one.await()</code> expression there is some logic error in the code, and the program throws an exception, and the operation that was being performed by the program aborts. Normally, a global error-handler could catch this exception, log and report the error for developers, but the program could otherwise continue doing other operations. However, here we have <code class="code" id="-xfvzq8_98">somethingUsefulOneAsync</code> still running in the background, even though the operation that initiated it was aborted. This problem does not happen with structured concurrency, as shown in the section below.</p></section><section class="chapter"><h2 id="structured-concurrency-with-async">Structured concurrency with async</h2>
@@ -177,12 +177,12 @@ suspend fun doSomethingUsefulTwo(): Int {
 import kotlin.system.*
 
 fun main() = runBlocking&lt;Unit&gt; {
-//sampleStart
+//<span class="code-comment">sampleStart</span>
     val time = measureTimeMillis {
         println("The answer is ${concurrentSum()}")
     }
     println("Completed in $time ms")
-//sampleEnd    
+//<span class="code-comment">sampleEnd</span>&#32;&#32;&#32;&#32;
 }
 
 suspend fun concurrentSum(): Int = coroutineScope {
@@ -192,12 +192,12 @@ suspend fun concurrentSum(): Int = coroutineScope {
 }
 
 suspend fun doSomethingUsefulOne(): Int {
-    delay(1000L) // pretend we are doing something useful here
+    delay(1000L) // <span class="code-comment">pretend we are doing something useful here</span>
     return 13
 }
 
 suspend fun doSomethingUsefulTwo(): Int {
-    delay(1000L) // pretend we are doing something useful here, too
+    delay(1000L) // <span class="code-comment">pretend we are doing something useful here, too</span>
     return 29
 }</code></pre>
 <aside class="prompt" data-type="note" id="-xfvzq8_103"><p id="-xfvzq8_118">You can get the full code <a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-compose-05.kt" id="-xfvzq8_119">here</a>.</p></aside><p id="-xfvzq8_104">We still have concurrent execution of both operations, as evident from the output of the above <code class="code" id="-xfvzq8_120">main</code> function:</p>
@@ -215,15 +215,15 @@ fun main() = runBlocking&lt;Unit&gt; {
 }
 
 suspend fun failedConcurrentSum(): Int = coroutineScope {
-    val one = async&lt;Int&gt; { 
+    val one = async&lt;Int&gt; {&#32;
         try {
-            delay(Long.MAX_VALUE) // Emulates very long computation
+            delay(Long.MAX_VALUE) // <span class="code-comment">Emulates very long computation</span>
             42
         } finally {
             println("First child was cancelled")
         }
     }
-    val two = async&lt;Int&gt; { 
+    val two = async&lt;Int&gt; {&#32;
         println("Second child throws an exception")
         throw ArithmeticException()
     }
@@ -233,5 +233,5 @@ suspend fun failedConcurrentSum(): Int = coroutineScope {
 <pre><code class="language-none">Second child throws an exception
 First child was cancelled
 Computation failed with ArithmeticException</code></pre></section></article>
-<nav class="chapter-switcher" aria-label="章节导航"><a href="../coroutines-and-channels/english.html">← Coroutines and channels − tutorial</a><a class="course-home" href="../english.html">Contents</a><a href="../coroutine-context-and-dispatchers/english.html">Coroutine context and dispatchers →</a></nav><footer class="source-credit"><p>原文由 JetBrains 与 Kotlin 贡献者维护。RIN III 于 2026 年 11 月 18 日翻译、润色并补充导读与自测；代码、输出及图中界面保留原貌。</p><p><a href="https://kotlinlang.org/docs/composing-suspending-functions.html">Kotlin 官方原文</a> · <a href="../LICENSE-2.0.txt">Apache License 2.0</a></p></footer></main>
+<nav class="chapter-switcher" aria-label="章节导航"><a href="../coroutines-and-channels/english.html">← Coroutines and channels − tutorial</a><a class="course-home" href="../english.html">Contents</a><a href="../coroutine-context-and-dispatchers/english.html">Coroutine context and dispatchers →</a></nav><footer class="source-credit"><p>English source by JetBrains and Kotlin contributors.</p><p><a href="https://kotlinlang.org/docs/composing-suspending-functions.html">Kotlin 官方原文</a> · <a href="../LICENSE-2.0.txt">Apache License 2.0</a></p></footer></main>
 </body></html>

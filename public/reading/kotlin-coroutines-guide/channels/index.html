@@ -4,63 +4,63 @@
 <meta charset="utf-8"><script src="../../../theme.js"></script>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>通道｜RIN III</title>
-<meta name="description" content="把待处理的数字交给几个工人。观察谁发送、谁接收、缓冲装满时谁等待，以及最后谁来关闭通道。">
+<meta name="description" content="通道 · 中文润色稿">
 <link rel="manifest" href="../../../manifest.webmanifest">
 <link rel="stylesheet" href="../../../reading/reader.css">
 <link rel="stylesheet" href="../../../theme.css">
 <link rel="stylesheet" href="../../../reading/_shared/theme-readers.css">
 <link rel="stylesheet" href="../../../reading/kotlin-coroutines-guide/course.css">
 </head><body><div class="reader-theme-control" data-theme-control></div>
-<nav class="site-nav"><a href="../index.html">← Kotlin 协程指南</a><a href="english.html">English</a><a href="https://kotlinlang.org/docs/channels.html">Kotlin 原文 ↗</a></nav><main class="reader project-reader"><header class="chapter-header"><span class="chapter-kicker">Kotlin 协程指南 · 07 / 12</span><h1>通道</h1><p class="lead">把待处理的数字交给几个工人。观察谁发送、谁接收、缓冲装满时谁等待，以及最后谁来关闭通道。</p></header><nav class="chapter-switcher" aria-label="章节导航"><a href="../coroutine-context-and-dispatchers/index.html">← 协程上下文与调度器</a><a class="course-home" href="../index.html">全部章节</a><a href="../exception-handling/index.html">协程怎样处理异常 →</a></nav><details class="source-details chapter-toc"><summary>本章目录</summary><ul><li><a href="#channel-basics">发送与接收</a></li><li><a href="#closing-and-iteration-over-channels">关闭通道与遍历元素</a></li><li><a href="#building-channel-producers">编写生产者</a></li><li><a href="#pipelines">把处理步骤串成管道</a></li><li><a href="#prime-numbers-with-pipeline">用管道筛选素数</a></li><li><a href="#fan-out">多个消费者分担工作</a></li><li><a href="#fan-in">多个生产者汇入同一通道</a></li><li><a href="#buffered-channels">带缓冲的通道</a></li><li><a href="#channels-are-fair">等待队列中的先来后到</a></li><li><a href="#ticker-channels">定时发送的 ticker 通道</a></li></ul></details><article class="translated-article"><p id="z7dygzm_3">两个协程之间只交付一个结果，可以用 Deferred。要陆续交付一串值，可以用通道 Channel。</p>
-<section class="chapter"><h2 id="channel-basics">发送与接收</h2>
-<p id="z7dygzm_14">把 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.channels/-channel/index.html">Channel</a> 想成协程之间的队列。对于 <code>BlockingQueue</code>，<code>put</code> 或 <code>take</code> 可能阻塞线程；通道提供的 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.channels/-send-channel/send.html">send</a> 和 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.channels/-receive-channel/receive.html">receive</a> 可以只挂起正在等待的协程。</p>
-<pre><code class="language-kotlin">import kotlinx.coroutines.*
+<nav class="site-nav"><a href="../index.html">← 全部章节</a><div class="version-links" aria-label="版本"><a href="index.html" aria-current="page">中文润色稿</a><a href="literal.html">严格译稿</a><a href="english.html">English</a></div></nav><main class="reader project-reader"><header class="chapter-header"><span class="chapter-kicker">7 / 12 · 中文润色稿</span><h1 id="channels.md">通道</h1></header><nav class="chapter-switcher" aria-label="章节导航"><a href="../coroutine-context-and-dispatchers/index.html">← 协程上下文与调度器</a><a class="course-home" href="../index.html">全部章节</a><a href="../exception-handling/index.html">协程异常处理 →</a></nav><details class="source-details chapter-toc"><summary>本章目录</summary><ul><li><a href="#channel-basics">通道基础</a></li><li><a href="#closing-and-iteration-over-channels">关闭和遍历通道</a></li><li><a href="#building-channel-producers">构建通道生产者</a></li><li><a href="#pipelines">管道</a></li><li><a href="#prime-numbers-with-pipeline">用管道生成素数</a></li><li><a href="#fan-out">扇出：多个接收者</a></li><li><a href="#fan-in">扇入：多个发送者</a></li><li><a href="#buffered-channels">带缓冲的通道</a></li><li><a href="#channels-are-fair">通道的公平性</a></li><li><a href="#ticker-channels">定时通道</a></li></ul></details><article class="translated-article"><p id="z7dygzm_3">前面用 Deferred 把一个结果交给等待它的协程。若要陆续交付多个值，可以用通道（Channel）。</p>
+<section class="chapter"><h2 id="channel-basics">通道基础</h2>
+<p id="z7dygzm_14">如果熟悉 <code>BlockingQueue</code>，可以把 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.channels/-channel/index.html">Channel</a> 的 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.channels/-send-channel/send.html">send</a> 和 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.channels/-receive-channel/receive.html">receive</a> 分别与队列的 <code>put</code> 和 <code>take</code> 对照。后两者在等待时可能阻塞线程，而通道可以让发送或接收的协程挂起。</p>
+<aside class="learning-note"><strong>编者注</strong><p>下面的发送方计算 1 到 5 的平方，主协程接收五次。读代码时可以把 channel.send(x * x) 和接收端的 channel.receive() 对起来，看一个数是怎样传过去的。</p></aside><pre><code class="language-kotlin">import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.*
 
 fun main() = runBlocking {
-//sampleStart
+//<span class="code-comment">sampleStart</span>
     val channel = Channel&lt;Int&gt;()
     launch {
-        // this might be heavy CPU-consuming computation or async logic, 
-        // we'll just send five squares
+        // <span class="code-comment">这里可能要执行耗费 CPU 的计算或一段异步逻辑，</span>&#32;
+        // <span class="code-comment">这里只发送五个平方数</span>
         for (x in 1..5) channel.send(x * x)
     }
-    // here we print five received integers:
+    // <span class="code-comment">打印收到的五个整数</span>
     repeat(5) { println(channel.receive()) }
     println("Done!")
-//sampleEnd
+//<span class="code-comment">sampleEnd</span>
 }</code></pre>
-<aside class="prompt" data-type="note" id="z7dygzm_16"><p id="z7dygzm_25"><a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-channel-01.kt">查看完整示例</a>。</p></aside><p id="z7dygzm_17">一次运行的输出如下。</p>
+<aside class="prompt" data-type="note" id="z7dygzm_16"><p id="z7dygzm_25">查看<a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-channel-01.kt">完整代码</a>。</p></aside><p id="z7dygzm_17">输出如下。</p>
 <pre><code class="language-none">1
 4
 9
 16
 25
-Done!</code></pre></section><section class="chapter"><h2 id="closing-and-iteration-over-channels">关闭通道与遍历元素</h2>
-<p id="z7dygzm_27">发送方可以关闭通道，表示后面没有新元素。接收方可以用普通 <code>for</code> 循环依次接收。</p>
-<p id="z7dygzm_28">可以把 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.channels/-send-channel/close.html">close</a> 想成排在已有元素后面的结束标记。接收方先读完关闭前发来的元素，随后自然退出循环。</p>
+Done!</code></pre></section><section class="chapter"><h2 id="closing-and-iteration-over-channels">关闭和遍历通道</h2>
+<p id="z7dygzm_27">发送方知道不会再产生新值时，可以关闭通道。接收方使用普通的 <code>for</code> 循环，就能依次取出通道中的元素。</p>
+<p id="z7dygzm_28">可以把关闭理解为排在已有元素后面的结束标记。接收方先取完关闭前已经发送的元素，再结束循环。 <sup class="source-refs"><a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.channels/-send-channel/close.html">[1]</a></sup></p>
 <pre><code class="language-kotlin">import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.*
 
 fun main() = runBlocking {
-//sampleStart
+//<span class="code-comment">sampleStart</span>
     val channel = Channel&lt;Int&gt;()
     launch {
         for (x in 1..5) channel.send(x * x)
-        channel.close() // we're done sending
+        channel.close() // <span class="code-comment">数据已发完</span>
     }
-    // here we print received values using `for` loop (until the channel is closed)
+    // <span class="code-comment">用 for 循环打印收到的值，直到通道关闭</span>
     for (y in channel) println(y)
     println("Done!")
-//sampleEnd
+//<span class="code-comment">sampleEnd</span>
 }</code></pre>
-<aside class="prompt" data-type="note" id="z7dygzm_30"><p id="z7dygzm_33"><a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-channel-02.kt">查看完整示例</a>。</p></aside></section><section class="chapter"><h2 id="building-channel-producers">编写生产者</h2>
-<p id="z7dygzm_35">经常会有一个协程负责生成一串值，另一个协程消费它们。可以把通道作为参数传给生产者，但从调用方看，更自然的形式是调用一个函数，从返回值里接收结果。</p>
-<p id="z7dygzm_36"><a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.channels/produce.html">produce</a> 会启动生产者协程，返回接收端。单一消费者可以用 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.channels/consume-each.html">consumeEach</a> 替代 <code>for</code> 循环。</p>
+<aside class="prompt" data-type="note" id="z7dygzm_30"><p id="z7dygzm_33">查看<a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-channel-02.kt">完整代码</a>。</p></aside></section><section class="chapter"><h2 id="building-channel-producers">构建通道生产者</h2>
+<p id="z7dygzm_35">用一个协程生成一系列元素很常见，这是并发代码中常见的生产者与消费者模式的一部分。可以将生产者抽取为接受通道参数的函数，但这样不符合「由函数返回结果」的惯常形式。</p>
+<p id="z7dygzm_36">协程构建器 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.channels/produce.html">produce</a> 能方便地在生产端完成这项工作；消费端可用扩展函数 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.channels/consume-each.html">consumeEach</a> 替代 <code>for</code> 循环。</p>
 <pre><code class="language-kotlin">import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.*
 
-//sampleStart
+//<span class="code-comment">sampleStart</span>
 fun CoroutineScope.produceSquares(): ReceiveChannel&lt;Int&gt; = produce {
     for (x in 1..5) send(x * x)
 }
@@ -69,79 +69,79 @@ fun main() = runBlocking {
     val squares = produceSquares()
     squares.consumeEach { println(it) }
     println("Done!")
-//sampleEnd
+//<span class="code-comment">sampleEnd</span>
 }</code></pre>
-<aside class="prompt" data-type="note" id="z7dygzm_38"><p id="z7dygzm_43"><a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-channel-03.kt">查看完整示例</a>。</p></aside></section><section class="chapter"><h2 id="pipelines">把处理步骤串成管道</h2>
-<p id="z7dygzm_45">管道的第一站持续生成值，甚至可以一直生成下去。</p>
+<aside class="prompt" data-type="note" id="z7dygzm_38"><p id="z7dygzm_43">查看<a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-channel-03.kt">完整代码</a>。</p></aside></section><section class="chapter"><h2 id="pipelines">管道</h2>
+<p id="z7dygzm_45">在管道这种模式中，一个协程产生一串可能没有尽头的值。</p>
 <pre><code class="language-kotlin">fun CoroutineScope.produceNumbers() = produce&lt;Int&gt; {
     var x = 1
-    while (true) send(x++) // infinite stream of integers starting from 1
+    while (true) send(x++) // <span class="code-comment">从 1 开始生成无限整数流</span>
 }</code></pre>
-<p id="z7dygzm_47">后续协程接收上游值，处理后再交给下一站。这里的处理只有一步，把数字平方。</p>
+<p id="z7dygzm_47">下一阶段从这个通道取值，处理后再把结果发出去。这样的处理阶段可以有一个，也可以有多个。下面只用一个阶段，把收到的每个数变为它的平方。</p>
 <pre><code class="language-kotlin">fun CoroutineScope.square(numbers: ReceiveChannel&lt;Int&gt;): ReceiveChannel&lt;Int&gt; = produce {
     for (x in numbers) send(x * x)
 }</code></pre>
-<p id="z7dygzm_49">主程序把各站连接起来，启动整条管道。</p>
+<p id="z7dygzm_49">主程序启动各个阶段并将它们连成完整管道。</p>
 <pre><code class="language-kotlin">import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.*
 
 fun main() = runBlocking {
-//sampleStart
-    val numbers = produceNumbers() // produces integers from 1 and on
-    val squares = square(numbers) // squares integers
+//<span class="code-comment">sampleStart</span>
+    val numbers = produceNumbers() // <span class="code-comment">从 1 开始逐个生成整数</span>
+    val squares = square(numbers) // <span class="code-comment">计算整数的平方</span>
     repeat(5) {
-        println(squares.receive()) // print first five
+        println(squares.receive()) // <span class="code-comment">打印前五个结果</span>
     }
-    println("Done!") // we are done
-    coroutineContext.cancelChildren() // cancel children coroutines
-//sampleEnd
+    println("Done!") // <span class="code-comment">工作完成</span>
+    coroutineContext.cancelChildren() // <span class="code-comment">取消子协程</span>
+//<span class="code-comment">sampleEnd</span>
 }
 
 fun CoroutineScope.produceNumbers() = produce&lt;Int&gt; {
     var x = 1
-    while (true) send(x++) // infinite stream of integers starting from 1
+    while (true) send(x++) // <span class="code-comment">从 1 开始生成无限整数流</span>
 }
 
 fun CoroutineScope.square(numbers: ReceiveChannel&lt;Int&gt;): ReceiveChannel&lt;Int&gt; = produce {
     for (x in numbers) send(x * x)
 }</code></pre>
-<aside class="prompt" data-type="note" id="z7dygzm_51"><p id="z7dygzm_53"><a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-channel-04.kt">查看完整示例</a>。</p></aside><aside class="prompt" data-type="note" id="z7dygzm_52"><p id="z7dygzm_55">创建协程的函数都写成 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-coroutine-scope/index.html">CoroutineScope</a> 的扩展。这样管道归调用作用域管理，作用域结束时就能收拢工作。 <small class="source-refs"><a href="../composing-suspending-functions/index.html#structured-concurrency-with-async">structured concurrency</a></small></p></aside></section><section class="chapter"><h2 id="prime-numbers-with-pipeline">用管道筛选素数</h2>
-<p id="z7dygzm_58">先从一条无限的整数流开始，看看连续增加过滤步骤会发生什么。</p>
+<aside class="prompt" data-type="note" id="z7dygzm_51"><p id="z7dygzm_53">查看<a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-channel-04.kt">完整代码</a>。</p></aside><aside class="prompt" data-type="note" id="z7dygzm_52"><p id="z7dygzm_55">所有创建协程的函数都是 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-coroutine-scope/index.html">CoroutineScope</a> 的扩展函数，这样就能依靠<a href="../composing-suspending-functions/index.html#structured-concurrency-with-async">结构化并发</a>，避免应用留下长期运行的全局协程。</p></aside></section><section class="chapter"><h2 id="prime-numbers-with-pipeline">用管道生成素数</h2>
+<p id="z7dygzm_58">下面用由协程组成的管道生成素数，进一步展示这种结构。先从一串无穷整数开始。</p>
 <pre><code class="language-kotlin">fun CoroutineScope.numbersFrom(start: Int) = produce&lt;Int&gt; {
     var x = start
-    while (true) send(x++) // infinite stream of integers from start
+    while (true) send(x++) // <span class="code-comment">从 start 开始生成无限整数流</span>
 }</code></pre>
-<p id="z7dygzm_60">每一层过滤器接收上游数字，去掉给定素数的所有倍数，把余下的传下去。</p>
+<p id="z7dygzm_60">接下来的一层过滤输入的整数，移除能被指定素数整除的数。</p>
 <pre><code class="language-kotlin">fun CoroutineScope.filter(numbers: ReceiveChannel&lt;Int&gt;, prime: Int) = produce&lt;Int&gt; {
     for (x in numbers) if (x % prime != 0) send(x)
 }</code></pre>
-<p id="z7dygzm_62">从 2 开始取数。当前通道送来的第一个数是新的素数，接着为它启动一层过滤器，再从新的出口取数。</p>
+<p id="z7dygzm_62">先从 2 开始生成整数。每从当前通道取出一个素数，就为它新建一层过滤，把这个素数的倍数挡掉，再从过滤后的通道继续取数。</p>
 <pre><code class="language-none">numbersFrom(2) -&gt; filter(2) -&gt; filter(3) -&gt; filter(5) -&gt; filter(7) ... </code></pre>
-<p id="z7dygzm_64">下面在主线程上打印前十个素数。所有阶段都是 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/run-blocking.html">runBlocking</a> 的后代，因此无需逐个保存句柄。取够十个数后，调用 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/cancel-children.html">cancelChildren</a> 停止余下的生产和过滤。</p>
+<p id="z7dygzm_64">下面的例子在主线程上下文里运行整个管道，打印前十个素数。所有协程都在 main 的 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/run-blocking.html">runBlocking</a> 作用域内启动，因此无须保存启动过的全部协程列表。打印前十个素数后，调用 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/cancel-children.html">cancelChildren</a> 扩展函数取消所有子协程。</p>
 <pre><code class="language-kotlin">import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.*
 
 fun main() = runBlocking {
-//sampleStart
+//<span class="code-comment">sampleStart</span>
     var cur = numbersFrom(2)
     repeat(10) {
         val prime = cur.receive()
         println(prime)
         cur = filter(cur, prime)
     }
-    coroutineContext.cancelChildren() // cancel all children to let main finish
-//sampleEnd    
+    coroutineContext.cancelChildren() // <span class="code-comment">取消所有子协程，让 main 可以结束</span>
+//<span class="code-comment">sampleEnd</span>&#32;&#32;&#32;&#32;
 }
 
 fun CoroutineScope.numbersFrom(start: Int) = produce&lt;Int&gt; {
     var x = start
-    while (true) send(x++) // infinite stream of integers from start
+    while (true) send(x++) // <span class="code-comment">从 start 开始生成无限整数流</span>
 }
 
 fun CoroutineScope.filter(numbers: ReceiveChannel&lt;Int&gt;, prime: Int) = produce&lt;Int&gt; {
     for (x in numbers) if (x % prime != 0) send(x)
 }</code></pre>
-<aside class="prompt" data-type="note" id="z7dygzm_66"><p id="z7dygzm_73"><a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-channel-05.kt">查看完整示例</a>。</p></aside><p id="z7dygzm_67">一次运行的输出如下。</p>
+<aside class="prompt" data-type="note" id="z7dygzm_66"><p id="z7dygzm_73">查看<a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-channel-05.kt">完整代码</a>。</p></aside><p id="z7dygzm_67">输出如下。</p>
 <pre><code class="language-none">2
 3
 5
@@ -152,49 +152,49 @@ fun CoroutineScope.filter(numbers: ReceiveChannel&lt;Int&gt;, prime: Int) = prod
 19
 23
 29</code></pre>
-<p id="z7dygzm_69">同样的算法也能用标准库 <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.sequences/iterator.html">iterator</a> 实现。把 <code>produce</code>、<code>send</code>、<code>receive</code>、<code>ReceiveChannel</code> 分别换成 <code>iterator</code>、<code>yield</code>、<code>next</code>、<code>Iterator</code>，再去掉作用域和 <code>runBlocking</code>。通道版如果放在 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-dispatchers/-default.html">Dispatchers.Default</a> 上，不同阶段有机会使用多个 CPU 核心。</p>
-<p id="z7dygzm_70">求素数有更实用的算法。这个例子的价值在于展示管道结构：真实阶段可能需要挂起并等待远程服务，<code>produce</code> 允许这些挂起调用，<code>sequence</code> 或 <code>iterator</code> 的构建块对挂起操作有额外限制。</p></section><section class="chapter"><h2 id="fan-out">多个消费者分担工作</h2>
-<p id="z7dygzm_90">多个协程可以从同一个通道接收，各自取走不同元素。先让生产者每秒产生约十个整数。</p>
+<p id="z7dygzm_69">同样的管道也可以用标准库的 <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.sequences/iterator.html">iterator</a> 构建器来搭建：把 <code>produce</code> 换成 <code>iterator</code>，<code>send</code> 换成 <code>yield</code>，<code>receive</code> 换成 <code>next</code>，<code>ReceiveChannel</code> 换成 <code>Iterator</code>，再移除协程作用域，也不需要 <code>runBlocking</code>。使用通道的优点在于，如果运行在 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-dispatchers/-default.html">Dispatchers.Default</a> 上，管道能实际利用多个 CPU 核心。</p>
+<p id="z7dygzm_70">用这个方法求素数非常不实用。实际的管道往往涉及其他挂起调用，例如异步调用远程服务。<code>sequence</code> 和 <code>iterator</code> 不允许任意挂起，无法搭建这类管道；<code>produce</code> 则是完全异步的。</p></section><section class="chapter"><h2 id="fan-out">扇出：多个接收者</h2>
+<p id="z7dygzm_90">多个协程可以接收同一通道中的元素，彼此分担工作。先创建一个定期产生整数的生产者，每秒产生十个数。</p>
 <pre><code class="language-kotlin">fun CoroutineScope.produceNumbers() = produce&lt;Int&gt; {
-    var x = 1 // start from 1
+    var x = 1 // <span class="code-comment">从 1 开始</span>
     while (true) {
-        send(x++) // produce next
-        delay(100) // wait 0.1s
+        send(x++) // <span class="code-comment">产生下一个值</span>
+        delay(100) // <span class="code-comment">等待 0.1 秒</span>
     }
 }</code></pre>
-<p id="z7dygzm_92">再创建几个处理协程，各自打印自己的编号和收到的数。</p>
+<p id="z7dygzm_92">接着可以创建多个处理协程。这里它们只打印自己的编号和收到的数字。</p>
 <pre><code class="language-kotlin">fun CoroutineScope.launchProcessor(id: Int, channel: ReceiveChannel&lt;Int&gt;) = launch {
     for (msg in channel) {
         println("Processor #$id received $msg")
-    }    
+    }&#32;&#32;&#32;&#32;
 }</code></pre>
-<p id="z7dygzm_94">启动五个处理协程，让它们工作将近一秒，观察分工。</p>
+<p id="z7dygzm_94">启动五个处理者，让它们工作将近一秒，观察结果。</p>
 <pre><code class="language-kotlin">import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.*
 
 fun main() = runBlocking&lt;Unit&gt; {
-//sampleStart
+//<span class="code-comment">sampleStart</span>
     val producer = produceNumbers()
     repeat(5) { launchProcessor(it, producer) }
     delay(950)
-    producer.cancel() // cancel producer coroutine and thus kill them all
-//sampleEnd
+    producer.cancel() // <span class="code-comment">取消生产者协程，让这些处理协程随之结束</span>
+//<span class="code-comment">sampleEnd</span>
 }
 
 fun CoroutineScope.produceNumbers() = produce&lt;Int&gt; {
-    var x = 1 // start from 1
+    var x = 1 // <span class="code-comment">从 1 开始</span>
     while (true) {
-        send(x++) // produce next
-        delay(100) // wait 0.1s
+        send(x++) // <span class="code-comment">产生下一个值</span>
+        delay(100) // <span class="code-comment">等待 0.1 秒</span>
     }
 }
 
 fun CoroutineScope.launchProcessor(id: Int, channel: ReceiveChannel&lt;Int&gt;) = launch {
     for (msg in channel) {
         println("Processor #$id received $msg")
-    }    
+    }&#32;&#32;&#32;&#32;
 }</code></pre>
-<aside class="prompt" data-type="note" id="z7dygzm_96"><p id="z7dygzm_101"><a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-channel-06.kt">查看完整示例</a>。</p></aside><p id="z7dygzm_97">输出与下例相近，每个数具体交给哪位处理者可能变化。</p>
+<aside class="prompt" data-type="note" id="z7dygzm_96"><p id="z7dygzm_101">查看<a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-channel-06.kt">完整代码</a>。</p></aside><p id="z7dygzm_97">输出与下例相近，但收到某个整数的处理者编号可能不同。</p>
 <pre><code class="language-none">Processor #2 received 1
 Processor #4 received 2
 Processor #0 received 3
@@ -205,29 +205,29 @@ Processor #4 received 7
 Processor #0 received 8
 Processor #1 received 9
 Processor #3 received 10</code></pre>
-<p id="z7dygzm_99">取消生产者后，它的通道会关闭。各处理者对通道的遍历也会相继结束。</p>
-<p id="z7dygzm_100"><code>launchProcessor</code> 用 <code>for</code> 逐项接收。多个处理者共享接收端时，这样写能让其余处理者在一个处理者退出后继续消费，只要它们的作用域仍然有效。<code>consumeEach</code> 结束时会取消通道，包括异常退出的情况，因此不适合这里的共享接收端。</p></section><section class="chapter"><h2 id="fan-in">多个生产者汇入同一通道</h2>
-<p id="z7dygzm_108">也可以让多个协程向同一个通道发送。下面的挂起函数每隔一段时间，就把指定的字符串送进去。</p>
+<p id="z7dygzm_99">取消生产者协程会关闭它的通道，各个处理协程对该通道的遍历也最终会结束。</p>
+<p id="z7dygzm_100">这里刻意在 <code>launchProcessor</code> 中使用 <code>for</code>。几个处理协程可以安全地从同一通道取值，其中一个退出后，其余协程仍能继续接收。换成 <code>consumeEach</code> 就不同了：使用它的处理协程一旦结束，无论正常结束还是抛出异常，都将消费并取消底层通道。</p></section><section class="chapter"><h2 id="fan-in">扇入：多个发送者</h2>
+<p id="z7dygzm_108">多个协程可以向同一个通道发送值。下面创建字符串通道，再定义一个挂起函数，以指定间隔向它反复发送指定字符串。</p>
 <pre><code class="language-kotlin">suspend fun sendString(channel: SendChannel&lt;String&gt;, s: String, time: Long) {
     while (true) {
         delay(time)
         channel.send(s)
     }
 }</code></pre>
-<p id="z7dygzm_110">在主线程的主协程里启动两个子协程，各自按自己的节奏发送，再从同一处接收。</p>
+<p id="z7dygzm_110">启动两个发送字符串的协程，观察输出。这里它们在主线程上下文中运行，都是主协程的子任务。</p>
 <pre><code class="language-kotlin">import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.*
 
 fun main() = runBlocking {
-//sampleStart
+//<span class="code-comment">sampleStart</span>
     val channel = Channel&lt;String&gt;()
     launch { sendString(channel, "foo", 200L) }
     launch { sendString(channel, "BAR!", 500L) }
-    repeat(6) { // receive first six
+    repeat(6) { // <span class="code-comment">接收前六个结果</span>
         println(channel.receive())
     }
-    coroutineContext.cancelChildren() // cancel all children to let main finish
-//sampleEnd
+    coroutineContext.cancelChildren() // <span class="code-comment">取消所有子协程，让 main 可以结束</span>
+//<span class="code-comment">sampleEnd</span>
 }
 
 suspend fun sendString(channel: SendChannel&lt;String&gt;, s: String, time: Long) {
@@ -236,110 +236,110 @@ suspend fun sendString(channel: SendChannel&lt;String&gt;, s: String, time: Long
         channel.send(s)
     }
 }</code></pre>
-<aside class="prompt" data-type="note" id="z7dygzm_112"><p id="z7dygzm_115"><a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-channel-07.kt">查看完整示例</a>。</p></aside><p id="z7dygzm_113">一次运行的输出如下。</p>
+<aside class="prompt" data-type="note" id="z7dygzm_112"><p id="z7dygzm_115">查看<a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-channel-07.kt">完整代码</a>。</p></aside><p id="z7dygzm_113">输出如下。</p>
 <pre><code class="language-none">foo
 foo
 BAR!
 foo
 foo
 BAR!</code></pre></section><section class="chapter"><h2 id="buffered-channels">带缓冲的通道</h2>
-<p id="z7dygzm_117">前面的无缓冲通道要求双方会合。先到的 send 会等 receive，先到的 receive 也会等 send。</p>
-<p id="z7dygzm_118"><a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.channels/-channel.html">Channel()</a> 和 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.channels/produce.html">produce</a> 都接受 <code>capacity</code>。缓冲区还有空位时，发送方可以连续交付几个元素。缓冲区满后，再发送就要等待接收方腾出位置。</p>
-<p id="z7dygzm_119">观察日志与 send 的先后位置，预测发送方会在哪里停下。</p>
+<p id="z7dygzm_117">前面使用的通道都没有缓冲，发送方与接收方会合时才交付元素。先调用 send，就挂起等待 receive；先调用 receive，就挂起等待 send。</p>
+<p id="z7dygzm_118"><a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.channels/-channel.html">Channel()</a> 工厂函数和 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.channels/produce.html">produce</a> 构建器都接受可选参数 <code>capacity</code>，用来指定缓冲大小。有了缓冲，发送者可以发送多个元素后才挂起。这类似于带容量限制的 <code>BlockingQueue</code>，但队列满时阻塞的是调用线程。</p>
+<p id="z7dygzm_119">观察下面这段代码的行为。</p>
 <pre><code class="language-kotlin">import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.*
 
 fun main() = runBlocking&lt;Unit&gt; {
-//sampleStart
-    val channel = Channel&lt;Int&gt;(4) // create buffered channel
-    val sender = launch { // launch sender coroutine
+//<span class="code-comment">sampleStart</span>
+    val channel = Channel&lt;Int&gt;(4) // <span class="code-comment">创建带缓冲的通道</span>
+    val sender = launch { // <span class="code-comment">启动负责发送的协程</span>
         repeat(10) {
-            println("Sending $it") // print before sending each element
-            channel.send(it) // will suspend when buffer is full
+            println("Sending $it") // <span class="code-comment">在发送每个元素前打印</span>
+            channel.send(it) // <span class="code-comment">缓冲区满时会挂起</span>
         }
     }
-    // don't receive anything... just wait....
+    // <span class="code-comment">先不接收，只等待</span>
     delay(1000)
-    sender.cancel() // cancel sender coroutine
-//sampleEnd    
+    sender.cancel() // <span class="code-comment">取消发送协程</span>
+//<span class="code-comment">sampleEnd</span>&#32;&#32;&#32;&#32;
 }</code></pre>
-<aside class="prompt" data-type="note" id="z7dygzm_121"><p id="z7dygzm_130"><a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-channel-08.kt">查看完整示例</a>。</p></aside><p id="z7dygzm_122">容量是四，日志却会打印五次「sending」。</p>
+<aside class="prompt" data-type="note" id="z7dygzm_121"><p id="z7dygzm_130">查看<a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-channel-08.kt">完整代码</a>。</p></aside><p id="z7dygzm_122">通道容量为四，却会打印五次「Sending」。</p>
 <pre><code class="language-none">Sending 0
 Sending 1
 Sending 2
 Sending 3
 Sending 4</code></pre>
-<p id="z7dygzm_124">前四个元素进入了缓冲区。第五次打印发生在 send 之前，真正发送第五个元素时才挂起。</p></section><section class="chapter"><h2 id="channels-are-fair">等待队列中的先来后到</h2>
-<p id="z7dygzm_134">已经排队的发送或接收请求按先来先服务处理。例如先调用 <code>receive</code> 并进入等待的协程先拿到值。下面让 ping 和 pong 在名为 table 的通道上传递同一个球。</p>
+<p id="z7dygzm_124">前四个元素进入缓冲。尝试发送第五个元素时，发送者挂起。</p></section><section class="chapter"><h2 id="channels-are-fair">通道的公平性</h2>
+<p id="z7dygzm_134">对于多个协程提交的发送和接收请求，通道按调用先后提供服务。例如，最先调用 <code>receive</code> 的协程先取得元素。下面让 ping 和 pong 两个协程从共享的 table 通道接收 ball 对象。</p>
 <pre><code class="language-kotlin">import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.*
 
-//sampleStart
+//<span class="code-comment">sampleStart</span>
 data class Ball(var hits: Int)
 
 fun main() = runBlocking {
-    val table = Channel&lt;Ball&gt;() // a shared table
+    val table = Channel&lt;Ball&gt;() // <span class="code-comment">双方共用的球桌</span>
     launch { player("ping", table) }
     launch { player("pong", table) }
-    table.send(Ball(0)) // serve the ball
-    delay(1000) // delay 1 second
-    coroutineContext.cancelChildren() // game over, cancel them
+    table.send(Ball(0)) // <span class="code-comment">发球</span>
+    delay(1000) // <span class="code-comment">等待一秒</span>
+    coroutineContext.cancelChildren() // <span class="code-comment">比赛结束，取消双方的协程</span>
 }
 
 suspend fun player(name: String, table: Channel&lt;Ball&gt;) {
-    for (ball in table) { // receive the ball in a loop
+    for (ball in table) { // <span class="code-comment">在循环里接球</span>
         ball.hits++
         println("$name $ball")
-        delay(300) // wait a bit
-        table.send(ball) // send the ball back
+        delay(300) // <span class="code-comment">稍等片刻</span>
+        table.send(ball) // <span class="code-comment">把球传回去</span>
     }
 }
-//sampleEnd</code></pre>
-<aside class="prompt" data-type="note" id="z7dygzm_136"><p id="z7dygzm_142"><a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-channel-09.kt">查看完整示例</a>。</p></aside><p id="z7dygzm_137">ping 先启动，因此先拿球。它把球送回去后马上又想接球，此时 pong 已经在等，所以下一球轮到 pong。</p>
+//<span class="code-comment">sampleEnd</span></code></pre>
+<aside class="prompt" data-type="note" id="z7dygzm_136"><p id="z7dygzm_142">查看<a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-channel-09.kt">完整代码</a>。</p></aside><p id="z7dygzm_137">ping 先启动，所以最先接到球。尽管它一把球送回桌上便又开始等球，pong 已提前等在那里，这次会由 pong 接到球。</p>
 <pre><code class="language-none">ping Ball(hits=1)
 pong Ball(hits=2)
 ping Ball(hits=3)
 pong Ball(hits=4)</code></pre>
-<p id="z7dygzm_139">执行器的调度方式有时会让观察到的顺序显得不均匀。原文所附 issue 讨论了这种现象。 <small class="source-refs"><a href="https://github.com/Kotlin/kotlinx.coroutines/issues/111">this issue</a></small></p></section><section class="chapter"><h2 id="ticker-channels">定时发送的 ticker 通道</h2>
-<p id="z7dygzm_145">ticker 是一种按时间交付 <code>Unit</code> 的会合通道。它可以充当窗口计算等时间管道的输入，也可以配合 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.selects/select.html">select</a> 在每次计时到点时执行一个分支。 <small class="source-refs"><a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.channels/produce.html">produce</a></small></p>
-<p id="z7dygzm_146">用 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.channels/ticker.html">ticker</a> 创建通道，用 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.channels/-receive-channel/cancel.html">ReceiveChannel.cancel</a> 告知生产者后续不再需要计时信号。</p>
-<p id="z7dygzm_147">运行例子，观察消费者暂停前后的间隔。</p>
+<p id="z7dygzm_139">由于执行器的调度方式，有时看到的执行顺序似乎不公平。详情见原文所引的 issue。 <sup class="source-refs"><a href="https://github.com/Kotlin/kotlinx.coroutines/issues/111">[1]</a></sup></p></section><section class="chapter"><h2 id="ticker-channels">定时通道</h2>
+<p id="z7dygzm_145">ticker 通道是一种特殊的会合通道，按指定间隔产生 <code>Unit</code>。单独使用看似用途不大，但它可用于构造复杂的时间管道、窗口操作及其他时间相关处理。在 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.selects/select.html">select</a> 中可用 ticker 通道触发到点执行的操作。 <sup class="source-refs"><a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.channels/produce.html">[1]</a></sup></p>
+<p id="z7dygzm_146">使用工厂函数 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.channels/ticker.html">ticker</a> 创建这种通道。不再需要后续元素时，调用其 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.channels/-receive-channel/cancel.html">ReceiveChannel.cancel</a> 方法。</p>
+<p id="z7dygzm_147">下面看看它实际怎样工作。</p>
 <pre><code class="language-kotlin">import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.*
 
-//sampleStart
+//<span class="code-comment">sampleStart</span>
 fun main() = runBlocking&lt;Unit&gt; {
-    val tickerChannel = ticker(delayMillis = 200, initialDelayMillis = 0) // create a ticker channel
+    val tickerChannel = ticker(delayMillis = 200, initialDelayMillis = 0) // <span class="code-comment">创建定时通道</span>
     var nextElement = withTimeoutOrNull(1) { tickerChannel.receive() }
-    println("Initial element is available immediately: $nextElement") // no initial delay
+    println("Initial element is available immediately: $nextElement") // <span class="code-comment">首次发送前不等待</span>
 
-    nextElement = withTimeoutOrNull(100) { tickerChannel.receive() } // all subsequent elements have 200ms delay
+    nextElement = withTimeoutOrNull(100) { tickerChannel.receive() } // <span class="code-comment">后续元素间隔均为 200 毫秒</span>
     println("Next element is not ready in 100 ms: $nextElement")
 
     nextElement = withTimeoutOrNull(120) { tickerChannel.receive() }
     println("Next element is ready in 200 ms: $nextElement")
 
-    // Emulate large consumption delays
+    // <span class="code-comment">模拟消费者长时间暂停</span>
     println("Consumer pauses for 300ms")
     delay(300)
-    // Next element is available immediately
+    // <span class="code-comment">下一个元素已经可以立即领取</span>
     nextElement = withTimeoutOrNull(1) { tickerChannel.receive() }
     println("Next element is available immediately after large consumer delay: $nextElement")
-    // Note that the pause between `receive` calls is taken into account and next element arrives faster
+    // <span class="code-comment">计算下一次发送时间时会考虑两次 receive 之间的停顿，所以这个元素来得更快</span>
     nextElement = withTimeoutOrNull(120) { tickerChannel.receive() }
     println("Next element is ready in 100ms after consumer pause in 300ms: $nextElement")
 
-    tickerChannel.cancel() // indicate that no more elements are needed
+    tickerChannel.cancel() // <span class="code-comment">表示不再需要后续元素</span>
 }
-//sampleEnd</code></pre>
-<aside class="prompt" data-type="note" id="z7dygzm_149"><p id="z7dygzm_159"><a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-channel-10.kt">查看完整示例</a>。</p></aside><p id="z7dygzm_150">一次运行的输出如下。</p>
+//<span class="code-comment">sampleEnd</span></code></pre>
+<aside class="prompt" data-type="note" id="z7dygzm_149"><p id="z7dygzm_159">查看<a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-channel-10.kt">完整代码</a>。</p></aside><p id="z7dygzm_150">输出如下。</p>
 <pre><code class="language-none">Initial element is available immediately: kotlin.Unit
 Next element is not ready in 100 ms: null
 Next element is ready in 200 ms: kotlin.Unit
 Consumer pauses for 300ms
 Next element is available immediately after large consumer delay: kotlin.Unit
 Next element is ready in 100ms after consumer pause in 300ms: kotlin.Unit</code></pre>
-<p id="z7dygzm_152">默认模式会考虑消费者的停顿，调整下一个元素的等待时间，尽可能维持固定频率。 <small class="source-refs"><a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.channels/ticker.html">ticker</a></small></p>
-<p id="z7dygzm_153">将 <code>mode</code> 设为 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.channels/-ticker-mode/-f-i-x-e-d_-d-e-l-a-y/index.html">TickerMode.FIXED_DELAY</a>，则按固定延迟安排后续信号。</p></section></article>
-<section class="recall"><h2>读完试一题</h2><p>一个元素放进通道，五个消费者都在接收。它会被处理几次？</p><details><summary>展开参考答案</summary><p>这个元素只交给一个消费者。要让所有订阅者都观察同一个事件，可以回到 Flow 章比较 SharedFlow。</p></details></section><nav class="chapter-switcher" aria-label="章节导航"><a href="../coroutine-context-and-dispatchers/index.html">← 协程上下文与调度器</a><a class="course-home" href="../index.html">全部章节</a><a href="../exception-handling/index.html">协程怎样处理异常 →</a></nav><footer class="source-credit"><p>原文由 JetBrains 与 Kotlin 贡献者维护。RIN III 于 2026 年 11 月 18 日翻译、润色并补充导读与自测；代码、输出及图中界面保留原貌。</p><p><a href="https://kotlinlang.org/docs/channels.html">Kotlin 官方原文</a> · <a href="../LICENSE-2.0.txt">Apache License 2.0</a></p></footer></main>
+<p id="z7dygzm_152"><a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.channels/ticker.html">ticker</a> 会考虑消费者可能发生的暂停。默认情况下，发生暂停后会调整下一次产生元素前的延迟，尽量保持固定频率。</p>
+<p id="z7dygzm_153">也可以将 <code>mode</code> 设为 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.channels/-ticker-mode/-f-i-x-e-d_-d-e-l-a-y/index.html">TickerMode.FIXED_DELAY</a>，在各个元素之间保持固定的延迟。</p></section></article>
+<section class="recall"><h2>编者自测</h2><p>向同一条通道发送一个整数，五个处理协程都在接收。日志里会有几个处理者收到这个数？</p><details><summary>查看答案</summary><p>一个。五个协程分担同一条通道里的元素。一次成功的接收会取走那个数，另四个处理者可以继续等待后面的元素。</p></details></section><nav class="chapter-switcher" aria-label="章节导航"><a href="../coroutine-context-and-dispatchers/index.html">← 协程上下文与调度器</a><a class="course-home" href="../index.html">全部章节</a><a href="../exception-handling/index.html">协程异常处理 →</a></nav><footer class="source-credit"><p>原文由 JetBrains 与 Kotlin 贡献者维护。中文译稿修订于 2026 年 11 月 19 日。示例代码的说明性注释已译为中文，输出文字与截图沿用原文。</p><p><a href="https://kotlinlang.org/docs/channels.html">Kotlin 官方原文</a> · <a href="../LICENSE-2.0.txt">Apache License 2.0</a></p></footer></main>
 </body></html>

@@ -4,21 +4,21 @@
 <meta charset="utf-8"><script src="../../../theme.js"></script>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>共享可变状态与并发｜RIN III</title>
-<meta name="description" content="一百个协程各加一千次，计数却不到十万。借这个反例比较原子操作、线程封闭和互斥锁各自保护了哪一步。">
+<meta name="description" content="共享可变状态与并发 · 中文润色稿">
 <link rel="manifest" href="../../../manifest.webmanifest">
 <link rel="stylesheet" href="../../../reading/reader.css">
 <link rel="stylesheet" href="../../../theme.css">
 <link rel="stylesheet" href="../../../reading/_shared/theme-readers.css">
 <link rel="stylesheet" href="../../../reading/kotlin-coroutines-guide/course.css">
 </head><body><div class="reader-theme-control" data-theme-control></div>
-<nav class="site-nav"><a href="../index.html">← Kotlin 协程指南</a><a href="english.html">English</a><a href="https://kotlinlang.org/docs/shared-mutable-state-and-concurrency.html">Kotlin 原文 ↗</a></nav><main class="reader project-reader"><header class="chapter-header"><span class="chapter-kicker">Kotlin 协程指南 · 09 / 12</span><h1>共享可变状态与并发</h1><p class="lead">一百个协程各加一千次，计数却不到十万。借这个反例比较原子操作、线程封闭和互斥锁各自保护了哪一步。</p></header><nav class="chapter-switcher" aria-label="章节导航"><a href="../exception-handling/index.html">← 协程怎样处理异常</a><a class="course-home" href="../index.html">全部章节</a><a href="../select-expression/index.html">select 表达式（实验性） →</a></nav><details class="source-details chapter-toc"><summary>本章目录</summary><ul><li><a href="#the-problem">十万次加一会得到多少</a></li><li><a href="#volatiles-are-of-no-help">volatile 能保护哪一步</a></li><li><a href="#thread-safe-data-structures">线程安全的数据结构</a></li><li><a href="#thread-confinement-fine-grained">把每次更新交给同一线程</a></li><li><a href="#thread-confinement-coarse-grained">把一批更新交给同一线程</a></li><li><a href="#mutual-exclusion">用 Mutex 保护临界区</a></li></ul></details><article class="translated-article"><p id="a201kw_3">在 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-dispatchers/-default.html">Dispatchers.Default</a> 这样的多线程调度器上，协程可能并行执行。多个线程同时读写同一份可变状态时，需要协调访问。线程安全的数据结构仍然有用，协程还提供了可以挂起等待的同步手段。</p>
-<section class="chapter"><h2 id="the-problem">十万次加一会得到多少</h2>
-<p id="a201kw_12">启动一百个协程，每个都重复同一操作一千次。顺便记录总耗时，稍后比较不同写法。</p>
+<nav class="site-nav"><a href="../index.html">← 全部章节</a><div class="version-links" aria-label="版本"><a href="index.html" aria-current="page">中文润色稿</a><a href="literal.html">严格译稿</a><a href="english.html">English</a></div></nav><main class="reader project-reader"><header class="chapter-header"><span class="chapter-kicker">9 / 12 · 中文润色稿</span><h1 id="shared-mutable-state-and-concurrency.md">共享可变状态与并发</h1></header><nav class="chapter-switcher" aria-label="章节导航"><a href="../exception-handling/index.html">← 协程异常处理</a><a class="course-home" href="../index.html">全部章节</a><a href="../select-expression/index.html">select 表达式（实验性） →</a></nav><details class="source-details chapter-toc"><summary>本章目录</summary><ul><li><a href="#the-problem">问题</a></li><li><a href="#volatiles-are-of-no-help">volatile 无法解决这个问题</a></li><li><a href="#thread-safe-data-structures">线程安全的数据结构</a></li><li><a href="#thread-confinement-fine-grained">细粒度的线程封闭</a></li><li><a href="#thread-confinement-coarse-grained">粗粒度的线程封闭</a></li><li><a href="#mutual-exclusion">互斥</a></li></ul></details><article class="translated-article"><p id="a201kw_3"><a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-dispatchers/-default.html">Dispatchers.Default</a> 可以把协程安排到多条线程上并行执行。如果这些协程读写同一份会变化的数据，就要协调它们的访问。下面的做法一部分也适用于普通多线程程序，另一部分利用了协程本身的特点。</p>
+<section class="chapter"><h2 id="the-problem">问题</h2>
+<p id="a201kw_12">例子启动 100 个协程，每个协程把同一个动作重复 1,000 次。程序还会记录全部动作完成所用的时间，后面几种解法都用它来比较。</p>
 <pre><code class="language-kotlin">suspend fun massiveRun(action: suspend () -&gt; Unit) {
-    val n = 100  // number of coroutines to launch
-    val k = 1000 // times an action is repeated by each coroutine
+    val n = 100  // <span class="code-comment">要启动的协程数量</span>
+    val k = 1000 // <span class="code-comment">每个协程重复执行操作的次数</span>
     val time = measureTimeMillis {
-        coroutineScope { // scope for coroutines 
+        coroutineScope { // <span class="code-comment">协程所属的作用域</span>&#32;
             repeat(n) {
                 launch {
                     repeat(k) { action() }
@@ -26,17 +26,17 @@
             }
         }
     }
-    println("Completed ${n * k} actions in $time ms")    
+    println("Completed ${n * k} actions in $time ms")&#32;&#32;&#32;&#32;
 }</code></pre>
-<p id="a201kw_14">让这些协程在 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-dispatchers/-default.html">Dispatchers.Default</a> 上给共享计数器加一。</p>
-<pre><code class="language-kotlin">import kotlinx.coroutines.*
-import kotlin.system.*    
+<p id="a201kw_14">从最简单的操作开始：在多线程的 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-dispatchers/-default.html">Dispatchers.Default</a> 上递增一个共享的可变计数器。</p>
+<aside class="learning-note"><strong>编者注</strong><p>counter++ 要先读出旧值，再把加一后的结果写回去。两个工作者若都读到 7，就可能都写回 8。代码执行了两次加一，计数器却只增加了一次。</p></aside><pre><code class="language-kotlin">import kotlinx.coroutines.*
+import kotlin.system.*&#32;&#32;&#32;&#32;
 
 suspend fun massiveRun(action: suspend () -&gt; Unit) {
-    val n = 100  // number of coroutines to launch
-    val k = 1000 // times an action is repeated by each coroutine
+    val n = 100  // <span class="code-comment">要启动的协程数量</span>
+    val k = 1000 // <span class="code-comment">每个协程重复执行操作的次数</span>
     val time = measureTimeMillis {
-        coroutineScope { // scope for coroutines 
+        coroutineScope { // <span class="code-comment">协程所属的作用域</span>&#32;
             repeat(n) {
                 launch {
                     repeat(k) { action() }
@@ -44,10 +44,10 @@ suspend fun massiveRun(action: suspend () -&gt; Unit) {
             }
         }
     }
-    println("Completed ${n * k} actions in $time ms")    
+    println("Completed ${n * k} actions in $time ms")&#32;&#32;&#32;&#32;
 }
 
-//sampleStart
+//<span class="code-comment">sampleStart</span>
 var counter = 0
 
 fun main() = runBlocking {
@@ -58,17 +58,17 @@ fun main() = runBlocking {
     }
     println("Counter = $counter")
 }
-//sampleEnd    </code></pre>
-<aside class="prompt" data-type="note" id="a201kw_16"><p id="a201kw_19"><a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-sync-01.kt">查看完整示例</a>。</p></aside><p id="a201kw_17">很难恰好得到 Counter = 100000。两个协程可能读到同一个旧值，各加一再写回，于是其中一次增加消失了。</p></section><section class="chapter"><h2 id="volatiles-are-of-no-help">volatile 能保护哪一步</h2>
-<p id="a201kw_22">试着给计数器加上 <code>volatile</code>，再运行相同的操作。</p>
+//<span class="code-comment">sampleEnd</span>    </code></pre>
+<aside class="prompt" data-type="note" id="a201kw_16"><p id="a201kw_19">查看<a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-sync-01.kt">完整代码</a>。</p></aside><p id="a201kw_17">如果每次加一都生效，最后应该得到 Counter = 100000。这里有 100 个协程从多条线程同时修改同一个变量，中间没有协调，运行时几乎不会稳定地得到这个数。</p></section><section class="chapter"><h2 id="volatiles-are-of-no-help">volatile 无法解决这个问题</h2>
+<p id="a201kw_22">一种常见误解是把变量声明为 <code>volatile</code> 就能解决并发访问问题。下面试一次。</p>
 <pre><code class="language-kotlin">import kotlinx.coroutines.*
 import kotlin.system.*
 
 suspend fun massiveRun(action: suspend () -&gt; Unit) {
-    val n = 100  // number of coroutines to launch
-    val k = 1000 // times an action is repeated by each coroutine
+    val n = 100  // <span class="code-comment">要启动的协程数量</span>
+    val k = 1000 // <span class="code-comment">每个协程重复执行操作的次数</span>
     val time = measureTimeMillis {
-        coroutineScope { // scope for coroutines 
+        coroutineScope { // <span class="code-comment">协程所属的作用域</span>&#32;
             repeat(n) {
                 launch {
                     repeat(k) { action() }
@@ -76,11 +76,11 @@ suspend fun massiveRun(action: suspend () -&gt; Unit) {
             }
         }
     }
-    println("Completed ${n * k} actions in $time ms")    
+    println("Completed ${n * k} actions in $time ms")&#32;&#32;&#32;&#32;
 }
 
-//sampleStart
-@Volatile // in Kotlin `volatile` is an annotation 
+//<span class="code-comment">sampleStart</span>
+@Volatile // <span class="code-comment">Kotlin 用注解声明 volatile</span>&#32;
 var counter = 0
 
 fun main() = runBlocking {
@@ -91,18 +91,18 @@ fun main() = runBlocking {
     }
     println("Counter = $counter")
 }
-//sampleEnd    </code></pre>
-<aside class="prompt" data-type="note" id="a201kw_24"><p id="a201kw_27"><a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-sync-02.kt">查看完整示例</a>。</p></aside><p id="a201kw_25">运行可能更慢，最终值仍可能偏小。volatile 确保对这个变量的单次读取和写入具有相应的可见性与原子性。加一却包含读、算、写三个步骤，其他线程可以插进来。</p></section><section class="chapter"><h2 id="thread-safe-data-structures">线程安全的数据结构</h2>
-<p id="a201kw_29">对计数器，可以把整个加一操作交给 <code>AtomicInteger</code>.<code>incrementAndGet</code>。数据结构内部完成同步，这种方法对线程和协程都适用。</p>
+//<span class="code-comment">sampleEnd</span>    </code></pre>
+<aside class="prompt" data-type="note" id="a201kw_24"><p id="a201kw_27">查看<a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-sync-02.kt">完整代码</a>。</p></aside><p id="a201kw_25">加上 volatile 之后，程序更慢，结果也仍然有时小于 100000。volatile 保证对变量的每次读、每次写分别是原子的。一次自增却包括读出旧值、加一、写回新值，这几步合在一起没有原子性保证。</p></section><section class="chapter"><h2 id="thread-safe-data-structures">线程安全的数据结构</h2>
+<p id="a201kw_29">一种同时适用于线程和协程的通用方案是使用线程安全的数据结构，让它为共享状态上所需的操作提供同步，例如提供可线性化的原子操作。简单计数器可用 <code>AtomicInteger</code>，它提供原子的 <code>incrementAndGet</code> 操作。</p>
 <pre><code class="language-kotlin">import kotlinx.coroutines.*
 import java.util.concurrent.atomic.*
 import kotlin.system.*
 
 suspend fun massiveRun(action: suspend () -&gt; Unit) {
-    val n = 100  // number of coroutines to launch
-    val k = 1000 // times an action is repeated by each coroutine
+    val n = 100  // <span class="code-comment">要启动的协程数量</span>
+    val k = 1000 // <span class="code-comment">每个协程重复执行操作的次数</span>
     val time = measureTimeMillis {
-        coroutineScope { // scope for coroutines 
+        coroutineScope { // <span class="code-comment">协程所属的作用域</span>&#32;
             repeat(n) {
                 launch {
                     repeat(k) { action() }
@@ -110,10 +110,10 @@ suspend fun massiveRun(action: suspend () -&gt; Unit) {
             }
         }
     }
-    println("Completed ${n * k} actions in $time ms")    
+    println("Completed ${n * k} actions in $time ms")&#32;&#32;&#32;&#32;
 }
 
-//sampleStart
+//<span class="code-comment">sampleStart</span>
 val counter = AtomicInteger()
 
 fun main() = runBlocking {
@@ -124,17 +124,17 @@ fun main() = runBlocking {
     }
     println("Counter = $counter")
 }
-//sampleEnd    </code></pre>
-<aside class="prompt" data-type="note" id="a201kw_31"><p id="a201kw_35"><a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-sync-03.kt">查看完整示例</a>。</p></aside><p id="a201kw_32">在这个简单计数实验里，原子计数器最快。集合、队列也有适合特定操作的线程安全实现。如果一次更新横跨多个字段或多个操作，就要考虑整个更新的边界。</p></section><section class="chapter"><h2 id="thread-confinement-fine-grained">把每次更新交给同一线程</h2>
-<p id="a201kw_37">线程封闭指某份状态只由一个线程访问。UI 状态常由事件分发线程维护。在协程里可以用单线程上下文实现同样的约束。</p>
+//<span class="code-comment">sampleEnd</span>    </code></pre>
+<aside class="prompt" data-type="note" id="a201kw_31"><p id="a201kw_35">查看<a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-sync-03.kt">完整代码</a>。</p></aside><p id="a201kw_32">在这个特定问题中，这是速度最快的解法。它适用于计数器、集合、队列等标准数据结构及其基本操作。如果状态更复杂，或需要的复合操作缺少现成线程安全实现，就很难直接推广。</p></section><section class="chapter"><h2 id="thread-confinement-fine-grained">细粒度的线程封闭</h2>
+<p id="a201kw_37">线程封闭是将对某份共享状态的所有访问限制在一条线程上。典型例子是 UI 应用：所有界面状态都归单一的事件分发线程或应用线程处理。在协程中可以使用单线程上下文实现。</p>
 <pre><code class="language-kotlin">import kotlinx.coroutines.*
 import kotlin.system.*
 
 suspend fun massiveRun(action: suspend () -&gt; Unit) {
-    val n = 100  // number of coroutines to launch
-    val k = 1000 // times an action is repeated by each coroutine
+    val n = 100  // <span class="code-comment">要启动的协程数量</span>
+    val k = 1000 // <span class="code-comment">每个协程重复执行操作的次数</span>
     val time = measureTimeMillis {
-        coroutineScope { // scope for coroutines 
+        coroutineScope { // <span class="code-comment">协程所属的作用域</span>&#32;
             repeat(n) {
                 launch {
                     repeat(k) { action() }
@@ -142,17 +142,17 @@ suspend fun massiveRun(action: suspend () -&gt; Unit) {
             }
         }
     }
-    println("Completed ${n * k} actions in $time ms")    
+    println("Completed ${n * k} actions in $time ms")&#32;&#32;&#32;&#32;
 }
 
-//sampleStart
+//<span class="code-comment">sampleStart</span>
 val counterContext = newSingleThreadContext("CounterContext")
 var counter = 0
 
 fun main() = runBlocking {
     withContext(Dispatchers.Default) {
         massiveRun {
-            // confine each increment to a single-threaded context
+            // <span class="code-comment">把每次自增都切换到单线程上下文执行</span>
             withContext(counterContext) {
                 counter++
             }
@@ -160,17 +160,17 @@ fun main() = runBlocking {
     }
     println("Counter = $counter")
 }
-//sampleEnd      </code></pre>
-<aside class="prompt" data-type="note" id="a201kw_39"><p id="a201kw_42"><a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-sync-04.kt">查看完整示例</a>。</p></aside><p id="a201kw_40">每加一都要用 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/with-context.html">withContext(counterContext)</a> 从 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-dispatchers/-default.html">Dispatchers.Default</a> 切到专用线程，再切回来。这种细粒度切换代价很高。</p></section><section class="chapter"><h2 id="thread-confinement-coarse-grained">把一批更新交给同一线程</h2>
-<p id="a201kw_47">实际中可以让整段更新状态的业务逻辑在同一线程运行。下面从协程启动时就指定单线程上下文，一次完成一批更新。</p>
+//<span class="code-comment">sampleEnd</span>      </code></pre>
+<aside class="prompt" data-type="note" id="a201kw_39"><p id="a201kw_42">查看<a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-sync-04.kt">完整代码</a>。</p></aside><p id="a201kw_40">慢在哪里？每加一次，<a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/with-context.html">withContext(counterContext)</a> 都要把执行从 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-dispatchers/-default.html">Dispatchers.Default</a> 切到那条专用线程。这个例子为每次加一都付出了切换上下文的代价。</p></section><section class="chapter"><h2 id="thread-confinement-coarse-grained">粗粒度的线程封闭</h2>
+<p id="a201kw_47">实际中通常将整段更新状态的业务逻辑限制在单一线程上。下例从一开始就在单线程上下文中运行每个协程。</p>
 <pre><code class="language-kotlin">import kotlinx.coroutines.*
 import kotlin.system.*
 
 suspend fun massiveRun(action: suspend () -&gt; Unit) {
-    val n = 100  // number of coroutines to launch
-    val k = 1000 // times an action is repeated by each coroutine
+    val n = 100  // <span class="code-comment">要启动的协程数量</span>
+    val k = 1000 // <span class="code-comment">每个协程重复执行操作的次数</span>
     val time = measureTimeMillis {
-        coroutineScope { // scope for coroutines 
+        coroutineScope { // <span class="code-comment">协程所属的作用域</span>&#32;
             repeat(n) {
                 launch {
                     repeat(k) { action() }
@@ -178,15 +178,15 @@ suspend fun massiveRun(action: suspend () -&gt; Unit) {
             }
         }
     }
-    println("Completed ${n * k} actions in $time ms")    
+    println("Completed ${n * k} actions in $time ms")&#32;&#32;&#32;&#32;
 }
 
-//sampleStart
+//<span class="code-comment">sampleStart</span>
 val counterContext = newSingleThreadContext("CounterContext")
 var counter = 0
 
 fun main() = runBlocking {
-    // confine everything to a single-threaded context
+    // <span class="code-comment">把整段工作限制在同一个单线程上下文里</span>
     withContext(counterContext) {
         massiveRun {
             counter++
@@ -194,19 +194,19 @@ fun main() = runBlocking {
     }
     println("Counter = $counter")
 }
-//sampleEnd     </code></pre>
-<aside class="prompt" data-type="note" id="a201kw_49"><p id="a201kw_51"><a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-sync-05.kt">查看完整示例</a>。</p></aside><p id="a201kw_50">这样既能得到正确结果，也省去了频繁切换的开销。</p></section><section class="chapter"><h2 id="mutual-exclusion">用 Mutex 保护临界区</h2>
-<p id="a201kw_53">还可以规定，同一时间只有一个协程进入更新状态的代码段。阻塞式程序常用 <code>synchronized</code> 或 <code>ReentrantLock</code>；协程里可用 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.sync/-mutex/index.html">Mutex</a>。调用 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.sync/-mutex/lock.html">lock</a> 时，如果需要等待，等待者可以挂起，让出线程，执行完再 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.sync/-mutex/unlock.html">unlock</a>。</p>
-<p id="a201kw_54">用 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.sync/with-lock.html">withLock</a> 包住临界区，相当于先加锁，在 finally 里解锁；即使更新抛异常，也会释放锁。</p>
+//<span class="code-comment">sampleEnd</span>     </code></pre>
+<aside class="prompt" data-type="note" id="a201kw_49"><p id="a201kw_51">查看<a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-sync-05.kt">完整代码</a>。</p></aside><p id="a201kw_50">新写法运行快得多，也能得到正确结果。</p></section><section class="chapter"><h2 id="mutual-exclusion">互斥</h2>
+<p id="a201kw_53">还可以约定，同一时间只允许一个执行者修改共享状态。受保护的这段代码叫临界区。阻塞代码常用 <code>synchronized</code> 或 <code>ReentrantLock</code>；协程可以用 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.sync/-mutex/index.html">Mutex</a>，进入前 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.sync/-mutex/lock.html">lock</a>，离开时 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.sync/-mutex/unlock.html">unlock</a>。<code>Mutex.lock()</code> 在等锁时会挂起协程，让线程继续做别的工作。</p>
+<p id="a201kw_54">使用扩展函数 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.sync/with-lock.html">withLock</a> 可以方便地表达先 mutex.lock()、在 try 中执行操作、最后在 finally 中 mutex.unlock() 的模式。</p>
 <pre><code class="language-kotlin">import kotlinx.coroutines.*
 import kotlinx.coroutines.sync.*
 import kotlin.system.*
 
 suspend fun massiveRun(action: suspend () -&gt; Unit) {
-    val n = 100  // number of coroutines to launch
-    val k = 1000 // times an action is repeated by each coroutine
+    val n = 100  // <span class="code-comment">要启动的协程数量</span>
+    val k = 1000 // <span class="code-comment">每个协程重复执行操作的次数</span>
     val time = measureTimeMillis {
-        coroutineScope { // scope for coroutines 
+        coroutineScope { // <span class="code-comment">协程所属的作用域</span>&#32;
             repeat(n) {
                 launch {
                     repeat(k) { action() }
@@ -214,17 +214,17 @@ suspend fun massiveRun(action: suspend () -&gt; Unit) {
             }
         }
     }
-    println("Completed ${n * k} actions in $time ms")    
+    println("Completed ${n * k} actions in $time ms")&#32;&#32;&#32;&#32;
 }
 
-//sampleStart
+//<span class="code-comment">sampleStart</span>
 val mutex = Mutex()
 var counter = 0
 
 fun main() = runBlocking {
     withContext(Dispatchers.Default) {
         massiveRun {
-            // protect each increment with lock
+            // <span class="code-comment">用锁保护每一次自增</span>
             mutex.withLock {
                 counter++
             }
@@ -232,7 +232,7 @@ fun main() = runBlocking {
     }
     println("Counter = $counter")
 }
-//sampleEnd    </code></pre>
-<aside class="prompt" data-type="note" id="a201kw_56"><p id="a201kw_67"><a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-sync-06.kt">查看完整示例</a>。</p></aside><p id="a201kw_57">例子每加一就加一次锁，因此仍有同步成本。当共享状态没有天然所属的线程，又必须不时更新时，互斥锁很合适。</p></section></article>
-<section class="recall"><h2>读完试一题</h2><p>两个工作者都读到 7，各加一再写回。为什么把变量标为 volatile 仍可能得到 8？</p><details><summary>展开参考答案</summary><p>读和写各自可见，也不能让「读、加、写」成为不可分割的操作。这里可用原子自增，或让完整的修改在同一个锁或同一线程内进行。</p></details></section><nav class="chapter-switcher" aria-label="章节导航"><a href="../exception-handling/index.html">← 协程怎样处理异常</a><a class="course-home" href="../index.html">全部章节</a><a href="../select-expression/index.html">select 表达式（实验性） →</a></nav><footer class="source-credit"><p>原文由 JetBrains 与 Kotlin 贡献者维护。RIN III 于 2026 年 11 月 18 日翻译、润色并补充导读与自测；代码、输出及图中界面保留原貌。</p><p><a href="https://kotlinlang.org/docs/shared-mutable-state-and-concurrency.html">Kotlin 官方原文</a> · <a href="../LICENSE-2.0.txt">Apache License 2.0</a></p></footer></main>
+//<span class="code-comment">sampleEnd</span>    </code></pre>
+<aside class="prompt" data-type="note" id="a201kw_56"><p id="a201kw_67">查看<a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-sync-06.kt">完整代码</a>。</p></aside><p id="a201kw_57">这个例子每次递增都要加锁，因此有细粒度加锁的开销。当共享状态需要定期修改，又没有天然归属的线程时，互斥是合适的选择。</p></section></article>
+<section class="recall"><h2>编者自测</h2><p>给 counter 加上 volatile，为什么 counter++ 仍可能漏计？</p><details><summary>查看答案</summary><p>一次自增要先读再写。两个协程可能读到同一个旧值，各加一后写回同一个新值。volatile 对单次读写的保证，无法把这一整串操作合成一次。</p></details></section><nav class="chapter-switcher" aria-label="章节导航"><a href="../exception-handling/index.html">← 协程异常处理</a><a class="course-home" href="../index.html">全部章节</a><a href="../select-expression/index.html">select 表达式（实验性） →</a></nav><footer class="source-credit"><p>原文由 JetBrains 与 Kotlin 贡献者维护。中文译稿修订于 2026 年 11 月 19 日。示例代码的说明性注释已译为中文，输出文字与截图沿用原文。</p><p><a href="https://kotlinlang.org/docs/shared-mutable-state-and-concurrency.html">Kotlin 官方原文</a> · <a href="../LICENSE-2.0.txt">Apache License 2.0</a></p></footer></main>
 </body></html>

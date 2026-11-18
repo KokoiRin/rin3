@@ -4,84 +4,84 @@
 <meta charset="utf-8"><script src="../../../theme.js"></script>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>取消与超时｜RIN III</title>
-<meta name="description" content="用户已经离开页面，加载任务却还在运行。沿着 Job 追踪一次取消，看看它何时生效，清理又该放在哪里。">
+<meta name="description" content="取消与超时 · 中文润色稿">
 <link rel="manifest" href="../../../manifest.webmanifest">
 <link rel="stylesheet" href="../../../reading/reader.css">
 <link rel="stylesheet" href="../../../theme.css">
 <link rel="stylesheet" href="../../../reading/_shared/theme-readers.css">
 <link rel="stylesheet" href="../../../reading/kotlin-coroutines-guide/course.css">
 </head><body><div class="reader-theme-control" data-theme-control></div>
-<nav class="site-nav"><a href="../index.html">← Kotlin 协程指南</a><a href="english.html">English</a><a href="https://kotlinlang.org/docs/coroutines-cancellation.html">Kotlin 原文 ↗</a></nav><main class="reader project-reader"><header class="chapter-header"><span class="chapter-kicker">Kotlin 协程指南 · 02 / 12</span><h1>取消与超时</h1><p class="lead">用户已经离开页面，加载任务却还在运行。沿着 Job 追踪一次取消，看看它何时生效，清理又该放在哪里。</p></header><nav class="chapter-switcher" aria-label="章节导航"><a href="../coroutines-basics/index.html">← 协程基础</a><a class="course-home" href="../index.html">全部章节</a><a href="../coroutines-flow/index.html">Flow：连续到来的值 →</a></nav><details class="source-details chapter-toc"><summary>本章目录</summary><ul><li><a href="#cancel-coroutines">发出取消请求</a></li><li><a href="#cancellation-is-cooperative">让工作及时响应取消</a></li><li><a href="#handle-values-safely-when-canceling-coroutines">取消时怎样安全交接结果</a></li><li><a href="#timeout">设置超时</a></li></ul></details><article class="translated-article"><p id="z7p4hhf_3">用户关闭窗口或离开页面时，后台协程可能还在加载数据。取消让调用方能在任务自然完成前，请求停止已经用不上的工作。</p>
-<p id="z7p4hhf_4">及时停止可以提早释放资源，避免再访问已经销毁的对象。下面这些反复执行的工作也需要一个停止条件。</p>
+<nav class="site-nav"><a href="../index.html">← 全部章节</a><div class="version-links" aria-label="版本"><a href="index.html" aria-current="page">中文润色稿</a><a href="literal.html">严格译稿</a><a href="english.html">English</a></div></nav><main class="reader project-reader"><header class="chapter-header"><span class="chapter-kicker">2 / 12 · 中文润色稿</span><h1 id="coroutines-cancellation.md">取消与超时</h1></header><nav class="chapter-switcher" aria-label="章节导航"><a href="../coroutines-basics/index.html">← 协程基础</a><a class="course-home" href="../index.html">全部章节</a><a href="../coroutines-flow/index.html">Flow →</a></nav><details class="source-details chapter-toc"><summary>本章目录</summary><ul><li><a href="#cancel-coroutines">取消协程</a></li><li><a href="#cancellation-is-cooperative">让协程响应取消</a></li><li><a href="#handle-values-safely-when-canceling-coroutines">取消时安全地处理返回值</a></li><li><a href="#timeout">超时</a></li></ul></details><article class="translated-article"><p id="z7p4hhf_3">用户关闭窗口时，窗口发起的工作可能还在运行。如果结果已经用不上，就可以请求协程提前停止，这就是取消。</p>
+<p id="z7p4hhf_4">可以借此提前释放资源，避免协程访问已销毁的对象。对于不断重复工作的长时间运行协程，也可以用取消来停止它，例如以下任务。</p>
 <ul class="list _bullet" id="z7p4hhf_5">
-<li class="list__item" id="z7p4hhf_11"><p id="z7p4hhf_14">定期发送心跳。</p></li>
-<li class="list__item" id="z7p4hhf_12"><p id="z7p4hhf_15">运行周期性任务。</p></li>
-<li class="list__item" id="z7p4hhf_13"><p id="z7p4hhf_16">更新界面上的最新读数，例如时钟。</p></li>
+<li class="list__item" id="z7p4hhf_11"><p id="z7p4hhf_14">发送心跳。</p></li>
+<li class="list__item" id="z7p4hhf_12"><p id="z7p4hhf_15">执行定时任务。</p></li>
+<li class="list__item" id="z7p4hhf_13"><p id="z7p4hhf_16">更新状态，使其反映最新读数，例如时钟界面的时间。</p></li>
 </ul>
-<p id="z7p4hhf_6">取消通过 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-job/">Job</a> 传递。这个句柄既能查询任务是否活跃，也记录父子关系，因此取消时可以连同子任务一起处理。 <small class="source-refs"><a href="../coroutines-basics/index.html#coroutine-scope-and-structured-concurrency">structured concurrency</a></small></p>
-<section class="chapter"><h2 id="cancel-coroutines">发出取消请求</h2>
-<p id="z7p4hhf_21">在 <code>Job</code> 上调用 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-job/cancel.html">cancel()</a> 即可请求取消。launch 返回 <code>Job</code>，async 返回的 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-deferred/">Deferred</a> 也实现了 <code>Job</code>，因此两者都可以取消。 <small class="source-refs"><a href="../coroutines-basics/index.html#coroutine-builder-functions">Coroutine builder functions</a> · <a href="../coroutines-basics/index.html#coroutinescope-launch">.launch()</a> · <a href="../coroutines-basics/index.html#coroutinescope-async">.async()</a></small></p>
-<p id="z7p4hhf_22">可以手动取消一个任务，也可以让父任务的取消沿任务树自动传来。</p>
-<p id="z7p4hhf_23">协程下次检查到取消时会抛出 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-cancellation-exception/">CancellationException</a>。协程库里的 delay 等挂起函数会在挂起等待时响应取消。</p>
-<p id="z7p4hhf_24">若协程的工作就是一直等到被取消，可以调用 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/await-cancellation.html">awaitCancellation()</a>，效果相当于 <code>delay(Duration.INFINITE)</code>。</p>
-<aside class="prompt" data-type="tip" id="z7p4hhf_25"><p id="z7p4hhf_53">具体什么时候检查，见下文「<a href="#suspension-points-and-cancellation">挂起点与取消</a>」。</p></aside><p id="z7p4hhf_26">先看一个手动取消的例子。</p>
+<p id="z7p4hhf_6">要管理一项已经启动的工作，可以保留它的 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-job/">Job</a>。通过 <code>Job</code> 既能查询协程是否仍在运行，也能请求取消。协程有子任务时，取消会按<a href="../coroutines-basics/index.html#coroutine-scope-and-structured-concurrency">结构化并发</a>的规则向下传递。</p>
+<section class="chapter"><h2 id="cancel-coroutines">取消协程</h2>
+<p id="z7p4hhf_21">对协程的 <code>Job</code> 调用 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-job/cancel.html">cancel()</a> 就会请求取消该协程。<a href="../coroutines-basics/index.html#coroutinescope-launch">launch()</a> 等构建器返回 <code>Job</code>；<a href="../coroutines-basics/index.html#coroutinescope-async">async()</a> 返回的 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-deferred/">Deferred</a> 实现了 <code>Job</code>，因此也支持同样的取消操作。 <sup class="source-refs"><a href="../coroutines-basics/index.html#coroutine-builder-functions">[1]</a></sup></p>
+<aside class="learning-note"><strong>编者注</strong><p>launch() 返回的 Job 可以保存到变量中。后面写 job.cancel()，请求停止的就是当初那一次 launch 启动的工作。</p></aside><p id="z7p4hhf_22">可以手动调用 <code>cancel()</code>；父协程被取消时，取消也会自动传播给子协程。</p>
+<p id="z7p4hhf_23">协程被取消后，下次检查取消状态时会抛出 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-cancellation-exception/">CancellationException</a>。<code>kotlinx.coroutines</code> 中的 <code>delay()</code> 等挂起函数会在挂起时检查取消。</p>
+<p id="z7p4hhf_24">可以调用 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/await-cancellation.html">awaitCancellation()</a> 使协程一直挂起直到被取消，效果相当于 <code>delay(Duration.INFINITE)</code>。</p>
+<aside class="prompt" data-type="tip" id="z7p4hhf_25"><p id="z7p4hhf_53">关于取消检查发生的时机与方式，请参阅「<a href="#suspension-points-and-cancellation">挂起点与取消</a>」。</p></aside><p id="z7p4hhf_26">下面手动取消一个协程。</p>
 <pre><code class="language-kotlin">import kotlinx.coroutines.*
 
 suspend fun main() {
-//sampleStart
+//<span class="code-comment">sampleStart</span>
 withContext(Dispatchers.Default) {
-    // Used as a signal that the coroutine has started running
+    // <span class="code-comment">用作协程已经开始运行的信号</span>
     val childStarted = CompletableDeferred&lt;Unit&gt;()
-    
+&#32;&#32;&#32;&#32;
     val childJob: Job = launch {
         println("The coroutine has started")
 
-        // Completes the CompletableDeferred,
-        // signaling that the coroutine has started running
+        // <span class="code-comment">将 CompletableDeferred 标记为已完成，</span>
+        // <span class="code-comment">表示协程已经开始运行</span>
         childStarted.complete(Unit)
         try {
-            // Suspends indefinitely
-            // This call will never return unless the coroutine is canceled
+            // <span class="code-comment">一直挂起</span>
+            // <span class="code-comment">只要协程没有被取消，这个调用就会一直等待</span>
             awaitCancellation()
         } catch (e: CancellationException) {
             println("The coroutine was canceled: $e")
-          
-            // Always rethrow cancellation exceptions!
+&#32;&#32;&#32;&#32;&#32;&#32;&#32;&#32;&#32;&#32;
+            // <span class="code-comment">捕获取消异常后，务必重新抛出！</span>
             throw e
         }
         println("This line will never be executed")
     }
-  
-    // Waits for the coroutine to start before canceling it
+&#32;&#32;
+    // <span class="code-comment">等协程开始运行后再取消它</span>
     childStarted.await()
 
-    // Cancels the coroutine,
-    // so awaitCancellation() throws a CancellationException
+    // <span class="code-comment">取消协程，</span>
+    // <span class="code-comment">因此 awaitCancellation() 会抛出 CancellationException</span>
     childJob.cancel()
 }
-// Coroutine builders such as withContext() or coroutineScope()
-// wait for all child coroutines to complete,
-// even when the children are canceled
+// <span class="code-comment">withContext()、coroutineScope() 等协程构建函数</span>
+// <span class="code-comment">等待所有子协程完成，</span>
+// <span class="code-comment">即使子任务已经被取消</span>
 println("All coroutines have completed")
-//sampleEnd
+//<span class="code-comment">sampleEnd</span>
 }</code></pre>
-<p id="z7p4hhf_28">这里用 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-completable-deferred/">CompletableDeferred</a> 当作启动信号。子协程开始执行时调用 <code>complete()</code>，外面等 <code>await()</code> 返回后才取消。这一步只是为了稳定复现先打印、后取消的顺序，取消本身不要求任务先发出信号。</p>
-<p id="z7p4hhf_29">async 创建的任务也可以用同样的方式取消，因为 <code>Deferred</code> 实现了 <code>Job</code>。</p>
+<p id="z7p4hhf_28">这里的 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-completable-deferred/">CompletableDeferred</a> 用来约定先后顺序。协程开始运行时调用 <code>complete()</code> 发出信号，外面的 <code>await()</code> 收到信号后才继续取消。这样每次运行都能看到协程先启动、打印消息，再收到取消请求。平时取消协程无需设置这个信号。</p>
+<p id="z7p4hhf_29"><code>Deferred</code> 实现了 <code>Job</code>，因此用 <code>async()</code> 创建的协程也可以用同样的方法取消。</p>
 <pre><code class="language-kotlin">val deferred = async { /* ... */ }
 deferred.cancel()</code></pre>
-<aside class="prompt" data-type="warning" id="z7p4hhf_31"><p id="z7p4hhf_63">如果代码捕获了 <code>CancellationException</code>，应在必要清理后重新抛出。吞掉它会让上层观察不到预期的取消信号。</p>
-<p id="z7p4hhf_64">关于异常与父子任务的关系，可继续阅读「<a href="../exception-handling/index.html#cancellation-and-exceptions">协程怎样处理异常</a>」。</p></aside><section class="chapter"><h3 id="cancellation-propagation">取消怎样向下传递</h3>
-<p id="z7p4hhf_67">取消父协程会递归取消子任务，避免父任务已经结束，子任务却继续为它工作。 <small class="source-refs"><a href="../coroutines-basics/index.html#coroutine-scope-and-structured-concurrency">Structured concurrency</a></small></p>
-<p id="z7p4hhf_68">看下面的例子。</p>
+<aside class="prompt" data-type="warning" id="z7p4hhf_31"><p id="z7p4hhf_63">捕获 <code>CancellationException</code> 可能中断取消传播。如果必须捕获它，请重新抛出，使取消继续沿协程层级传播。</p>
+<p id="z7p4hhf_64">另见「<a href="../exception-handling/index.html#cancellation-and-exceptions">协程异常处理</a>」。</p></aside><section class="chapter"><h3 id="cancellation-propagation">取消传播</h3>
+<p id="z7p4hhf_67">在<a href="../coroutines-basics/index.html#coroutine-scope-and-structured-concurrency">结构化并发</a>中，取消协程也会取消它的全部子协程，避免父协程被取消后子任务继续运行。</p>
+<p id="z7p4hhf_68">例如：</p>
 <pre><code class="language-kotlin">import kotlinx.coroutines.*
 
 suspend fun main() {
     withContext(Dispatchers.Default) {
-//sampleStart
-// Used as a signal that the child coroutines have been launched
+//<span class="code-comment">sampleStart</span>
+// <span class="code-comment">用作子协程均已发起启动的信号</span>
 val childrenLaunched = CompletableDeferred&lt;Unit&gt;()
 
-// Launches two child coroutines
+// <span class="code-comment">启动两个子协程</span>
 val parentJob = launch {
     launch {
         println("Child coroutine 1 has started running")
@@ -99,26 +99,26 @@ val parentJob = launch {
             println("Child coroutine 2 has been canceled")
         }
     }
-    // Completes the CompletableDeferred,
-    // signaling that the child coroutines have been launched
+    // <span class="code-comment">将 CompletableDeferred 标记为已完成，</span>
+    // <span class="code-comment">表示已经发起了对子协程的启动</span>
     childrenLaunched.complete(Unit)
 }
-// Waits for the parent coroutine to signal that it has launched
-// all of its children
+// <span class="code-comment">等待父协程发出启动信号</span>
+// <span class="code-comment">它的所有子任务</span>
 childrenLaunched.await()
 
-// Cancels the parent coroutine, which cancels all its children
+// <span class="code-comment">取消父协程，它会取消所有子任务</span>
 parentJob.cancel()
-//sampleEnd
+//<span class="code-comment">sampleEnd</span>
     }
 }</code></pre>
-<p id="z7p4hhf_70">每个子协程都在 <code>finally</code> 中写了清理逻辑。这里 <code>CompletableDeferred</code> 只能保证已经发起启动，不能保证每个子任务都进入了代码块。若在执行前就被取消，它可能连第一行都没运行，自然也没有打印。 <small class="source-refs"><a href="https://kotlinlang.org/docs/exceptions.html#the-finally-block">finally block</a></small></p></section></section><section class="chapter"><h2 id="cancellation-is-cooperative">让工作及时响应取消</h2>
-<p id="z7p4hhf_75">Kotlin 的取消是协作式的。正在执行的代码要在可取消的挂起点让出执行，或主动检查任务状态，才能响应已经发出的取消请求。 <small class="source-refs"><a href="#suspension-points-and-cancellation">suspending</a> · <a href="#check-for-cancellation-explicitly">checking for cancellation explicitly</a></small></p>
-<p id="z7p4hhf_76">可以给长时间运行的循环添加 <a href="#the-yield-suspending-function">yield()</a> 等挂起点。下面分别观察让出线程和只检查状态的做法。 <small class="source-refs"><a href="#suspension-points-and-cancellation">suspension points</a></small></p>
+<p id="z7p4hhf_70">每个子协程把收尾动作写在 <a href="https://kotlinlang.org/docs/exceptions.html#the-finally-block">finally</a> 里。只要已经进入对应的 try，收到取消时就会执行 <code>finally</code>。这里要分清两个时刻：父协程已调用 launch，和子协程已开始运行。<code>CompletableDeferred</code> 只确认前者。若在子协程开始前就取消，它还没有进入 try，也就不会打印收尾消息。</p></section></section><section class="chapter"><h2 id="cancellation-is-cooperative">让协程响应取消</h2>
+<p id="z7p4hhf_75">Kotlin 协程采用协作式取消。协程须在可取消的操作中<a href="#suspension-points-and-cancellation">挂起</a>，或<a href="#check-for-cancellation-explicitly">显式检查取消</a>，才能响应取消请求。</p>
+<p id="z7p4hhf_76">本节介绍如何加入<a href="#suspension-points-and-cancellation">挂起点</a>，例如调用 <a href="#the-yield-suspending-function">yield()</a>，让协程能响应取消。</p>
 <section class="chapter"><h3 id="suspension-points-and-cancellation">挂起点与取消</h3>
-<p id="z7p4hhf_86">挂起点是代码可能暂停的位置。取消请求到达后，协程仍可能执行一段代码；当可取消的挂起操作检查到请求时，会抛出 <code>CancellationException</code>，开始退出。</p>
-<p id="z7p4hhf_87">调用挂起函数不意味着一定会暂停。例如 await 一个已经完成的 <code>Deferred</code>，可以直接取得结果。</p>
-<p id="z7p4hhf_88">下面用几种常见的挂起操作，观察等待中的协程怎样停止。</p>
+<p id="z7p4hhf_86">被请求取消的协程仍会运行，直到到达可能挂起的位置，即挂起点。如果它在这里挂起，可取消的挂起函数会检查是否已经取消。若已取消，就抛出 <code>CancellationException</code>，协程停止原有工作。</p>
+<p id="z7p4hhf_87">调用挂起函数表示这里可能暂停。究竟会不会暂停，要看此刻是否需要等。例如调用 <code>Deferred</code>.await() 时，如果结果已经算好，就可以直接取得结果。</p>
+<p id="z7p4hhf_88">下面使用几种常见的挂起操作，让等待中的协程能在被取消时停止。</p>
 <pre><code class="language-kotlin">import kotlinx.coroutines.*
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.channels.Channel
@@ -126,52 +126,53 @@ import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration
 
 suspend fun main() {
-//sampleStart
+//<span class="code-comment">sampleStart</span>
 withContext(Dispatchers.Default) {
     val childJobs = listOf(
         launch {
-            // Suspends until canceled
+            // <span class="code-comment">挂起直到被取消</span>
             awaitCancellation()
         },
         launch {
-            // Suspends until canceled
+            // <span class="code-comment">挂起直到被取消</span>
             delay(Duration.INFINITE)
         },
         launch {
             val channel = Channel&lt;Int&gt;()
-            // Suspends while waiting for a value that's never sent
+            // <span class="code-comment">等待一个始终不会发来的值，此时协程挂起</span>
             channel.receive()
         },
         launch {
             val deferred = CompletableDeferred&lt;Int&gt;()
-            // Suspends while waiting for a value that's never completed
+            // <span class="code-comment">等待一个始终不会完成的结果，此时协程挂起</span>
             deferred.await()
         },
         launch {
             val mutex = Mutex(locked = true)
-            // Suspends while waiting for a mutex that remains locked indefinitely
+            // <span class="code-comment">等待一把一直没有释放的互斥锁，此时协程挂起</span>
             mutex.lock()
         }
     )
-    
-    // Gives the child coroutines time to start and suspend
+&#32;&#32;&#32;&#32;
+    // <span class="code-comment">留出时间，让子协程启动并进入挂起状态</span>
     delay(100.milliseconds)
-    
-    // Cancels all child coroutines
+&#32;&#32;&#32;&#32;
+    // <span class="code-comment">取消所有子协程</span>
     childJobs.forEach { it.cancel() }
 }
 println("All child jobs completed!")
-//sampleEnd
+//<span class="code-comment">sampleEnd</span>
 }</code></pre>
-<aside class="prompt" data-type="tip" id="z7p4hhf_90"><p id="z7p4hhf_96">协程库提供了可取消的挂起操作，编写回调适配层时也可以用 suspendCancellableCoroutine 接入这种机制。只用底层 suspendCoroutine 自行挂起，不会自动获得取消支持。 <small class="source-refs"><a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/suspend-cancellable-coroutine.html">suspendCancellableCoroutine()</a> · <a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.coroutines/suspend-coroutine.html">suspendCoroutine()</a></small></p></aside></section><section class="chapter"><h3 id="the-yield-suspending-function">用 <code>yield()</code> 让出执行机会</h3>
-<p id="z7p4hhf_103">在同一线程上，一段持续计算且从不挂起的代码会占住执行机会，排队的协程只能等它完成。它也可能迟迟察觉不到取消。</p>
-<p id="z7p4hhf_104">CPU 密集的长循环可以定期调用 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/yield.html">yield()</a>。这既给其他协程一个运行机会，也会检查取消；若已经取消，就抛出 <code>CancellationException</code>。</p>
-<figure id="z7p4hhf_105"><img alt="长循环中不检查取消、显式检查与调用 yield 三种执行轨迹" src="../assets/yield-and-cancellation.svg" width="727" height="373" loading="lazy"></figure><p id="z7p4hhf_106">看下面的例子。</p>
+<aside class="prompt" data-type="tip" id="z7p4hhf_90"><p id="z7p4hhf_96"><code>kotlinx.coroutines</code> 中的挂起操作通过 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/suspend-cancellable-coroutine.html">suspendCancellableCoroutine()</a> 等机制配合取消，在协程挂起时检查取消。相比之下，使用 <a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.coroutines/suspend-coroutine.html">suspendCoroutine()</a> 自己实现的挂起操作不会自动响应取消。</p></aside></section><section class="chapter"><h3 id="the-yield-suspending-function">挂起函数 <code>yield()</code>
+</h3>
+<p id="z7p4hhf_103">协程若一直占用当前线程而不挂起，同一线程上的其他协程就要等它执行完。这些协程只能在这条线程上依次执行。长时间不挂起也可能让协程在收到取消请求后仍继续运行。</p>
+<p id="z7p4hhf_104">一段计算若长时间占用线程，可以在循环中定期调用 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/yield.html">yield()</a>。其他协程因此有机会使用这条线程，当前协程也能检查自己是否已被取消。若已取消，<code>yield()</code> 会抛出 <code>CancellationException</code>。</p>
+<figure id="z7p4hhf_105"><img alt="长循环中不检查取消、显式检查与调用 yield 三种执行轨迹" src="../assets/yield-and-cancellation.svg" width="727" height="373" loading="lazy"></figure><p id="z7p4hhf_106">例如：</p>
 <pre><code class="language-kotlin">import kotlinx.coroutines.*
 
 fun main() {
-//sampleStart
-// runBlocking uses the current thread for running all coroutines
+//<span class="code-comment">sampleStart</span>
+// <span class="code-comment">runBlocking 在当前线程上运行本例的所有协程</span>
 runBlocking {
     val coroutineCount = 5
     repeat(coroutineCount) { coroutineIndex -&gt;
@@ -179,39 +180,39 @@ runBlocking {
             val id = coroutineIndex + 1
             repeat(5) { iterationIndex -&gt;
                 val iteration = iterationIndex + 1
-                // Suspends temporarily to give other coroutines a chance to run
-                // Without this, the coroutines run sequentially
+                // <span class="code-comment">短暂挂起，给其他协程运行机会</span>
+                // <span class="code-comment">省略这一步时，这些协程会依次执行</span>
                 yield()
-                // Prints the coroutine index and iteration index
+                // <span class="code-comment">打印协程编号和本轮循环的编号</span>
                 println("$id * $iteration = ${id * iteration}")
             }
         }
     }
 }
-//sampleEnd
+//<span class="code-comment">sampleEnd</span>
 }</code></pre>
-<p id="z7p4hhf_108">例子中的两个循环都在迭代之间调用 <code>yield()</code>，因此可以在同一线程上交替取得进展。</p></section><section class="chapter"><h3 id="check-for-cancellation-explicitly">显式检查取消</h3>
-<p id="z7p4hhf_115">如果计算需要持续占用当前线程，可以只检查取消状态。这会让长计算及时结束，但不会主动把线程让给其他协程。希望其他任务也能运行时，可考虑 <a href="#the-yield-suspending-function">yield()</a>。</p>
-<p id="z7p4hhf_116">有两种常用检查方式。</p>
+<p id="z7p4hhf_108">本例中的每个协程都在两轮迭代之间调用 <code>yield()</code>，让其他协程有机会运行。</p></section><section class="chapter"><h3 id="check-for-cancellation-explicitly">显式检查取消</h3>
+<p id="z7p4hhf_115">可以显式检查取消，使长时间执行的代码无需挂起也能响应请求。但一直不挂起的协程可能阻止同一线程上的其他协程运行，直到它完成。除非这正符合需求，否则可以用 <a href="#the-yield-suspending-function">yield()</a>。</p>
+<p id="z7p4hhf_116">有的检查返回布尔值，有的直接抛出异常。</p>
 <ul class="list _bullet" id="z7p4hhf_117">
-<li class="list__item" id="z7p4hhf_120"><p id="z7p4hhf_122">取消后，<a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/is-active.html">isActive</a> 返回 <code>false</code>，可用作循环条件。</p></li>
-<li class="list__item" id="z7p4hhf_121"><p id="z7p4hhf_126">取消后，<a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/ensure-active.html">ensureActive()</a> 直接抛出 <code>CancellationException</code>。</p></li>
-</ul></section><section class="chapter"><h3 id="interrupt-blocking-code-when-coroutines-are-canceled">取消时中断阻塞调用</h3>
-<p id="z7p4hhf_130">在 JVM 上，<code>Thread.sleep()</code>、<code>BlockingQueue.take()</code> 等操作可能阻塞整条线程。它们能响应线程中断，但仅仅取消协程不会自动中断正在执行的阻塞调用。</p>
-<p id="z7p4hhf_131">对于支持中断的阻塞操作，可用 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/run-interruptible.html">runInterruptible()</a> 包住它，把协程取消转成线程中断。</p>
+<li class="list__item" id="z7p4hhf_120"><p id="z7p4hhf_122">协程被取消时，<a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/is-active.html">isActive</a> 属性返回 <code>false</code>。</p></li>
+<li class="list__item" id="z7p4hhf_121"><p id="z7p4hhf_126">协程被取消时，<a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/ensure-active.html">ensureActive()</a> 抛出 <code>CancellationException</code>。</p></li>
+</ul></section><section class="chapter"><h3 id="interrupt-blocking-code-when-coroutines-are-canceled">协程取消时中断阻塞代码</h3>
+<p id="z7p4hhf_130">JVM 上的 <code>Thread.sleep()</code>、<code>BlockingQueue.take()</code> 等阻塞函数会占用当前线程。线程中断能让这类调用提前结束。但在协程中调用它们时，取消协程并不会自动中断线程。</p>
+<p id="z7p4hhf_131">要在取消协程时中断线程，可将支持中断的阻塞代码放进 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/run-interruptible.html">runInterruptible()</a>。</p>
 <pre><code class="language-kotlin">import kotlinx.coroutines.*
 
 suspend fun main() {
-//sampleStart
+//<span class="code-comment">sampleStart</span>
 withContext(Dispatchers.Default) {
     val childStarted = CompletableDeferred&lt;Unit&gt;()
     val childJob = launch {
         try {
-            // Cancellation triggers a thread interruption
+            // <span class="code-comment">取消协程会触发线程中断</span>
             runInterruptible {
                 childStarted.complete(Unit)
                 try {
-                    // Blocks the current thread for a very long time
+                    // <span class="code-comment">长时间阻塞当前线程</span>
                     Thread.sleep(Long.MAX_VALUE)
                 } catch (e: InterruptedException) {
                     println("Thread interrupted (Java): $e")
@@ -225,83 +226,83 @@ withContext(Dispatchers.Default) {
     }
     childStarted.await()
 
-    // Cancels the coroutine and interrupts the thread executing Thread.sleep()
+    // <span class="code-comment">取消协程，并中断正在执行 Thread.sleep() 的线程</span>
     childJob.cancel()
 }
-//sampleEnd
-}</code></pre></section></section><section class="chapter"><h2 id="handle-values-safely-when-canceling-coroutines">取消时怎样安全交接结果</h2>
-<p id="z7p4hhf_137">已挂起的协程恢复执行前，如果取消已经生效，即使结果准备好了，也可能以 <code>CancellationException</code> 恢复。这叫及时取消。它能阻止代码继续更新已经关闭的界面。</p>
-<p id="z7p4hhf_138">看下面的例子。</p>
-<pre><code class="language-kotlin">// Defines a coroutine scope that uses the UI thread
+//<span class="code-comment">sampleEnd</span>
+}</code></pre></section></section><section class="chapter"><h2 id="handle-values-safely-when-canceling-coroutines">取消时安全地处理返回值</h2>
+<p id="z7p4hhf_137">假设后台已经算出了结果，但等待结果的协程正要取消。恢复时，协程可能收到 <code>CancellationException</code>，来不及接过那个结果。这称为及时取消，可避免用刚返回的数据更新一个已经关闭的界面。</p>
+<p id="z7p4hhf_138">例如：</p>
+<pre><code class="language-kotlin">// <span class="code-comment">定义一个在 UI 线程运行的协程作用域</span>
 class ScreenWithButtons(private val scope: CoroutineScope) {
     fun loadAndUpdateButtons(filename: String) {
         scope.launch {
-            // withContext() checks for cancellation before entering the block
-            // and after the block returns
+            // <span class="code-comment">withContext() 进入块之前会检查取消状态</span>
+            // <span class="code-comment">以及代码块返回之后</span>
             val buttonNames = withContext(Dispatchers.IO) {
-                // This is a blocking call that doesn't react to cancellation
+                // <span class="code-comment">这是阻塞调用，无法自行响应协程取消</span>
                 readLines(filename)
             }
-            
-            // It's safe to call updateUi()
-            // because withContext() doesn't return if the coroutine is canceled,
-            // and no code running on the UI thread can dispose of the buttons before this call
+&#32;&#32;&#32;&#32;&#32;&#32;&#32;&#32;&#32;&#32;&#32;&#32;
+            // <span class="code-comment">此时可以安全调用 updateUi()</span>
+            // <span class="code-comment">因为协程被取消时，withContext() 不会正常返回，</span>
+            // <span class="code-comment">在此调用之前，UI 线程上的其他代码没有机会销毁按钮</span>
             updateUi(buttonNames)
         }
     }
 
-    // Call this function only from the UI thread because it accesses the buttons
-    // Throws an exception if called after the buttons are disposed
+    // <span class="code-comment">这个函数要访问按钮，只能在 UI 线程调用</span>
+    // <span class="code-comment">按钮销毁后再调用会抛异常</span>
     private fun updateUi(buttonNames: List&lt;String&gt;) {
-        // Placeholder code that updates the buttons with specified names
+        // <span class="code-comment">示意代码：用指定名称更新按钮</span>
     }
 
-    // Call this function only from the UI thread
+    // <span class="code-comment">只在 UI 线程调用这个函数</span>
     fun leaveScreen() {
-        // Cancels the scope when leaving the screen
-        // You can no longer update the UI
+        // <span class="code-comment">离开界面时取消作用域</span>
+        // <span class="code-comment">此时已不能再更新界面</span>
         scope.cancel()
     }
 }
 
-// UI controller code
+// <span class="code-comment">UI 控制器中的代码</span>
 setHandler(Event.ScreenClosed) {
-    // Runs on the UI thread
+    // <span class="code-comment">在 UI 线程运行</span>
     screenWithButtons.leaveScreen()
     buttons.dispose()
 }</code></pre>
-<p id="z7p4hhf_140">示例用 <code>withContext(Dispatchers.IO)</code> 加载按钮名称。如果返回界面前 <code>leaveScreen()</code> 已经取消任务，<code>updateUi()</code> 就不会执行。</p>
-<p id="z7p4hhf_141">同样的机制也会打断资源交接。例如刚拿到 <code>AutoCloseable</code>，协程还没走到关闭它的位置就被取消。把清理安排到取消后也能执行的位置，才能保证资源最终被释放。</p>
-<p id="z7p4hhf_142">看下面的例子。</p>
+<p id="z7p4hhf_140">本例中，若 <code>leaveScreen()</code> 在 <code>withContext(Dispatchers.IO)</code> 返回按钮名称前取消协程，withContext 会响应取消，<code>updateUi()</code> 就不会执行。</p>
+<p id="z7p4hhf_141">及时取消防止过期值被使用，但也可能中断重要值的交接。例如协程取得一个 <code>AutoCloseable</code> 资源后，可能在执行关闭资源的代码之前就被取消，从而失去这个资源。应把清理放在即使接收协程被取消也一定会执行的位置。</p>
+<p id="z7p4hhf_142">例如：</p>
 <pre><code class="language-kotlin">import java.nio.file.*
 import java.nio.charset.*
 import kotlinx.coroutines.*
 import java.io.*
 
-// Uses a scope that runs its coroutines on the UI thread
+// <span class="code-comment">使用在 UI 线程运行协程的作用域</span>
 class ScreenWithFileContents(private val scope: CoroutineScope) {
     fun displayFile(path: Path) {
         scope.launch {
-            // Stores the reader in a variable, so the finally block can close it
+            // <span class="code-comment">用变量保存读取器，使 finally 块能够关闭它</span>
             var reader: BufferedReader? = null
-            
+&#32;&#32;&#32;&#32;&#32;&#32;&#32;&#32;&#32;&#32;&#32;&#32;
             try {
                 withContext(Dispatchers.IO) {
                     reader = Files.newBufferedReader(
                         path, Charset.forName("US-ASCII")
                     )
                 }
-                // Uses the stored reader after withContext() completes
+                // <span class="code-comment">withContext() 完成后，使用先前保存的读取器</span>
                 updateUi(reader!!)
             } finally {
-                // Ensures the reader is closed even when the coroutine is canceled
+                // <span class="code-comment">即使协程被取消，也会关闭读取器</span>
                 reader?.close()
             }
         }
     }
 
     private suspend fun updateUi(reader: BufferedReader) {
-        // Shows the file contents
+        // <span class="code-comment">显示文件内容</span>
         while (true) {
             val line = withContext(Dispatchers.IO) {
                 reader.readLine()
@@ -313,24 +314,24 @@ class ScreenWithFileContents(private val scope: CoroutineScope) {
     }
 
     private fun addOneLineToUi(line: String) {
-        // Placeholder for code that adds one line to the UI
+        // <span class="code-comment">示意代码：向界面添加一行</span>
     }
 
-    // Only callable from the UI thread
+    // <span class="code-comment">只能在 UI 线程调用</span>
     fun leaveScreen() {
-        // Cancels the scope and prevents its coroutines from updating the UI
+        // <span class="code-comment">取消作用域，使其中的协程停止更新界面</span>
         scope.cancel()
     }
 }</code></pre>
-<p id="z7p4hhf_144">这里在外层变量中保留 <code>BufferedReader</code>，并在 <code>finally</code> 里关闭。这样即使返回值的交接被取消，也还能找到并释放资源。</p>
-<section class="chapter"><h3 id="run-non-cancelable-blocks">让必要的收尾执行完</h3>
-<p id="z7p4hhf_155">若清理本身必须挂起，可以用 withContext(<a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-non-cancellable/">NonCancellable</a>) 包住这一小段收尾工作。</p>
-<aside class="prompt" data-type="warning" id="z7p4hhf_156"><p id="z7p4hhf_163">不要把 <code>NonCancellable</code> 传给 launch 或 async。这会破坏任务之间原有的父子关系。</p></aside><p id="z7p4hhf_157">典型情形是资源的 <code>close()</code> 本身为挂起函数。即使任务已经取消，清理也需要获得完成的机会。</p>
-<p id="z7p4hhf_158">看下面的例子。</p>
+<p id="z7p4hhf_144">在本例中，先用变量保存 <code>BufferedReader</code>，然后在 <code>finally</code> 块中关闭它。这样即使协程被取消，资源也能释放。</p>
+<section class="chapter"><h3 id="run-non-cancelable-blocks">执行不可取消的代码块</h3>
+<p id="z7p4hhf_155">若要避免取消影响协程的某一小段工作，可以将 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-non-cancellable/">NonCancellable</a> 传给 <code>withContext()</code>。</p>
+<aside class="prompt" data-type="warning" id="z7p4hhf_156"><p id="z7p4hhf_163">避免将 <code>NonCancellable</code> 与 launch()、async() 等其他构建器一起使用；这样会破坏父子关系和结构化并发。</p></aside><p id="z7p4hhf_157">有些操作必须完成，例如用挂起的 <code>close()</code> 函数关闭资源。此时即使协程在操作完成前被取消，也可以用 <code>NonCancellable</code> 确保清理完成。</p>
+<p id="z7p4hhf_158">例如：</p>
 <pre><code class="language-kotlin">import kotlinx.coroutines.*
 import kotlin.time.Duration.Companion.milliseconds
 
-//sampleStart
+//<span class="code-comment">sampleStart</span>
 val serviceStarted = CompletableDeferred&lt;Unit&gt;()
 
 fun startService() {
@@ -352,8 +353,8 @@ suspend fun main() {
                 awaitCancellation()
             } finally {
                 withContext(NonCancellable) {
-                    // Without withContext(NonCancellable),
-                    // this function doesn't complete because the coroutine is canceled
+                    // <span class="code-comment">如果省略 withContext(NonCancellable)，</span>
+                    // <span class="code-comment">协程被取消，这个函数无法正常执行完</span>
                     shutdownServiceAndWait()
                 }
             }
@@ -363,14 +364,14 @@ suspend fun main() {
     }
     println("Exiting the program")
 }
-//sampleEnd</code></pre></section></section><section class="chapter"><h2 id="timeout">设置超时</h2>
-<p id="z7p4hhf_169">为操作指定最长等待时长，到期后自动请求取消。</p>
-<p id="z7p4hhf_170">例如下载图片超时后，调用方可以选择重试，或者读取本地缓存。</p>
-<p id="z7p4hhf_171">把 <code>Duration</code> 和任务代码传给 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/with-timeout-or-null.html">withTimeoutOrNull()</a>。</p>
+//<span class="code-comment">sampleEnd</span></code></pre></section></section><section class="chapter"><h2 id="timeout">超时</h2>
+<p id="z7p4hhf_169">超时会在指定时长过去后自动取消协程，可用于停止耗时过长的操作。</p>
+<p id="z7p4hhf_170">例如，从服务器下载图片超时后，可以重试或改为读取本地缓存。</p>
+<p id="z7p4hhf_171">给 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/with-timeout-or-null.html">withTimeoutOrNull()</a> 传入 <code>Duration</code> 来指定超时。</p>
 <pre><code class="language-kotlin">import kotlinx.coroutines.*
 import kotlin.time.Duration.Companion.milliseconds
 
-//sampleStart
+//<span class="code-comment">sampleStart</span>
 suspend fun slowOperation(): String {
     try {
         delay(300.milliseconds)
@@ -403,7 +404,7 @@ suspend fun main() {
         println("The fast operation finished with $fast")
     }
 }
-//sampleEnd</code></pre>
-<p id="z7p4hhf_173">如果超时，<code>withTimeoutOrNull()</code> 返回 <code>null</code>，调用处就可以决定下一步。</p></section></article>
-<section class="recall"><h2>读完试一题</h2><p>为什么发出 cancel 后，一个纯计算循环还可能继续消耗 CPU？</p><details><summary>展开参考答案</summary><p>取消是请求。没有挂起点或显式检查的循环可能一直运行。在迭代之间用 ensureActive 检查，或用 yield 同时让出执行机会。</p></details></section><nav class="chapter-switcher" aria-label="章节导航"><a href="../coroutines-basics/index.html">← 协程基础</a><a class="course-home" href="../index.html">全部章节</a><a href="../coroutines-flow/index.html">Flow：连续到来的值 →</a></nav><footer class="source-credit"><p>原文由 JetBrains 与 Kotlin 贡献者维护。RIN III 于 2026 年 11 月 18 日翻译、润色并补充导读与自测；代码、输出及图中界面保留原貌。</p><p><a href="https://kotlinlang.org/docs/coroutines-cancellation.html">Kotlin 官方原文</a> · <a href="../LICENSE-2.0.txt">Apache License 2.0</a></p></footer></main>
+//<span class="code-comment">sampleEnd</span></code></pre>
+<p id="z7p4hhf_173">如果操作用时超过指定的 <code>Duration</code>，<code>withTimeoutOrNull()</code> 会返回 <code>null</code>。</p></section></article>
+<section class="recall"><h2>编者自测</h2><p>例子为什么要在 cancel() 前等 childStarted.await()？</p><details><summary>查看答案</summary><p>为了让每次演示都按相同的顺序发生。子协程先打印并发出已开始的信号，外面收到信号再取消它。取消操作本身不需要这个信号。</p></details></section><nav class="chapter-switcher" aria-label="章节导航"><a href="../coroutines-basics/index.html">← 协程基础</a><a class="course-home" href="../index.html">全部章节</a><a href="../coroutines-flow/index.html">Flow →</a></nav><footer class="source-credit"><p>原文由 JetBrains 与 Kotlin 贡献者维护。中文译稿修订于 2026 年 11 月 19 日。示例代码的说明性注释已译为中文，输出文字与截图沿用原文。</p><p><a href="https://kotlinlang.org/docs/coroutines-cancellation.html">Kotlin 官方原文</a> · <a href="../LICENSE-2.0.txt">Apache License 2.0</a></p></footer></main>
 </body></html>

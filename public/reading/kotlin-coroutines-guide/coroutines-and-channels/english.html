@@ -4,14 +4,14 @@
 <meta charset="utf-8"><script src="../../../theme.js"></script>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Coroutines and channels − tutorial｜RIN III</title>
-<meta name="description" content="An upcoming update will revise this tutorial. In the meantime, for an up-to-date guide to getting started with coroutines, see Coroutines basics.">
+<meta name="description" content="Coroutines and channels − tutorial · English">
 <link rel="manifest" href="../../../manifest.webmanifest">
 <link rel="stylesheet" href="../../../reading/reader.css">
 <link rel="stylesheet" href="../../../theme.css">
 <link rel="stylesheet" href="../../../reading/_shared/theme-readers.css">
 <link rel="stylesheet" href="../../../reading/kotlin-coroutines-guide/course.css">
 </head><body><div class="reader-theme-control" data-theme-control></div>
-<nav class="site-nav"><a href="../index.html">← Kotlin 协程指南</a><a href="index.html">中文译文</a><a href="https://kotlinlang.org/docs/coroutines-and-channels.html">Kotlin 原文 ↗</a></nav><main class="reader project-reader"><header class="chapter-header"><span class="chapter-kicker">Kotlin 协程指南 · 04 / 12</span><h1>Coroutines and channels − tutorial</h1></header><nav class="chapter-switcher" aria-label="章节导航"><a href="../coroutines-flow/english.html">← Flows</a><a class="course-home" href="../english.html">Contents</a><a href="../composing-suspending-functions/english.html">Composing suspending functions →</a></nav><details class="source-details chapter-toc"><summary>On this page</summary><ul><li><a href="#before-you-start">Before you start</a></li><li><a href="#blocking-requests">Blocking requests</a></li><li><a href="#callbacks">Callbacks</a></li><li><a href="#suspending-functions">Suspending functions</a></li><li><a href="#coroutines">Coroutines</a></li><li><a href="#concurrency">Concurrency</a></li><li><a href="#structured-concurrency">Structured concurrency</a></li><li><a href="#showing-progress">Showing progress</a></li><li><a href="#channels">Channels</a></li><li><a href="#testing-coroutines">Testing coroutines</a></li><li><a href="#what-s-next">What&#x27;s next</a></li></ul></details><article class="translated-article"><aside class="prompt" data-type="note" id="-svzko0_3"><p id="-svzko0_21">An upcoming update will revise this tutorial. In the meantime, for an up-to-date guide to getting started with coroutines, see <a href="../coroutines-basics/english.html" id="-svzko0_22">Coroutines basics</a>.</p></aside><p id="-svzko0_4">In this tutorial, you'll learn how to use coroutines in IntelliJ IDEA to perform network requests without blocking the underlying thread or callbacks.</p>
+<nav class="site-nav"><a href="../english.html">← Contents</a><div class="version-links" aria-label="版本"><a href="index.html">中文润色稿</a><a href="literal.html">严格译稿</a><a href="english.html" aria-current="page">English</a></div></nav><main class="reader project-reader"><header class="chapter-header"><span class="chapter-kicker">4 / 12 · English</span><h1 id="coroutines-and-channels.md">Coroutines and channels − tutorial</h1></header><nav class="chapter-switcher" aria-label="章节导航"><a href="../coroutines-flow/english.html">← Flows</a><a class="course-home" href="../english.html">Contents</a><a href="../composing-suspending-functions/english.html">Composing suspending functions →</a></nav><details class="source-details chapter-toc"><summary>On this page</summary><ul><li><a href="#before-you-start">Before you start</a></li><li><a href="#blocking-requests">Blocking requests</a></li><li><a href="#callbacks">Callbacks</a></li><li><a href="#suspending-functions">Suspending functions</a></li><li><a href="#coroutines">Coroutines</a></li><li><a href="#concurrency">Concurrency</a></li><li><a href="#structured-concurrency">Structured concurrency</a></li><li><a href="#showing-progress">Showing progress</a></li><li><a href="#channels">Channels</a></li><li><a href="#testing-coroutines">Testing coroutines</a></li><li><a href="#what-s-next">What&#x27;s next</a></li></ul></details><article class="translated-article"><aside class="prompt" data-type="note" id="-svzko0_3"><p id="-svzko0_21">An upcoming update will revise this tutorial. In the meantime, for an up-to-date guide to getting started with coroutines, see <a href="../coroutines-basics/english.html" id="-svzko0_22">Coroutines basics</a>.</p></aside><p id="-svzko0_4">In this tutorial, you'll learn how to use coroutines in IntelliJ IDEA to perform network requests without blocking the underlying thread or callbacks.</p>
 <aside class="prompt" data-type="tip" id="-svzko0_5"><p id="-svzko0_23">No prior knowledge of coroutines is required, but you're expected to be familiar with basic Kotlin syntax.</p></aside><p id="-svzko0_6">You'll learn:</p>
 <ul class="list _bullet" id="-svzko0_7">
 <li class="list__item" id="-svzko0_24"><p id="-svzko0_27">Why and how to use suspending functions to perform network requests.</p></li>
@@ -73,17 +73,17 @@
     req: RequestData
 ): List&lt;User&gt; {
     val repos = service
-        .getOrgReposCall(req.org)   // #1
-        .execute()                  // #2
-        .also { logRepos(req, it) } // #3
-        .body() ?: emptyList()      // #4
+        .getOrgReposCall(req.org)   // <span class="code-comment">#1</span>
+        .execute()                  // <span class="code-comment">#2</span>
+        .also { logRepos(req, it) } // <span class="code-comment">#3</span>
+        .body() ?: emptyList()      // <span class="code-comment">#4</span>
 
     return repos.flatMap { repo -&gt;
         service
-            .getRepoContributorsCall(req.org, repo.name) // #1
-            .execute()                                   // #2
-            .also { logUsers(repo, it) }                 // #3
-            .bodyList()                                  // #4
+            .getRepoContributorsCall(req.org, repo.name) // <span class="code-comment">#1</span>
+            .execute()                                   // <span class="code-comment">#2</span>
+            .also { logUsers(repo, it) }                 // <span class="code-comment">#3</span>
+            .bodyList()                                  // <span class="code-comment">#4</span>
     }.aggregate()
 }</code></pre>
 <ul class="list _bullet" id="-svzko0_99">
@@ -116,7 +116,7 @@
 <li class="list__item" id="-svzko0_96">
 <p id="-svzko0_139">In <code class="code" id="-svzko0_142">src/contributors/Contributors.kt</code>, find the <code class="code" id="-svzko0_143">loadContributors()</code> function responsible for choosing how the contributors are loaded and look at how <code class="code" id="-svzko0_144">loadContributorsBlocking()</code> is called:</p>
 <pre><code class="language-kotlin">when (getSelectedVariant()) {
-    BLOCKING -&gt; { // Blocking UI thread
+    BLOCKING -&gt; { // <span class="code-comment">Blocking UI thread</span>
         val users = loadContributorsBlocking(service, req)
         updateResults(users, startTime)
     }
@@ -191,21 +191,21 @@
     service: GitHubService, req: RequestData,
     updateResults: (List&lt;User&gt;) -&gt; Unit
 ) {
-    service.getOrgReposCall(req.org).onResponse { responseRepos -&gt;  // #1
+    service.getOrgReposCall(req.org).onResponse { responseRepos -&gt;  // <span class="code-comment">#1</span>
         logRepos(req, responseRepos)
         val repos = responseRepos.bodyList()
 
         val allUsers = mutableListOf&lt;User&gt;()
         for (repo in repos) {
             service.getRepoContributorsCall(req.org, repo.name)
-                .onResponse { responseUsers -&gt;  // #2
+                .onResponse { responseUsers -&gt;  // <span class="code-comment">#2</span>
                     logUsers(repo, responseUsers)
                     val users = responseUsers.bodyList()
                     allUsers += users
                 }
             }
         }
-        // TODO: Why doesn't this code work? How to fix that?
+        // <span class="code-comment">TODO: Why doesn't this code work? How to fix that?</span>
         updateResults(allUsers.aggregate())
     }</code></pre>
 <ul class="list _bullet" id="-svzko0_233">
@@ -218,13 +218,13 @@
 <section class="chapter"><details class="source-details"><summary id="the-first-attempted-solution-for-task-3">The first attempted solution for task 3</summary><p id="-svzko0_254">In the current solution, many requests are started concurrently, which decreases the total loading time. However, the result isn't loaded. This is because the <code class="code" id="-svzko0_259">updateResults()</code> callback is called right after all of the loading requests are started, before the <code class="code" id="-svzko0_260">allUsers</code> list has been filled with the data.</p>
 <p id="-svzko0_255">You could try to fix this with a change like the following:</p>
 <pre><code class="language-kotlin">val allUsers = mutableListOf&lt;User&gt;()
-for ((index, repo) in repos.withIndex()) {   // #1
+for ((index, repo) in repos.withIndex()) {   // <span class="code-comment">#1</span>
     service.getRepoContributorsCall(req.org, repo.name)
         .onResponse { responseUsers -&gt;
             logUsers(repo, responseUsers)
             val users = responseUsers.bodyList()
             allUsers += users
-            if (index == repos.lastIndex) {    // #2
+            if (index == repos.lastIndex) {    // <span class="code-comment">#2</span>
                 updateResults(allUsers.aggregate())
             }
         }
@@ -256,7 +256,7 @@ for (repo in repos) {
 for (repo in repos) {
     service.getRepoContributorsCall(req.org, repo.name)
         .onResponse { responseUsers -&gt;
-            // processing repository
+            // <span class="code-comment">processing repository</span>
             countDownLatch.countDown()
         }
 }
@@ -279,7 +279,7 @@ updateResults(allUsers.aggregate())</code></pre>
 <p id="-svzko0_289">Alternatively, Retrofit allows returning the result wrapped in <code class="code" id="-svzko0_303">Response</code>. In this case, the result body is provided, and it is possible to check for errors manually. This tutorial uses the versions that return <code class="code" id="-svzko0_304">Response</code>.</p>
 <p id="-svzko0_290">In <code class="code" id="-svzko0_305">src/contributors/GitHubService.kt</code>, add the following declarations to the <code class="code" id="-svzko0_306">GitHubService</code> interface:</p>
 <pre><code class="language-kotlin">interface GitHubService {
-    // getOrgReposCall &amp; getRepoContributorsCall declarations
+    // <span class="code-comment">getOrgReposCall &amp; getRepoContributorsCall declarations</span>
 
     @GET("orgs/{org}/repos?per_page=100")
     suspend fun getOrgRepos(
@@ -399,15 +399,15 @@ fun main() = runBlocking {
 <p id="-svzko0_440">Base your solution on the following scheme:</p>
 <pre><code class="language-kotlin">val deferreds: List&lt;Deferred&lt;List&lt;User&gt;&gt;&gt; = repos.map { repo -&gt;
     async {
-        // load contributors for each repo
+        // <span class="code-comment">load contributors for each repo</span>
     }
 }
-deferreds.awaitAll() // List&lt;List&lt;User&gt;&gt;</code></pre></details></section><section class="chapter"><details class="source-details"><summary id="solution-for-task-5">Solution for task 5</summary><p id="-svzko0_445">Wrap each "contributors" request with <code class="code" id="-svzko0_449">async</code> to create as many coroutines as there are repositories. <code class="code" id="-svzko0_450">async</code> returns <code class="code" id="-svzko0_451">Deferred&lt;List&lt;User&gt;&gt;</code>. This is not an issue because creating new coroutines is not very resource-intensive, so you can create as many as you need.</p>
+deferreds.awaitAll() // <span class="code-comment">List&lt;List&lt;User&gt;&gt;</span></code></pre></details></section><section class="chapter"><details class="source-details"><summary id="solution-for-task-5">Solution for task 5</summary><p id="-svzko0_445">Wrap each "contributors" request with <code class="code" id="-svzko0_449">async</code> to create as many coroutines as there are repositories. <code class="code" id="-svzko0_450">async</code> returns <code class="code" id="-svzko0_451">Deferred&lt;List&lt;User&gt;&gt;</code>. This is not an issue because creating new coroutines is not very resource-intensive, so you can create as many as you need.</p>
 <ol class="list _decimal" id="-svzko0_446" type="1">
 <li class="list__item" id="-svzko0_452">
 <p id="-svzko0_457">You can no longer use <code class="code" id="-svzko0_459">flatMap</code> because the <code class="code" id="-svzko0_460">map</code> result is now a list of <code class="code" id="-svzko0_461">Deferred</code> objects, not a list of lists. <code class="code" id="-svzko0_462">awaitAll()</code> returns <code class="code" id="-svzko0_463">List&lt;List&lt;User&gt;&gt;</code>, so call <code class="code" id="-svzko0_464">flatten().aggregate()</code> to get the result:</p>
 <pre><code class="language-kotlin">suspend fun loadContributorsConcurrent(
-    service: GitHubService, 
+    service: GitHubService,&#32;
     req: RequestData
 ): List&lt;User&gt; = coroutineScope {
     val repos = service
@@ -488,7 +488,7 @@ deferreds.awaitAll() // List&lt;List&lt;User&gt;&gt;</code></pre></details></sec
 <li class="list__item" id="-svzko0_536"><p id="-svzko0_539">The <span class="emphasis" id="-svzko0_540">coroutine context</span> stores additional technical information used to run a given coroutine, like the coroutine custom name, or the dispatcher specifying the threads the coroutine should be scheduled on.</p></li>
 </ul>
 <p id="-svzko0_521">When <code class="code" id="-svzko0_541">launch</code>, <code class="code" id="-svzko0_542">async</code>, or <code class="code" id="-svzko0_543">runBlocking</code> are used to start a new coroutine, they automatically create the corresponding scope. All of these functions take a lambda with a receiver as an argument, and <code class="code" id="-svzko0_544">CoroutineScope</code> is the implicit receiver type:</p>
-<pre><code class="language-kotlin">launch { /* this: CoroutineScope */ }</code></pre>
+<pre><code class="language-kotlin">launch { /* <span class="code-comment">this: CoroutineScope</span> */ }</code></pre>
 <ul class="list _bullet" id="-svzko0_523">
 <li class="list__item" id="-svzko0_545"><p id="-svzko0_548">New coroutines can only be started inside a scope.</p></li>
 <li class="list__item" id="-svzko0_546"><p id="-svzko0_549"><code class="code" id="-svzko0_550">launch</code> and <code class="code" id="-svzko0_551">async</code> are declared as extensions to <code class="code" id="-svzko0_552">CoroutineScope</code>, so an implicit or explicit receiver must always be passed when you call them.</p></li>
@@ -497,9 +497,9 @@ deferreds.awaitAll() // List&lt;List&lt;User&gt;&gt;</code></pre></details></sec
 <p id="-svzko0_524">A new coroutine inside <code class="code" id="-svzko0_557">runBlocking</code>, <code class="code" id="-svzko0_558">launch</code>, or <code class="code" id="-svzko0_559">async</code> is started automatically inside the scope:</p>
 <pre><code class="language-kotlin">import kotlinx.coroutines.*
 
-fun main() = runBlocking { /* this: CoroutineScope */
+fun main() = runBlocking { /* <span class="code-comment">this: CoroutineScope</span> */
     launch { /* ... */ }
-    // the same as:   
+    // <span class="code-comment">the same as:</span>&#32;&#32;&#32;
     this.launch { /* ... */ }
 }</code></pre>
 <p id="-svzko0_526">When you call <code class="code" id="-svzko0_560">launch</code> inside <code class="code" id="-svzko0_561">runBlocking</code>, it's called as an extension to the implicit receiver of the <code class="code" id="-svzko0_562">CoroutineScope</code> type. Alternatively, you could explicitly write <code class="code" id="-svzko0_563">this.launch</code>.</p>
@@ -519,14 +519,14 @@ fun main() = runBlocking { /* this: CoroutineScope */
 <li class="list__item" id="-svzko0_589">
 <p id="-svzko0_596">In <code class="code" id="-svzko0_599">Request5Concurrent.kt</code>, add a 3-second delay to the <code class="code" id="-svzko0_600">loadContributorsConcurrent()</code> function:</p>
 <pre><code class="language-kotlin">suspend fun loadContributorsConcurrent(
-    service: GitHubService, 
+    service: GitHubService,&#32;
     req: RequestData
 ): List&lt;User&gt; = coroutineScope {
     // ...
     async {
         log("starting loading for ${repo.name}")
         delay(3000)
-        // load repo contributors
+        // <span class="code-comment">load repo contributors</span>
     }
     // ...
 }</code></pre>
@@ -538,14 +538,14 @@ fun main() = runBlocking { /* this: CoroutineScope */
 <pre><code class="language-kotlin">suspend fun loadContributorsNotCancellable(
     service: GitHubService,
     req: RequestData
-): List&lt;User&gt; {   // #1
+): List&lt;User&gt; {   // <span class="code-comment">#1</span>
     // ...
-    GlobalScope.async {   // #2
+    GlobalScope.async {   // <span class="code-comment">#2</span>
         log("starting loading for ${repo.name}")
-        // load repo contributors
+        // <span class="code-comment">load repo contributors</span>
     }
     // ...
-    return deferreds.awaitAll().flatten().aggregate()  // #3
+    return deferreds.awaitAll().flatten().aggregate()  // <span class="code-comment">#3</span>
 }</code></pre>
 <ul class="list _bullet" id="-svzko0_608">
 <li class="list__item" id="-svzko0_611"><p id="-svzko0_613">The function now returns the result directly, not as the last expression inside the lambda (lines <code class="code" id="-svzko0_614">#1</code> and <code class="code" id="-svzko0_615">#3</code>).</p></li>
@@ -559,8 +559,8 @@ fun main() = runBlocking { /* this: CoroutineScope */
 2901 [DefaultDispatcher-worker-2 @coroutine#4] INFO  Contributors - starting loading for kotlin-koans
 ...
 2909 [DefaultDispatcher-worker-5 @coroutine#36] INFO  Contributors - starting loading for mpp-example
-/* click on 'cancel' */
-/* no requests are sent */</code></pre>
+/* <span class="code-comment">click on 'cancel'</span> */
+/* <span class="code-comment">no requests are sent</span> */</code></pre>
 </li>
 <li class="list__item" id="-svzko0_594">
 <p id="-svzko0_624">Repeat step 5, but this time choose the <code class="code" id="-svzko0_627">NOT_CANCELLABLE</code> option:</p>
@@ -568,8 +568,8 @@ fun main() = runBlocking { /* this: CoroutineScope */
 2579 [DefaultDispatcher-worker-1 @coroutine#4] INFO  Contributors - starting loading for kotlin-koans
 ...
 2586 [DefaultDispatcher-worker-6 @coroutine#36] INFO  Contributors - starting loading for mpp-example
-/* click on 'cancel' */
-/* but all the requests are still sent: */
+/* <span class="code-comment">click on 'cancel'</span> */
+/* <span class="code-comment">but all the requests are still sent:</span> */
 6402 [DefaultDispatcher-worker-5 @coroutine#4] INFO  Contributors - kotlin-koans: loaded 45 contributors
 ...
 9555 [DefaultDispatcher-worker-8 @coroutine#36] INFO  Contributors - mpp-example: loaded 8 contributors</code></pre>
@@ -586,24 +586,24 @@ fun main() = runBlocking { /* this: CoroutineScope */
                 launch {
                     val users = loadContributorsConcurrent(service, req)
                     updateResults(users, startTime)
-                }.setUpCancellation()      // #1
+                }.setUpCancellation()      // <span class="code-comment">#1</span>
             }
         }
     }
 
     private fun Job.setUpCancellation() {
-        val loadingJob = this              // #2
+        val loadingJob = this              // <span class="code-comment">#2</span>
 
-        // cancel the loading job if the 'cancel' button was clicked:
+        // <span class="code-comment">cancel the loading job if the 'cancel' button was clicked:</span>
         val listener = ActionListener {
-            loadingJob.cancel()            // #3
+            loadingJob.cancel()            // <span class="code-comment">#3</span>
             updateLoadingStatus(CANCELED)
         }
-        // add a listener to the 'cancel' button:
+        // <span class="code-comment">add a listener to the 'cancel' button:</span>
         addCancelListener(listener)
 
-        // update the status and remove the listener
-        // after the loading job is completed
+        // <span class="code-comment">update the status and remove the listener</span>
+        // <span class="code-comment">after the loading job is completed</span>
     }
 }   </code></pre>
 </li>
@@ -619,7 +619,7 @@ job.setUpCancellation()</code></pre>
 <p id="-svzko0_586">With structured concurrency, you only need to cancel the parent coroutine and this automatically propagates cancellation to all of the child coroutines.</p></section><section class="chapter"><h3 id="using-the-outer-scope-s-context">Using the outer scope's context</h3>
 <p id="-svzko0_647">When you start new coroutines inside the given scope, it's much easier to ensure that all of them run with the same context. It is also much easier to replace the context if needed.</p>
 <p id="-svzko0_648">Now it's time to learn how using the dispatcher from the outer scope works. The new scope created by the <code class="code" id="-svzko0_654">coroutineScope</code> or by the coroutine builders always inherits the context from the outer scope. In this case, the outer scope is the scope the <code class="code" id="-svzko0_655">suspend loadContributorsConcurrent()</code> function was called from:</p>
-<pre><code class="language-kotlin">launch(Dispatchers.Default) {  // outer scope
+<pre><code class="language-kotlin">launch(Dispatchers.Default) {  // <span class="code-comment">outer scope</span>
     val users = loadContributorsConcurrent(service, req)
     // ...
 }</code></pre>
@@ -627,9 +627,9 @@ job.setUpCancellation()</code></pre>
 <pre><code class="language-kotlin">suspend fun loadContributorsConcurrent(
     service: GitHubService, req: RequestData
 ): List&lt;User&gt; = coroutineScope {
-    // this scope inherits the context from the outer scope
+    // <span class="code-comment">this scope inherits the context from the outer scope</span>
     // ...
-    async {   // nested coroutine started with the inherited context
+    async {   // <span class="code-comment">nested coroutine started with the inherited context</span>
         // ...
     }
     // ...
@@ -644,8 +644,8 @@ job.setUpCancellation()</code></pre>
     req: RequestData,
     updateResults: suspend (List&lt;User&gt;, completed: Boolean) -&gt; Unit
 ) {
-    // loading the data
-    // calling `updateResults()` on intermediate states
+    // <span class="code-comment">loading the data</span>
+    // <span class="code-comment">calling `updateResults()` on intermediate states</span>
 }</code></pre>
 <p id="-svzko0_664">On the call site in <code class="code" id="-svzko0_669">Contributors.kt</code>, the callback is passed to update the results from the <code class="code" id="-svzko0_670">Main</code> thread for the <span class="emphasis" id="-svzko0_671">PROGRESS</span> option:</p>
 <pre><code class="language-kotlin">launch(Dispatchers.Default) {
@@ -836,17 +836,17 @@ repo-3 - 800 ms delay</code></pre>
 <figure id="-svzko0_815"><img alt="Comparison for total running time" src="../assets/time-comparison.png" width="700" height="99" loading="lazy"></figure><p id="-svzko0_816">To use virtual time, replace the <code class="code" id="-svzko0_841">runBlocking</code> invocation with a <code class="code" id="-svzko0_842">runTest</code>. <code class="code" id="-svzko0_843">runTest</code> takes an extension lambda to <code class="code" id="-svzko0_844">TestScope</code> as an argument. When you call <code class="code" id="-svzko0_845">delay</code> in a <code class="code" id="-svzko0_846">suspend</code> function inside this special scope, <code class="code" id="-svzko0_847">delay</code> will increase the virtual time instead of delaying in real time:</p>
 <pre><code class="language-kotlin">@Test
 fun testDelayInSuspend() = runTest {
-    val realStartTime = System.currentTimeMillis() 
+    val realStartTime = System.currentTimeMillis()&#32;
     val virtualStartTime = currentTime
-        
+&#32;&#32;&#32;&#32;&#32;&#32;&#32;&#32;
     foo()
-    println("${System.currentTimeMillis() - realStartTime} ms") // ~ 6 ms
-    println("${currentTime - virtualStartTime} ms")             // 1000 ms
+    println("${System.currentTimeMillis() - realStartTime} ms") // <span class="code-comment">~ 6 ms</span>
+    println("${currentTime - virtualStartTime} ms")             // <span class="code-comment">1000 ms</span>
 }
 
 suspend fun foo() {
-    delay(1000)    // auto-advances without delay
-    println("foo") // executes eagerly when foo() is called
+    delay(1000)    // <span class="code-comment">auto-advances without delay</span>
+    println("foo") // <span class="code-comment">executes eagerly when foo() is called</span>
 }</code></pre>
 <p id="-svzko0_818">You can check the current virtual time using the <code class="code" id="-svzko0_848">currentTime</code> property of <code class="code" id="-svzko0_849">TestScope</code>.</p>
 <p id="-svzko0_819">The actual running time in this example is several milliseconds, whereas virtual time equals the delay argument, which is 1000 milliseconds.</p>
@@ -858,14 +858,14 @@ fun testDelayInLaunch() = runTest {
 
     bar()
 
-    println("${System.currentTimeMillis() - realStartTime} ms") // ~ 11 ms
-    println("${currentTime - virtualStartTime} ms")             // 1000 ms
+    println("${System.currentTimeMillis() - realStartTime} ms") // <span class="code-comment">~ 11 ms</span>
+    println("${currentTime - virtualStartTime} ms")             // <span class="code-comment">1000 ms</span>
 }
 
 suspend fun bar() = coroutineScope {
     launch {
-        delay(1000)    // auto-advances without delay
-        println("bar") // executes eagerly when bar() is called
+        delay(1000)    // <span class="code-comment">auto-advances without delay</span>
+        println("bar") // <span class="code-comment">executes eagerly when bar() is called</span>
     }
 }</code></pre>
 <p id="-svzko0_822">If <code class="code" id="-svzko0_853">launch</code> is called with the context of <code class="code" id="-svzko0_854">Dispatchers.Default</code> in the example above, the test will fail. You'll get an exception saying that the job has not been completed yet.</p>
@@ -893,9 +893,9 @@ suspend fun bar() = coroutineScope {
 <pre><code class="language-kotlin">@Test
 fun test() = runTest {
     val startTime = currentTime
-    // action
+    // <span class="code-comment">action</span>
     val totalTime = currentTime - startTime
-    // testing result
+    // <span class="code-comment">testing result</span>
 }</code></pre>
 </li>
 <li class="list__item" id="-svzko0_882"><p id="-svzko0_890">Uncomment the assertions that check the exact virtual time.</p></li>
@@ -933,5 +933,5 @@ fun test() = runTest {
 <li class="list__item" id="-svzko0_902"><p id="-svzko0_904">Check out the <a href="https://kotlinconf.com/workshops/" id="-svzko0_905">Asynchronous Programming with Kotlin</a> workshop at KotlinConf.</p></li>
 <li class="list__item" id="-svzko0_903"><p id="-svzko0_906">Find out more about using <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-test/" id="-svzko0_907">virtual time and the experimental testing package</a>.</p></li>
 </ul></section></article>
-<nav class="chapter-switcher" aria-label="章节导航"><a href="../coroutines-flow/english.html">← Flows</a><a class="course-home" href="../english.html">Contents</a><a href="../composing-suspending-functions/english.html">Composing suspending functions →</a></nav><footer class="source-credit"><p>原文由 JetBrains 与 Kotlin 贡献者维护。RIN III 于 2026 年 11 月 18 日翻译、润色并补充导读与自测；代码、输出及图中界面保留原貌。</p><p><a href="https://kotlinlang.org/docs/coroutines-and-channels.html">Kotlin 官方原文</a> · <a href="../LICENSE-2.0.txt">Apache License 2.0</a></p></footer></main>
+<nav class="chapter-switcher" aria-label="章节导航"><a href="../coroutines-flow/english.html">← Flows</a><a class="course-home" href="../english.html">Contents</a><a href="../composing-suspending-functions/english.html">Composing suspending functions →</a></nav><footer class="source-credit"><p>English source by JetBrains and Kotlin contributors.</p><p><a href="https://kotlinlang.org/docs/coroutines-and-channels.html">Kotlin 官方原文</a> · <a href="../LICENSE-2.0.txt">Apache License 2.0</a></p></footer></main>
 </body></html>
