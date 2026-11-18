@@ -1,0 +1,98 @@
+[
+  {
+    "source": "https://kotlinlang.org/docs/coroutines-basics.html",
+    "chapter": "coroutines-basics",
+    "textUnits": 95,
+    "codeBlocks": 21,
+    "figures": 2,
+    "sourceSha256": "51ee4e63cfd1dd47446ff71b61cd6d1d39b51a0c3500362927b8e87bfb4cbdd8"
+  },
+  {
+    "source": "https://kotlinlang.org/docs/coroutines-cancellation.html",
+    "chapter": "coroutines-cancellation",
+    "textUnits": 60,
+    "codeBlocks": 10,
+    "figures": 1,
+    "sourceSha256": "b6f7a413da33aaf9449173520252d3def85d99646eaa2bf2bdab06c5bded2203"
+  },
+  {
+    "source": "https://kotlinlang.org/docs/coroutines-flow.html",
+    "chapter": "coroutines-flow",
+    "textUnits": 166,
+    "codeBlocks": 35,
+    "figures": 1,
+    "sourceSha256": "189e61144edf1bc1008055004021c8cd3a90979104b948103fa94d28d094b9fe"
+  },
+  {
+    "source": "https://kotlinlang.org/docs/coroutines-and-channels.html",
+    "chapter": "coroutines-and-channels",
+    "textUnits": 307,
+    "codeBlocks": 57,
+    "figures": 20,
+    "sourceSha256": "dcc29005ae8dbfd54590986a60cd4ff23af0aa95ee3e73a98af6fc8dffb0e830"
+  },
+  {
+    "source": "https://kotlinlang.org/docs/composing-suspending-functions.html",
+    "chapter": "composing-suspending-functions",
+    "textUnits": 36,
+    "codeBlocks": 14,
+    "figures": 0,
+    "sourceSha256": "dcc44382cbc0ea7b30919920f361f8144972c92a351102e6a7a218ea6c86586f"
+  },
+  {
+    "source": "https://kotlinlang.org/docs/coroutine-context-and-dispatchers.html",
+    "chapter": "coroutine-context-and-dispatchers",
+    "textUnits": 92,
+    "codeBlocks": 24,
+    "figures": 1,
+    "sourceSha256": "d6165b19425294de77a1e2e2c47946dfef271a9b5423f2ec5fa7f8d0b5634c37"
+  },
+  {
+    "source": "https://kotlinlang.org/docs/channels.html",
+    "chapter": "channels",
+    "textUnits": 62,
+    "codeBlocks": 25,
+    "figures": 0,
+    "sourceSha256": "ff165495778cd3350457d6dcc8e6a2f035fdeaca49a4d812a660547f43f9b933"
+  },
+  {
+    "source": "https://kotlinlang.org/docs/exception-handling.html",
+    "chapter": "exception-handling",
+    "textUnits": 47,
+    "codeBlocks": 18,
+    "figures": 0,
+    "sourceSha256": "a6f1c0ca7cfe68ca51557991895e274f1a447831da36eca5ce05e6955a69fbcf"
+  },
+  {
+    "source": "https://kotlinlang.org/docs/shared-mutable-state-and-concurrency.html",
+    "chapter": "shared-mutable-state-and-concurrency",
+    "textUnits": 28,
+    "codeBlocks": 7,
+    "figures": 0,
+    "sourceSha256": "e00f6279423f0d13a8618989e67c0a17d7f43ada93b43740ea85951c055a7f72"
+  },
+  {
+    "source": "https://kotlinlang.org/docs/select-expression.html",
+    "chapter": "select-expression",
+    "textUnits": 36,
+    "codeBlocks": 19,
+    "figures": 0,
+    "sourceSha256": "080126132909c83321ec766a3ce62a437ecabd77bd0513328de4c8641a257eb9"
+  },
+  {
+    "source": "https://kotlinlang.org/docs/debug-coroutines-with-idea.html",
+    "chapter": "debug-coroutines-with-idea",
+    "textUnits": 37,
+    "codeBlocks": 3,
+    "figures": 7,
+    "sourceSha256": "a6b55a2828f8081dac0773503b6f5585b64585c811b35873a83f6774a118b56c"
+  },
+  {
+    "source": "https://kotlinlang.org/docs/debug-flow-with-idea.html",
+    "chapter": "debug-flow-with-idea",
+    "textUnits": 45,
+    "codeBlocks": 5,
+    "figures": 9,
+    "sourceSha256": "c858c37380689beb0fd356e6382147059f02cf23ddb1b777d208579308ad32db"
+  }
+]

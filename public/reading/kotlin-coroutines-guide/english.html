@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en" data-reader-family="kotlin-coroutines-guide">
+<head>
+<meta charset="utf-8"><script src="../../theme.js"></script>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Coroutines guide｜RIN III</title>
+<meta name="description" content="Kotlin coroutines guide and table of contents">
+<link rel="manifest" href="../../manifest.webmanifest">
+<link rel="stylesheet" href="../../reading/reader.css">
+<link rel="stylesheet" href="../../theme.css">
+<link rel="stylesheet" href="../../reading/_shared/theme-readers.css">
+<link rel="stylesheet" href="../../reading/kotlin-coroutines-guide/course.css">
+</head><body><div class="reader-theme-control" data-theme-control></div>
+<nav class="site-nav"><a href="index.html">← 中文目录</a></nav><main class="reader"><h1>Coroutines guide</h1><article class="translated-article"><p id="mimzt4_3">Kotlin provides only minimal low-level APIs in its standard library to enable other libraries to utilize coroutines. Unlike many other languages with similar capabilities, <code class="code" id="mimzt4_9">async</code> and <code class="code" id="mimzt4_10">await</code> are not keywords in Kotlin and are not even part of its standard library. Moreover, Kotlin's concept of <span class="emphasis" id="mimzt4_11">suspending function</span> provides a safer and less error-prone abstraction for asynchronous operations than futures and promises.</p>
+<p id="mimzt4_4"><code class="code" id="mimzt4_12">kotlinx.coroutines</code> is a rich library for coroutines developed by JetBrains. It contains a number of high-level coroutine-enabled primitives that this guide covers, including <code class="code" id="mimzt4_13">launch</code>, <code class="code" id="mimzt4_14">async</code>, and others.</p>
+<p id="mimzt4_5">This is a guide about the core features of <code class="code" id="mimzt4_15">kotlinx.coroutines</code> with a series of examples, divided up into different topics.</p>
+<p id="mimzt4_6">In order to use coroutines as well as follow the examples in this guide, you need to add a dependency on the <code class="code" id="mimzt4_16">kotlinx-coroutines-core</code> module as explained <a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/README.md#using-in-your-projects" id="mimzt4_17">in the project README</a>.</p>
+<section class="chapter"><h2 id="table-of-contents">Table of contents</h2>
+<ul class="list _bullet" id="mimzt4_18">
+<li class="list__item" id="mimzt4_19"><p id="mimzt4_31"><a href="coroutines-basics/english.html" id="mimzt4_32">Coroutines basics</a></p></li>
+<li class="list__item" id="mimzt4_20"><p id="mimzt4_33"><a href="coroutines-cancellation/english.html" id="mimzt4_34">Cancellation and timeouts</a></p></li>
+<li class="list__item" id="mimzt4_21"><p id="mimzt4_35"><a href="coroutines-flow/english.html" id="mimzt4_36">Flows</a></p></li>
+<li class="list__item" id="mimzt4_22"><p id="mimzt4_37"><a href="coroutines-and-channels/english.html" id="mimzt4_38">Tutorial: Intro to coroutines and channels</a></p></li>
+<li class="list__item" id="mimzt4_23"><p id="mimzt4_39"><a href="composing-suspending-functions/english.html" id="mimzt4_40">Composing suspending functions</a></p></li>
+<li class="list__item" id="mimzt4_24"><p id="mimzt4_41"><a href="coroutine-context-and-dispatchers/english.html" id="mimzt4_42">Coroutine context and dispatchers</a></p></li>
+<li class="list__item" id="mimzt4_25"><p id="mimzt4_43"><a href="channels/english.html" id="mimzt4_44">Channels</a></p></li>
+<li class="list__item" id="mimzt4_26"><p id="mimzt4_45"><a href="exception-handling/english.html" id="mimzt4_46">Coroutine exceptions handling</a></p></li>
+<li class="list__item" id="mimzt4_27"><p id="mimzt4_47"><a href="shared-mutable-state-and-concurrency/english.html" id="mimzt4_48">Shared mutable state and concurrency</a></p></li>
+<li class="list__item" id="mimzt4_28"><p id="mimzt4_49"><a href="select-expression/english.html" id="mimzt4_50">Select expression (experimental)</a></p></li>
+<li class="list__item" id="mimzt4_29"><p id="mimzt4_51"><a href="debug-coroutines-with-idea/english.html" id="mimzt4_52">Tutorial: Debug coroutines using IntelliJ IDEA</a></p></li>
+<li class="list__item" id="mimzt4_30"><p id="mimzt4_53"><a href="debug-flow-with-idea/english.html" id="mimzt4_54">Tutorial: Debug Kotlin Flow using IntelliJ IDEA</a></p></li>
+</ul></section><section class="chapter"><h2 id="additional-references">Additional references</h2>
+<ul class="list _bullet" id="mimzt4_55">
+<li class="list__item" id="mimzt4_56"><p id="mimzt4_61"><a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/ui/coroutines-guide-ui.md" id="mimzt4_62">Guide to UI programming with coroutines</a></p></li>
+<li class="list__item" id="mimzt4_57"><p id="mimzt4_63"><a href="https://github.com/Kotlin/KEEP/blob/master/proposals/coroutines.md" id="mimzt4_64">Coroutines design document (KEEP)</a></p></li>
+<li class="list__item" id="mimzt4_58"><p id="mimzt4_65"><a href="https://kotlinlang.org/api/kotlinx.coroutines/" id="mimzt4_66">Full kotlinx.coroutines API reference</a></p></li>
+<li class="list__item" id="mimzt4_59"><p id="mimzt4_67"><a href="https://developer.android.com/kotlin/coroutines/coroutines-best-practices" id="mimzt4_68">Best practices for coroutines in Android</a></p></li>
+<li class="list__item" id="mimzt4_60"><p id="mimzt4_69"><a href="https://developer.android.com/kotlin/coroutines/additional-resources" id="mimzt4_70">Additional Android resources for Kotlin coroutines and flow</a></p></li>
+</ul></section></article>
+<footer class="source-credit"><p>原文由 JetBrains 与 Kotlin 贡献者维护。RIN III 于 2026 年 11 月 18 日翻译、润色并补充导读与自测；代码、输出及图中界面保留原貌。</p><p><a href="https://kotlinlang.org/docs/coroutines-guide.html">Kotlin 官方原文</a> · <a href="LICENSE-2.0.txt">Apache License 2.0</a></p></footer></main>
+</body></html>

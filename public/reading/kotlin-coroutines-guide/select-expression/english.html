@@ -1,0 +1,337 @@
+<!doctype html>
+<html lang="en" data-reader-family="kotlin-coroutines-guide">
+<head>
+<meta charset="utf-8"><script src="../../../theme.js"></script>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Select expression (experimental)｜RIN III</title>
+<meta name="description" content="Select expression makes it possible to await multiple suspending functions simultaneously and select the first one that becomes available.">
+<link rel="manifest" href="../../../manifest.webmanifest">
+<link rel="stylesheet" href="../../../reading/reader.css">
+<link rel="stylesheet" href="../../../theme.css">
+<link rel="stylesheet" href="../../../reading/_shared/theme-readers.css">
+<link rel="stylesheet" href="../../../reading/kotlin-coroutines-guide/course.css">
+</head><body><div class="reader-theme-control" data-theme-control></div>
+<nav class="site-nav"><a href="../index.html">← Kotlin 协程指南</a><a href="index.html">中文译文</a><a href="https://kotlinlang.org/docs/select-expression.html">Kotlin 原文 ↗</a></nav><main class="reader project-reader"><header class="chapter-header"><span class="chapter-kicker">Kotlin 协程指南 · 10 / 12</span><h1>Select expression (experimental)</h1></header><nav class="chapter-switcher" aria-label="章节导航"><a href="../shared-mutable-state-and-concurrency/english.html">← Shared mutable state and concurrency</a><a class="course-home" href="../english.html">Contents</a><a href="../debug-coroutines-with-idea/english.html">Debug coroutines using IntelliJ IDEA – tutorial →</a></nav><details class="source-details chapter-toc"><summary>On this page</summary><ul><li><a href="#selecting-from-channels">Selecting from channels</a></li><li><a href="#selecting-on-close">Selecting on close</a></li><li><a href="#selecting-to-send">Selecting to send</a></li><li><a href="#selecting-deferred-values">Selecting deferred values</a></li><li><a href="#switch-over-a-channel-of-deferred-values">Switch over a channel of deferred values</a></li></ul></details><article class="translated-article"><p id="z9bbktr_3">Select expression makes it possible to await multiple suspending functions simultaneously and <span class="emphasis" id="z9bbktr_10">select</span> the first one that becomes available.</p>
+<aside class="prompt" data-type="note" id="z9bbktr_4"><p id="z9bbktr_11">Select expressions are an experimental feature of <code class="code" id="z9bbktr_12">kotlinx.coroutines</code>. Their API is expected to evolve in the upcoming updates of the <code class="code" id="z9bbktr_13">kotlinx.coroutines</code> library with potentially breaking changes.</p></aside><section class="chapter"><h2 id="selecting-from-channels">Selecting from channels</h2>
+<p id="z9bbktr_14">Let us have two producers of strings: <code class="code" id="z9bbktr_25">fizz</code> and <code class="code" id="z9bbktr_26">buzz</code>. The <code class="code" id="z9bbktr_27">fizz</code> produces "Fizz" string every 500 ms:</p>
+<pre><code class="language-kotlin">fun CoroutineScope.fizz() = produce&lt;String&gt; {
+    while (true) { // sends "Fizz" every 500 ms
+        delay(500)
+        send("Fizz")
+    }
+}</code></pre>
+<p id="z9bbktr_16">And the <code class="code" id="z9bbktr_28">buzz</code> produces "Buzz!" string every 1000 ms:</p>
+<pre><code class="language-kotlin">fun CoroutineScope.buzz() = produce&lt;String&gt; {
+    while (true) { // sends "Buzz!" every 1000 ms
+        delay(1000)
+        send("Buzz!")
+    }
+}</code></pre>
+<p id="z9bbktr_18">Using <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.channels/-receive-channel/receive.html" id="z9bbktr_29">receive</a> suspending function we can receive <span class="emphasis" id="z9bbktr_30">either</span> from one channel or the other. But <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.selects/select.html" id="z9bbktr_31">select</a> expression allows us to receive from <span class="emphasis" id="z9bbktr_32">both</span> simultaneously using its <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.channels/-receive-channel/on-receive.html" id="z9bbktr_33">onReceive</a> clauses:</p>
+<pre><code class="language-kotlin">suspend fun selectFizzBuzz(fizz: ReceiveChannel&lt;String&gt;, buzz: ReceiveChannel&lt;String&gt;) {
+    select&lt;Unit&gt; { // &lt;Unit&gt; means that this select expression does not produce any result 
+        fizz.onReceive { value -&gt;  // this is the first select clause
+            println("fizz -&gt; '$value'")
+        }
+        buzz.onReceive { value -&gt;  // this is the second select clause
+            println("buzz -&gt; '$value'")
+        }
+    }
+}</code></pre>
+<p id="z9bbktr_20">Let us run it all seven times:</p>
+<pre><code class="language-kotlin">import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.*
+import kotlinx.coroutines.selects.*
+
+fun CoroutineScope.fizz() = produce&lt;String&gt; {
+    while (true) { // sends "Fizz" every 500 ms
+        delay(500)
+        send("Fizz")
+    }
+}
+
+fun CoroutineScope.buzz() = produce&lt;String&gt; {
+    while (true) { // sends "Buzz!" every 1000 ms
+        delay(1000)
+        send("Buzz!")
+    }
+}
+
+suspend fun selectFizzBuzz(fizz: ReceiveChannel&lt;String&gt;, buzz: ReceiveChannel&lt;String&gt;) {
+    select&lt;Unit&gt; { // &lt;Unit&gt; means that this select expression does not produce any result 
+        fizz.onReceive { value -&gt;  // this is the first select clause
+            println("fizz -&gt; '$value'")
+        }
+        buzz.onReceive { value -&gt;  // this is the second select clause
+            println("buzz -&gt; '$value'")
+        }
+    }
+}
+
+fun main() = runBlocking&lt;Unit&gt; {
+//sampleStart
+    val fizz = fizz()
+    val buzz = buzz()
+    repeat(7) {
+        selectFizzBuzz(fizz, buzz)
+    }
+    coroutineContext.cancelChildren() // cancel fizz &amp; buzz coroutines
+//sampleEnd        
+}</code></pre>
+<aside class="prompt" data-type="note" id="z9bbktr_22"><p id="z9bbktr_34">You can get the full code <a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-select-01.kt" id="z9bbktr_35">here</a>.</p></aside><p id="z9bbktr_23">The result of this code is:</p>
+<pre><code class="language-none">fizz -&gt; 'Fizz'
+buzz -&gt; 'Buzz!'
+fizz -&gt; 'Fizz'
+fizz -&gt; 'Fizz'
+buzz -&gt; 'Buzz!'
+fizz -&gt; 'Fizz'
+fizz -&gt; 'Fizz'</code></pre></section><section class="chapter"><h2 id="selecting-on-close">Selecting on close</h2>
+<p id="z9bbktr_36">The <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.channels/-receive-channel/on-receive.html" id="z9bbktr_46">onReceive</a> clause in <code class="code" id="z9bbktr_47">select</code> fails when the channel is closed causing the corresponding <code class="code" id="z9bbktr_48">select</code> to throw an exception. We can use <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.channels/-receive-channel/on-receive-catching.html" id="z9bbktr_49">onReceiveCatching</a> clause to perform a specific action when the channel is closed. The following example also shows that <code class="code" id="z9bbktr_50">select</code> is an expression that returns the result of its selected clause:</p>
+<pre><code class="language-kotlin">suspend fun selectAorB(a: ReceiveChannel&lt;String&gt;, b: ReceiveChannel&lt;String&gt;): String =
+    select&lt;String&gt; {
+        a.onReceiveCatching { it -&gt;
+            val value = it.getOrNull()
+            if (value != null) {
+                "a -&gt; '$value'"
+            } else {
+                "Channel 'a' is closed"
+            }
+        }
+        b.onReceiveCatching { it -&gt;
+            val value = it.getOrNull()
+            if (value != null) {
+                "b -&gt; '$value'"
+            } else {
+                "Channel 'b' is closed"
+            }
+        }
+    }</code></pre>
+<p id="z9bbktr_38">Let's use it with channel <code class="code" id="z9bbktr_51">a</code> that produces "Hello" string four times and channel <code class="code" id="z9bbktr_52">b</code> that produces "World" four times:</p>
+<pre><code class="language-kotlin">import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.*
+import kotlinx.coroutines.selects.*
+
+suspend fun selectAorB(a: ReceiveChannel&lt;String&gt;, b: ReceiveChannel&lt;String&gt;): String =
+    select&lt;String&gt; {
+        a.onReceiveCatching { it -&gt;
+            val value = it.getOrNull()
+            if (value != null) {
+                "a -&gt; '$value'"
+            } else {
+                "Channel 'a' is closed"
+            }
+        }
+        b.onReceiveCatching { it -&gt;
+            val value = it.getOrNull()
+            if (value != null) {
+                "b -&gt; '$value'"
+            } else {
+                "Channel 'b' is closed"
+            }
+        }
+    }
+    
+fun main() = runBlocking&lt;Unit&gt; {
+//sampleStart
+    val a = produce&lt;String&gt; {
+        repeat(4) { send("Hello $it") }
+    }
+    val b = produce&lt;String&gt; {
+        repeat(4) { send("World $it") }
+    }
+    repeat(8) { // print first eight results
+        println(selectAorB(a, b))
+    }
+    coroutineContext.cancelChildren()  
+//sampleEnd      
+}    </code></pre>
+<aside class="prompt" data-type="note" id="z9bbktr_40"><p id="z9bbktr_53">You can get the full code <a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-select-02.kt" id="z9bbktr_54">here</a>.</p></aside><p id="z9bbktr_41">The result of this code is quite interesting, so we'll analyze it in more detail:</p>
+<pre><code class="language-none">a -&gt; 'Hello 0'
+a -&gt; 'Hello 1'
+b -&gt; 'World 0'
+a -&gt; 'Hello 2'
+a -&gt; 'Hello 3'
+b -&gt; 'World 1'
+Channel 'a' is closed
+Channel 'a' is closed</code></pre>
+<p id="z9bbktr_43">There are a couple of observations to make out of it.</p>
+<p id="z9bbktr_44">First of all, <code class="code" id="z9bbktr_55">select</code> is <span class="emphasis" id="z9bbktr_56">biased</span> to the first clause. When several clauses are selectable at the same time, the first one among them gets selected. Here, both channels are constantly producing strings, so <code class="code" id="z9bbktr_57">a</code> channel, being the first clause in select, wins. However, because we are using unbuffered channel, the <code class="code" id="z9bbktr_58">a</code> gets suspended from time to time on its <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.channels/-send-channel/send.html" id="z9bbktr_59">send</a> invocation and gives a chance for <code class="code" id="z9bbktr_60">b</code> to send, too.</p>
+<p id="z9bbktr_45">The second observation, is that <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.channels/-receive-channel/on-receive-catching.html" id="z9bbktr_61">onReceiveCatching</a> gets immediately selected when the channel is already closed.</p></section><section class="chapter"><h2 id="selecting-to-send">Selecting to send</h2>
+<p id="z9bbktr_62">Select expression has <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.channels/-send-channel/on-send.html" id="z9bbktr_70">onSend</a> clause that can be used for a great good in combination with a biased nature of selection.</p>
+<p id="z9bbktr_63">Let us write an example of a producer of integers that sends its values to a <code class="code" id="z9bbktr_71">side</code> channel when the consumers on its primary channel cannot keep up with it:</p>
+<pre><code class="language-kotlin">fun CoroutineScope.produceNumbers(side: SendChannel&lt;Int&gt;) = produce&lt;Int&gt; {
+    for (num in 1..10) { // produce 10 numbers from 1 to 10
+        delay(100) // every 100 ms
+        select&lt;Unit&gt; {
+            onSend(num) {} // Send to the primary channel
+            side.onSend(num) {} // or to the side channel     
+        }
+    }
+}</code></pre>
+<p id="z9bbktr_65">Consumer is going to be quite slow, taking 250 ms to process each number:</p>
+<pre><code class="language-kotlin">import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.*
+import kotlinx.coroutines.selects.*
+
+fun CoroutineScope.produceNumbers(side: SendChannel&lt;Int&gt;) = produce&lt;Int&gt; {
+    for (num in 1..10) { // produce 10 numbers from 1 to 10
+        delay(100) // every 100 ms
+        select&lt;Unit&gt; {
+            onSend(num) {} // Send to the primary channel
+            side.onSend(num) {} // or to the side channel     
+        }
+    }
+}
+
+fun main() = runBlocking&lt;Unit&gt; {
+//sampleStart
+    val side = Channel&lt;Int&gt;() // allocate side channel
+    launch { // this is a very fast consumer for the side channel
+        side.consumeEach { println("Side channel has $it") }
+    }
+    produceNumbers(side).consumeEach { 
+        println("Consuming $it")
+        delay(250) // let us digest the consumed number properly, do not hurry
+    }
+    println("Done consuming")
+    coroutineContext.cancelChildren()  
+//sampleEnd      
+}</code></pre>
+<aside class="prompt" data-type="note" id="z9bbktr_67"><p id="z9bbktr_72">You can get the full code <a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-select-03.kt" id="z9bbktr_73">here</a>.</p></aside><p id="z9bbktr_68">So let us see what happens:</p>
+<pre><code class="language-none">Consuming 1
+Side channel has 2
+Side channel has 3
+Consuming 4
+Side channel has 5
+Side channel has 6
+Consuming 7
+Side channel has 8
+Side channel has 9
+Consuming 10
+Done consuming</code></pre></section><section class="chapter"><h2 id="selecting-deferred-values">Selecting deferred values</h2>
+<p id="z9bbktr_74">Deferred values can be selected using <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-deferred/on-await.html" id="z9bbktr_83">onAwait</a> clause. Let us start with an async function that returns a deferred string value after a random delay:</p>
+<pre><code class="language-kotlin">fun CoroutineScope.asyncString(time: Int) = async {
+    delay(time.toLong())
+    "Waited for $time ms"
+}</code></pre>
+<p id="z9bbktr_76">Let us start a dozen of them with a random delay.</p>
+<pre><code class="language-kotlin">fun CoroutineScope.asyncStringsList(): List&lt;Deferred&lt;String&gt;&gt; {
+    val random = Random(3)
+    return List(12) { asyncString(random.nextInt(1000)) }
+}</code></pre>
+<p id="z9bbktr_78">Now the main function awaits for the first of them to complete and counts the number of deferred values that are still active. Note that we've used here the fact that <code class="code" id="z9bbktr_84">select</code> expression is a Kotlin DSL, so we can provide clauses for it using an arbitrary code. In this case we iterate over a list of deferred values to provide <code class="code" id="z9bbktr_85">onAwait</code> clause for each deferred value.</p>
+<pre><code class="language-kotlin">import kotlinx.coroutines.*
+import kotlinx.coroutines.selects.*
+import java.util.*
+    
+fun CoroutineScope.asyncString(time: Int) = async {
+    delay(time.toLong())
+    "Waited for $time ms"
+}
+
+fun CoroutineScope.asyncStringsList(): List&lt;Deferred&lt;String&gt;&gt; {
+    val random = Random(3)
+    return List(12) { asyncString(random.nextInt(1000)) }
+}
+
+fun main() = runBlocking&lt;Unit&gt; {
+//sampleStart
+    val list = asyncStringsList()
+    val result = select&lt;String&gt; {
+        list.withIndex().forEach { (index, deferred) -&gt;
+            deferred.onAwait { answer -&gt;
+                "Deferred $index produced answer '$answer'"
+            }
+        }
+    }
+    println(result)
+    val countActive = list.count { it.isActive }
+    println("$countActive coroutines are still active")
+//sampleEnd
+}</code></pre>
+<aside class="prompt" data-type="note" id="z9bbktr_80"><p id="z9bbktr_86">You can get the full code <a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-select-04.kt" id="z9bbktr_87">here</a>.</p></aside><p id="z9bbktr_81">The output is:</p>
+<pre><code class="language-none">Deferred 4 produced answer 'Waited for 128 ms'
+11 coroutines are still active</code></pre></section><section class="chapter"><h2 id="switch-over-a-channel-of-deferred-values">Switch over a channel of deferred values</h2>
+<p id="z9bbktr_88">Let us write a channel producer function that consumes a channel of deferred string values, waits for each received deferred value, but only until the next deferred value comes over or the channel is closed. This example puts together <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.channels/-receive-channel/on-receive-catching.html" id="z9bbktr_97">onReceiveCatching</a> and <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-deferred/on-await.html" id="z9bbktr_98">onAwait</a> clauses in the same <code class="code" id="z9bbktr_99">select</code>:</p>
+<pre><code class="language-kotlin">fun CoroutineScope.switchMapDeferreds(input: ReceiveChannel&lt;Deferred&lt;String&gt;&gt;) = produce&lt;String&gt; {
+    var current = input.receive() // start with first received deferred value
+    while (isActive) { // loop while not cancelled/closed
+        val next = select&lt;Deferred&lt;String&gt;?&gt; { // return next deferred value from this select or null
+            input.onReceiveCatching { update -&gt;
+                update.getOrNull()
+            }
+            current.onAwait { value -&gt;
+                send(value) // send value that current deferred has produced
+                input.receiveCatching().getOrNull() // and use the next deferred from the input channel
+            }
+        }
+        if (next == null) {
+            println("Channel was closed")
+            break // out of loop
+        } else {
+            current = next
+        }
+    }
+}</code></pre>
+<p id="z9bbktr_90">To test it, we'll use a simple async function that resolves to a specified string after a specified time:</p>
+<pre><code class="language-kotlin">fun CoroutineScope.asyncString(str: String, time: Long) = async {
+    delay(time)
+    str
+}</code></pre>
+<p id="z9bbktr_92">The main function just launches a coroutine to print results of <code class="code" id="z9bbktr_100">switchMapDeferreds</code> and sends some test data to it:</p>
+<pre><code class="language-kotlin">import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.*
+import kotlinx.coroutines.selects.*
+    
+fun CoroutineScope.switchMapDeferreds(input: ReceiveChannel&lt;Deferred&lt;String&gt;&gt;) = produce&lt;String&gt; {
+    var current = input.receive() // start with first received deferred value
+    while (isActive) { // loop while not cancelled/closed
+        val next = select&lt;Deferred&lt;String&gt;?&gt; { // return next deferred value from this select or null
+            input.onReceiveCatching { update -&gt;
+                update.getOrNull()
+            }
+            current.onAwait { value -&gt;
+                send(value) // send value that current deferred has produced
+                input.receiveCatching().getOrNull() // and use the next deferred from the input channel
+            }
+        }
+        if (next == null) {
+            println("Channel was closed")
+            break // out of loop
+        } else {
+            current = next
+        }
+    }
+}
+
+fun CoroutineScope.asyncString(str: String, time: Long) = async {
+    delay(time)
+    str
+}
+
+fun main() = runBlocking&lt;Unit&gt; {
+//sampleStart
+    val chan = Channel&lt;Deferred&lt;String&gt;&gt;() // the channel for test
+    launch { // launch printing coroutine
+        for (s in switchMapDeferreds(chan)) 
+            println(s) // print each received string
+    }
+    chan.send(asyncString("BEGIN", 100))
+    delay(200) // enough time for "BEGIN" to be produced
+    chan.send(asyncString("Slow", 500))
+    delay(100) // not enough time to produce slow
+    chan.send(asyncString("Replace", 100))
+    delay(500) // give it time before the last one
+    chan.send(asyncString("END", 500))
+    delay(1000) // give it time to process
+    chan.close() // close the channel ... 
+    delay(500) // and wait some time to let it finish
+//sampleEnd
+}</code></pre>
+<aside class="prompt" data-type="note" id="z9bbktr_94"><p id="z9bbktr_101">You can get the full code <a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-select-05.kt" id="z9bbktr_102">here</a>.</p></aside><p id="z9bbktr_95">The result of this code:</p>
+<pre><code class="language-none">BEGIN
+Replace
+END
+Channel was closed</code></pre></section></article>
+<nav class="chapter-switcher" aria-label="章节导航"><a href="../shared-mutable-state-and-concurrency/english.html">← Shared mutable state and concurrency</a><a class="course-home" href="../english.html">Contents</a><a href="../debug-coroutines-with-idea/english.html">Debug coroutines using IntelliJ IDEA – tutorial →</a></nav><footer class="source-credit"><p>原文由 JetBrains 与 Kotlin 贡献者维护。RIN III 于 2026 年 11 月 18 日翻译、润色并补充导读与自测；代码、输出及图中界面保留原貌。</p><p><a href="https://kotlinlang.org/docs/select-expression.html">Kotlin 官方原文</a> · <a href="../LICENSE-2.0.txt">Apache License 2.0</a></p></footer></main>
+</body></html>

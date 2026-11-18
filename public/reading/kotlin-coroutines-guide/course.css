@@ -1,0 +1,46 @@
+/* Keep long Kotlin signatures readable at narrow viewport widths. */
+.translated-article,
+.source-credit,
+.chapter-switcher {
+  overflow-wrap: anywhere;
+}
+
+.source-refs {
+  display: inline;
+  padding-inline-start: .3em;
+  font-size: .82em;
+}
+
+.source-refs a {
+  color: var(--muted);
+}
+
+.chapter-toc ul {
+  margin-block-end: 0;
+}
+
+.translated-article dt {
+  margin-block-start: 1.5rem;
+  font-weight: 700;
+}
+
+.translated-article dd {
+  margin-inline-start: 0;
+}
+
+.translated-article :is(h2, h3, h4, summary) {
+  scroll-margin-top: 1.5rem;
+}
+
+.source-credit {
+  margin-block-start: 2rem;
+  padding-block-start: 1rem;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: .87rem;
+}
+
+.recall summary {
+  cursor: pointer;
+  color: var(--accent);
+}

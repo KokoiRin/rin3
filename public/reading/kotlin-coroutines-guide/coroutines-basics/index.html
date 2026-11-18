@@ -1,0 +1,411 @@
+<!doctype html>
+<html lang="zh-CN" data-reader-family="kotlin-coroutines-guide">
+<head>
+<meta charset="utf-8"><script src="../../../theme.js"></script>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>协程基础｜RIN III</title>
+<meta name="description" content="当两个任务都在等数据，一条线程怎样照顾它们？从第一个 delay 开始，找出挂起点、作用域和调度器。">
+<link rel="manifest" href="../../../manifest.webmanifest">
+<link rel="stylesheet" href="../../../reading/reader.css">
+<link rel="stylesheet" href="../../../theme.css">
+<link rel="stylesheet" href="../../../reading/_shared/theme-readers.css">
+<link rel="stylesheet" href="../../../reading/kotlin-coroutines-guide/course.css">
+</head><body><div class="reader-theme-control" data-theme-control></div>
+<nav class="site-nav"><a href="../index.html">← Kotlin 协程指南</a><a href="english.html">English</a><a href="https://kotlinlang.org/docs/coroutines-basics.html">Kotlin 原文 ↗</a></nav><main class="reader project-reader"><header class="chapter-header"><span class="chapter-kicker">Kotlin 协程指南 · 01 / 12</span><h1>协程基础</h1><p class="lead">当两个任务都在等数据，一条线程怎样照顾它们？从第一个 delay 开始，找出挂起点、作用域和调度器。</p></header><nav class="chapter-switcher" aria-label="章节导航"><span></span><a class="course-home" href="../index.html">全部章节</a><a href="../coroutines-cancellation/index.html">取消与超时 →</a></nav><details class="source-details chapter-toc"><summary>本章目录</summary><ul><li><a href="#suspending-functions">挂起函数</a></li><li><a href="#add-the-kotlinx-coroutines-library-to-your-project">把协程库加到项目中</a></li><li><a href="#create-your-first-coroutines">启动第一组协程</a></li><li><a href="#coroutine-scope-and-structured-concurrency">作用域与结构化并发</a></li><li><a href="#coroutine-builder-functions">几种常见的协程入口</a></li><li><a href="#coroutine-dispatchers">调度器</a></li><li><a href="#comparing-coroutines-and-jvm-threads">与 JVM 平台线程对比</a></li><li><a href="#what-s-next">继续学习</a></li></ul></details><article class="translated-article"><p id="-5ziqdb_3">程序要一边等待数据，一边响应别的任务，这叫并发。Kotlin 用协程承载一段可以暂停、稍后继续的计算。多个协程可以交替推进；如果有多条执行线程，它们也可能并行运行。</p>
+<p id="-5ziqdb_4">在 JVM 和 Kotlin/Native 上，协程实际在线程上运行。一个协程等数据时可以挂起，把线程让给另一个协程。图中要区分两件事：任务是否在同一段时间内推进，以及它们是否在同一时刻占用不同的核心。</p>
+<figure id="-5ziqdb_5"><img alt="并发交替推进与多线程同时执行的时间线" src="../assets/parallelism-and-concurrency.svg" width="700" height="440" loading="lazy"></figure><p id="-5ziqdb_6">线程与协程的资源差异，在本章末尾用一组 JVM 实验对照。 <small class="source-refs"><a href="#comparing-coroutines-and-jvm-threads">Comparing coroutines and JVM threads</a></small></p>
+<section class="chapter"><h2 id="suspending-functions">挂起函数</h2>
+<p id="-5ziqdb_18">挂起函数让一段计算能够暂停，等条件满足再从原处继续。调用方仍然可以按照「先做什么、再做什么」书写程序。</p>
+<p id="-5ziqdb_19">声明这种函数，在 fun 前加 <code>suspend</code>。</p>
+<pre><code class="language-kotlin">suspend fun greet() {
+    println("Hello world from a suspending function")
+}</code></pre>
+<p id="-5ziqdb_21">挂起调用需要位于挂起函数或协程的挂起代码块中。独立 Kotlin 程序也可以使用 <code>suspend</code> <code>main()</code> 作为入口。</p>
+<pre><code class="language-kotlin">suspend fun main() {
+    showUserInfo()
+}
+
+suspend fun showUserInfo() {
+    println("Loading user...")
+    greet()
+    println("User: John Smith")
+}
+
+suspend fun greet() {
+    println("Hello world from a suspending function")
+}</code></pre>
+<p id="-5ziqdb_23">眼下 greet() 仍然按顺序调用。<code>suspend</code> 让函数可以调用挂起操作；代码是否产生并发，还取决于是否启动了其他任务。</p>
+<p id="-5ziqdb_24"><code>suspend</code> 属于 Kotlin 语言，大部分协程工具则由 <a href="https://github.com/Kotlin/kotlinx.coroutines">kotlinx.coroutines</a> 库提供。</p></section><section class="chapter"><h2 id="add-the-kotlinx-coroutines-library-to-your-project">把协程库加到项目中</h2>
+<p id="-5ziqdb_33">按构建工具选用下面一份配置，为项目引入 kotlinx-coroutines-core。</p>
+<div class="tabs" id="-5ziqdb_34">
+<div class="tabs__content" id="-5ziqdb_36">
+<p class="source-tab-title">Kotlin</p>
+<pre><code class="language-kotlin">// build.gradle.kts
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.11.0")
+}</code></pre>
+</div>
+<div class="tabs__content" id="-5ziqdb_37">
+<p class="source-tab-title">Groovy</p>
+<pre><code class="language-groovy">// build.gradle
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-core:1.11.0'
+}</code></pre>
+</div>
+<div class="tabs__content" id="-5ziqdb_38">
+<p class="source-tab-title">Maven</p>
+<pre><code class="language-markup">&lt;!-- pom.xml --&gt;
+&lt;project&gt;
+    &lt;dependencies&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;org.jetbrains.kotlinx&lt;/groupId&gt;
+            &lt;artifactId&gt;kotlinx-coroutines-core&lt;/artifactId&gt;
+            &lt;version&gt;1.11.0&lt;/version&gt;
+        &lt;/dependency&gt;
+    &lt;/dependencies&gt;
+    ...
+&lt;/project&gt;</code></pre>
+</div>
+</div></section><section class="chapter"><h2 id="create-your-first-coroutines">启动第一组协程</h2>
+<aside class="prompt" data-type="note" id="-5ziqdb_42"><p id="-5ziqdb_49">接下来的例子把 <code>this</code>.launch() 和 <code>this</code>.async() 中的 <code>this</code> 明确写出来。它指向当前 <code>CoroutineScope</code>。这两个构建器都是该类型上的扩展函数。 <small class="source-refs"><a href="https://kotlinlang.org/docs/extensions.html">extension functions</a></small></p>
+<p id="-5ziqdb_50">稍后把启动逻辑抽成独立函数时，这个接收者就会派上用场。 <small class="source-refs"><a href="#extract-coroutine-builders-from-the-coroutine-scope">Extract coroutine builders from the coroutine scope</a></small></p></aside><p id="-5ziqdb_43">读接下来的程序时，依次辨认四样东西。</p>
+<ul class="list _bullet" id="-5ziqdb_44">
+<li class="list__item" id="-5ziqdb_59"><p id="-5ziqdb_63">要运行的挂起代码。 <small class="source-refs"><a href="#suspending-functions">suspending function</a></small></p></li>
+<li class="list__item" id="-5ziqdb_60"><p id="-5ziqdb_65">管理任务的作用域，例如 <code>withContext()</code> 块内的作用域。 <small class="source-refs"><a href="#coroutine-scope-and-structured-concurrency">coroutine scope</a></small></p></li>
+<li class="list__item" id="-5ziqdb_61"><p id="-5ziqdb_68">启动任务的构建器，例如 <code>CoroutineScope.launch()</code>。 <small class="source-refs"><a href="#coroutine-builder-functions">coroutine builder</a></small></p></li>
+<li class="list__item" id="-5ziqdb_62"><p id="-5ziqdb_71">决定使用哪些线程的调度器。 <small class="source-refs"><a href="#coroutine-dispatchers">dispatcher</a></small></p></li>
+</ul>
+<p id="-5ziqdb_45">现在来组合这些部件，让多个协程在共享线程池上运行。</p>
+<ol class="list _decimal" id="-5ziqdb_46" type="1">
+<li class="list__item" id="-5ziqdb_73">
+<p id="-5ziqdb_79">导入 <code>kotlinx.coroutines</code>。</p>
+<pre><code class="language-kotlin">import kotlinx.coroutines.*</code></pre>
+</li>
+<li class="list__item" id="-5ziqdb_74">
+<p id="-5ziqdb_82">给允许暂停和恢复的函数加上 <code>suspend</code>。</p>
+<pre><code class="language-kotlin">suspend fun greet() {
+    println("The greet() on the thread: ${Thread.currentThread().name}")
+}
+
+suspend fun main() {}</code></pre>
+<aside class="prompt" data-type="note" id="-5ziqdb_84"><p id="-5ziqdb_87">如果入口由已有框架控制，先查看它怎样支持挂起调用。必须从同步入口桥接时，<a href="#runblocking">runBlocking()</a> 可以运行挂起代码，但它会占用当前线程直到结束。</p></aside><p id="-5ziqdb_85"></p>
+</li>
+<li class="list__item" id="-5ziqdb_75">
+<p id="-5ziqdb_92">用 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/delay.html">delay()</a> 模拟一次需要等待的数据读取，例如网络响应或数据库操作。</p>
+<pre><code class="language-kotlin">suspend fun greet() {
+    println("The greet() on the thread: ${Thread.currentThread().name}")
+    delay(1000L)
+}</code></pre>
+</li>
+<li class="list__item" id="-5ziqdb_76">
+<p id="-5ziqdb_96">用 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/with-context.html">withContext(Dispatchers.Default)</a> 进入共享线程池的上下文。</p>
+<pre><code class="language-kotlin">suspend fun main() {
+    withContext(Dispatchers.Default) {
+        // Add the coroutine builders here
+    }
+}</code></pre>
+<aside class="prompt" data-type="note" id="-5ziqdb_98"><p id="-5ziqdb_102"><code>withContext()</code> 通常用来切换上下文，这里也为内部并发工作提供入口。<code>Dispatchers.Default</code> 在共享线程池调度，默认并行度与可用 CPU 核心数有关，最低为二。 <small class="source-refs"><a href="../coroutine-context-and-dispatchers/index.html#jumping-between-threads">context switching</a> · <a href="#coroutine-dispatchers">Dispatchers.Default dispatcher</a></small></p>
+<p id="-5ziqdb_103">在这个块中启动的子协程同属一个作用域，后面会看到它如何把任务一起收尾。 <small class="source-refs"><a href="#coroutine-scope-and-structured-concurrency">structured concurrency</a></small></p></aside><p id="-5ziqdb_99"></p>
+</li>
+<li class="list__item" id="-5ziqdb_77">
+<p id="-5ziqdb_110">在作用域里用 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/launch.html">CoroutineScope.launch()</a> 启动子协程。 <small class="source-refs"><a href="#coroutine-builder-functions">coroutine builder function</a></small></p>
+<pre><code class="language-kotlin">suspend fun main() {
+    withContext(Dispatchers.Default) { // this: CoroutineScope
+        // Starts a coroutine inside the scope with CoroutineScope.launch()
+        this.launch { greet() }
+        println("The withContext() on the thread: ${Thread.currentThread().name}")
+    }
+}</code></pre>
+</li>
+<li class="list__item" id="-5ziqdb_78">
+<p id="-5ziqdb_115">把它们拼起来，同时启动两个子任务。运行前先预测哪一行必定出现，哪几行的先后可能变化。</p>
+<pre><code class="language-kotlin">// Imports the coroutines library
+import kotlinx.coroutines.*
+
+// Imports the kotlin.time.Duration to express duration in seconds
+import kotlin.time.Duration.Companion.seconds
+
+// Defines a suspending function
+suspend fun greet() {
+    println("The greet() on the thread: ${Thread.currentThread().name}")
+    // Suspends for 1 second and releases the thread
+    delay(1.seconds) 
+    // The delay() function simulates a suspending API call here
+    // You can add suspending API calls here like a network request
+}
+
+suspend fun main() {
+    // Runs the code inside this block on a shared thread pool
+    withContext(Dispatchers.Default) { // this: CoroutineScope
+        this.launch() {
+            greet()
+        }
+
+        // Starts another coroutine
+        this.launch() {
+            println("The CoroutineScope.launch() on the thread: ${Thread.currentThread().name}")
+            delay(1.seconds)
+            // The delay function simulates a suspending API call here
+            // You can add suspending API calls here like a network request
+        }
+
+        println("The withContext() on the thread: ${Thread.currentThread().name}")
+    }
+}</code></pre>
+<p id="-5ziqdb_117"></p>
+</li>
+</ol>
+<p id="-5ziqdb_47">多运行几次，行的顺序和线程名都可能变化，这取决于当时的调度。</p>
+<aside class="prompt" data-type="tip" id="-5ziqdb_48"><p id="-5ziqdb_118">要把协程标识也打印在线程名旁，在构建工具或 IDE 运行配置的 VM options 中加入 <code>-Dkotlinx.coroutines.debug</code>。</p>
+<p id="-5ziqdb_119">更详细的观察方法见协程调试文档。 <small class="source-refs"><a href="https://kotlinlang.org/docs/coroutines-debugging.html">Debug coroutines</a></small></p></aside></section><section class="chapter"><h2 id="coroutine-scope-and-structured-concurrency">作用域与结构化并发</h2>
+<p id="-5ziqdb_122">当一个操作需要多个协程配合，它们也需要共同的完成和取消规则。Kotlin 用结构化并发来表达这种归属。</p>
+<p id="-5ziqdb_123">把任务想成一棵树。父子任务各有从创建到完成、失败或取消的生命周期，彼此通过树上的连接相互约束。</p>
+<p id="-5ziqdb_124">父任务要等孩子都结束才算完成。父任务被取消或因异常失败时，取消会向下传到子孙任务。沿这棵树就能判断哪些工作应当停止。</p>
+<p id="-5ziqdb_125"><a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-coroutine-scope/">CoroutineScope</a> 定义工作的归属，内部带有包括调度器在内的上下文。在当前作用域里启动的协程，默认成为对应任务的子任务。</p>
+<p id="-5ziqdb_126">进入 launch 的代码块后，接收者变成新的嵌套作用域。在里面再 launch，启动的就是下一层子任务。 <small class="source-refs"><a href="#coroutine-builder-functions">coroutine builder function</a> · <a href="https://kotlinlang.org/docs/lambdas.html#function-literals-with-receiver">receiver</a></small></p>
+<section class="chapter"><h3 id="create-a-coroutine-scope-with-the-coroutinescope-function">用 <code>coroutineScope()</code> 管理一组子任务</h3>
+<p id="-5ziqdb_140"><a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/coroutine-scope.html">coroutineScope()</a> 沿用调用方的上下文，为代码块建立一棵局部子树。块里直接启动的是它的子任务，子任务再启动的也是它的后代。块本身和所有后代都完成后，函数才会返回。</p>
+<p id="-5ziqdb_141">看下面的例子。</p>
+<pre><code class="language-kotlin">// Imports the kotlin.time.Duration to express duration in seconds
+import kotlin.time.Duration.Companion.seconds
+
+import kotlinx.coroutines.*
+
+// If the coroutine context doesn't specify a dispatcher,
+// CoroutineScope.launch() uses Dispatchers.Default
+//sampleStart
+suspend fun main() {
+    // Root of the coroutine subtree
+    coroutineScope { // this: CoroutineScope
+        this.launch {
+            this.launch {
+                delay(2.seconds)
+                println("Child of the enclosing coroutine completed")
+            }
+            println("Child coroutine 1 completed")
+        }
+        this.launch {
+            delay(1.seconds)
+            println("Child coroutine 2 completed")
+        }
+    }
+    // Runs only after all children in the coroutineScope have completed
+    println("Coroutine scope completed")
+}
+//sampleEnd</code></pre>
+<p id="-5ziqdb_143">例子没有为 launch 单独指定调度器，它会继承当前上下文；若上下文也没有调度器，这些构建器会使用共享的 <code>Dispatchers.Default</code>。 <small class="source-refs"><a href="#coroutine-dispatchers">dispatcher</a></small></p></section><section class="chapter"><h3 id="extract-coroutine-builders-from-the-coroutine-scope">把启动逻辑提取成函数</h3>
+<p id="-5ziqdb_153">若一组任务要在多处使用，可以把调用 launch 的逻辑抽出去。 <small class="source-refs"><a href="#coroutinescope-launch">CoroutineScope.launch()</a></small></p>
+<p id="-5ziqdb_154">先看代码仍全部位于作用域内部的写法。</p>
+<pre><code class="language-kotlin">suspend fun main() {
+    coroutineScope { // this: CoroutineScope
+        // Calls CoroutineScope.launch() where CoroutineScope is the receiver
+        this.launch { println("1") }
+        this.launch { println("2") }
+    } 
+}</code></pre>
+<aside class="prompt" data-type="tip" id="-5ziqdb_156"><p id="-5ziqdb_163"><code>this.launch</code> 可简写为 <code>launch</code>。这里保留 <code>this</code>，是为了看清扩展函数绑定在哪个对象上。</p>
+<p id="-5ziqdb_164">Kotlin 的「带接收者的函数字面量」解释了这种语法。 <small class="source-refs"><a href="https://kotlinlang.org/docs/lambdas.html#function-literals-with-receiver">Function literals with receiver</a></small></p></aside><p id="-5ziqdb_157"><code>coroutineScope()</code> 接受一个以 <code>CoroutineScope</code> 为接收者的 lambda。块内可以直接使用接收者的扩展函数，例如 launch 或 async。 <small class="source-refs"><a href="#coroutinescope-async">CoroutineScope.async()</a> · <a href="https://kotlinlang.org/docs/extensions.html#extension-functions">extension functions</a></small></p>
+<p id="-5ziqdb_158">提取到另一个函数后，也要让它能取得这个作用域。例子把新函数声明成 <code>CoroutineScope</code> 的扩展，否则原样搬过去的 launch 无法解析。</p>
+<pre><code class="language-kotlin">import kotlinx.coroutines.*
+//sampleStart
+suspend fun main() {
+    coroutineScope {
+        launchAll()
+    }
+}
+
+fun CoroutineScope.launchAll() { // this: CoroutineScope
+    // Calls .launch() on CoroutineScope
+    this.launch { println("1") }
+    this.launch { println("2") } 
+}
+//sampleEnd
+/* -- Calling launch without declaring CoroutineScope as the receiver results in a compilation error --
+
+fun launchAll() {
+    // Compilation error: this is not defined
+    this.launch { println("1") }
+    this.launch { println("2") }
+}
+ */</code></pre>
+<p id="-5ziqdb_160"><code>launchAll()</code> 只负责启动任务，随即返回，因此它本身可以是普通函数。只有需要在返回前挂起、恢复的函数才需要标记 <code>suspend</code>。</p></section></section><section class="chapter"><h2 id="coroutine-builder-functions">几种常见的协程入口</h2>
+<p id="-5ziqdb_183">这些函数都接收一段可挂起的代码，不过启动方式、调用方是否等待以及如何拿到结果各不相同。 <small class="source-refs"><a href="https://kotlinlang.org/docs/lambdas.html">lambda</a></small></p>
+<ul class="list _bullet" id="-5ziqdb_184">
+<li class="list__item" id="-5ziqdb_191"><p id="-5ziqdb_196"><a href="#coroutinescope-launch">CoroutineScope.launch()</a></p></li>
+<li class="list__item" id="-5ziqdb_192"><p id="-5ziqdb_199"><a href="#coroutinescope-async">CoroutineScope.async()</a></p></li>
+<li class="list__item" id="-5ziqdb_193"><p id="-5ziqdb_202"><a href="#runblocking">runBlocking()</a></p></li>
+<li class="list__item" id="-5ziqdb_194"><p id="-5ziqdb_205"><a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/with-context.html">withContext()</a></p></li>
+<li class="list__item" id="-5ziqdb_195"><p id="-5ziqdb_208"><a href="#create-a-coroutine-scope-with-the-coroutinescope-function">coroutineScope()</a></p></li>
+</ul>
+<p id="-5ziqdb_185">launch 和 async 在已有作用域中启动子任务。<code>coroutineScope()</code>、<a href="#runblocking">runBlocking()</a> 或 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/with-context.html">withContext()</a> 可以提供带作用域的块。以下分别观察调用处会得到什么。</p>
+<section class="chapter"><h3 id="coroutinescope-launch"><code>CoroutineScope.launch()</code></h3>
+<p id="-5ziqdb_218"><a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/launch.html">CoroutineScope.launch()</a> 是作用域上的扩展函数。它启动新的子协程，调用方可以接着运行。 <small class="source-refs"><a href="#coroutine-scope-and-structured-concurrency">coroutine scope</a></small></p>
+<p id="-5ziqdb_219">如果想同时做另一项工作，又不需要它返回业务值，就可以用 launch。</p>
+<pre><code class="language-kotlin">// Imports the kotlin.time.Duration to enable expressing duration in milliseconds
+import kotlin.time.Duration.Companion.milliseconds
+
+import kotlinx.coroutines.*
+
+suspend fun main() {
+    withContext(Dispatchers.Default) {
+        performBackgroundWork()
+    }
+}
+
+//sampleStart
+suspend fun performBackgroundWork() = coroutineScope { // this: CoroutineScope
+    // Starts a coroutine that runs without blocking the scope
+    this.launch {
+        // Suspends to simulate background work
+        delay(100.milliseconds)
+        println("Sending notification in background")
+    }
+
+    // Main coroutine continues while a previous one suspends
+    println("Scope continues")
+}
+//sampleEnd</code></pre>
+<p id="-5ziqdb_221">运行时，<code>main()</code> 在 launch 后能继续执行自己的代码，子任务也会取得进展。</p>
+<aside class="prompt" data-type="tip" id="-5ziqdb_222"><p id="-5ziqdb_231">返回的 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-job/">Job</a> 可以管理这项任务，例如用 join 等它结束。如何停止它见「<a href="../coroutines-cancellation/index.html#cancel-coroutines">取消与超时</a>」。</p></aside></section><section class="chapter"><h3 id="coroutinescope-async"><code>CoroutineScope.async()</code></h3>
+<p id="-5ziqdb_237"><a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/async.html">CoroutineScope.async()</a> 在已有作用域里启动并发计算，返回代表未来结果的 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-deferred/">Deferred</a>。调用 await() 取得结果；如果还没准备好，就挂起等待。 <small class="source-refs"><a href="#coroutine-scope-and-structured-concurrency">coroutine scope</a></small></p>
+<pre><code class="language-kotlin">// Imports the kotlin.time.Duration to enable expressing duration in milliseconds
+import kotlin.time.Duration.Companion.milliseconds
+
+import kotlinx.coroutines.*
+
+//sampleStart
+suspend fun main() = withContext(Dispatchers.Default) { // this: CoroutineScope
+    // Starts downloading the first page
+    val firstPage = this.async {
+        delay(50.milliseconds)
+        "First page"
+    }
+
+    // Starts downloading the second page in parallel
+    val secondPage = this.async {
+        delay(100.milliseconds)
+        "Second page"
+    }
+
+    // Awaits both results and compares them
+    val pagesAreEqual = firstPage.await() == secondPage.await()
+    println("Pages are equal: $pagesAreEqual")
+}
+//sampleEnd</code></pre></section><section class="chapter"><h3 id="runblocking"><code>runBlocking()</code></h3>
+<p id="-5ziqdb_248"><a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/run-blocking.html">runBlocking()</a> 建立作用域，并阻塞当前线程，直到块及其中启动的子任务完成。 <small class="source-refs"><a href="#comparing-coroutines-and-jvm-threads">thread</a></small></p>
+<p id="-5ziqdb_249">需要从普通代码进入挂起代码，且入口无法改成挂起形式时，可以这样桥接。</p>
+<pre><code class="language-kotlin">import kotlin.time.Duration.Companion.milliseconds
+import kotlinx.coroutines.*
+
+// A third-party interface you can't change
+interface Repository {
+    fun readItem(): Int
+}
+
+object MyRepository : Repository {
+    override fun readItem(): Int {
+        // Bridges to a suspending function
+        return runBlocking {
+            myReadItem()
+        }
+    }
+}
+
+suspend fun myReadItem(): Int {
+    delay(100.milliseconds)
+    return 4
+}</code></pre></section></section><section class="chapter"><h2 id="coroutine-dispatchers">调度器</h2>
+<p id="-5ziqdb_256">调度器决定代码在哪条线程或哪个线程池执行。同一协程可能在一条线程挂起，再在另一条线程恢复，因此许多协程可以共用少量线程。 <small class="source-refs"><a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-dispatchers/">coroutine dispatcher</a></small></p>
+<aside class="prompt" data-type="tip" id="-5ziqdb_257"><p id="-5ziqdb_268">即使恢复时换了线程，同一协程仍能读取自己挂起前已经写入的值。</p></aside><p id="-5ziqdb_258">作用域回答「任务归谁管、什么时候结束」，调度器回答「这段代码交给哪些线程执行」。两者共同构成执行环境。 <small class="source-refs"><a href="#coroutine-scope-and-structured-concurrency">coroutine scope</a></small></p>
+<aside class="prompt" data-type="note" id="-5ziqdb_259"><p id="-5ziqdb_270">通常子协程会继承外层调度器，需要改变执行位置时才显式指定。</p>
+<p id="-5ziqdb_271">对 launch、async 等构建器，如果当前上下文没有调度器，会回退到 <code>Dispatchers.Default</code>。</p></aside><p id="-5ziqdb_260"><a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-dispatchers/-default.html">Dispatchers.Default</a> 让计算在共享后台线程池执行，适合数据处理等消耗 CPU 的工作。协程库还提供其他用途的调度器。</p>
+<p id="-5ziqdb_261">可以在调用 <code>CoroutineScope.launch()</code> 时传入调度器。</p>
+<pre><code class="language-kotlin">suspend fun runWithDispatcher() = coroutineScope { // this: CoroutineScope
+    this.launch(Dispatchers.Default) {
+        println("Running on ${Thread.currentThread().name}")
+    }
+}</code></pre>
+<p id="-5ziqdb_263">也可以用 <code>withContext()</code> 让整段代码在目标调度器上执行，再回到调用处。</p>
+<pre><code class="language-kotlin">// Imports the kotlin.time.Duration to enable expressing duration in milliseconds
+import kotlin.time.Duration.Companion.milliseconds
+
+import kotlinx.coroutines.*
+
+//sampleStart
+suspend fun main() = withContext(Dispatchers.Default) { // this: CoroutineScope
+    println("Running withContext block on ${Thread.currentThread().name}")
+
+    val one = this.async {
+        println("First calculation starting on ${Thread.currentThread().name}")
+        val sum = (1L..500_000L).sum()
+        delay(200L)
+        println("First calculation done on ${Thread.currentThread().name}")
+        sum
+    }
+
+    val two = this.async {
+        println("Second calculation starting on ${Thread.currentThread().name}")
+        val sum = (500_001L..1_000_000L).sum()
+        println("Second calculation done on ${Thread.currentThread().name}")
+        sum
+    }
+
+    // Waits for both calculations and prints the result
+    println("Combined total: ${one.await() + two.await()}")
+}
+//sampleEnd</code></pre>
+<p id="-5ziqdb_265">关于 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-dispatchers/-i-o.html">Dispatchers.IO</a> 和 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-dispatchers/-main.html">Dispatchers.Main</a> 等调度器，见「<a href="../coroutine-context-and-dispatchers/index.html">协程上下文与调度器</a>」。</p></section><section class="chapter"><h2 id="comparing-coroutines-and-jvm-threads">与 JVM 平台线程对比</h2>
+<p id="-5ziqdb_283">平台线程和协程都可以承载并发工作。下面用大量「等待五秒」的任务观察两种实现的资源开销。</p>
+<p id="-5ziqdb_284">平台线程由操作系统管理，每条线程需要线程栈，在线程间切换也有成本。多核上线程可以并行执行，但一个进程能容纳的线程数受栈大小和系统资源制约。</p>
+<p id="-5ziqdb_285">协程将等待时需要保留的状态保存在内存中，许多协程能在同一个线程池上恢复执行。轻量挂起任务的数量因而可以远多于线程数，在合适条件下可达百万级。</p>
+<figure id="-5ziqdb_286"><img alt="多个协程共用线程与每个任务独占线程的对比图" src="../assets/coroutines-and-threads.svg" width="700" height="376" loading="lazy"></figure><p id="-5ziqdb_287">先启动 50000 个协程，每个等待五秒，然后打印一个点。</p>
+<pre><code class="language-kotlin">import kotlin.time.Duration.Companion.seconds
+import kotlinx.coroutines.*
+
+suspend fun main() {
+    withContext(Dispatchers.Default) {
+        // Launches 50,000 coroutines that each wait five seconds, then print a period
+        printPeriods()
+    }
+}
+
+//sampleStart
+suspend fun printPeriods() = coroutineScope { // this: CoroutineScope
+    // Launches 50,000 coroutines that each wait five seconds, then print a period
+    repeat(50_000) {
+        this.launch {
+            delay(5.seconds)
+            print(".")
+        }
+    }
+}
+//sampleEnd</code></pre>
+<p id="-5ziqdb_289">再看用 JVM 平台线程表达同样任务的版本。</p>
+<pre><code class="language-kotlin">import kotlin.concurrent.thread
+
+fun main() {
+    repeat(50_000) {
+        thread {
+            Thread.sleep(5000L)
+            print(".")
+        }
+    }
+}</code></pre>
+<p id="-5ziqdb_291">后一种写法需要为大量线程分别准备栈空间。官方给出的量级示例是，50000 条平台线程可能需要约 100 GB，同数目的示例协程约为 500 MB。具体数值取决于环境和任务携带的状态。</p>
+<p id="-5ziqdb_292">受操作系统、JDK 版本和设置影响，大量创建线程可能非常缓慢，或直接遇到内存不足。理解这里的数量级即可。</p></section><section class="chapter"><h2 id="what-s-next">继续学习</h2>
+<ul class="list _bullet" id="-5ziqdb_295">
+<li class="list__item" id="-5ziqdb_296"><p id="-5ziqdb_300">接下来可以学习如何组合多个挂起函数。 <small class="source-refs"><a href="../composing-suspending-functions/index.html">Composing suspending functions</a></small></p></li>
+<li class="list__item" id="-5ziqdb_297"><p id="-5ziqdb_302">也可以先看如何取消工作、设置超时。 <small class="source-refs"><a href="../coroutines-cancellation/index.html">Cancellation and timeouts</a></small></p></li>
+<li class="list__item" id="-5ziqdb_298"><p id="-5ziqdb_304">想弄清代码在哪里执行，继续读上下文与调度器一章。 <small class="source-refs"><a href="../coroutine-context-and-dispatchers/index.html">Coroutine context and dispatchers</a></small></p></li>
+<li class="list__item" id="-5ziqdb_299"><p id="-5ziqdb_306">想连续返回多个异步产生的值，继续读 Flow 一章。 <small class="source-refs"><a href="../coroutines-flow/index.html">Flows</a></small></p></li>
+</ul></section></article>
+<section class="recall"><h2>读完试一题</h2><p>如果删掉两处 launch，只在同一个协程里顺序调用两次挂起函数，等待时间还会重叠吗？</p><details><summary>展开参考答案</summary><p>不会仅因 suspend 就重叠。第一次调用返回后，第二次才开始。原例中两个 launch 才是引入两个独立任务的地方。</p></details></section><nav class="chapter-switcher" aria-label="章节导航"><span></span><a class="course-home" href="../index.html">全部章节</a><a href="../coroutines-cancellation/index.html">取消与超时 →</a></nav><footer class="source-credit"><p>原文由 JetBrains 与 Kotlin 贡献者维护。RIN III 于 2026 年 11 月 18 日翻译、润色并补充导读与自测；代码、输出及图中界面保留原貌。</p><p><a href="https://kotlinlang.org/docs/coroutines-basics.html">Kotlin 官方原文</a> · <a href="../LICENSE-2.0.txt">Apache License 2.0</a></p></footer></main>
+</body></html>

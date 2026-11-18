@@ -116,3 +116,9 @@ KaTeX 的 `public/reading/_shared/katex/` 是第三方数学排版资源，不�
 按作者要求，撤下《Learning Domain-Driven Design》学习记录、第 10～16 章阅读器、配套图片，以及三个旧章节文章入口，共 39 个文件。站点不再列出该学习记录，原文章和章节地址不再导出。内容已在仓库外保留私人备份，不放回公开资源目录。
 
 静态产物检查验证首页和软件工程分区没有 DDD 链接，文章、七个阅读器、三个旧入口和阅读器资源目录均不存在。上方 2026-08-29 的数量保留为历史快照，DDD 样式整理任务已移除。
+
+## 2026-11-18 · Kotlin 协程指南
+
+新增 `public/reading/kotlin-coroutines-guide/`，含中英文目录、十二章中文正文及对应英文页。站内入口为 `content/computer-science/kotlin-coroutines-guide.md`。正文复用 `public/reading/reader.css` 和全站主题；系列内的 `course.css` 用于长签名换行、参考链接与折叠导航。每章附导读、章末自测和 Kotlin 官方链接，实战章保留八项任务及可展开的提示、解法。
+
+`coverage.json` 记录各章官方页面快照哈希及正文单元、代码块和配图数量。系列接入 `check:course-readers`。

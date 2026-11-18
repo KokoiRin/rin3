@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="zh-CN" data-reader-family="kotlin-coroutines-guide">
+<head>
+<meta charset="utf-8"><script src="../../theme.js"></script>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Kotlin 协程指南 · 中文学习版｜RIN III</title>
+<meta name="description" content="Kotlin 官方协程指南十二章中文读本，含代码、配图、实战与英文对照。">
+<link rel="manifest" href="../../manifest.webmanifest">
+<link rel="stylesheet" href="../../reading/reader.css">
+<link rel="stylesheet" href="../../theme.css">
+<link rel="stylesheet" href="../../reading/_shared/theme-readers.css">
+<link rel="stylesheet" href="../../reading/kotlin-coroutines-guide/course.css">
+</head><body><div class="reader-theme-control" data-theme-control></div>
+<nav class="site-nav"><a href="../../computer-science/kotlin-coroutines-guide/">← RIN III · 系列导读</a><a href="english.html">English</a></nav>
+<main class="course-shell"><header class="course-hero"><span class="chapter-kicker">Kotlin · 中文学习版</span><h1>Kotlin 协程指南</h1>
+<p class="lead">发出两个请求，等多久能拿到结果？用户关掉页面，谁来叫停它们？从一次挂起开始，读懂并发代码的执行顺序与任务归属。</p></header>
+<section class="how-to-study"><h2>第一次从哪里读</h2><p>先读<a href="coroutines-basics/index.html">协程基础</a>。等你能指出代码在哪儿挂起，接着读<a href="composing-suspending-functions/index.html">组合挂起函数</a>，预测两段等待会不会重叠，再读<a href="coroutines-cancellation/index.html">取消与超时</a>。想把三件事连起来做一次，打开<a href="coroutines-and-channels/index.html">贡献者实战</a>，从会卡住的窗口开始改。</p></section>
+<section><h2>指南导言</h2><p>Kotlin 在语言与标准库层面提供了挂起函数和一小组底层接口，让库能在此基础上组织异步操作。调用挂起函数时，可以像普通调用一样沿着代码等待结果。<code>async</code> 和 <code>await</code> 则由协程库提供；在 Kotlin 里它们都是函数。</p><p>JetBrains 开发的 <code>kotlinx.coroutines</code> 提供更高层的工具，例如用 <code>launch</code> 启动任务、用 <code>async</code> 启动带返回值的计算。</p><p>这份指南按主题介绍协程库的核心功能。各章用代码演示概念，也有能跟着操作的完整实战与调试教程。</p><p>要运行示例，请先按项目 README 的说明添加 <code>kotlinx-coroutines-core</code> 依赖。第一章给出了 Gradle 和 Maven 的配置示例。 <small class="source-refs"><a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/README.md#using-in-your-projects">in the project README</a></small></p></section><section class="course-phase"><div class="phase-heading"><h2>章节目录</h2><p>下列十二章沿用官方指南顺序。</p></div><div class="chapter-grid"><a class="chapter-card" href="coroutines-basics/index.html"><span class="chapter-number">01</span><span><strong>协程基础</strong><small>当两个任务都在等数据，一条线程怎样照顾它们？从第一个 delay 开始，找出挂起点、作用域和调度器。</small></span></a>
+<a class="chapter-card" href="coroutines-cancellation/index.html"><span class="chapter-number">02</span><span><strong>取消与超时</strong><small>用户已经离开页面，加载任务却还在运行。沿着 Job 追踪一次取消，看看它何时生效，清理又该放在哪里。</small></span></a>
+<a class="chapter-card" href="coroutines-flow/index.html"><span class="chapter-number">03</span><span><strong>Flow：连续到来的值</strong><small>下载进度会从 0 走到 100。用同一条数据管道比较重新生产、广播事件和保存当前状态三种行为。</small></span></a>
+<a class="chapter-card" href="coroutines-and-channels/index.html"><span class="chapter-number">04</span><span><strong>实战：用协程和通道加载 GitHub 贡献者</strong><small>同一份贡献者名单，要经历从窗口冻结，到边加载边显示的八步改造。每次只换一个机制，观察界面、日志与测试时间。</small></span></a>
+<a class="chapter-card" href="composing-suspending-functions/index.html"><span class="chapter-number">05</span><span><strong>组合挂起函数</strong><small>两个各需一秒的查询，什么时候总共等两秒，什么时候只等一秒？沿启动、等待与失败三个时刻读代码。</small></span></a>
+<a class="chapter-card" href="coroutine-context-and-dispatchers/index.html"><span class="chapter-number">06</span><span><strong>协程上下文与调度器</strong><small>一段代码启动于主线程，挂起后还会回来吗？同时看线程名、协程名和父 Job，就能分清执行位置与任务归属。</small></span></a>
+<a class="chapter-card" href="channels/index.html"><span class="chapter-number">07</span><span><strong>通道</strong><small>把待处理的数字交给几个工人。观察谁发送、谁接收、缓冲装满时谁等待，以及最后谁来关闭通道。</small></span></a>
+<a class="chapter-card" href="exception-handling/index.html"><span class="chapter-number">08</span><span><strong>协程怎样处理异常</strong><small>一个子任务失败后，先发生取消、清理还是错误报告？对照普通任务树与监督作用域，跟踪同一个异常。</small></span></a>
+<a class="chapter-card" href="shared-mutable-state-and-concurrency/index.html"><span class="chapter-number">09</span><span><strong>共享可变状态与并发</strong><small>一百个协程各加一千次，计数却不到十万。借这个反例比较原子操作、线程封闭和互斥锁各自保护了哪一步。</small></span></a>
+<a class="chapter-card" href="select-expression/index.html"><span class="chapter-number">10</span><span><strong>select 表达式（实验性）</strong><small>两个通道都可能先有消息。看 select 怎样挑一个已经就绪的分支，以及为什么通道关闭也算一次就绪。</small></span></a>
+<a class="chapter-card" href="debug-coroutines-with-idea/index.html"><span class="chapter-number">11</span><span><strong>在 IntelliJ IDEA 中调试协程</strong><small>让两个子任务分别计算乘数。在 IDEA 的三个断点之间切换，辨认正在计算、正在等值和已经结束的协程。</small></span></a>
+<a class="chapter-card" href="debug-flow-with-idea/index.html"><span class="chapter-number">12</span><span><strong>在 IntelliJ IDEA 中调试 Flow</strong><small>在 emit 和打印结果的位置打断点，再只加一行 buffer()。比较两次调试时的协程数和暂停位置。</small></span></a>
+</div></section>
+<section><h2>延伸阅读</h2><ul><li><a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/ui/coroutines-guide-ui.md">用协程编写 UI 程序</a></li><li><a href="https://github.com/Kotlin/KEEP/blob/master/proposals/coroutines.md">协程设计文档（KEEP）</a></li><li><a href="https://kotlinlang.org/api/kotlinx.coroutines/">kotlinx.coroutines 完整 API 参考</a></li><li><a href="https://developer.android.com/kotlin/coroutines/coroutines-best-practices">Android 协程最佳实践</a></li><li><a href="https://developer.android.com/kotlin/coroutines/additional-resources">Android 上学习协程与 Flow 的更多资料</a></li></ul></section><footer class="source-credit"><p>原文由 JetBrains 与 Kotlin 贡献者维护。RIN III 于 2026 年 11 月 18 日翻译、润色并补充导读与自测；代码、输出及图中界面保留原貌。</p><p><a href="https://kotlinlang.org/docs/coroutines-guide.html">Kotlin 官方原文</a> · <a href="LICENSE-2.0.txt">Apache License 2.0</a></p></footer></main>
+</body></html>

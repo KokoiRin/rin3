@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en" data-reader-family="kotlin-coroutines-guide">
+<head>
+<meta charset="utf-8"><script src="../../../theme.js"></script>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Debug coroutines using IntelliJ IDEA – tutorial｜RIN III</title>
+<meta name="description" content="This tutorial demonstrates how to create Kotlin coroutines and debug them using IntelliJ IDEA.">
+<link rel="manifest" href="../../../manifest.webmanifest">
+<link rel="stylesheet" href="../../../reading/reader.css">
+<link rel="stylesheet" href="../../../theme.css">
+<link rel="stylesheet" href="../../../reading/_shared/theme-readers.css">
+<link rel="stylesheet" href="../../../reading/kotlin-coroutines-guide/course.css">
+</head><body><div class="reader-theme-control" data-theme-control></div>
+<nav class="site-nav"><a href="../index.html">← Kotlin 协程指南</a><a href="index.html">中文译文</a><a href="https://kotlinlang.org/docs/debug-coroutines-with-idea.html">Kotlin 原文 ↗</a></nav><main class="reader project-reader"><header class="chapter-header"><span class="chapter-kicker">Kotlin 协程指南 · 11 / 12</span><h1>Debug coroutines using IntelliJ IDEA – tutorial</h1></header><nav class="chapter-switcher" aria-label="章节导航"><a href="../select-expression/english.html">← Select expression (experimental)</a><a class="course-home" href="../english.html">Contents</a><a href="../debug-flow-with-idea/english.html">Debug Kotlin Flow using IntelliJ IDEA – tutorial →</a></nav><details class="source-details chapter-toc"><summary>On this page</summary><ul><li><a href="#create-coroutines">Create coroutines</a></li><li><a href="#debug-coroutines">Debug coroutines</a></li></ul></details><article class="translated-article"><p id="dvbbjg_3">This tutorial demonstrates how to create Kotlin coroutines and debug them using IntelliJ IDEA.</p>
+<p id="dvbbjg_4">The tutorial assumes you have prior knowledge of the <a href="../english.html" id="dvbbjg_7">coroutines</a> concept.</p>
+<section class="chapter"><h2 id="create-coroutines">Create coroutines</h2>
+<ol class="list _decimal" id="dvbbjg_8" type="1">
+<li class="list__item" id="dvbbjg_9"><p id="dvbbjg_14">Open a Kotlin project in IntelliJ IDEA. If you don't have a project, <a href="https://kotlinlang.org/docs/jvm-get-started.html#create-a-project" id="dvbbjg_15">create one</a>.</p></li>
+<li class="list__item" id="dvbbjg_10">
+<p id="dvbbjg_16">To use the <code class="code" id="dvbbjg_19">kotlinx.coroutines</code> library in a Gradle project, add the following dependency to <code class="code" id="dvbbjg_20">build.gradle(.kts)</code>:</p>
+<div class="tabs" id="dvbbjg_17">
+<div class="tabs__content" id="dvbbjg_21">
+<p class="source-tab-title">Kotlin</p>
+<pre><code class="language-kotlin">dependencies {
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.11.0")
+}</code></pre>
+</div>
+<div class="tabs__content" id="dvbbjg_22">
+<p class="source-tab-title">Groovy</p>
+<pre><code class="language-groovy">dependencies {
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-core:1.11.0'
+}</code></pre>
+</div>
+</div>
+<p id="dvbbjg_18">For other build systems, see instructions in the <a href="https://github.com/Kotlin/kotlinx.coroutines#using-in-your-projects" id="dvbbjg_25"><code class="code" id="dvbbjg_26">kotlinx.coroutines</code> README</a>.</p>
+</li>
+<li class="list__item" id="dvbbjg_11">
+<p id="dvbbjg_27">Open the <code class="code" id="dvbbjg_29">Main.kt</code> file in <code class="code" id="dvbbjg_30">src/main/kotlin</code>.</p>
+<p id="dvbbjg_28">The <code class="code" id="dvbbjg_31">src</code> directory contains Kotlin source files and resources. The <code class="code" id="dvbbjg_32">Main.kt</code> file contains sample code that will print <code class="code" id="dvbbjg_33">Hello World!</code>.</p>
+</li>
+<li class="list__item" id="dvbbjg_12">
+<p id="dvbbjg_34">Change code in the <code class="code" id="dvbbjg_37">main()</code> function:</p>
+<ul class="list _bullet" id="dvbbjg_35">
+<li class="list__item" id="dvbbjg_38"><p id="dvbbjg_42">Use the <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/run-blocking.html" id="dvbbjg_43"><code class="code" id="dvbbjg_44">runBlocking()</code></a> block to wrap a coroutine.</p></li>
+<li class="list__item" id="dvbbjg_39"><p id="dvbbjg_45">Use the <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/async.html" id="dvbbjg_46"><code class="code" id="dvbbjg_49">async()</code></a> function to create coroutines that compute deferred values <code class="code" id="dvbbjg_47">a</code> and <code class="code" id="dvbbjg_48">b</code>.</p></li>
+<li class="list__item" id="dvbbjg_40"><p id="dvbbjg_50">Use the <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-deferred/await.html" id="dvbbjg_51"><code class="code" id="dvbbjg_52">await()</code></a> function to await the computation result.</p></li>
+<li class="list__item" id="dvbbjg_41"><p id="dvbbjg_53">Use the <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.io/println.html" id="dvbbjg_54"><code class="code" id="dvbbjg_55">println()</code></a> function to print computing status and the result of multiplication to the output.</p></li>
+</ul>
+<pre><code class="language-kotlin">import kotlinx.coroutines.*
+
+fun main() = runBlocking&lt;Unit&gt; {
+    val a = async {
+        println("I'm computing part of the answer")
+        6
+    }
+    val b = async {
+        println("I'm computing another part of the answer")
+        7
+    }
+    println("The answer is ${a.await() * b.await()}")
+}</code></pre>
+</li>
+<li class="list__item" id="dvbbjg_13">
+<p id="dvbbjg_56">Build the code by clicking <span class="control" id="dvbbjg_58">Build Project</span>.</p>
+<figure id="dvbbjg_57"><img alt="Build an application" src="../assets/flow-build-project.png" width="984" height="308" loading="lazy"></figure>
+</li>
+</ol></section><section class="chapter"><h2 id="debug-coroutines">Debug coroutines</h2>
+<ol class="list _decimal" id="dvbbjg_59" type="1">
+<li class="list__item" id="dvbbjg_62">
+<p id="dvbbjg_66">Set breakpoints at the lines with the <code class="code" id="dvbbjg_68">println()</code> function call:</p>
+<figure id="dvbbjg_67"><img alt="Build a console application" src="../assets/coroutine-breakpoint.png" width="1312" height="668" loading="lazy"></figure>
+</li>
+<li class="list__item" id="dvbbjg_63">
+<p id="dvbbjg_69">Run the code in debug mode by clicking <span class="control" id="dvbbjg_74">Debug</span> next to the run configuration at the top of the screen.</p>
+<figure id="dvbbjg_70"><img alt="Build a console application" src="../assets/flow-debug-project.png" width="1158" height="342" loading="lazy"></figure><p id="dvbbjg_71">The <span class="control" id="dvbbjg_75">Debug</span> tool window appears:</p>
+<ul class="list _bullet" id="dvbbjg_72">
+<li class="list__item" id="dvbbjg_76"><p id="dvbbjg_79">The <span class="control" id="dvbbjg_80">Frames</span> tab contains the call stack.</p></li>
+<li class="list__item" id="dvbbjg_77"><p id="dvbbjg_81">The <span class="control" id="dvbbjg_82">Variables</span> tab contains variables in the current context.</p></li>
+<li class="list__item" id="dvbbjg_78"><p id="dvbbjg_83">The <span class="control" id="dvbbjg_84">Coroutines</span> tab contains information on running or suspended coroutines. It shows that there are three coroutines. The first one has the <span class="control" id="dvbbjg_85">RUNNING</span> status, and the other two have the <span class="control" id="dvbbjg_86">CREATED</span> status.</p></li>
+</ul>
+<figure id="dvbbjg_73"><img alt="Debug the coroutine" src="../assets/coroutine-debug-1.png" width="2408" height="658" loading="lazy"></figure>
+</li>
+<li class="list__item" id="dvbbjg_64">
+<p id="dvbbjg_87">Resume the debugger session by clicking <span class="control" id="dvbbjg_91">Resume Program</span> in the <span class="control" id="dvbbjg_92">Debug</span> tool window:</p>
+<figure id="dvbbjg_88"><img alt="Debug the coroutine" src="../assets/coroutine-debug-2.png" width="2408" height="658" loading="lazy"></figure><p id="dvbbjg_89">Now the <span class="control" id="dvbbjg_93">Coroutines</span> tab shows the following:</p>
+<ul class="list _bullet" id="dvbbjg_90">
+<li class="list__item" id="dvbbjg_94"><p id="dvbbjg_97">The first coroutine has the <span class="control" id="dvbbjg_98">SUSPENDED</span> status – it is waiting for the values so it can multiply them.</p></li>
+<li class="list__item" id="dvbbjg_95"><p id="dvbbjg_99">The second coroutine is calculating the <code class="code" id="dvbbjg_100">a</code> value – it has the <span class="control" id="dvbbjg_101">RUNNING</span> status.</p></li>
+<li class="list__item" id="dvbbjg_96"><p id="dvbbjg_102">The third coroutine has the <span class="control" id="dvbbjg_103">CREATED</span> status and isn’t calculating the value of <code class="code" id="dvbbjg_104">b</code>.</p></li>
+</ul>
+</li>
+<li class="list__item" id="dvbbjg_65">
+<p id="dvbbjg_105">Resume the debugger session by clicking <span class="control" id="dvbbjg_109">Resume Program</span> in the <span class="control" id="dvbbjg_110">Debug</span> tool window:</p>
+<figure id="dvbbjg_106"><img alt="Build a console application" src="../assets/coroutine-debug-3.png" width="2408" height="658" loading="lazy"></figure><p id="dvbbjg_107">Now the <span class="control" id="dvbbjg_111">Coroutines</span> tab shows the following:</p>
+<ul class="list _bullet" id="dvbbjg_108">
+<li class="list__item" id="dvbbjg_112"><p id="dvbbjg_115">The first coroutine has the <span class="control" id="dvbbjg_116">SUSPENDED</span> status – it is waiting for the values so it can multiply them.</p></li>
+<li class="list__item" id="dvbbjg_113"><p id="dvbbjg_117">The second coroutine has computed its value and disappeared.</p></li>
+<li class="list__item" id="dvbbjg_114"><p id="dvbbjg_118">The third coroutine is calculating the value of <code class="code" id="dvbbjg_119">b</code> – it has the <span class="control" id="dvbbjg_120">RUNNING</span> status.</p></li>
+</ul>
+</li>
+</ol>
+<p id="dvbbjg_60">Using IntelliJ IDEA debugger, you can dig deeper into each coroutine to debug your code.</p>
+<section class="chapter"><h3 id="optimized-out-variables">Optimized-out variables</h3>
+<p id="dvbbjg_121">If you use <code class="code" id="dvbbjg_125">suspend</code> functions, in the debugger, you might see the "was optimized out" text next to a variable's name:</p>
+<figure id="dvbbjg_122"><img alt='Variable "a" was optimized out' src="../assets/variable-optimised-out.png" width="480" height="291" loading="lazy"></figure><p id="dvbbjg_123">This text means that the variable's lifetime was decreased, and the variable doesn't exist anymore. It is difficult to debug code with optimized variables because you don't see their values. You can disable this behavior with the <code class="code" id="dvbbjg_126">-Xdebug</code> compiler option.</p>
+<aside class="prompt" data-type="warning" id="dvbbjg_124"><p id="dvbbjg_127"><span class="control" id="dvbbjg_128">Never use this flag in production</span>: <code class="code" id="dvbbjg_129">-Xdebug</code> can <a href="https://youtrack.jetbrains.com/issue/KT-48678/Coroutine-debugger-disable-was-optimised-out-compiler-feature#focus=Comments-27-6015585.0-0" id="dvbbjg_130">cause memory leaks</a>.</p></aside></section></section></article>
+<nav class="chapter-switcher" aria-label="章节导航"><a href="../select-expression/english.html">← Select expression (experimental)</a><a class="course-home" href="../english.html">Contents</a><a href="../debug-flow-with-idea/english.html">Debug Kotlin Flow using IntelliJ IDEA – tutorial →</a></nav><footer class="source-credit"><p>原文由 JetBrains 与 Kotlin 贡献者维护。RIN III 于 2026 年 11 月 18 日翻译、润色并补充导读与自测；代码、输出及图中界面保留原貌。</p><p><a href="https://kotlinlang.org/docs/debug-coroutines-with-idea.html">Kotlin 官方原文</a> · <a href="../LICENSE-2.0.txt">Apache License 2.0</a></p></footer></main>
+</body></html>

@@ -126,3 +126,20 @@ test("[CONTENT-CONTRACT-001] 全站派生 Slides 路由保持唯一", async () =
 test("[COURSE-READER-001] 学习课程使用指定样式并保持完整导航", async () => {
   assert.deepEqual(await validateCourseReaders(), []);
 });
+
+test("Kotlin 协程指南的双语章节保留原文的示例、输出与配图", async () => {
+  const root = path.resolve(contentRoot, "../public/reading/kotlin-coroutines-guide");
+  const chapters = JSON.parse(await readFile(path.join(root, "coverage.json"), "utf8"));
+  assert.equal(chapters.length, 12);
+  for (const { chapter, codeBlocks, figures } of chapters) {
+    const [chinese, english] = await Promise.all(
+      ["index.html", "english.html"].map((file) => readFile(path.join(root, chapter, file), "utf8")),
+    );
+    const examples = (page) => page.match(/<pre><code\b[\s\S]*?<\/code><\/pre>/g) ?? [];
+    const images = (page) => [...page.matchAll(/<img\b[^>]*? src="([^"]+)"/g)].map((match) => match[1]);
+    assert.equal(examples(english).length, codeBlocks, chapter);
+    assert.deepEqual(examples(chinese), examples(english), chapter);
+    assert.equal(images(english).length, figures, chapter);
+    assert.deepEqual(images(chinese), images(english), chapter);
+  }
+});

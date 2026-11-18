@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en" data-reader-family="kotlin-coroutines-guide">
+<head>
+<meta charset="utf-8"><script src="../../../theme.js"></script>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Debug Kotlin Flow using IntelliJ IDEA – tutorial｜RIN III</title>
+<meta name="description" content="This tutorial demonstrates how to create Kotlin Flow and debug it using IntelliJ IDEA.">
+<link rel="manifest" href="../../../manifest.webmanifest">
+<link rel="stylesheet" href="../../../reading/reader.css">
+<link rel="stylesheet" href="../../../theme.css">
+<link rel="stylesheet" href="../../../reading/_shared/theme-readers.css">
+<link rel="stylesheet" href="../../../reading/kotlin-coroutines-guide/course.css">
+</head><body><div class="reader-theme-control" data-theme-control></div>
+<nav class="site-nav"><a href="../index.html">← Kotlin 协程指南</a><a href="index.html">中文译文</a><a href="https://kotlinlang.org/docs/debug-flow-with-idea.html">Kotlin 原文 ↗</a></nav><main class="reader project-reader"><header class="chapter-header"><span class="chapter-kicker">Kotlin 协程指南 · 12 / 12</span><h1>Debug Kotlin Flow using IntelliJ IDEA – tutorial</h1></header><nav class="chapter-switcher" aria-label="章节导航"><a href="../debug-coroutines-with-idea/english.html">← Debug coroutines using IntelliJ IDEA – tutorial</a><a class="course-home" href="../english.html">Contents</a><span></span></nav><details class="source-details chapter-toc"><summary>On this page</summary><ul><li><a href="#create-a-kotlin-flow">Create a Kotlin flow</a></li><li><a href="#debug-the-coroutine">Debug the coroutine</a></li><li><a href="#add-a-concurrently-running-coroutine">Add a concurrently running coroutine</a></li><li><a href="#debug-a-kotlin-flow-with-two-coroutines">Debug a Kotlin flow with two coroutines</a></li></ul></details><article class="translated-article"><p id="tl6y0p_3">This tutorial demonstrates how to create Kotlin Flow and debug it using IntelliJ IDEA.</p>
+<p id="tl6y0p_4">The tutorial assumes you have prior knowledge of the <a href="../coroutines-basics/english.html" id="tl6y0p_9">coroutines</a> and <a href="../coroutines-flow/english.html" id="tl6y0p_10">flow</a> concepts.</p>
+<section class="chapter"><h2 id="create-a-kotlin-flow">Create a Kotlin flow</h2>
+<p id="tl6y0p_11">Create a Kotlin <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/flow.html" id="tl6y0p_13">flow</a> with a slow emitter and a slow collector:</p>
+<ol class="list _decimal" id="tl6y0p_12" type="1">
+<li class="list__item" id="tl6y0p_14"><p id="tl6y0p_20">Open a Kotlin project in IntelliJ IDEA. If you don't have a project, <a href="https://kotlinlang.org/docs/jvm-get-started.html#create-a-project" id="tl6y0p_21">create one</a>.</p></li>
+<li class="list__item" id="tl6y0p_15">
+<p id="tl6y0p_22">To use the <code class="code" id="tl6y0p_25">kotlinx.coroutines</code> library in a Gradle project, add the following dependency to <code class="code" id="tl6y0p_26">build.gradle(.kts)</code>:</p>
+<div class="tabs" id="tl6y0p_23">
+<div class="tabs__content" id="tl6y0p_27">
+<p class="source-tab-title">Kotlin</p>
+<pre><code class="language-kotlin">dependencies {
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.11.0")
+}</code></pre>
+</div>
+<div class="tabs__content" id="tl6y0p_28">
+<p class="source-tab-title">Groovy</p>
+<pre><code class="language-groovy">dependencies {
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-core:1.11.0'
+}</code></pre>
+</div>
+</div>
+<p id="tl6y0p_24">For other build systems, see instructions in the <a href="https://github.com/Kotlin/kotlinx.coroutines#using-in-your-projects" id="tl6y0p_31"><code class="code" id="tl6y0p_32">kotlinx.coroutines</code> README</a>.</p>
+</li>
+<li class="list__item" id="tl6y0p_16">
+<p id="tl6y0p_33">Open the <code class="code" id="tl6y0p_35">Main.kt</code> file in <code class="code" id="tl6y0p_36">src/main/kotlin</code>.</p>
+<p id="tl6y0p_34">The <code class="code" id="tl6y0p_37">src</code> directory contains Kotlin source files and resources. The <code class="code" id="tl6y0p_38">Main.kt</code> file contains sample code that will print <code class="code" id="tl6y0p_39">Hello World!</code>.</p>
+</li>
+<li class="list__item" id="tl6y0p_17">
+<p id="tl6y0p_40">Create the <code class="code" id="tl6y0p_43">simple()</code> function that returns a flow of three numbers:</p>
+<ul class="list _bullet" id="tl6y0p_41">
+<li class="list__item" id="tl6y0p_44"><p id="tl6y0p_46">Use the <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/delay.html" id="tl6y0p_47"><code class="code" id="tl6y0p_48">delay()</code></a> function to imitate CPU-consuming blocking code. It suspends the coroutine for 100 ms without blocking the thread.</p></li>
+<li class="list__item" id="tl6y0p_45"><p id="tl6y0p_49">Produce the values in the <code class="code" id="tl6y0p_50">for</code> loop using the <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-flow-collector/emit.html" id="tl6y0p_51"><code class="code" id="tl6y0p_52">emit()</code></a> function.</p></li>
+</ul>
+<pre><code class="language-kotlin">import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.*
+import kotlin.system.*
+
+fun simple(): Flow&lt;Int&gt; = flow {
+    for (i in 1..3) {
+        delay(100)
+        emit(i)
+    }
+}</code></pre>
+</li>
+<li class="list__item" id="tl6y0p_18">
+<p id="tl6y0p_53">Change the code in the <code class="code" id="tl6y0p_56">main()</code> function:</p>
+<ul class="list _bullet" id="tl6y0p_54">
+<li class="list__item" id="tl6y0p_57"><p id="tl6y0p_61">Use the <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/run-blocking.html" id="tl6y0p_62"><code class="code" id="tl6y0p_63">runBlocking()</code></a> block to wrap a coroutine.</p></li>
+<li class="list__item" id="tl6y0p_58"><p id="tl6y0p_64">Collect the emitted values using the <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/collect.html" id="tl6y0p_65"><code class="code" id="tl6y0p_66">collect()</code></a> function.</p></li>
+<li class="list__item" id="tl6y0p_59"><p id="tl6y0p_67">Use the <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/delay.html" id="tl6y0p_68"><code class="code" id="tl6y0p_69">delay()</code></a> function to imitate CPU-consuming code. It suspends the coroutine for 300 ms without blocking the thread.</p></li>
+<li class="list__item" id="tl6y0p_60"><p id="tl6y0p_70">Print the collected value from the flow using the <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.io/println.html" id="tl6y0p_71"><code class="code" id="tl6y0p_72">println()</code></a> function.</p></li>
+</ul>
+<pre><code class="language-kotlin">fun main() = runBlocking {
+    simple()
+        .collect { value -&gt;
+            delay(300)
+            println(value)
+        }
+}</code></pre>
+</li>
+<li class="list__item" id="tl6y0p_19">
+<p id="tl6y0p_73">Build the code by clicking <span class="control" id="tl6y0p_75">Build Project</span>.</p>
+<figure id="tl6y0p_74"><img alt="Build an application" src="../assets/flow-build-project.png" width="984" height="308" loading="lazy"></figure>
+</li>
+</ol></section><section class="chapter"><h2 id="debug-the-coroutine">Debug the coroutine</h2>
+<ol class="list _decimal" id="tl6y0p_76" type="1">
+<li class="list__item" id="tl6y0p_78">
+<p id="tl6y0p_81">Set a breakpoint at the line where the <code class="code" id="tl6y0p_83">emit()</code> function is called:</p>
+<figure id="tl6y0p_82"><img alt="Build a console application" src="../assets/flow-breakpoint.png" width="1120" height="846" loading="lazy"></figure>
+</li>
+<li class="list__item" id="tl6y0p_79">
+<p id="tl6y0p_84">Run the code in debug mode by clicking <span class="control" id="tl6y0p_89">Debug</span> next to the run configuration at the top of the screen.</p>
+<figure id="tl6y0p_85"><img alt="Build a console application" src="../assets/flow-debug-project.png" width="1158" height="342" loading="lazy"></figure><p id="tl6y0p_86">The <span class="control" id="tl6y0p_90">Debug</span> tool window appears:</p>
+<ul class="list _bullet" id="tl6y0p_87">
+<li class="list__item" id="tl6y0p_91"><p id="tl6y0p_94">The <span class="control" id="tl6y0p_95">Frames</span> tab contains the call stack.</p></li>
+<li class="list__item" id="tl6y0p_92"><p id="tl6y0p_96">The <span class="control" id="tl6y0p_97">Variables</span> tab contains variables in the current context. It tells us that the flow is emitting the first value.</p></li>
+<li class="list__item" id="tl6y0p_93"><p id="tl6y0p_98">The <span class="control" id="tl6y0p_99">Coroutines</span> tab contains information on running or suspended coroutines.</p></li>
+</ul>
+<figure id="tl6y0p_88"><img alt="Debug the coroutine" src="../assets/flow-debug-1.png" width="2408" height="658" loading="lazy"></figure>
+</li>
+<li class="list__item" id="tl6y0p_80">
+<p id="tl6y0p_100">Resume the debugger session by clicking <span class="control" id="tl6y0p_104">Resume Program</span> in the <span class="control" id="tl6y0p_105">Debug</span> tool window. The program stops at the same breakpoint.</p>
+<figure id="tl6y0p_101"><img alt="Debug the coroutine" src="../assets/flow-resume-debug.png" width="1288" height="308" loading="lazy"></figure><p id="tl6y0p_102">Now the flow emits the second value.</p>
+<figure id="tl6y0p_103"><img alt="Debug the coroutine" src="../assets/flow-debug-2.png" width="2408" height="658" loading="lazy"></figure>
+</li>
+</ol>
+<section class="chapter"><h3 id="optimized-out-variables">Optimized-out variables</h3>
+<p id="tl6y0p_106">If you use <code class="code" id="tl6y0p_110">suspend</code> functions, in the debugger, you might see the "was optimized out" text next to a variable's name:</p>
+<figure id="tl6y0p_107"><img alt='Variable "a" was optimized out' src="../assets/variable-optimised-out.png" width="988" height="598" loading="lazy"></figure><p id="tl6y0p_108">This text means that the variable's lifetime was decreased, and the variable doesn't exist anymore. It is difficult to debug code with optimized variables because you don't see their values. You can disable this behavior with the <code class="code" id="tl6y0p_111">-Xdebug</code> compiler option.</p>
+<aside class="prompt" data-type="warning" id="tl6y0p_109"><p id="tl6y0p_112"><span class="control" id="tl6y0p_113">Never use this flag in production</span>: <code class="code" id="tl6y0p_114">-Xdebug</code> can <a href="https://youtrack.jetbrains.com/issue/KT-48678/Coroutine-debugger-disable-was-optimised-out-compiler-feature#focus=Comments-27-6015585.0-0" id="tl6y0p_115">cause memory leaks</a>.</p></aside></section></section><section class="chapter"><h2 id="add-a-concurrently-running-coroutine">Add a concurrently running coroutine</h2>
+<ol class="list _decimal" id="tl6y0p_116" type="1">
+<li class="list__item" id="tl6y0p_117"><p id="tl6y0p_120">Open the <code class="code" id="tl6y0p_121">Main.kt</code> file in <code class="code" id="tl6y0p_122">src/main/kotlin</code>.</p></li>
+<li class="list__item" id="tl6y0p_118">
+<p id="tl6y0p_123">Enhance the code to run the emitter and collector concurrently:</p>
+<ul class="list _bullet" id="tl6y0p_124"><li class="list__item" id="tl6y0p_126"><p id="tl6y0p_127">Add a call to the <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/buffer.html" id="tl6y0p_128"><code class="code" id="tl6y0p_130">buffer()</code></a> function to run the emitter and collector concurrently. <code class="code" id="tl6y0p_129">buffer()</code> stores emitted values and runs the flow collector in a separate coroutine.</p></li></ul>
+<pre><code class="language-kotlin">fun main() = runBlocking&lt;Unit&gt; {
+    simple()
+        .buffer()
+        .collect { value -&gt;
+            delay(300)
+            println(value)
+        }
+}</code></pre>
+</li>
+<li class="list__item" id="tl6y0p_119"><p id="tl6y0p_131">Build the code by clicking <span class="control" id="tl6y0p_132">Build Project</span>.</p></li>
+</ol></section><section class="chapter"><h2 id="debug-a-kotlin-flow-with-two-coroutines">Debug a Kotlin flow with two coroutines</h2>
+<ol class="list _decimal" id="tl6y0p_133" type="1">
+<li class="list__item" id="tl6y0p_134"><p id="tl6y0p_137">Set a new breakpoint at <code class="code" id="tl6y0p_138">println(value)</code>.</p></li>
+<li class="list__item" id="tl6y0p_135">
+<p id="tl6y0p_139">Run the code in debug mode by clicking <span class="control" id="tl6y0p_143">Debug</span> next to the run configuration at the top of the screen.</p>
+<figure id="tl6y0p_140"><img alt="Build a console application" src="../assets/flow-debug-3.png" width="2408" height="658" loading="lazy"></figure><p id="tl6y0p_141">The <span class="control" id="tl6y0p_144">Debug</span> tool window appears.</p>
+<p id="tl6y0p_142">In the <span class="control" id="tl6y0p_145">Coroutines</span> tab, you can see that there are two coroutines running concurrently. The flow collector and emitter run in separate coroutines because of the <code class="code" id="tl6y0p_146">buffer()</code> function. The <code class="code" id="tl6y0p_147">buffer()</code> function buffers emitted values from the flow. The emitter coroutine has the <span class="control" id="tl6y0p_148">RUNNING</span> status, and the collector coroutine has the <span class="control" id="tl6y0p_149">SUSPENDED</span> status.</p>
+</li>
+<li class="list__item" id="tl6y0p_136">
+<p id="tl6y0p_150">Resume the debugger session by clicking <span class="control" id="tl6y0p_154">Resume Program</span> in the <span class="control" id="tl6y0p_155">Debug</span> tool window.</p>
+<figure id="tl6y0p_151"><img alt="Debugging coroutines" src="../assets/flow-debug-4.png" width="2408" height="658" loading="lazy"></figure><p id="tl6y0p_152">Now the collector coroutine has the <span class="control" id="tl6y0p_156">RUNNING</span> status, while the emitter coroutine has the <span class="control" id="tl6y0p_157">SUSPENDED</span> status.</p>
+<p id="tl6y0p_153">You can dig deeper into each coroutine to debug your code.</p>
+</li>
+</ol></section></article>
+<nav class="chapter-switcher" aria-label="章节导航"><a href="../debug-coroutines-with-idea/english.html">← Debug coroutines using IntelliJ IDEA – tutorial</a><a class="course-home" href="../english.html">Contents</a><span></span></nav><footer class="source-credit"><p>原文由 JetBrains 与 Kotlin 贡献者维护。RIN III 于 2026 年 11 月 18 日翻译、润色并补充导读与自测；代码、输出及图中界面保留原貌。</p><p><a href="https://kotlinlang.org/docs/debug-flow-with-idea.html">Kotlin 官方原文</a> · <a href="../LICENSE-2.0.txt">Apache License 2.0</a></p></footer></main>
+</body></html>

@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="zh-CN" data-reader-family="kotlin-coroutines-guide">
+<head>
+<meta charset="utf-8"><script src="../../../theme.js"></script>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>组合挂起函数｜RIN III</title>
+<meta name="description" content="两个各需一秒的查询，什么时候总共等两秒，什么时候只等一秒？沿启动、等待与失败三个时刻读代码。">
+<link rel="manifest" href="../../../manifest.webmanifest">
+<link rel="stylesheet" href="../../../reading/reader.css">
+<link rel="stylesheet" href="../../../theme.css">
+<link rel="stylesheet" href="../../../reading/_shared/theme-readers.css">
+<link rel="stylesheet" href="../../../reading/kotlin-coroutines-guide/course.css">
+</head><body><div class="reader-theme-control" data-theme-control></div>
+<nav class="site-nav"><a href="../index.html">← Kotlin 协程指南</a><a href="english.html">English</a><a href="https://kotlinlang.org/docs/composing-suspending-functions.html">Kotlin 原文 ↗</a></nav><main class="reader project-reader"><header class="chapter-header"><span class="chapter-kicker">Kotlin 协程指南 · 05 / 12</span><h1>组合挂起函数</h1><p class="lead">两个各需一秒的查询，什么时候总共等两秒，什么时候只等一秒？沿启动、等待与失败三个时刻读代码。</p></header><nav class="chapter-switcher" aria-label="章节导航"><a href="../coroutines-and-channels/index.html">← 实战：用协程和通道加载 GitHub 贡献者</a><a class="course-home" href="../index.html">全部章节</a><a href="../coroutine-context-and-dispatchers/index.html">协程上下文与调度器 →</a></nav><details class="source-details chapter-toc"><summary>本章目录</summary><ul><li><a href="#sequential-by-default">默认按顺序执行</a></li><li><a href="#concurrent-using-async">用 async 并发执行</a></li><li><a href="#lazily-started-async">需要时再启动 async</a></li><li><a href="#async-style-functions">返回异步任务的普通函数</a></li><li><a href="#structured-concurrency-with-async">让 async 遵守结构化并发</a></li></ul></details><article class="translated-article"><p id="-xfvzq8_3">两个挂起函数写在一起时，怎样决定先后，又怎样让它们同时工作？下面用同一对函数比较几种写法。</p>
+<section class="chapter"><h2 id="sequential-by-default">默认按顺序执行</h2>
+<p id="-xfvzq8_9">假设两个函数分别调用远程服务或做一段计算。为了专心观察时间，例子让每个函数等待一秒，再返回一个数。</p>
+<pre><code class="language-kotlin">suspend fun doSomethingUsefulOne(): Int {
+    delay(1000L) // pretend we are doing something useful here
+    return 13
+}
+
+suspend fun doSomethingUsefulTwo(): Int {
+    delay(1000L) // pretend we are doing something useful here, too
+    return 29
+}</code></pre>
+<p id="-xfvzq8_11">先调用 <code>doSomethingUsefulOne</code>，再调用 <code>doSomethingUsefulTwo</code>，最后相加。实际项目里，如果第一步的结果决定第二步要不要做，或者决定它的参数，这个顺序就有意义。</p>
+<p id="-xfvzq8_12">像写普通函数一样逐行调用即可。协程每次挂起后，仍会从原处继续。测量整段耗时，就能看到两个等待依次发生。</p>
+<pre><code class="language-kotlin">import kotlinx.coroutines.*
+import kotlin.system.*
+
+fun main() = runBlocking&lt;Unit&gt; {
+//sampleStart
+    val time = measureTimeMillis {
+        val one = doSomethingUsefulOne()
+        val two = doSomethingUsefulTwo()
+        println("The answer is ${one + two}")
+    }
+    println("Completed in $time ms")
+//sampleEnd    
+}
+
+suspend fun doSomethingUsefulOne(): Int {
+    delay(1000L) // pretend we are doing something useful here
+    return 13
+}
+
+suspend fun doSomethingUsefulTwo(): Int {
+    delay(1000L) // pretend we are doing something useful here, too
+    return 29
+}</code></pre>
+<aside class="prompt" data-type="note" id="-xfvzq8_14"><p id="-xfvzq8_22"><a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-compose-01.kt">查看完整示例</a>。</p></aside><p id="-xfvzq8_15">一次运行的输出如下。</p>
+<pre><code class="language-none">The answer is 42
+Completed in 2017 ms</code></pre></section><section class="chapter"><h2 id="concurrent-using-async">用 async 并发执行</h2>
+<p id="-xfvzq8_24">如果两个调用互不依赖，可以让它们同时等待，缩短拿到总和的时间。这里用 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/async.html">async</a> 启动工作。</p>
+<p id="-xfvzq8_25"><a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/async.html">async</a> 和 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/launch.html">launch</a> 都会启动独立执行的协程。<code>launch</code> 返回 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-job/index.html">Job</a>，可以管理任务的生命周期。<code>async</code> 返回 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-deferred/index.html">Deferred</a>，表示稍后会产生一个结果；调用 await() 即可取得它。<code>Deferred</code> 也实现了 <code>Job</code>，因此也可以取消。</p>
+<pre><code class="language-kotlin">import kotlinx.coroutines.*
+import kotlin.system.*
+
+fun main() = runBlocking&lt;Unit&gt; {
+//sampleStart
+    val time = measureTimeMillis {
+        val one = async { doSomethingUsefulOne() }
+        val two = async { doSomethingUsefulTwo() }
+        println("The answer is ${one.await() + two.await()}")
+    }
+    println("Completed in $time ms")
+//sampleEnd    
+}
+
+suspend fun doSomethingUsefulOne(): Int {
+    delay(1000L) // pretend we are doing something useful here
+    return 13
+}
+
+suspend fun doSomethingUsefulTwo(): Int {
+    delay(1000L) // pretend we are doing something useful here, too
+    return 29
+}</code></pre>
+<aside class="prompt" data-type="note" id="-xfvzq8_27"><p id="-xfvzq8_44"><a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-compose-02.kt">查看完整示例</a>。</p></aside><p id="-xfvzq8_28">一次运行的输出如下。</p>
+<pre><code class="language-none">The answer is 42
+Completed in 1017 ms</code></pre>
+<p id="-xfvzq8_30">两段各一秒的等待重叠后，总耗时约为原来的一半。这里的并发来自显式启动的两个子协程。</p></section><section class="chapter"><h2 id="lazily-started-async">需要时再启动 async</h2>
+<p id="-xfvzq8_46">将 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-job/start.html">start</a> 参数设为 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-coroutine-start/-l-a-z-y/index.html">CoroutineStart.LAZY</a>，创建 Deferred 时先不执行。第一次调用 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-deferred/await.html">await</a> 或主动调用 <code>start</code>，才会启动协程。运行下面的例子观察时机。 <small class="source-refs"><a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/async.html">async</a></small></p>
+<pre><code class="language-kotlin">import kotlinx.coroutines.*
+import kotlin.system.*
+
+fun main() = runBlocking&lt;Unit&gt; {
+//sampleStart
+    val time = measureTimeMillis {
+        val one = async(start = CoroutineStart.LAZY) { doSomethingUsefulOne() }
+        val two = async(start = CoroutineStart.LAZY) { doSomethingUsefulTwo() }
+        // some computation
+        one.start() // start the first one
+        two.start() // start the second one
+        println("The answer is ${one.await() + two.await()}")
+    }
+    println("Completed in $time ms")
+//sampleEnd    
+}
+
+suspend fun doSomethingUsefulOne(): Int {
+    delay(1000L) // pretend we are doing something useful here
+    return 13
+}
+
+suspend fun doSomethingUsefulTwo(): Int {
+    delay(1000L) // pretend we are doing something useful here, too
+    return 29
+}</code></pre>
+<aside class="prompt" data-type="note" id="-xfvzq8_48"><p id="-xfvzq8_59"><a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-compose-03.kt">查看完整示例</a>。</p></aside><p id="-xfvzq8_49">一次运行的输出如下。</p>
+<pre><code class="language-none">The answer is 42
+Completed in 1017 ms</code></pre>
+<p id="-xfvzq8_51">先创建两个任务，然后分别调用 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-job/start.html">start</a> 让它们都开始工作，最后依次取得结果。写下 await 的先后顺序并不妨碍已经启动的任务同时推进。</p>
+<p id="-xfvzq8_52">若省略两个 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-job/start.html">start</a>，直接在 <code>println</code> 里依次 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-deferred/await.html">await</a>，第一次等待会连同启动一起发生，直到它结束才会启动第二个。惰性 async 更适合替代 <a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/lazy.html">lazy</a> 的一种情形：值要按需计算，而计算过程需要调用挂起函数。</p></section><section class="chapter"><h2 id="async-style-functions">返回异步任务的普通函数</h2>
+<aside class="prompt" data-type="note" id="-xfvzq8_70"><p id="-xfvzq8_79">下面演示其他语言里常见的写法。读这个反例时，请留心谁来收拾调用方已经放弃的工作。</p></aside><p id="-xfvzq8_71">例子用 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-global-scope/index.html">GlobalScope</a>.<a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/async.html">async</a> 在调用方的作用域之外运行两个函数。名字末尾的 Async 提醒调用者：返回的是已启动的任务，要从 Deferred 取结果。</p>
+<aside class="prompt" data-type="note" id="-xfvzq8_72"><p id="-xfvzq8_86">使用 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-global-scope/index.html">GlobalScope</a> 必须通过 <code>@OptIn(DelicateCoroutinesApi::class)</code> 显式选择加入。下面可以看到它为何需要谨慎使用。</p></aside><pre><code class="language-kotlin">// The result type of somethingUsefulOneAsync is Deferred&lt;Int&gt;
+@OptIn(DelicateCoroutinesApi::class)
+fun somethingUsefulOneAsync() = GlobalScope.async {
+    doSomethingUsefulOne()
+}
+
+// The result type of somethingUsefulTwoAsync is Deferred&lt;Int&gt;
+@OptIn(DelicateCoroutinesApi::class)
+fun somethingUsefulTwoAsync() = GlobalScope.async {
+    doSomethingUsefulTwo()
+}</code></pre>
+<p id="-xfvzq8_74">这些 <code>xxxAsync</code> 是普通函数，任何地方都能调用。调用一次，就让任务和调用方的后续代码并发执行。</p>
+<p id="-xfvzq8_75">即使当前代码在协程外，也能这样启动任务。</p>
+<pre><code class="language-kotlin">import kotlinx.coroutines.*
+import kotlin.system.*
+
+//sampleStart
+// note that we don't have `runBlocking` to the right of `main` in this example
+fun main() {
+    val time = measureTimeMillis {
+        // we can initiate async actions outside of a coroutine
+        val one = somethingUsefulOneAsync()
+        val two = somethingUsefulTwoAsync()
+        // but waiting for a result must involve either suspending or blocking.
+        // here we use `runBlocking { ... }` to block the main thread while waiting for the result
+        runBlocking {
+            println("The answer is ${one.await() + two.await()}")
+        }
+    }
+    println("Completed in $time ms")
+}
+//sampleEnd
+
+@OptIn(DelicateCoroutinesApi::class)
+fun somethingUsefulOneAsync() = GlobalScope.async {
+    doSomethingUsefulOne()
+}
+
+@OptIn(DelicateCoroutinesApi::class)
+fun somethingUsefulTwoAsync() = GlobalScope.async {
+    doSomethingUsefulTwo()
+}
+
+suspend fun doSomethingUsefulOne(): Int {
+    delay(1000L) // pretend we are doing something useful here
+    return 13
+}
+
+suspend fun doSomethingUsefulTwo(): Int {
+    delay(1000L) // pretend we are doing something useful here, too
+    return 29
+}</code></pre>
+<aside class="prompt" data-type="note" id="-xfvzq8_77"><p id="-xfvzq8_94"><a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-compose-04.kt">查看完整示例</a>。</p></aside><p id="-xfvzq8_78">假设启动第一个任务后、调用 <code>one.await()</code> 前，业务代码抛出异常。应用可以记录错误并继续处理其他事情，原来的请求却已经作废。用 GlobalScope 启动的任务仍在后台运行，因为它的生命周期没有接在这次请求上。</p></section><section class="chapter"><h2 id="structured-concurrency-with-async">让 async 遵守结构化并发</h2>
+<p id="-xfvzq8_99">把前面的并发求和封装成 concurrentSum。<a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/async.html">async</a> 是 <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-coroutine-scope/index.html">CoroutineScope</a> 的扩展函数，<a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/coroutine-scope.html">coroutineScope</a> 为两个任务提供共同的作用域。 <small class="source-refs"><a href="#concurrent-using-async">Concurrent using async</a></small></p>
+<pre><code class="language-kotlin">suspend fun concurrentSum(): Int = coroutineScope {
+    val one = async { doSomethingUsefulOne() }
+    val two = async { doSomethingUsefulTwo() }
+    one.await() + two.await()
+}</code></pre>
+<p id="-xfvzq8_101">若 <code>concurrentSum</code> 内部抛出异常，作用域会取消其中已经启动的子协程。</p>
+<pre><code class="language-kotlin">import kotlinx.coroutines.*
+import kotlin.system.*
+
+fun main() = runBlocking&lt;Unit&gt; {
+//sampleStart
+    val time = measureTimeMillis {
+        println("The answer is ${concurrentSum()}")
+    }
+    println("Completed in $time ms")
+//sampleEnd    
+}
+
+suspend fun concurrentSum(): Int = coroutineScope {
+    val one = async { doSomethingUsefulOne() }
+    val two = async { doSomethingUsefulTwo() }
+    one.await() + two.await()
+}
+
+suspend fun doSomethingUsefulOne(): Int {
+    delay(1000L) // pretend we are doing something useful here
+    return 13
+}
+
+suspend fun doSomethingUsefulTwo(): Int {
+    delay(1000L) // pretend we are doing something useful here, too
+    return 29
+}</code></pre>
+<aside class="prompt" data-type="note" id="-xfvzq8_103"><p id="-xfvzq8_118"><a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-compose-05.kt">查看完整示例</a>。</p></aside><p id="-xfvzq8_104">运行 <code>main</code>，从耗时仍能看出两项工作并发执行。</p>
+<pre><code class="language-none">The answer is 42
+Completed in 1017 ms</code></pre>
+<p id="-xfvzq8_106">取消沿任务树传播。下面故意让第二项工作失败，观察第一项和父协程的变化。</p>
+<pre><code class="language-kotlin">import kotlinx.coroutines.*
+
+fun main() = runBlocking&lt;Unit&gt; {
+    try {
+        failedConcurrentSum()
+    } catch(e: ArithmeticException) {
+        println("Computation failed with ArithmeticException")
+    }
+}
+
+suspend fun failedConcurrentSum(): Int = coroutineScope {
+    val one = async&lt;Int&gt; { 
+        try {
+            delay(Long.MAX_VALUE) // Emulates very long computation
+            42
+        } finally {
+            println("First child was cancelled")
+        }
+    }
+    val two = async&lt;Int&gt; { 
+        println("Second child throws an exception")
+        throw ArithmeticException()
+    }
+    one.await() + two.await()
+}</code></pre>
+<aside class="prompt" data-type="note" id="-xfvzq8_108"><p id="-xfvzq8_121"><a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-compose-06.kt">查看完整示例</a>。</p></aside><p id="-xfvzq8_109">输出里，子任务 <code>two</code> 的失败终止了等结果的父协程，也让第一个 <code>async</code> 进入清理流程。</p>
+<pre><code class="language-none">Second child throws an exception
+First child was cancelled
+Computation failed with ArithmeticException</code></pre></section></article>
+<section class="recall"><h2>读完试一题</h2><p>把两个 async 都设成 LAZY，然后依次 await，为什么可能花两秒？</p><details><summary>展开参考答案</summary><p>第一个 await 同时负责启动和等待，第二个任务要等它结束才启动。先分别 start 再等待，就有了重叠的机会。</p></details></section><nav class="chapter-switcher" aria-label="章节导航"><a href="../coroutines-and-channels/index.html">← 实战：用协程和通道加载 GitHub 贡献者</a><a class="course-home" href="../index.html">全部章节</a><a href="../coroutine-context-and-dispatchers/index.html">协程上下文与调度器 →</a></nav><footer class="source-credit"><p>原文由 JetBrains 与 Kotlin 贡献者维护。RIN III 于 2026 年 11 月 18 日翻译、润色并补充导读与自测；代码、输出及图中界面保留原貌。</p><p><a href="https://kotlinlang.org/docs/composing-suspending-functions.html">Kotlin 官方原文</a> · <a href="../LICENSE-2.0.txt">Apache License 2.0</a></p></footer></main>
+</body></html>
