@@ -48,7 +48,7 @@ RIN 把三个概念分开管理：
 - 投影视图：`core` 同时进入文章和 Slides；`detail` 只进入文章。
 - Slides 表现：`kind` 继续选择 prose、cards、flow 等页面布局。
 
-不要根据文字长度自动隐藏内容。作者先写两种视图都需要的简短核心，再把只适合连续阅读的解释放进 `:::detail`：
+排版时以完整文章为底稿。翻译官方文档先按[两轮译稿流程](../.agents/skills/publish-book-learning/SKILL.md#官方文档的两轮译稿)完成严格译稿和润色稿，再标记 Slides 共用的段落。只适合连续阅读的解释留在原位置，用 `:::detail` 包住。文章仍显示全部正文，投影片需要更多篇幅时就增加一页。
 
 ```md
 :::slide {"kind":"prose","chapter":"opening","eyebrow":"OPENING / IDEA"}

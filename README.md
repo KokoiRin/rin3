@@ -4,7 +4,7 @@
 
 ## 本地运行
 
-需要 Node.js 22 或更高版本。
+需要 Node.js 22.13.0 或更高版本，与 [package.json](package.json) 中的 `engines.node` 一致。
 
 ```bash
 npm install

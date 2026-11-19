@@ -1,3 +1,4 @@
+import { verifyReaderCode } from "./android-reader-code.mjs";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
@@ -41,7 +42,8 @@ test("Android 构建系统的十五篇双语阅读页保留全部正文单元、
     assert.equal(document.units, document.unitIds.length, `${document.id}: coverage unit count`);
     assert.equal(document.code_blocks, document.code_sha256.length, `${document.id}: coverage code count`);
     if (!selected) assert.equal(document.excerpt_scope, null);
-    for (const edition of Object.keys(tableCounts)) {
+    let originalCode;
+    for (const edition of ["english.html", "index.html"]) {
       const label = `${document.id}/${edition}`;
       const html = await readFile(path.join(root, label), "utf8");
       const article = articleBody(html, label);
@@ -60,7 +62,8 @@ test("Android 构建系统的十五篇双语阅读页保留全部正文单元、
       assert.equal(new Set(ids).size, ids.length, `${label}: unique live HTML ids`);
       const blocks = [...article.matchAll(/<pre\b[^>]*>([\s\S]*?)<\/pre>/g)]
         .map((match) => decode(match[1].replace(/<[^>]+>/g, "")));
-      assert.deepEqual(blocks.map(hash), document.code_sha256, `${label}: original code hashes`);
+      if (edition === "english.html") originalCode = blocks;
+      verifyReaderCode(originalCode, blocks, document.code_sha256, edition, label);
       const images = [...article.matchAll(/<img\b[^>]*>/g)].map((match) => match[0]);
       assert.equal(images.length, document.images.length, `${label}: original figures`);
       for (const image of images) {

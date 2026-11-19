@@ -8,7 +8,7 @@
 | --- | --- |
 | 整书学习记录（需要时） | `content/<section>/<book-slug>.md` |
 | 分章阅读器 | `public/reading/<book-slug>/<chapter-slug>/index.html` |
-| 共享样式 | `public/reading/reader.css` |
+| 章节样式 | 复用[所在系列的样式](../../../../docs/reader-inventory.md#维护规则)。使用通用阅读器的系列引用 `public/reading/reader.css` |
 | 本地公式资源 | `public/reading/_shared/katex/` |
 
 同一本书需要学习记录时，维护一个整书入口，汇集章节链接与实际形成的理解，不为每章新建文章或虚构学习进度。单篇文档沿用所在系列的组织方式。
@@ -17,6 +17,7 @@
 
 - 整书文章链接到章节，例如 `../../reading/book-slug/chapter-N/`。
 - 章节链接回整书文章，例如 `../../../software-engineering/book-slug/`；返回首页可用 `../../../`。
+- 站点内每个独立阅读页都用相对路径链接到 `public/manifest.webmanifest`。按章节深度填写[阅读器模板](../assets/reader-shell.html)中的 `MANIFEST_HREF`。
 - 同时核对本地访问和 `/rin3` 路径前缀。合并既有入口时，保留承诺兼容的旧链接；静态跳转页不进入文章目录。
 
 ## 验证与交付
